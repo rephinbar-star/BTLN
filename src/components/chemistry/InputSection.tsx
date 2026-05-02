@@ -39,7 +39,7 @@ const labelClass = "text-[13px] font-medium text-foreground";
 type InputMode = "paste" | "file" | "screenshots";
 type Screenshot = { id: string; name: string; size: number; dataUrl: string };
 
-const MAX_SCREENSHOTS = 10;
+const MAX_SCREENSHOTS = 20;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_TXT_BYTES = 5 * 1024 * 1024;
 
@@ -306,10 +306,10 @@ export const InputSection = () => {
                 <div>
                   <p className="text-[14px] font-medium text-foreground">
                     {screenshots.length >= MAX_SCREENSHOTS
-                      ? "Maximum of 10 images reached"
+                      ? `Maximum of ${MAX_SCREENSHOTS} images reached`
                       : "Drop screenshots or click to browse"}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to 10 images, 10 MB each.</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to {MAX_SCREENSHOTS} images, 10 MB each.</p>
                 </div>
               </button>
 
