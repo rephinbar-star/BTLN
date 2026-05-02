@@ -3,8 +3,8 @@
 // the per-request body limit (~6 MB), even when the user picks 6–15
 // high-resolution phone screenshots.
 
-const MAX_DIMENSION = 1600; // px on the long edge — plenty for OCR
-const JPEG_QUALITY = 0.78;
+const MAX_DIMENSION = 1280; // px on the long edge — plenty for OCR
+const JPEG_QUALITY = 0.75;
 
 const readAsDataURL = (file: Blob): Promise<string> =>
   new Promise((resolve, reject) => {
@@ -24,10 +24,13 @@ const loadImage = (src: string): Promise<HTMLImageElement> =>
 
 /**
  * Compress an image File to a JPEG data URL no larger than MAX_DIMENSION on
- * the long edge. Falls back to the original data URL if compression fails
- * for any reason.
+ * the long edge. Returns the resulting data URL plus the original file size
+ * for telemetry. Falls back to the original data URL if compression fails.
  */
-export async function compressImage(file: File): Promise<string> {
+export async function compressImage(
+  file: File,
+): Promise<{ dataUrl: string; originalBytes: number }> {
+  const originalBytes = file.size;
   try {
     const originalDataUrl = await readAsDataURL(file);
     const img = await loadImage(originalDataUrl);
@@ -42,16 +45,17 @@ export async function compressImage(file: File): Promise<string> {
     canvas.width = targetW;
     canvas.height = targetH;
     const ctx = canvas.getContext("2d");
-    if (!ctx) return originalDataUrl;
+    if (!ctx) return { dataUrl: originalDataUrl, originalBytes };
     ctx.drawImage(img, 0, 0, targetW, targetH);
 
     const compressed = canvas.toDataURL("image/jpeg", JPEG_QUALITY);
-    // Sanity check: only use compressed if it actually shrank.
-    return compressed.length < originalDataUrl.length ? compressed : originalDataUrl;
+    const dataUrl =
+      compressed.length < originalDataUrl.length ? compressed : originalDataUrl;
+    return { dataUrl, originalBytes };
   } catch {
-    // Fall back to a plain data-URL read of the original.
     try {
-      return await readAsDataURL(file);
+      const dataUrl = await readAsDataURL(file);
+      return { dataUrl, originalBytes };
     } catch {
       throw new Error(`Could not read ${file.name}`);
     }
