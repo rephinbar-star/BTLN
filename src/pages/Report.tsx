@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
@@ -94,8 +95,9 @@ const ReportContent = () => {
   const navigate = useNavigate();
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!analysisId) {
@@ -143,24 +145,81 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
 
   const handleDownload = async () => {
-    if (!cardRef.current || !context) return;
+    if (!reportRef.current || !context || downloading) return;
+    setDownloading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 12;
+      const contentWidth = pageWidth - margin * 2;
+      const maxContentHeight = pageHeight - margin * 2;
+      const sectionGap = 4;
+      let currentY = margin;
+      const sections = Array.from(
+        reportRef.current.querySelectorAll<HTMLElement>("[data-pdf-section]"),
+      );
+
+      for (const section of sections) {
+        const canvas = await html2canvas(section, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          windowWidth: document.documentElement.scrollWidth,
+        });
+        const heightMm = (canvas.height * contentWidth) / canvas.width;
+        const remaining = pageHeight - margin - currentY;
+
+        if (heightMm > maxContentHeight) {
+          const pxPerMm = canvas.width / contentWidth;
+          const chunkHeightPx = Math.floor(maxContentHeight * pxPerMm);
+          let sourceY = 0;
+          while (sourceY < canvas.height) {
+            if (currentY > margin) {
+              pdf.addPage();
+              currentY = margin;
+            }
+            const sliceHeightPx = Math.min(chunkHeightPx, canvas.height - sourceY);
+            const slice = document.createElement("canvas");
+            slice.width = canvas.width;
+            slice.height = sliceHeightPx;
+            slice.getContext("2d")?.drawImage(
+              canvas,
+              0,
+              sourceY,
+              canvas.width,
+              sliceHeightPx,
+              0,
+              0,
+              canvas.width,
+              sliceHeightPx,
+            );
+            const sliceHeightMm = (sliceHeightPx * contentWidth) / canvas.width;
+            pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, currentY, contentWidth, sliceHeightMm);
+            sourceY += sliceHeightPx;
+            currentY = margin + sliceHeightMm + sectionGap;
+          }
+          continue;
+        }
+
+        if (heightMm > remaining && currentY > margin) {
+          pdf.addPage();
+          currentY = margin;
+        }
+
+        const imgData = canvas.toDataURL("image/png");
+        pdf.addImage(imgData, "PNG", margin, currentY, contentWidth, heightMm);
+        currentY += heightMm + sectionGap;
+      }
+
+      pdf.save(`chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}-report.pdf`);
       void supabase.from("share_clicks").insert([
         { analysis_id: analysisId!, platform: "download" },
       ]);
     } catch (e) {
-      toast.error("Could not generate image.");
+      toast.error("Could not generate report.");
+    } finally {
+      setDownloading(false);
     }
   };
 
@@ -230,17 +289,20 @@ const ReportContent = () => {
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
         {!safetyMode && (
-          <>
-            <ShareableCard ref={cardRef} result={result} context={context} />
+          <div ref={reportRef}>
+            <div data-pdf-section>
+              <ShareableCard result={result} context={context} />
+            </div>
 
             {/* Action buttons */}
             <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
                 type="button"
                 onClick={handleDownload}
+                disabled={downloading}
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
               >
-                <Download className="h-4 w-4" /> Download as image
+                <Download className="h-4 w-4" /> {downloading ? "Preparing PDF…" : "Download report"}
               </button>
               <button
                 type="button"
@@ -259,7 +321,7 @@ const ReportContent = () => {
             </div>
 
             {result.meta.analysis_confidence === "low" && (
-              <div className="mt-8 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
+              <div data-pdf-section className="mt-8 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
                 <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <p className="text-[13px] leading-relaxed">
                   Low confidence: only {result.meta.messages_analyzed} messages were available.
@@ -285,7 +347,7 @@ const ReportContent = () => {
                 Start a new analysis <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-          </>
+          </div>
         )}
 
         {safetyMode && <SafetyOverride note={result.meta.safety_note ?? ""} />}
@@ -366,13 +428,15 @@ const DeepReport = ({
 
   return (
     <div className="mt-12">
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Your full report
-      </p>
-      <h2 className="mt-1 text-[26px] font-medium tracking-tight sm:text-[32px]">
-        {name1} & {name2}
-        {context.duration ? ` · ${context.duration} together` : ""}
-      </h2>
+      <div data-pdf-section>
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Your full report
+        </p>
+        <h2 className="mt-1 text-[26px] font-medium tracking-tight sm:text-[32px]">
+          {name1} & {name2}
+          {context.duration ? ` · ${context.duration} together` : ""}
+        </h2>
+      </div>
 
       {/* 1. Communication diagnostic */}
       <Section title="1 · Communication diagnostic">
@@ -485,7 +549,7 @@ const DeepReport = ({
 };
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-  <section className="mt-10">
+  <section data-pdf-section className="mt-10">
     <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
     <div className="mt-4">{children}</div>
   </section>
