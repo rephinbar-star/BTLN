@@ -153,6 +153,7 @@ const ReportContent = () => {
       const pageHeight = 297;
       const margin = 12;
       const contentWidth = pageWidth - margin * 2;
+      const maxContentHeight = pageHeight - margin * 2;
       const sectionGap = 4;
       let currentY = margin;
       const sections = Array.from(
@@ -166,15 +167,47 @@ const ReportContent = () => {
           useCORS: true,
           windowWidth: document.documentElement.scrollWidth,
         });
-        const imgData = canvas.toDataURL("image/png");
         const heightMm = (canvas.height * contentWidth) / canvas.width;
         const remaining = pageHeight - margin - currentY;
+
+        if (heightMm > maxContentHeight) {
+          const pxPerMm = canvas.width / contentWidth;
+          const chunkHeightPx = Math.floor(maxContentHeight * pxPerMm);
+          let sourceY = 0;
+          while (sourceY < canvas.height) {
+            if (currentY > margin) {
+              pdf.addPage();
+              currentY = margin;
+            }
+            const sliceHeightPx = Math.min(chunkHeightPx, canvas.height - sourceY);
+            const slice = document.createElement("canvas");
+            slice.width = canvas.width;
+            slice.height = sliceHeightPx;
+            slice.getContext("2d")?.drawImage(
+              canvas,
+              0,
+              sourceY,
+              canvas.width,
+              sliceHeightPx,
+              0,
+              0,
+              canvas.width,
+              sliceHeightPx,
+            );
+            const sliceHeightMm = (sliceHeightPx * contentWidth) / canvas.width;
+            pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, currentY, contentWidth, sliceHeightMm);
+            sourceY += sliceHeightPx;
+            currentY = margin + sliceHeightMm + sectionGap;
+          }
+          continue;
+        }
 
         if (heightMm > remaining && currentY > margin) {
           pdf.addPage();
           currentY = margin;
         }
 
+        const imgData = canvas.toDataURL("image/png");
         pdf.addImage(imgData, "PNG", margin, currentY, contentWidth, heightMm);
         currentY += heightMm + sectionGap;
       }
