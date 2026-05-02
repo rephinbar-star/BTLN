@@ -333,7 +333,6 @@ const DeepReport = ({
   const { name1, name2 } = context;
   const profile1 = result.attachment_profiles?.[name1];
   const profile2 = result.attachment_profiles?.[name2];
-  const communication = result.communication_diagnostic ?? {};
 
   const horsemen = result.four_horsemen;
   const horsemenList = useMemo(
@@ -361,15 +360,15 @@ const DeepReport = ({
       {/* 1. Communication diagnostic */}
       <Section title="1 · Communication diagnostic">
         <div className="grid grid-cols-2 gap-3">
-          <Tile label="Avg reply time" value={textFromUnknown(communication.response_time_asymmetry)} />
-          <Tile label="Conversations initiated" value={textFromUnknown(communication.initiator_balance)} />
-          <Tile label="Message length ratio" value={textFromUnknown(communication.message_length_asymmetry)} />
-          <Tile label="Questions asked" value={textFromUnknown(communication.question_ratio)} />
+          <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
+          <Tile label="Conversations initiated" value={textFromUnknown(result.communication_diagnostic?.initiator_balance)} />
+          <Tile label="Message length ratio" value={textFromUnknown(result.communication_diagnostic?.message_length_asymmetry)} />
+          <Tile label="Questions asked" value={textFromUnknown(result.communication_diagnostic?.question_ratio)} />
         </div>
         <div className="mt-4 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <p className="text-[14px] leading-relaxed">
             <span className="font-medium">Key observation:</span>{" "}
-            {textFromUnknown(communication.key_observation)}
+            {textFromUnknown(result.communication_diagnostic?.key_observation)}
           </p>
         </div>
       </Section>
