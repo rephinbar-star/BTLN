@@ -2,103 +2,73 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Chemistry — Light, warm, confident. Pastel category accents. */
 
 @layer base {
   :root {
-    /* Nova — dark minimal AI workspace */
-    --background: 240 10% 4%;
-    --foreground: 0 0% 98%;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
 
-    --card: 240 8% 7%;
-    --card-foreground: 0 0% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
 
-    --popover: 240 8% 7%;
-    --popover-foreground: 0 0% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
 
-    --primary: 250 95% 70%;
-    --primary-foreground: 240 10% 4%;
-    --primary-glow: 265 90% 75%;
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 240 6% 12%;
-    --secondary-foreground: 0 0% 98%;
+    --secondary: 40 22% 95%;
+    --secondary-foreground: 0 0% 7%;
 
-    --muted: 240 6% 12%;
-    --muted-foreground: 240 5% 60%;
+    --muted: 40 22% 95%;
+    --muted-foreground: 0 0% 42%;
 
-    --accent: 250 95% 70%;
-    --accent-foreground: 240 10% 4%;
+    --accent: 40 22% 95%;
+    --accent-foreground: 0 0% 7%;
 
-    --destructive: 0 72% 55%;
-    --destructive-foreground: 0 0% 98%;
+    --destructive: 0 75% 45%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 240 6% 14%;
-    --input: 240 6% 14%;
-    --ring: 250 95% 70%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 7%;
 
-    --radius: 0.75rem;
+    --radius: 0.875rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(250 95% 70%), hsl(265 90% 75%));
-    --gradient-subtle: linear-gradient(180deg, hsl(240 10% 4%), hsl(240 10% 6%));
-    --gradient-glow: radial-gradient(circle at 50% 0%, hsl(250 95% 70% / 0.15), transparent 60%);
+    /* Chemistry pastel accents (HSL approximations) */
+    --pastel-pink-bg: 350 100% 96%;
+    --pastel-pink-fg: 345 70% 30%;
 
-    --shadow-glow: 0 0 40px hsl(250 95% 70% / 0.25);
-    --shadow-elegant: 0 10px 40px -10px hsl(240 10% 0% / 0.5);
+    --pastel-purple-bg: 245 86% 96%;
+    --pastel-purple-fg: 247 47% 24%;
+    --pastel-purple-fg-strong: 248 49% 18%;
+
+    --pastel-yellow-bg: 48 100% 92%;
+    --pastel-yellow-fg: 35 85% 20%;
+
+    --pastel-green-bg: 86 47% 91%;
+    --pastel-green-fg: 110 80% 11%;
+    --pastel-green-fg-strong: 162 86% 14%;
+
+    --pastel-amber-bg: 36 89% 92%;
+    --pastel-amber-fg: 28 91% 13%;
+    --pastel-amber-fg-strong: 36 86% 28%;
+
+    --pastel-blue-bg: 207 82% 94%;
+    --pastel-blue-fg: 211 86% 27%;
+
+    --section-soft: 44 18% 93%;
+
+    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.04), 0 8px 24px -12px hsl(0 0% 0% / 0.08);
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
@@ -108,7 +78,15 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv11";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
   }
 }
