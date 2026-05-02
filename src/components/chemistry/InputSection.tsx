@@ -10,6 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { HowToHelp } from "./HowToHelp";
 
 type FormState = {
   conversation: string;
@@ -194,6 +195,11 @@ export const InputSection = () => {
             For best results: paste at least 50 messages. More is better — the analysis gets sharper with 100+
             messages spanning a few weeks. Below 30 messages, we can only give you a rough read.
           </p>
+        </div>
+
+        {/* How-to help */}
+        <div className="mt-4">
+          <HowToHelp />
         </div>
 
         {/* Tabs */}
