@@ -29,7 +29,7 @@ export const Hero = () => {
           <div className="mt-5 flex flex-col gap-1 text-[13px] text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
             <span>No account required</span>
             <span className="hidden sm:inline">·</span>
-            <span>Messages deleted after analysis</span>
+            <span>Nothing stored. Analyzed in seconds, then discarded.</span>
             <span className="hidden sm:inline">·</span>
             <span>Results in 90 seconds</span>
           </div>
