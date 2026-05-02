@@ -8,6 +8,7 @@ import NotFound from "./pages/NotFound.tsx";
 import Processing from "./pages/Processing.tsx";
 import Report from "./pages/Report.tsx";
 import ErrorPage from "./pages/ErrorPage.tsx";
+import Admin from "./pages/Admin.tsx";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/processing/:analysisId" element={<Processing />} />
           <Route path="/report/:analysisId" element={<Report />} />
           <Route path="/error" element={<ErrorPage />} />
+          <Route path="/admin" element={<Admin />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
