@@ -428,13 +428,15 @@ const DeepReport = ({
 
   return (
     <div className="mt-12">
-      <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
-        Your full report
-      </p>
-      <h2 className="mt-1 text-[26px] font-medium tracking-tight sm:text-[32px]">
-        {name1} & {name2}
-        {context.duration ? ` · ${context.duration} together` : ""}
-      </h2>
+      <div data-pdf-section>
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
+          Your full report
+        </p>
+        <h2 className="mt-1 text-[26px] font-medium tracking-tight sm:text-[32px]">
+          {name1} & {name2}
+          {context.duration ? ` · ${context.duration} together` : ""}
+        </h2>
+      </div>
 
       {/* 1. Communication diagnostic */}
       <Section title="1 · Communication diagnostic">
@@ -547,7 +549,7 @@ const DeepReport = ({
 };
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
-  <section className="mt-10">
+  <section data-pdf-section className="mt-10">
     <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
     <div className="mt-4">{children}</div>
   </section>
