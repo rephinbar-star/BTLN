@@ -256,17 +256,20 @@ const ReportContent = () => {
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
         {!safetyMode && (
-          <>
-            <ShareableCard ref={cardRef} result={result} context={context} />
+          <div ref={reportRef}>
+            <div data-pdf-section>
+              <ShareableCard result={result} context={context} />
+            </div>
 
             {/* Action buttons */}
             <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
                 type="button"
                 onClick={handleDownload}
+                disabled={downloading}
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
               >
-                <Download className="h-4 w-4" /> Download as image
+                <Download className="h-4 w-4" /> {downloading ? "Preparing PDF…" : "Download report"}
               </button>
               <button
                 type="button"
@@ -285,7 +288,7 @@ const ReportContent = () => {
             </div>
 
             {result.meta.analysis_confidence === "low" && (
-              <div className="mt-8 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
+              <div data-pdf-section className="mt-8 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
                 <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
                 <p className="text-[13px] leading-relaxed">
                   Low confidence: only {result.meta.messages_analyzed} messages were available.
@@ -311,7 +314,7 @@ const ReportContent = () => {
                 Start a new analysis <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
-          </>
+          </div>
         )}
 
         {safetyMode && <SafetyOverride note={result.meta.safety_note ?? ""} />}
