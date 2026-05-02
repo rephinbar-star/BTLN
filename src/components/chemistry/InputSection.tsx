@@ -306,10 +306,10 @@ export const InputSection = () => {
                 <div>
                   <p className="text-[14px] font-medium text-foreground">
                     {screenshots.length >= MAX_SCREENSHOTS
-                      ? "Maximum of 10 images reached"
+                      ? `Maximum of ${MAX_SCREENSHOTS} images reached`
                       : "Drop screenshots or click to browse"}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to 10 images, 10 MB each.</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to {MAX_SCREENSHOTS} images, 10 MB each.</p>
                 </div>
               </button>
 
