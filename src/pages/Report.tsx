@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
@@ -94,8 +95,9 @@ const ReportContent = () => {
   const navigate = useNavigate();
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloading, setDownloading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+  const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!analysisId) {
@@ -143,24 +145,48 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
 
   const handleDownload = async () => {
-    if (!cardRef.current || !context) return;
+    if (!reportRef.current || !context || downloading) return;
+    setDownloading(true);
     try {
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-      });
-      const dataUrl = canvas.toDataURL("image/png");
-      const a = document.createElement("a");
-      a.href = dataUrl;
-      a.download = `chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.png`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageWidth = 210;
+      const pageHeight = 297;
+      const margin = 12;
+      const contentWidth = pageWidth - margin * 2;
+      const sectionGap = 4;
+      let currentY = margin;
+      const sections = Array.from(
+        reportRef.current.querySelectorAll<HTMLElement>("[data-pdf-section]"),
+      );
+
+      for (const section of sections) {
+        const canvas = await html2canvas(section, {
+          backgroundColor: "#ffffff",
+          scale: 2,
+          useCORS: true,
+          windowWidth: document.documentElement.scrollWidth,
+        });
+        const imgData = canvas.toDataURL("image/png");
+        const heightMm = (canvas.height * contentWidth) / canvas.width;
+        const remaining = pageHeight - margin - currentY;
+
+        if (heightMm > remaining && currentY > margin) {
+          pdf.addPage();
+          currentY = margin;
+        }
+
+        pdf.addImage(imgData, "PNG", margin, currentY, contentWidth, heightMm);
+        currentY += heightMm + sectionGap;
+      }
+
+      pdf.save(`chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}-report.pdf`);
       void supabase.from("share_clicks").insert([
         { analysis_id: analysisId!, platform: "download" },
       ]);
     } catch (e) {
-      toast.error("Could not generate image.");
+      toast.error("Could not generate report.");
+    } finally {
+      setDownloading(false);
     }
   };
 
