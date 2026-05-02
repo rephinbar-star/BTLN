@@ -535,7 +535,7 @@ export const InputSection = () => {
                       ? `Maximum of ${MAX_SCREENSHOTS} images reached`
                       : "Drop screenshots or click to browse"}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to {MAX_SCREENSHOTS} images, 10 MB each.</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each.</p>
                 </div>
               </button>
 
@@ -547,7 +547,18 @@ export const InputSection = () => {
                         key={s.id}
                         className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
                       >
-                        <img src={s.dataUrl} alt={s.name} className="h-full w-full object-cover" />
+                        {s.status === "ready" ? (
+                          <img src={s.dataUrl} alt={s.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
+                            Compressing…
+                          </div>
+                        )}
+                        {s.status === "ready" && (
+                          <div className="absolute bottom-1 left-1 rounded bg-foreground/80 px-1.5 py-0.5 text-[10px] font-medium text-background">
+                            {formatBytes(s.size)} · Compressed
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={() => removeScreenshot(s.id)}
@@ -560,7 +571,8 @@ export const InputSection = () => {
                     ))}
                   </div>
                   <p className="mt-3 text-[12px] text-muted-foreground">
-                    {screenshots.length} of {MAX_SCREENSHOTS} images · {formatBytes(totalImageBytes)} total
+                    {screenshots.length} of {MAX_SCREENSHOTS} images · {formatBytes(totalImageBytes)} total compressed
+                    {screenshots.some((s) => s.status === "compressing") && " · compressing…"}
                   </p>
                 </>
               )}
