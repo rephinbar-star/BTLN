@@ -165,8 +165,13 @@ const ReportContent = () => {
       const maxContentHeight = pageHeight - margin * 2;
       const sectionGap = 4;
       let currentY = margin;
-      const sections = Array.from(
+      // Only render LEAF sections (no nested data-pdf-section descendants)
+      // so we don't double-render and so each block is small enough to fit.
+      const allMarked = Array.from(
         reportRef.current.querySelectorAll<HTMLElement>("[data-pdf-section]"),
+      );
+      const sections = allMarked.filter(
+        (el) => el.querySelector("[data-pdf-section]") === null,
       );
 
       for (const section of sections) {
@@ -179,35 +184,18 @@ const ReportContent = () => {
         const heightMm = (canvas.height * contentWidth) / canvas.width;
         const remaining = pageHeight - margin - currentY;
 
+        // If a single leaf is taller than a full page, we must scale it down
+        // to fit (rather than chopping mid-text). Center it on its own page.
         if (heightMm > maxContentHeight) {
-          const pxPerMm = canvas.width / contentWidth;
-          const chunkHeightPx = Math.floor(maxContentHeight * pxPerMm);
-          let sourceY = 0;
-          while (sourceY < canvas.height) {
-            if (currentY > margin) {
-              pdf.addPage();
-              currentY = margin;
-            }
-            const sliceHeightPx = Math.min(chunkHeightPx, canvas.height - sourceY);
-            const slice = document.createElement("canvas");
-            slice.width = canvas.width;
-            slice.height = sliceHeightPx;
-            slice.getContext("2d")?.drawImage(
-              canvas,
-              0,
-              sourceY,
-              canvas.width,
-              sliceHeightPx,
-              0,
-              0,
-              canvas.width,
-              sliceHeightPx,
-            );
-            const sliceHeightMm = (sliceHeightPx * contentWidth) / canvas.width;
-            pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, currentY, contentWidth, sliceHeightMm);
-            sourceY += sliceHeightPx;
-            currentY = margin + sliceHeightMm + sectionGap;
+          if (currentY > margin) {
+            pdf.addPage();
+            currentY = margin;
           }
+          const scaledWidth = (maxContentHeight / heightMm) * contentWidth;
+          const xOffset = margin + (contentWidth - scaledWidth) / 2;
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOffset, currentY, scaledWidth, maxContentHeight);
+          pdf.addPage();
+          currentY = margin;
           continue;
         }
 
@@ -508,13 +496,13 @@ const DeepReport = ({
 
       {/* 1. Communication diagnostic */}
       <Section title="1 · Communication diagnostic">
-        <div className="grid grid-cols-2 gap-3">
+        <div data-pdf-section className="grid grid-cols-2 gap-3">
           <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
           <Tile label="Conversations initiated" value={textFromUnknown(result.communication_diagnostic?.initiator_balance)} />
           <Tile label="Message length ratio" value={textFromUnknown(result.communication_diagnostic?.message_length_asymmetry)} />
           <Tile label="Questions asked" value={textFromUnknown(result.communication_diagnostic?.question_ratio)} />
         </div>
-        <div className="mt-4 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
+        <div data-pdf-section className="mt-4 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <p className="text-[14px] leading-relaxed">
             <span className="font-medium">Key observation:</span>{" "}
             {textFromUnknown(result.communication_diagnostic?.key_observation)}
@@ -525,8 +513,16 @@ const DeepReport = ({
       {/* 2. Attachment styles */}
       <Section title="2 · Attachment styles">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {profile1 && <AttachmentCard name={name1} profile={profile1} />}
-          {profile2 && <AttachmentCard name={name2} profile={profile2} />}
+          {profile1 && (
+            <div data-pdf-section>
+              <AttachmentCard name={name1} profile={profile1} />
+            </div>
+          )}
+          {profile2 && (
+            <div data-pdf-section>
+              <AttachmentCard name={name2} profile={profile2} />
+            </div>
+          )}
         </div>
         <EvidenceQuotes
           name1={name1}
@@ -535,7 +531,7 @@ const DeepReport = ({
           profile2={profile2}
         />
         {result.compatibility_implication && (
-          <p className="mt-5 text-[15px] leading-relaxed text-foreground">
+          <p data-pdf-section className="mt-5 text-[15px] leading-relaxed text-foreground">
             {result.compatibility_implication}
           </p>
         )}
@@ -543,7 +539,7 @@ const DeepReport = ({
 
       {/* 3. Four Horsemen */}
       <Section title="3 · The Four Horsemen">
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div data-pdf-section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {horsemenList.map((x) => (
             <div
               key={x.key}
@@ -565,7 +561,7 @@ const DeepReport = ({
           ))}
         </div>
         {anyPresent && (
-          <div className="mt-4 rounded-xl bg-muted p-4">
+          <div data-pdf-section className="mt-4 rounded-xl bg-muted p-4">
             <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Quoted evidence
             </div>
@@ -589,7 +585,7 @@ const DeepReport = ({
 
       {/* 4. Hidden pattern */}
       <Section title="4 · The hidden pattern">
-        <div className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
+        <div data-pdf-section className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <h4 className="text-[15px] font-semibold">{result.hidden_pattern?.title}</h4>
           <p className="mt-2 text-[14px] leading-relaxed">
             {result.hidden_pattern?.description}
@@ -603,6 +599,7 @@ const DeepReport = ({
           {(result.conversation_prompts ?? []).map((p, i) => (
             <div
               key={i}
+              data-pdf-section
               className="rounded-lg border-l-2 border-l-pastel-green-fg-strong bg-muted p-3"
             >
               <p className="text-[14px] italic leading-relaxed text-foreground">
@@ -618,7 +615,9 @@ const DeepReport = ({
 
 const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <section data-pdf-section className="mt-10">
-    <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
+    <h3 data-pdf-section className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+      {title}
+    </h3>
     <div className="mt-4">{children}</div>
   </section>
 );
@@ -731,7 +730,7 @@ const EvidenceQuotes = ({
   return (
     <div className="mt-5 space-y-4">
       {blocks.map((b) => (
-        <div key={b.name} className="rounded-xl bg-muted p-4">
+        <div key={b.name} data-pdf-section className="rounded-xl bg-muted p-4">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Quoted evidence — {b.name}
           </div>
