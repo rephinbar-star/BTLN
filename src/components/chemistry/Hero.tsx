@@ -1,7 +1,9 @@
 import { ArrowRight } from "lucide-react";
 import { SampleCard } from "./SampleCard";
+import { logEvent } from "@/lib/session";
 
 const scrollToInput = () => {
+  logEvent("cta_clicked", { location: "hero" });
   document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
 };
 

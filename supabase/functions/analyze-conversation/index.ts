@@ -145,6 +145,7 @@ Deno.serve(async (req) => {
   const raw_text: string | undefined = payload?.raw_text;
   const screenshot_base64_array: string[] | undefined =
     payload?.screenshot_base64_array;
+  const provided_analysis_id: string | undefined = payload?.analysis_id;
 
   if (!session_id || !context_data || !input_method) {
     return json(400, { error: "Missing session_id, context_data, or input_method" });
@@ -165,21 +166,44 @@ Deno.serve(async (req) => {
     return json(400, { error: "screenshot_base64_array is required for screenshot" });
   }
 
-  // 1. Create analysis row
-  const { data: created, error: createErr } = await supabase
-    .from("analyses")
-    .insert({
-      session_id,
-      context_data,
-      input_method,
-      status: "pending",
-    })
-    .select("id")
-    .single();
-  if (createErr || !created) {
-    return json(500, { error: `Could not create analysis row: ${createErr?.message}` });
+  // 1. Resolve analysis row: update existing if analysis_id provided, else create one.
+  let analysis_id: string;
+  if (provided_analysis_id) {
+    const { data: existing, error: exErr } = await supabase
+      .from("analyses")
+      .select("id")
+      .eq("id", provided_analysis_id)
+      .maybeSingle();
+    if (exErr || !existing) {
+      return json(404, { error: `Analysis row ${provided_analysis_id} not found` });
+    }
+    analysis_id = existing.id as string;
+    await supabase
+      .from("analyses")
+      .update({
+        session_id,
+        context_data,
+        input_method,
+        status: "pending",
+        error_message: null,
+      })
+      .eq("id", analysis_id);
+  } else {
+    const { data: created, error: createErr } = await supabase
+      .from("analyses")
+      .insert({
+        session_id,
+        context_data,
+        input_method,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+    if (createErr || !created) {
+      return json(500, { error: `Could not create analysis row: ${createErr?.message}` });
+    }
+    analysis_id = created.id as string;
   }
-  const analysis_id = created.id as string;
 
   const failAnalysis = async (msg: string) => {
     await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);

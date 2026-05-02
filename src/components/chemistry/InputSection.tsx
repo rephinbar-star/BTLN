@@ -1,5 +1,8 @@
 import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X } from "lucide-react";
 import { useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { getSessionId, logEvent } from "@/lib/session";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,17 +62,30 @@ export const InputSection = () => {
   const [imageError, setImageError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [inputStartedFired, setInputStartedFired] = useState(false);
   const txtInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
-  const update = <K extends keyof FormState>(key: K, value: FormState[K]) =>
+  const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+    setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const fireInputStarted = () => {
+    if (inputStartedFired) return;
+    setInputStartedFired(true);
+    logEvent("input_started", { tab: mode });
+  };
 
   const hasTextData = () => form.conversation.trim().length > 0;
   const hasScreenshotData = () => screenshots.length > 0;
 
   const requestModeChange = (next: InputMode) => {
     if (next === mode) return;
+    logEvent("tab_selected", { tab: next });
     const leavingText = (mode === "paste" || mode === "file") && next === "screenshots" && hasTextData();
     const leavingImages = mode === "screenshots" && (next === "paste" || next === "file") && hasScreenshotData();
     if (leavingText || leavingImages) {
@@ -93,6 +109,7 @@ export const InputSection = () => {
 
   const handleTxtFile = (file: File) => {
     setFileError(null);
+    fireInputStarted();
     if (!file.name.toLowerCase().endsWith(".txt") && file.type !== "text/plain") {
       setFileError("Please upload a .txt file.");
       return;
@@ -114,6 +131,7 @@ export const InputSection = () => {
 
   const handleImageFiles = (files: FileList | File[]) => {
     setImageError(null);
+    fireInputStarted();
     const incoming = Array.from(files);
     const remaining = MAX_SCREENSHOTS - screenshots.length;
     if (remaining <= 0) {
@@ -152,19 +170,116 @@ export const InputSection = () => {
   const removeScreenshot = (id: string) =>
     setScreenshots((prev) => prev.filter((s) => s.id !== id));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validate = (): { ok: true } | { ok: false; errors: typeof fieldErrors; banner?: string } => {
+    const errors: typeof fieldErrors = {};
+    let banner: string | undefined;
+
+    if (mode === "paste") {
+      if (form.conversation.trim().length < 100) {
+        errors.conversation = "Paste at least 100 characters of conversation.";
+      }
+    } else if (mode === "file") {
+      if (form.conversation.trim().length < 100) {
+        banner = "Upload a chat file with at least 100 characters of conversation.";
+      }
+    } else if (mode === "screenshots") {
+      if (screenshots.length < 1) {
+        banner = "Upload at least one screenshot.";
+      }
+    }
+
+    if (!form.yourName.trim()) errors.yourName = "Required.";
+    if (!form.theirName.trim()) errors.theirName = "Required.";
+    if (!form.stage) errors.stage = "Select an option.";
+    if (!form.duration) errors.duration = "Select an option.";
+    if (!form.goal) errors.goal = "Select an option.";
+
+    if (Object.keys(errors).length === 0 && !banner) return { ok: true };
+    return { ok: false, errors, banner };
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return;
     setSubmitError(null);
-    if (!hasTextData() && !hasScreenshotData()) {
-      setSubmitError("Paste your conversation, upload a chat file, or add screenshots first.");
+
+    const v = validate();
+    if (v.ok === false) {
+      setFieldErrors(v.errors);
+      setSubmitError(v.banner ?? "Please fix the highlighted fields.");
       return;
     }
-    // Backend wiring comes in a later prompt — log captured state for now.
-    // eslint-disable-next-line no-console
-    console.log("Chemistry form submitted:", {
-      ...form,
-      screenshots: screenshots.map((s) => ({ name: s.name, size: s.size, dataUrl: s.dataUrl })),
-    });
+
+    setSubmitting(true);
+    try {
+      const session_id = getSessionId();
+      const input_method: "paste" | "chat_file" | "screenshot" =
+        mode === "paste" ? "paste" : mode === "file" ? "chat_file" : "screenshot";
+
+      const context_data = {
+        name1: form.yourName.trim(),
+        name2: form.theirName.trim(),
+        relationship_stage: form.stage,
+        duration: form.duration,
+        goal: form.goal,
+        free_text: form.context.trim(),
+      };
+
+      logEvent("analysis_started", {
+        input_method,
+        has_free_text: context_data.free_text.length > 0,
+        message_estimate_chars:
+          input_method === "screenshot" ? 0 : form.conversation.length,
+      });
+
+      // 1. Create analyses row first
+      const { data: created, error: createErr } = await supabase
+        .from("analyses")
+        .insert([
+          {
+            session_id,
+            context_data: context_data as never,
+            input_method,
+            status: "pending",
+          },
+        ])
+        .select("id")
+        .single();
+
+      if (createErr || !created) {
+        setSubmitError(
+          createErr?.message ?? "Could not start the analysis. Please try again.",
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      const analysis_id = created.id as string;
+
+      // 2. Fire Edge Function in the background — DO NOT await
+      const payload: Record<string, unknown> = {
+        analysis_id,
+        session_id,
+        context_data,
+        input_method,
+      };
+      if (input_method === "screenshot") {
+        payload.screenshot_base64_array = screenshots.map((s) => s.dataUrl);
+      } else {
+        payload.raw_text = form.conversation;
+      }
+
+      void supabase.functions.invoke("analyze-conversation", {
+        body: payload,
+      });
+
+      // 3. Navigate immediately to processing page
+      navigate(`/processing/${analysis_id}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unexpected error.";
+      setSubmitError(msg);
+      setSubmitting(false);
+    }
   };
 
   const totalImageBytes = screenshots.reduce((acc, s) => acc + s.size, 0);
@@ -232,10 +347,16 @@ export const InputSection = () => {
             <>
               <textarea
                 value={form.conversation}
-                onChange={(e) => update("conversation", e.target.value)}
+                onChange={(e) => {
+                  update("conversation", e.target.value);
+                  fireInputStarted();
+                }}
                 placeholder="Paste a chunk of your conversation here. Both sides — at least 30 messages works best. We'll figure out who said what."
                 className={`${fieldClass} h-[200px] resize-none leading-relaxed`}
               />
+              {fieldErrors.conversation && (
+                <p className="mt-2 text-[12px] text-destructive">{fieldErrors.conversation}</p>
+              )}
               {loadedFileName && (
                 <p className="mt-2 text-[12px] text-muted-foreground">
                   Loaded from <span className="font-medium text-foreground">{loadedFileName}</span>
@@ -367,6 +488,7 @@ export const InputSection = () => {
               <option>Married</option>
               <option>Other</option>
             </select>
+            {fieldErrors.stage && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.stage}</p>}
           </div>
           <div>
             <label className={labelClass}>How long have you been together</label>
@@ -384,6 +506,7 @@ export const InputSection = () => {
               <option>2–5 years</option>
               <option>5+ years</option>
             </select>
+            {fieldErrors.duration && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.duration}</p>}
           </div>
           <div>
             <label className={labelClass}>What are you hoping to learn?</label>
@@ -399,6 +522,7 @@ export const InputSection = () => {
               <option>Strengthening our communication</option>
               <option>Deciding whether to commit</option>
             </select>
+            {fieldErrors.goal && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.goal}</p>}
           </div>
           <div>
             <label className={labelClass}>Anything we should know? (optional)</label>
@@ -421,6 +545,7 @@ export const InputSection = () => {
                 onChange={(e) => update("yourName", e.target.value)}
                 className={`${fieldClass} mt-1.5`}
               />
+              {fieldErrors.yourName && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.yourName}</p>}
             </div>
             <div>
               <label className={labelClass}>Their name</label>
@@ -430,6 +555,7 @@ export const InputSection = () => {
                 onChange={(e) => update("theirName", e.target.value)}
                 className={`${fieldClass} mt-1.5`}
               />
+              {fieldErrors.theirName && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.theirName}</p>}
             </div>
           </div>
         </div>
@@ -438,9 +564,10 @@ export const InputSection = () => {
         <div className="mt-7 flex flex-col items-center">
           <button
             type="submit"
+            disabled={submitting}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 sm:w-auto sm:min-w-[280px]"
           >
-            Analyze my chemistry <ArrowRight className="h-4 w-4" />
+            {submitting ? "Starting…" : "Analyze my chemistry"} <ArrowRight className="h-4 w-4" />
           </button>
           {submitError && <p className="mt-3 text-[12px] text-destructive">{submitError}</p>}
           <p className="mt-4 max-w-md text-center text-[12px] leading-relaxed text-muted-foreground">
