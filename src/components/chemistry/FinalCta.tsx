@@ -1,6 +1,8 @@
 import { ArrowRight } from "lucide-react";
+import { logEvent } from "@/lib/session";
 
 const scrollToInput = () => {
+  logEvent("cta_clicked", { location: "final" });
   document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
 };
 

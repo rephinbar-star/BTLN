@@ -1,6 +1,8 @@
 import { Heart } from "lucide-react";
+import { logEvent } from "@/lib/session";
 
-const scrollToInput = () => {
+const scrollToInput = (location: string) => {
+  logEvent("cta_clicked", { location });
   document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
 };
 
@@ -13,7 +15,7 @@ export const Header = () => {
           <span className="text-base font-medium tracking-tight">Chemistry</span>
         </a>
         <button
-          onClick={scrollToInput}
+          onClick={() => scrollToInput("header")}
           className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
         >
           Try it free
