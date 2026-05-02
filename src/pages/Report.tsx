@@ -165,8 +165,13 @@ const ReportContent = () => {
       const maxContentHeight = pageHeight - margin * 2;
       const sectionGap = 4;
       let currentY = margin;
-      const sections = Array.from(
+      // Only render LEAF sections (no nested data-pdf-section descendants)
+      // so we don't double-render and so each block is small enough to fit.
+      const allMarked = Array.from(
         reportRef.current.querySelectorAll<HTMLElement>("[data-pdf-section]"),
+      );
+      const sections = allMarked.filter(
+        (el) => el.querySelector("[data-pdf-section]") === null,
       );
 
       for (const section of sections) {
@@ -179,35 +184,18 @@ const ReportContent = () => {
         const heightMm = (canvas.height * contentWidth) / canvas.width;
         const remaining = pageHeight - margin - currentY;
 
+        // If a single leaf is taller than a full page, we must scale it down
+        // to fit (rather than chopping mid-text). Center it on its own page.
         if (heightMm > maxContentHeight) {
-          const pxPerMm = canvas.width / contentWidth;
-          const chunkHeightPx = Math.floor(maxContentHeight * pxPerMm);
-          let sourceY = 0;
-          while (sourceY < canvas.height) {
-            if (currentY > margin) {
-              pdf.addPage();
-              currentY = margin;
-            }
-            const sliceHeightPx = Math.min(chunkHeightPx, canvas.height - sourceY);
-            const slice = document.createElement("canvas");
-            slice.width = canvas.width;
-            slice.height = sliceHeightPx;
-            slice.getContext("2d")?.drawImage(
-              canvas,
-              0,
-              sourceY,
-              canvas.width,
-              sliceHeightPx,
-              0,
-              0,
-              canvas.width,
-              sliceHeightPx,
-            );
-            const sliceHeightMm = (sliceHeightPx * contentWidth) / canvas.width;
-            pdf.addImage(slice.toDataURL("image/png"), "PNG", margin, currentY, contentWidth, sliceHeightMm);
-            sourceY += sliceHeightPx;
-            currentY = margin + sliceHeightMm + sectionGap;
+          if (currentY > margin) {
+            pdf.addPage();
+            currentY = margin;
           }
+          const scaledWidth = (maxContentHeight / heightMm) * contentWidth;
+          const xOffset = margin + (contentWidth - scaledWidth) / 2;
+          pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOffset, currentY, scaledWidth, maxContentHeight);
+          pdf.addPage();
+          currentY = margin;
           continue;
         }
 
