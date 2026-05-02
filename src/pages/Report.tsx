@@ -334,7 +334,7 @@ const DeepReport = ({
   const profile1 = result.attachment_profiles?.[name1];
   const profile2 = result.attachment_profiles?.[name2];
 
-  const horsemen = result.four_horsemen;
+  const horsemen = result.four_horsemen ?? {};
   const horsemenList = useMemo(
     () =>
       [
@@ -422,14 +422,14 @@ const DeepReport = ({
             </div>
             <div className="mt-2 space-y-2">
               {horsemenList
-                .filter((x) => x.h?.present && x.h?.evidence_quote)
+                .filter((x) => x.h?.present && evidenceText(x.h))
                 .map((x) => (
                   <div key={x.key} className="text-[13px] leading-relaxed">
                     <span className="font-semibold uppercase tracking-wide text-foreground">
                       {x.label}:
                     </span>{" "}
                     <span className="italic text-muted-foreground">
-                      "{x.h.evidence_quote}"
+                      &quot;{evidenceText(x.h)}&quot;
                     </span>
                   </div>
                 ))}
@@ -454,9 +454,11 @@ const DeepReport = ({
           {(result.conversation_prompts ?? []).map((p, i) => (
             <div
               key={i}
-              className="rounded-lg border-l-2 border-l-[#639922] bg-[#F1EFE8] p-3"
+              className="rounded-lg border-l-2 border-l-pastel-green-fg-strong bg-muted p-3"
             >
-              <p className="text-[14px] italic leading-relaxed text-foreground">"{p}"</p>
+              <p className="text-[14px] italic leading-relaxed text-foreground">
+                &quot;{textFromUnknown(p, "")}&quot;
+              </p>
             </div>
           ))}
         </div>
