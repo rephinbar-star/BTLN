@@ -11,7 +11,16 @@ export type AttachmentProfile = {
 export type Horseman = {
   present: boolean;
   evidence_quote?: string | null;
+  evidence?: string | null;
 };
+
+export type ReportFlag =
+  | string
+  | {
+      title?: string;
+      evidence?: string;
+      description?: string;
+    };
 
 export type AnalysisResult = {
   meta: {
@@ -52,9 +61,9 @@ export type AnalysisResult = {
     [k: string]: unknown;
   };
   love_languages: unknown;
-  green_flags: string[];
-  yellow_flags: string[];
-  red_flags: string[];
+  green_flags: ReportFlag[];
+  yellow_flags: ReportFlag[];
+  red_flags: ReportFlag[];
   hidden_pattern: {
     title: string;
     description: string;

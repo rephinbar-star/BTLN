@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -18,6 +19,58 @@ type Row = {
   error_message: string | null;
 };
 
+type FlagValue = string | { title?: unknown; evidence?: unknown; description?: unknown };
+
+const textFromUnknown = (value: unknown, fallback = "—") => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return fallback;
+};
+
+const flagSummary = (flag: FlagValue | null | undefined) => {
+  if (!flag) return "";
+  if (typeof flag === "string") return flag;
+  return [flag.title, flag.description, flag.evidence]
+    .map((x) => textFromUnknown(x, ""))
+    .filter(Boolean)
+    .join(" — ");
+};
+
+const evidenceText = (horseman: { evidence_quote?: unknown; evidence?: unknown } | undefined) =>
+  textFromUnknown(horseman?.evidence_quote ?? horseman?.evidence, "");
+
+class ReportErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
+          <h1 className="text-[28px] font-medium tracking-tight sm:text-[36px]">
+            We couldn&apos;t display this report.
+          </h1>
+          <p className="mt-4 max-w-md text-[15px] text-muted-foreground">
+            The analysis finished, but one report field came back in an unexpected format.
+          </p>
+          <Link
+            to="/#input-section"
+            className="mt-8 inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
+          >
+            Try again
+          </Link>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const sanitizeName = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "person";
 
@@ -36,7 +89,7 @@ const STYLE_BAR: Record<string, string> = {
   disorganized: "bg-muted-foreground",
 };
 
-const Report = () => {
+const ReportContent = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
   const [row, setRow] = useState<Row | null>(null);
@@ -285,10 +338,10 @@ const DeepReport = ({
   const horsemenList = useMemo(
     () =>
       [
-        { key: "criticism", label: "Criticism", h: horsemen.criticism },
-        { key: "contempt", label: "Contempt", h: horsemen.contempt },
-        { key: "defensiveness", label: "Defensiveness", h: horsemen.defensiveness },
-        { key: "stonewalling", label: "Stonewalling", h: horsemen.stonewalling },
+        { key: "criticism", label: "Criticism", h: horsemen?.criticism },
+        { key: "contempt", label: "Contempt", h: horsemen?.contempt },
+        { key: "defensiveness", label: "Defensiveness", h: horsemen?.defensiveness },
+        { key: "stonewalling", label: "Stonewalling", h: horsemen?.stonewalling },
       ] as const,
     [horsemen],
   );
@@ -307,15 +360,15 @@ const DeepReport = ({
       {/* 1. Communication diagnostic */}
       <Section title="1 · Communication diagnostic">
         <div className="grid grid-cols-2 gap-3">
-          <Tile label="Avg reply time" value={result.communication_diagnostic.response_time_asymmetry} />
-          <Tile label="Conversations initiated" value={result.communication_diagnostic.initiator_balance} />
-          <Tile label="Message length ratio" value={result.communication_diagnostic.message_length_asymmetry} />
-          <Tile label="Questions asked" value={result.communication_diagnostic.question_ratio} />
+          <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
+          <Tile label="Conversations initiated" value={textFromUnknown(result.communication_diagnostic?.initiator_balance)} />
+          <Tile label="Message length ratio" value={textFromUnknown(result.communication_diagnostic?.message_length_asymmetry)} />
+          <Tile label="Questions asked" value={textFromUnknown(result.communication_diagnostic?.question_ratio)} />
         </div>
         <div className="mt-4 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <p className="text-[14px] leading-relaxed">
             <span className="font-medium">Key observation:</span>{" "}
-            {result.communication_diagnostic.key_observation}
+            {textFromUnknown(result.communication_diagnostic?.key_observation)}
           </p>
         </div>
       </Section>
@@ -369,14 +422,14 @@ const DeepReport = ({
             </div>
             <div className="mt-2 space-y-2">
               {horsemenList
-                .filter((x) => x.h?.present && x.h?.evidence_quote)
+                .filter((x) => x.h?.present && evidenceText(x.h))
                 .map((x) => (
                   <div key={x.key} className="text-[13px] leading-relaxed">
                     <span className="font-semibold uppercase tracking-wide text-foreground">
                       {x.label}:
                     </span>{" "}
                     <span className="italic text-muted-foreground">
-                      "{x.h.evidence_quote}"
+                      &quot;{evidenceText(x.h)}&quot;
                     </span>
                   </div>
                 ))}
@@ -401,9 +454,11 @@ const DeepReport = ({
           {(result.conversation_prompts ?? []).map((p, i) => (
             <div
               key={i}
-              className="rounded-lg border-l-2 border-l-[#639922] bg-[#F1EFE8] p-3"
+              className="rounded-lg border-l-2 border-l-pastel-green-fg-strong bg-muted p-3"
             >
-              <p className="text-[14px] italic leading-relaxed text-foreground">"{p}"</p>
+              <p className="text-[14px] italic leading-relaxed text-foreground">
+                &quot;{textFromUnknown(p, "")}&quot;
+              </p>
             </div>
           ))}
         </div>
@@ -412,7 +467,7 @@ const DeepReport = ({
   );
 };
 
-const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
+const Section = ({ title, children }: { title: string; children: ReactNode }) => (
   <section className="mt-10">
     <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
     <div className="mt-4">{children}</div>
@@ -543,5 +598,11 @@ const EvidenceQuotes = ({
     </div>
   );
 };
+
+const Report = () => (
+  <ReportErrorBoundary>
+    <ReportContent />
+  </ReportErrorBoundary>
+);
 
 export default Report;
