@@ -730,7 +730,7 @@ const EvidenceQuotes = ({
   return (
     <div className="mt-5 space-y-4">
       {blocks.map((b) => (
-        <div key={b.name} className="rounded-xl bg-muted p-4">
+        <div key={b.name} data-pdf-section className="rounded-xl bg-muted p-4">
           <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
             Quoted evidence — {b.name}
           </div>
