@@ -39,7 +39,7 @@ const labelClass = "text-[13px] font-medium text-foreground";
 type InputMode = "paste" | "file" | "screenshots";
 type Screenshot = { id: string; name: string; size: number; dataUrl: string };
 
-const MAX_SCREENSHOTS = 20;
+const MAX_SCREENSHOTS = 15;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_TXT_BYTES = 5 * 1024 * 1024;
 
