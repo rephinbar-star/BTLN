@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Component, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +18,27 @@ type Row = {
   message_count: number | null;
   error_message: string | null;
 };
+
+type FlagValue = string | { title?: unknown; evidence?: unknown; description?: unknown };
+
+const textFromUnknown = (value: unknown, fallback = "—") => {
+  if (typeof value === "string") return value;
+  if (typeof value === "number") return String(value);
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  return fallback;
+};
+
+const flagSummary = (flag: FlagValue | null | undefined) => {
+  if (!flag) return "";
+  if (typeof flag === "string") return flag;
+  return [flag.title, flag.description, flag.evidence]
+    .map((x) => textFromUnknown(x, ""))
+    .filter(Boolean)
+    .join(" — ");
+};
+
+const evidenceText = (horseman: { evidence_quote?: unknown; evidence?: unknown } | undefined) =>
+  textFromUnknown(horseman?.evidence_quote ?? horseman?.evidence, "");
 
 const sanitizeName = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "person";
