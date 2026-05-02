@@ -89,7 +89,7 @@ const STYLE_BAR: Record<string, string> = {
   disorganized: "bg-muted-foreground",
 };
 
-const Report = () => {
+const ReportContent = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
   const [row, setRow] = useState<Row | null>(null);
@@ -596,5 +596,11 @@ const EvidenceQuotes = ({
     </div>
   );
 };
+
+const Report = () => (
+  <ReportErrorBoundary>
+    <ReportContent />
+  </ReportErrorBoundary>
+);
 
 export default Report;
