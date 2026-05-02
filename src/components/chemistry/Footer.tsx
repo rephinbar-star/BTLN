@@ -7,6 +7,7 @@ export const Footer = () => {
           <a href="#" className="hover:text-foreground">Privacy</a>
           <a href="#" className="hover:text-foreground">Terms</a>
           <a href="#" className="hover:text-foreground">Feedback</a>
+          <a href="/admin" className="hover:text-foreground">Admin</a>
         </nav>
       </div>
       {/* Spacer so sticky mobile CTA never overlaps footer */}
