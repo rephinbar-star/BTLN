@@ -10,6 +10,13 @@ import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 type Row = {
   id: string;
@@ -97,6 +104,8 @@ const ReportContent = () => {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -259,22 +268,38 @@ const ReportContent = () => {
         console.warn("navigator.share failed, falling back", e);
       }
     }
-    // Fallback: copy link to clipboard, then offer X intent.
+    // Fallback: open modal with copyable link (iOS-friendly when share is blocked).
+    setCopied(false);
+    setShareFallbackOpen(true);
+  };
+
+  const shareUrl = `https://couplechemistry.lovable.app/report/${analysisId}`;
+  const shareText = result
+    ? `Our chemistry score: ${Math.round(result.headline.score)} — ${result.headline.tier_label}`
+    : "Check our chemistry analysis";
+
+  const copyFromFallback = async () => {
     try {
-      await navigator.clipboard.writeText(url);
-      toast("Link copied — paste it anywhere to share", { duration: 2500 });
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      toast("Link copied", { duration: 2000 });
       void supabase.from("share_clicks").insert([
         { analysis_id: analysisId!, platform: "copy_link" },
       ]);
-      return;
     } catch {
-      // Last resort: open X compose window.
-      const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-      window.open(x, "_blank", "noopener,noreferrer");
-      void supabase.from("share_clicks").insert([
-        { analysis_id: analysisId!, platform: "x" },
-      ]);
+      // Last-resort: select text in the input so user can long-press copy.
+      const input = document.getElementById("share-fallback-url") as HTMLInputElement | null;
+      input?.select();
+      toast.error("Couldn't copy automatically. Long-press the link to copy.");
     }
+  };
+
+  const openX = () => {
+    const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+    window.open(x, "_blank", "noopener,noreferrer");
+    void supabase.from("share_clicks").insert([
+      { analysis_id: analysisId!, platform: "x" },
+    ]);
   };
 
   if (loading || !result || !context) {
@@ -360,6 +385,49 @@ const ReportContent = () => {
           onClose={() => setShowFeedback(false)}
         />
       )}
+
+      <Dialog open={shareFallbackOpen} onOpenChange={setShareFallbackOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share this report</DialogTitle>
+            <DialogDescription>
+              Copy the link and paste it anywhere — Messages, WhatsApp, email, or notes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-2 flex items-center gap-2">
+            <input
+              id="share-fallback-url"
+              readOnly
+              value={shareUrl}
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-w-0 flex-1 rounded-md border border-border bg-muted px-3 py-2 text-[13px] text-foreground"
+            />
+            <button
+              type="button"
+              onClick={copyFromFallback}
+              className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-md bg-foreground px-3 py-2 text-[13px] font-medium text-background hover:opacity-90"
+            >
+              <Copy className="h-3.5 w-3.5" /> {copied ? "Copied" : "Copy"}
+            </button>
+          </div>
+          <div className="mt-2 flex justify-between text-[13px]">
+            <button
+              type="button"
+              onClick={openX}
+              className="text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Share on X
+            </button>
+            <button
+              type="button"
+              onClick={() => setShareFallbackOpen(false)}
+              className="text-muted-foreground underline-offset-2 hover:underline"
+            >
+              Done
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
