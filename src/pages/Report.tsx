@@ -334,14 +334,14 @@ const DeepReport = ({
   const profile1 = result.attachment_profiles?.[name1];
   const profile2 = result.attachment_profiles?.[name2];
 
-  const horsemen = result.four_horsemen ?? {};
+  const horsemen = result.four_horsemen;
   const horsemenList = useMemo(
     () =>
       [
-        { key: "criticism", label: "Criticism", h: horsemen.criticism },
-        { key: "contempt", label: "Contempt", h: horsemen.contempt },
-        { key: "defensiveness", label: "Defensiveness", h: horsemen.defensiveness },
-        { key: "stonewalling", label: "Stonewalling", h: horsemen.stonewalling },
+        { key: "criticism", label: "Criticism", h: horsemen?.criticism },
+        { key: "contempt", label: "Contempt", h: horsemen?.contempt },
+        { key: "defensiveness", label: "Defensiveness", h: horsemen?.defensiveness },
+        { key: "stonewalling", label: "Stonewalling", h: horsemen?.stonewalling },
       ] as const,
     [horsemen],
   );
