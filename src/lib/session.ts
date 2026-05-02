@@ -31,7 +31,9 @@ export const logEvent = (
   try {
     const session_id = getSessionId();
     // Fire-and-forget — never await, never throw
-    void supabase.from("events").insert({ session_id, event_name, metadata });
+    void supabase
+      .from("events")
+      .insert([{ session_id, event_name, metadata: metadata as never }]);
   } catch {
     // swallow
   }
