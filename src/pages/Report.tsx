@@ -40,6 +40,37 @@ const flagSummary = (flag: FlagValue | null | undefined) => {
 const evidenceText = (horseman: { evidence_quote?: unknown; evidence?: unknown } | undefined) =>
   textFromUnknown(horseman?.evidence_quote ?? horseman?.evidence, "");
 
+class ReportErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
+          <h1 className="text-[28px] font-medium tracking-tight sm:text-[36px]">
+            We couldn&apos;t display this report.
+          </h1>
+          <p className="mt-4 max-w-md text-[15px] text-muted-foreground">
+            The analysis finished, but one report field came back in an unexpected format.
+          </p>
+          <Link
+            to="/#input-section"
+            className="mt-8 inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
+          >
+            Try again
+          </Link>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 const sanitizeName = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "person";
 
