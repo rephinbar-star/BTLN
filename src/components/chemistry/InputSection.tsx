@@ -204,7 +204,7 @@ export const InputSection = () => {
     setSubmitError(null);
 
     const v = validate();
-    if (!v.ok) {
+    if (v.ok === false) {
       setFieldErrors(v.errors);
       setSubmitError(v.banner ?? "Please fix the highlighted fields.");
       return;
