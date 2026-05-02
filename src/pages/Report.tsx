@@ -182,23 +182,40 @@ const ReportContent = () => {
     const text = result
       ? `Our chemistry score: ${Math.round(result.headline.score)} — ${result.headline.tier_label}`
       : "Check our chemistry analysis";
-    if (typeof navigator !== "undefined" && "share" in navigator) {
+    const canWebShare =
+      typeof navigator !== "undefined" &&
+      typeof (navigator as Navigator).share === "function";
+    if (canWebShare) {
       try {
-        await navigator.share({ title: "Chemistry report", text, url });
+        await (navigator as Navigator).share({ title: "Chemistry report", text, url });
         void supabase.from("share_clicks").insert([
           { analysis_id: analysisId!, platform: "web_share" },
         ]);
-      } catch {
-        // user cancelled
+        return;
+      } catch (err: unknown) {
+        const e = err as { name?: string; message?: string };
+        // User cancelled the share sheet — do nothing.
+        if (e?.name === "AbortError") return;
+        // Otherwise (NotAllowedError in iframes, etc.) fall through to fallback.
+        console.warn("navigator.share failed, falling back", e);
       }
-      return;
     }
-    // Desktop fallback: open Twitter share
-    const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
-    window.open(x, "_blank", "noopener,noreferrer");
-    void supabase.from("share_clicks").insert([
-      { analysis_id: analysisId!, platform: "x" },
-    ]);
+    // Fallback: copy link to clipboard, then offer X intent.
+    try {
+      await navigator.clipboard.writeText(url);
+      toast("Link copied — paste it anywhere to share", { duration: 2500 });
+      void supabase.from("share_clicks").insert([
+        { analysis_id: analysisId!, platform: "copy_link" },
+      ]);
+      return;
+    } catch {
+      // Last resort: open X compose window.
+      const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+      window.open(x, "_blank", "noopener,noreferrer");
+      void supabase.from("share_clicks").insert([
+        { analysis_id: analysisId!, platform: "x" },
+      ]);
+    }
   };
 
   if (loading || !result || !context) {
