@@ -169,7 +169,7 @@ export const InputSection = () => {
   const totalImageBytes = screenshots.reduce((acc, s) => acc + s.size, 0);
 
   const tabs: { id: InputMode; label: string; shortLabel: string; icon: typeof FileText }[] = [
-    { id: "paste", label: "Paste text", shortLabel: "Paste", icon: FileText },
+    { id: "paste", label: "Paste Messages", shortLabel: "Paste Messages", icon: FileText },
     { id: "file", label: "Chat file", shortLabel: "Chat file", icon: Upload },
     { id: "screenshots", label: "Screenshots", shortLabel: "Screenshots", icon: ImageIcon },
   ];
