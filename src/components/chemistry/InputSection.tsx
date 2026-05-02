@@ -42,17 +42,27 @@ const fieldClass =
 const labelClass = "text-[13px] font-medium text-foreground";
 
 type InputMode = "paste" | "file" | "screenshots";
-type Screenshot = { id: string; name: string; size: number; dataUrl: string };
+type Screenshot = {
+  id: string;
+  name: string;
+  size: number; // compressed bytes (approx, decoded)
+  originalBytes: number;
+  dataUrl: string;
+  status: "compressing" | "ready";
+};
 
 // Cap kept conservative so the JSON payload sent to the Edge Function
 // stays well under the per-request body limit on mobile networks.
-const MAX_SCREENSHOTS = 8;
-const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+const MAX_SCREENSHOTS = 10;
+// Pre-compression per-image hard cap. Post-compression images are typically
+// well under 200 KB, so 2 MB pre-compression is plenty of headroom while
+// still rejecting weird/huge inputs early.
+const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const MAX_TXT_BYTES = 5 * 1024 * 1024;
-// Hard ceiling for the combined base64 payload we send to the Edge Function.
-// 5 MB of decoded image data ≈ ~6.7 MB of base64, which fits inside the
-// Supabase Functions request body limit with headroom.
-const MAX_TOTAL_UPLOAD_BYTES = 5 * 1024 * 1024;
+// Hard ceiling for the combined COMPRESSED payload we send to the Edge
+// Function. 4 MB of decoded image data ≈ ~5.4 MB of base64, comfortably
+// inside the Supabase Functions request body limit.
+const MAX_TOTAL_UPLOAD_BYTES = 4 * 1024 * 1024;
 
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -156,28 +166,48 @@ export const InputSection = () => {
         continue;
       }
       if (f.size > MAX_IMAGE_BYTES) {
-        setImageError(`"${f.name}" is too large (max 10 MB).`);
+        setImageError(`"${f.name}" is too large (max 2 MB).`);
         continue;
       }
       accepted.push(f);
     }
-    // Compress each image client-side before adding it to state. This keeps
-    // the eventual upload payload small enough to actually reach the Edge
-    // Function from a phone.
-    accepted.forEach(async (file) => {
+    // Insert placeholders immediately so the user sees a "Compressing…"
+    // state, then replace each one as compression finishes.
+    const placeholders: Screenshot[] = accepted.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name: file.name,
+      size: 0,
+      originalBytes: file.size,
+      dataUrl: "",
+      status: "compressing",
+    }));
+    setScreenshots((prev) => [...prev, ...placeholders]);
+
+    accepted.forEach(async (file, idx) => {
+      const placeholderId = placeholders[idx].id;
       try {
-        const dataUrl = await compressImage(file);
+        const { dataUrl, originalBytes } = await compressImage(file);
         const compressedSize = dataUrlByteSize(dataUrl);
-        setScreenshots((prev) => [
-          ...prev,
-          {
-            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-            name: file.name,
-            size: compressedSize,
-            dataUrl,
-          },
-        ]);
+        setScreenshots((prev) => {
+          const next = prev.map((s) =>
+            s.id === placeholderId
+              ? { ...s, dataUrl, size: compressedSize, originalBytes, status: "ready" as const }
+              : s,
+          );
+          // When this batch finishes (no more compressing entries), log telemetry.
+          if (!next.some((s) => s.status === "compressing")) {
+            const original_total_bytes = next.reduce((a, s) => a + s.originalBytes, 0);
+            const compressed_total_bytes = next.reduce((a, s) => a + s.size, 0);
+            logEvent("screenshot_compression_complete", {
+              original_total_bytes,
+              compressed_total_bytes,
+              image_count: next.length,
+            });
+          }
+          return next;
+        });
       } catch {
+        setScreenshots((prev) => prev.filter((s) => s.id !== placeholderId));
         setImageError(`Could not read "${file.name}". Try another image.`);
       }
     });
@@ -226,6 +256,12 @@ export const InputSection = () => {
       return;
     }
 
+    // Block submit while images are still compressing.
+    if (mode === "screenshots" && screenshots.some((s) => s.status === "compressing")) {
+      setSubmitError("Still compressing your images — give it a second and try again.");
+      return;
+    }
+
     setSubmitting(true);
     try {
       const session_id = getSessionId();
@@ -251,9 +287,7 @@ export const InputSection = () => {
         );
         if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
           setSubmitting(false);
-          setSubmitError(
-            "Your screenshots are too large to upload all at once. Try fewer images, or crop them down to just the conversation.",
-          );
+          setSubmitError("Too many or too large images. Please remove some and try again.");
           return;
         }
       }
@@ -501,7 +535,7 @@ export const InputSection = () => {
                       ? `Maximum of ${MAX_SCREENSHOTS} images reached`
                       : "Drop screenshots or click to browse"}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to {MAX_SCREENSHOTS} images, 10 MB each.</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each.</p>
                 </div>
               </button>
 
@@ -513,7 +547,18 @@ export const InputSection = () => {
                         key={s.id}
                         className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
                       >
-                        <img src={s.dataUrl} alt={s.name} className="h-full w-full object-cover" />
+                        {s.status === "ready" ? (
+                          <img src={s.dataUrl} alt={s.name} className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
+                            Compressing…
+                          </div>
+                        )}
+                        {s.status === "ready" && (
+                          <div className="absolute bottom-1 left-1 rounded bg-foreground/80 px-1.5 py-0.5 text-[10px] font-medium text-background">
+                            {formatBytes(s.size)} · Compressed
+                          </div>
+                        )}
                         <button
                           type="button"
                           onClick={() => removeScreenshot(s.id)}
@@ -526,7 +571,8 @@ export const InputSection = () => {
                     ))}
                   </div>
                   <p className="mt-3 text-[12px] text-muted-foreground">
-                    {screenshots.length} of {MAX_SCREENSHOTS} images · {formatBytes(totalImageBytes)} total
+                    {screenshots.length} of {MAX_SCREENSHOTS} images · {formatBytes(totalImageBytes)} total compressed
+                    {screenshots.some((s) => s.status === "compressing") && " · compressing…"}
                   </p>
                 </>
               )}
