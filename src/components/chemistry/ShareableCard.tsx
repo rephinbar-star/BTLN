@@ -17,6 +17,18 @@ const tierClass = (label: string) =>
 const fmtScore = (n: number | null | undefined) =>
   n === null || n === undefined ? "—" : String(Math.round(n));
 
+const flagText = (flag: unknown) => {
+  if (!flag) return "";
+  if (typeof flag === "string") return flag;
+  if (typeof flag === "object") {
+    const value = flag as { title?: unknown; description?: unknown; evidence?: unknown };
+    return [value.title, value.description, value.evidence]
+      .filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      .join(" — ");
+  }
+  return String(flag);
+};
+
 type Props = {
   result: AnalysisResult;
   context: ContextData;
@@ -25,8 +37,8 @@ type Props = {
 export const ShareableCard = forwardRef<HTMLDivElement, Props>(
   ({ result, context }, ref) => {
     const { name1, name2 } = context;
-    const greenFlag = result.green_flags?.[0];
-    const yellowFlag = result.yellow_flags?.[0];
+    const greenFlag = flagText(result.green_flags?.[0]);
+    const yellowFlag = flagText(result.yellow_flags?.[0]);
     const fallbackHidden = result.hidden_pattern?.description;
     const highlight = greenFlag ?? fallbackHidden ?? "";
     const showBoth = Boolean(greenFlag && yellowFlag);
