@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId, logEvent } from "@/lib/session";
+import { compressImage, dataUrlByteSize } from "@/lib/image-compress";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -43,9 +44,15 @@ const labelClass = "text-[13px] font-medium text-foreground";
 type InputMode = "paste" | "file" | "screenshots";
 type Screenshot = { id: string; name: string; size: number; dataUrl: string };
 
-const MAX_SCREENSHOTS = 15;
+// Cap kept conservative so the JSON payload sent to the Edge Function
+// stays well under the per-request body limit on mobile networks.
+const MAX_SCREENSHOTS = 8;
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const MAX_TXT_BYTES = 5 * 1024 * 1024;
+// Hard ceiling for the combined base64 payload we send to the Edge Function.
+// 5 MB of decoded image data ≈ ~6.7 MB of base64, which fits inside the
+// Supabase Functions request body limit with headroom.
+const MAX_TOTAL_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -154,16 +161,25 @@ export const InputSection = () => {
       }
       accepted.push(f);
     }
-    accepted.forEach((file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = String(reader.result ?? "");
+    // Compress each image client-side before adding it to state. This keeps
+    // the eventual upload payload small enough to actually reach the Edge
+    // Function from a phone.
+    accepted.forEach(async (file) => {
+      try {
+        const dataUrl = await compressImage(file);
+        const compressedSize = dataUrlByteSize(dataUrl);
         setScreenshots((prev) => [
           ...prev,
-          { id: `${Date.now()}-${Math.random().toString(36).slice(2)}`, name: file.name, size: file.size, dataUrl },
+          {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: file.name,
+            size: compressedSize,
+            dataUrl,
+          },
         ]);
-      };
-      reader.readAsDataURL(file);
+      } catch {
+        setImageError(`Could not read "${file.name}". Try another image.`);
+      }
     });
   };
 
@@ -225,6 +241,23 @@ export const InputSection = () => {
         free_text: form.context.trim(),
       };
 
+      // Pre-flight payload check for screenshot uploads — better to fail
+      // here with a clear message than to ship a too-large request that
+      // mobile networks will silently drop.
+      if (input_method === "screenshot") {
+        const totalBytes = screenshots.reduce(
+          (acc, s) => acc + dataUrlByteSize(s.dataUrl),
+          0,
+        );
+        if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+          setSubmitting(false);
+          setSubmitError(
+            "Your screenshots are too large to upload all at once. Try fewer images, or crop them down to just the conversation.",
+          );
+          return;
+        }
+      }
+
       logEvent("analysis_started", {
         input_method,
         has_free_text: context_data.free_text.length > 0,
@@ -256,7 +289,12 @@ export const InputSection = () => {
 
       const analysis_id = created.id as string;
 
-      // 2. Fire Edge Function in the background — DO NOT await
+      // 2. Kick off the Edge Function. The function uses
+      //    EdgeRuntime.waitUntil() and returns 202 almost immediately, so
+      //    we DO await the initial response — that way we can detect
+      //    "request never even reached the server" errors (e.g. the giant
+      //    payload was dropped on a flaky mobile connection) and surface
+      //    them, instead of letting Processing hang for 4 minutes.
       const payload: Record<string, unknown> = {
         analysis_id,
         session_id,
@@ -269,12 +307,39 @@ export const InputSection = () => {
         payload.raw_text = form.conversation;
       }
 
-      void supabase.functions.invoke("analyze-conversation", {
-        body: payload,
-      });
-
-      // 3. Navigate immediately to processing page
+      // Navigate to the processing page right away so the user sees
+      // progress, then dispatch the request in the background. If the
+      // request itself fails (network dropped, payload rejected, etc.),
+      // mark the analysis row as failed so polling resolves to a
+      // proper error page instead of timing out after 4 minutes.
       navigate(`/processing/${analysis_id}`);
+
+      void supabase.functions
+        .invoke("analyze-conversation", { body: payload })
+        .then(async ({ error }) => {
+          if (error) {
+            await supabase
+              .from("analyses")
+              .update({
+                status: "failed",
+                error_message:
+                  "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images.",
+                completed_at: new Date().toISOString(),
+              })
+              .eq("id", analysis_id);
+          }
+        })
+        .catch(async () => {
+          await supabase
+            .from("analyses")
+            .update({
+              status: "failed",
+              error_message:
+                "We couldn't reach the analyzer. Please check your connection and try again.",
+              completed_at: new Date().toISOString(),
+            })
+            .eq("id", analysis_id);
+        });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unexpected error.";
       setSubmitError(msg);

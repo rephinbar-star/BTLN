@@ -109,6 +109,11 @@ async function extractWithRetry(
   return { error: "Extraction failed after retry." };
 }
 
+// EdgeRuntime is provided by the Supabase Edge runtime but isn't in the
+// Deno type defs we have here.
+// deno-lint-ignore no-explicit-any
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -205,16 +210,31 @@ Deno.serve(async (req) => {
     analysis_id = created.id as string;
   }
 
-  const failAnalysis = async (msg: string) => {
+  // Helper to mark a row as failed and return a value (used inside the
+  // background task so we can early-return cleanly).
+  const failAnalysis = async (msg: string): Promise<void> => {
     await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);
     await supabase
       .from("analyses")
       .update({ status: "failed", error_message: msg, completed_at: new Date().toISOString() })
       .eq("id", analysis_id);
-    return json(200, { analysis_id, status: "failed", error: msg });
   };
 
-  // 2. Fetch active prompt version
+  // 2. Run the heavy work (extraction + analysis) in the background so the
+  // HTTP response returns to the client in <1s even with multi-MB
+  // screenshot payloads. The client tracks progress by polling the
+  // analyses row by id.
+  const runPipeline = async (): Promise<void> => {
+    try {
+      await processAnalysis();
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Unexpected analyzer error.";
+      await failAnalysis(msg);
+    }
+  };
+
+  const processAnalysis = async (): Promise<void> => {
+    // 2. Fetch active prompt version
   const { data: pv, error: pvErr } = await supabase
     .from("prompt_versions")
     .select("id, prompt_text, model_string, vision_model_string")
@@ -403,10 +423,15 @@ ${messagesBlock}`;
   if (updErr) {
     return failAnalysis(`Could not save analysis: ${updErr.message}`);
   }
+  };
 
-  return json(200, {
-    analysis_id,
-    status: "complete",
-    result: resultJson,
-  });
+  // Fire off the heavy pipeline in the background and return immediately.
+  if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+    EdgeRuntime.waitUntil(runPipeline());
+  } else {
+    // Fallback for local/dev: just don't await — the client polls anyway.
+    void runPipeline();
+  }
+
+  return json(202, { analysis_id, status: "accepted" });
 });
