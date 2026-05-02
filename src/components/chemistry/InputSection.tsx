@@ -168,10 +168,10 @@ export const InputSection = () => {
 
   const totalImageBytes = screenshots.reduce((acc, s) => acc + s.size, 0);
 
-  const tabs: { id: InputMode; label: string; icon: typeof FileText }[] = [
-    { id: "paste", label: "Paste text", icon: FileText },
-    { id: "file", label: "Upload chat file", icon: Upload },
-    { id: "screenshots", label: "Upload screenshots", icon: ImageIcon },
+  const tabs: { id: InputMode; label: string; shortLabel: string; icon: typeof FileText }[] = [
+    { id: "paste", label: "Paste text", shortLabel: "Paste", icon: FileText },
+    { id: "file", label: "Chat file", shortLabel: "Chat file", icon: Upload },
+    { id: "screenshots", label: "Screenshots", shortLabel: "Screenshots", icon: ImageIcon },
   ];
 
   return (
@@ -214,7 +214,7 @@ export const InputSection = () => {
               >
                 <Icon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{t.label}</span>
-                <span className="sm:hidden">{t.label.split(" ")[0]}</span>
+                <span className="sm:hidden">{t.shortLabel}</span>
               </button>
             );
           })}
