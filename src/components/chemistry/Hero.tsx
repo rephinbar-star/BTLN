@@ -7,7 +7,7 @@ const scrollToInput = () => {
 
 export const Hero = () => {
   return (
-    <section className="mx-auto max-w-6xl px-5 pb-16 pt-12 sm:px-8 sm:pt-20 lg:pt-24">
+    <section className="mx-auto max-w-6xl px-5 pb-8 pt-10 sm:px-8 sm:pb-10 sm:pt-14 lg:pt-16">
       <div className="grid gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16">
         <div className="order-1">
           <p className="text-sm text-muted-foreground">AI relationship analysis</p>
