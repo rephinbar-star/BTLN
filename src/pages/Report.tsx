@@ -137,16 +137,49 @@ const ReportContent = () => {
     };
   }, [analysisId, navigate]);
 
-  // Schedule feedback modal 30s after render
+  // Show feedback modal when user scrolls near bottom of report, or after 90s — whichever first.
   useEffect(() => {
     if (!row || !analysisId) return;
     if (sessionStorage.getItem(`chemistry_feedback_shown_${analysisId}`)) return;
-    const t = setTimeout(() => {
-      logEvent("feedback_shown", { skipped: false });
+
+    let triggered = false;
+    const trigger = (reason: "scroll" | "timeout") => {
+      if (triggered) return;
+      triggered = true;
+      logEvent("feedback_shown", { skipped: false, trigger: reason });
       setShowFeedback(true);
-    }, 30_000);
-    return () => clearTimeout(t);
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(t);
+    };
+
+    const onScroll = () => {
+      const el = reportRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const distanceFromBottom = rect.bottom - window.innerHeight;
+      if (distanceFromBottom <= 200) trigger("scroll");
+    };
+
+    const t = setTimeout(() => trigger("timeout"), 90_000);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    // Check immediately in case the report is short enough to already be in view.
+    onScroll();
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      clearTimeout(t);
+    };
   }, [row, analysisId]);
+
+  const openFeedbackManually = () => {
+    logEvent("feedback_shown", { skipped: false, trigger: "manual" });
+    // Clear suppression flag so this explicit request always works,
+    // even if the user previously dismissed it.
+    if (analysisId) {
+      sessionStorage.removeItem(`chemistry_feedback_shown_${analysisId}`);
+    }
+    setShowFeedback(true);
+  };
 
   const result = row?.result_json ?? null;
   const context = (row?.context_data ?? null) as ContextData | null;
@@ -344,6 +377,17 @@ const ReportContent = () => {
             )}
 
             <DeepReport result={result} context={context} />
+
+            {/* Persistent feedback CTA */}
+            <div className="mt-16 flex justify-center">
+              <button
+                type="button"
+                onClick={openFeedbackManually}
+                className="rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
+              >
+                Give feedback
+              </button>
+            </div>
 
             {/* Try again */}
             <div className="mt-16 text-center">
