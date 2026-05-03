@@ -106,7 +106,6 @@ const ReportContent = () => {
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
-  const shareableCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!analysisId) {
@@ -187,7 +186,7 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
 
   const handleDownload = async () => {
-    if (!shareableCardRef.current || !context || downloading) return;
+    if (!reportRef.current || !context || downloading) return;
     setDownloading(true);
     try {
       // Wait for web fonts to be ready so text renders correctly.
@@ -199,12 +198,23 @@ const ReportContent = () => {
         }
       }
 
-      const dataUrl = await htmlToImage.toPng(shareableCardRef.current, {
+      const node = reportRef.current;
+      const dataUrl = await htmlToImage.toPng(node, {
         quality: 1.0,
         pixelRatio: 2,
         backgroundColor: "#ffffff",
         cacheBust: true,
         skipFonts: false,
+        width: node.scrollWidth,
+        height: node.scrollHeight,
+        style: {
+          width: `${node.scrollWidth}px`,
+          height: `${node.scrollHeight}px`,
+        },
+        filter: (el) => {
+          if (!(el instanceof HTMLElement)) return true;
+          return el.dataset.pdfExclude !== "true";
+        },
       });
 
       const link = document.createElement("a");
@@ -308,13 +318,11 @@ const ReportContent = () => {
         {!safetyMode && (
           <div ref={reportRef}>
             <div data-pdf-section>
-              <div ref={shareableCardRef}>
-                <ShareableCard result={result} context={context} />
-              </div>
+              <ShareableCard result={result} context={context} />
             </div>
 
             {/* Action buttons */}
-            <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
+            <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
                 type="button"
                 onClick={handleDownload}
@@ -352,7 +360,7 @@ const ReportContent = () => {
             <DeepReport result={result} context={context} />
 
             {/* Persistent feedback CTA */}
-            <div className="mt-16 flex justify-center">
+            <div data-pdf-exclude="true" className="mt-16 flex justify-center">
               <button
                 type="button"
                 onClick={openFeedbackManually}
@@ -363,7 +371,7 @@ const ReportContent = () => {
             </div>
 
             {/* Try again */}
-            <div className="mt-16 text-center">
+            <div data-pdf-exclude="true" className="mt-16 text-center">
               <h3 className="text-[24px] font-medium tracking-tight">
                 Curious about another relationship?
               </h3>
