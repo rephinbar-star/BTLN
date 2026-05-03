@@ -199,17 +199,21 @@ const ReportContent = () => {
       }
 
       const node = reportRef.current;
+      const extraRightPadding = 24;
+      const captureWidth = node.scrollWidth + extraRightPadding;
       const dataUrl = await htmlToImage.toPng(node, {
         quality: 1.0,
         pixelRatio: 2,
         backgroundColor: "#ffffff",
         cacheBust: true,
         skipFonts: false,
-        width: node.scrollWidth,
+        width: captureWidth,
         height: node.scrollHeight,
         style: {
-          width: `${node.scrollWidth}px`,
+          width: `${captureWidth}px`,
           height: `${node.scrollHeight}px`,
+          paddingRight: `${extraRightPadding}px`,
+          boxSizing: "content-box",
         },
         filter: (el) => {
           if (!(el instanceof HTMLElement)) return true;
