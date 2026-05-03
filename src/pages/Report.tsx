@@ -322,7 +322,7 @@ const ReportContent = () => {
             </div>
 
             {/* Action buttons */}
-            <div className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
+            <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
                 type="button"
                 onClick={handleDownload}
@@ -360,7 +360,7 @@ const ReportContent = () => {
             <DeepReport result={result} context={context} />
 
             {/* Persistent feedback CTA */}
-            <div className="mt-16 flex justify-center">
+            <div data-pdf-exclude="true" className="mt-16 flex justify-center">
               <button
                 type="button"
                 onClick={openFeedbackManually}
@@ -371,7 +371,7 @@ const ReportContent = () => {
             </div>
 
             {/* Try again */}
-            <div className="mt-16 text-center">
+            <div data-pdf-exclude="true" className="mt-16 text-center">
               <h3 className="text-[24px] font-medium tracking-tight">
                 Curious about another relationship?
               </h3>
