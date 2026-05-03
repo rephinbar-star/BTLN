@@ -106,6 +106,7 @@ const ReportContent = () => {
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!analysisId) {
@@ -186,7 +187,7 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
 
   const handleDownload = async () => {
-    if (!reportRef.current || !context || downloading) return;
+    if (!cardRef.current || !context || downloading) return;
     setDownloading(true);
     try {
       // Wait for web fonts to be ready so text renders correctly.
@@ -198,9 +199,10 @@ const ReportContent = () => {
         }
       }
 
-      const node = reportRef.current;
-      const extraRightPadding = 24;
-      const captureWidth = node.scrollWidth + extraRightPadding;
+      const node = cardRef.current;
+      const rect = node.getBoundingClientRect();
+      const captureWidth = Math.ceil(rect.width);
+      const captureHeight = Math.ceil(rect.height);
       const dataUrl = await htmlToImage.toPng(node, {
         quality: 1.0,
         pixelRatio: 2,
@@ -208,16 +210,10 @@ const ReportContent = () => {
         cacheBust: true,
         skipFonts: false,
         width: captureWidth,
-        height: node.scrollHeight,
+        height: captureHeight,
         style: {
           width: `${captureWidth}px`,
-          height: `${node.scrollHeight}px`,
-          paddingRight: `${extraRightPadding}px`,
-          boxSizing: "content-box",
-        },
-        filter: (el) => {
-          if (!(el instanceof HTMLElement)) return true;
-          return el.dataset.pdfExclude !== "true";
+          height: `${captureHeight}px`,
         },
       });
 
@@ -322,7 +318,7 @@ const ReportContent = () => {
         {!safetyMode && (
           <div ref={reportRef}>
             <div data-pdf-section>
-              <ShareableCard result={result} context={context} />
+              <ShareableCard ref={cardRef} result={result} context={context} />
             </div>
 
             {/* Action buttons */}
