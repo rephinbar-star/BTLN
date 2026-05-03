@@ -1,10 +1,9 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { toast } from "sonner";
-import html2canvas from "html2canvas";
-import { jsPDF } from "jspdf";
+import * as htmlToImage from "html-to-image";
+import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
@@ -107,6 +106,7 @@ const ReportContent = () => {
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
+  const shareableCardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!analysisId) {
@@ -187,67 +187,38 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
 
   const handleDownload = async () => {
-    if (!reportRef.current || !context || downloading) return;
+    if (!shareableCardRef.current || !context || downloading) return;
     setDownloading(true);
     try {
-      const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
-      const pageWidth = 210;
-      const pageHeight = 297;
-      const margin = 12;
-      const contentWidth = pageWidth - margin * 2;
-      const maxContentHeight = pageHeight - margin * 2;
-      const sectionGap = 4;
-      let currentY = margin;
-      // Only render LEAF sections (no nested data-pdf-section descendants)
-      // so we don't double-render and so each block is small enough to fit.
-      const allMarked = Array.from(
-        reportRef.current.querySelectorAll<HTMLElement>("[data-pdf-section]"),
-      );
-      const sections = allMarked.filter(
-        (el) => el.querySelector("[data-pdf-section]") === null,
-      );
-
-      for (const section of sections) {
-        const canvas = await html2canvas(section, {
-          backgroundColor: "#ffffff",
-          scale: 2,
-          useCORS: true,
-          windowWidth: document.documentElement.scrollWidth,
-        });
-        const heightMm = (canvas.height * contentWidth) / canvas.width;
-        const remaining = pageHeight - margin - currentY;
-
-        // If a single leaf is taller than a full page, we must scale it down
-        // to fit (rather than chopping mid-text). Center it on its own page.
-        if (heightMm > maxContentHeight) {
-          if (currentY > margin) {
-            pdf.addPage();
-            currentY = margin;
-          }
-          const scaledWidth = (maxContentHeight / heightMm) * contentWidth;
-          const xOffset = margin + (contentWidth - scaledWidth) / 2;
-          pdf.addImage(canvas.toDataURL("image/png"), "PNG", xOffset, currentY, scaledWidth, maxContentHeight);
-          pdf.addPage();
-          currentY = margin;
-          continue;
+      // Wait for web fonts to be ready so text renders correctly.
+      if (typeof document !== "undefined" && (document as Document & { fonts?: FontFaceSet }).fonts) {
+        try {
+          await (document as Document & { fonts: FontFaceSet }).fonts.ready;
+        } catch {
+          // ignore
         }
-
-        if (heightMm > remaining && currentY > margin) {
-          pdf.addPage();
-          currentY = margin;
-        }
-
-        const imgData = canvas.toDataURL("image/png");
-        pdf.addImage(imgData, "PNG", margin, currentY, contentWidth, heightMm);
-        currentY += heightMm + sectionGap;
       }
 
-      pdf.save(`chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}-report.pdf`);
+      const dataUrl = await htmlToImage.toPng(shareableCardRef.current, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        skipFonts: false,
+      });
+
+      const link = document.createElement("a");
+      link.href = dataUrl;
+      link.download = `chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
       void supabase.from("share_clicks").insert([
         { analysis_id: analysisId!, platform: "download" },
       ]);
     } catch (e) {
-      toast.error("Could not generate report.");
+      toast.error("Could not generate image.");
     } finally {
       setDownloading(false);
     }
@@ -337,7 +308,9 @@ const ReportContent = () => {
         {!safetyMode && (
           <div ref={reportRef}>
             <div data-pdf-section>
-              <ShareableCard result={result} context={context} />
+              <div ref={shareableCardRef}>
+                <ShareableCard result={result} context={context} />
+              </div>
             </div>
 
             {/* Action buttons */}
@@ -348,7 +321,7 @@ const ReportContent = () => {
                 disabled={downloading}
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
               >
-                <Download className="h-4 w-4" /> {downloading ? "Preparing PDF…" : "Download report"}
+                <Download className="h-4 w-4" /> {downloading ? "Preparing image…" : "Download as image"}
               </button>
               <button
                 type="button"
