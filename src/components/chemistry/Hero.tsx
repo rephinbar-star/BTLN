@@ -28,7 +28,7 @@ export const Hero = () => {
               Try it free <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-5 flex flex-col gap-2 text-[14px] text-foreground/70 sm:flex-row sm:items-center sm:gap-4">
+          <div className="mt-5 flex flex-col gap-2 text-[14px] font-bold text-emerald-600 sm:flex-row sm:items-center sm:gap-4">
             <span className="inline-flex items-center gap-1.5">
               <Check className="h-4 w-4" /> No account required
             </span>
