@@ -1,4 +1,4 @@
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Lock, Clock, Check } from "lucide-react";
 import { SampleCard } from "./SampleCard";
 import { logEvent } from "@/lib/session";
 
@@ -28,12 +28,16 @@ export const Hero = () => {
               Try it free <ArrowRight className="h-4 w-4" />
             </button>
           </div>
-          <div className="mt-5 flex flex-col gap-1 text-[13px] text-muted-foreground sm:flex-row sm:items-center sm:gap-2">
-            <span>No account required</span>
-            <span className="hidden sm:inline">·</span>
-            <span>Nothing stored. Analyzed in seconds, then discarded.</span>
-            <span className="hidden sm:inline">·</span>
-            <span>Results in 90 seconds</span>
+          <div className="mt-5 flex flex-col gap-2 text-[14px] text-foreground/70 sm:flex-row sm:items-center sm:gap-4">
+            <span className="inline-flex items-center gap-1.5">
+              <Check className="h-4 w-4" /> No account required
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Lock className="h-4 w-4" /> Messages deleted after analysis
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <Clock className="h-4 w-4" /> Results in 90 seconds
+            </span>
           </div>
         </div>
         <div className="order-2">
