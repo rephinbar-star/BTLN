@@ -25,11 +25,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setLoading(false);
-      if (event === "SIGNED_IN" && newSession) {
+      if (event === "SIGNED_IN" && newSession?.user) {
         // Defer to avoid deadlock with auth callback
         setTimeout(() => {
           const sid = getSessionId();
-          void supabase.rpc("claim_analyses_for_session", { p_session_id: sid });
+          void supabase.rpc("claim_anonymous_analyses", {
+            p_session_id: sid,
+            p_user_id: newSession.user!.id,
+          });
         }, 0);
       }
     });

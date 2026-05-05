@@ -9,6 +9,8 @@ import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
+import { SaveReportModal } from "@/components/auth/SaveReportModal";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
@@ -99,10 +101,12 @@ const STYLE_BAR: Record<string, string> = {
 const ReportContent = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showSave, setShowSave] = useState(false);
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
@@ -350,6 +354,18 @@ const ReportContent = () => {
               </button>
             </div>
 
+            {!user && analysisId && (
+              <div data-pdf-exclude="true" className="mt-6 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => setShowSave(true)}
+                  className="rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background shadow-sm transition-opacity hover:opacity-90"
+                >
+                  Save this report — Free account
+                </button>
+              </div>
+            )}
+
             {result.meta.analysis_confidence === "low" && (
               <div data-pdf-section className="mt-8 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
                 <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
@@ -402,6 +418,14 @@ const ReportContent = () => {
           analysisId={analysisId}
           open={showFeedback}
           onClose={() => setShowFeedback(false)}
+        />
+      )}
+
+      {analysisId && (
+        <SaveReportModal
+          open={showSave}
+          onClose={() => setShowSave(false)}
+          returnTo={`/report/${analysisId}`}
         />
       )}
 

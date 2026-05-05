@@ -83,6 +83,7 @@ export type Database = {
           email: string
           id: string
           source: string | null
+          user_id: string | null
         }
         Insert: {
           analysis_id?: string | null
@@ -90,6 +91,7 @@ export type Database = {
           email: string
           id?: string
           source?: string | null
+          user_id?: string | null
         }
         Update: {
           analysis_id?: string | null
@@ -97,6 +99,7 @@ export type Database = {
           email?: string
           id?: string
           source?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -266,6 +269,10 @@ export type Database = {
     Functions: {
       claim_analyses_for_session: {
         Args: { p_session_id: string }
+        Returns: number
+      }
+      claim_anonymous_analyses: {
+        Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
       submit_feedback: {
