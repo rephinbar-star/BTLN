@@ -116,7 +116,7 @@ const Processing = () => {
       </div>
 
       <p className="mt-10 max-w-md text-[12px] leading-relaxed text-muted-foreground">
-        This usually takes 30–90 seconds. Don't refresh.
+        This usually takes 30–90 seconds. Don't refresh. Your messages will be deleted as soon as the analysis is done.
       </p>
 
       {showSlow && (
