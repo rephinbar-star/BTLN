@@ -30,6 +30,7 @@ export type Database = {
           result_json: Json | null
           session_id: string
           status: string
+          user_id: string | null
         }
         Insert: {
           completed_at?: string | null
@@ -46,6 +47,7 @@ export type Database = {
           result_json?: Json | null
           session_id: string
           status?: string
+          user_id?: string | null
         }
         Update: {
           completed_at?: string | null
@@ -62,6 +64,7 @@ export type Database = {
           result_json?: Json | null
           session_id?: string
           status?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -167,6 +170,33 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       prompt_versions: {
         Row: {
           active: boolean
@@ -234,6 +264,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_analyses_for_session: {
+        Args: { p_session_id: string }
+        Returns: number
+      }
       submit_feedback: {
         Args: {
           p_analysis_id: string
