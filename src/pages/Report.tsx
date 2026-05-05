@@ -214,6 +214,9 @@ const ReportContent = () => {
         style: {
           width: `${captureWidth}px`,
           height: `${captureHeight}px`,
+          margin: "0",
+          marginLeft: "0",
+          marginRight: "0",
         },
       });
 
