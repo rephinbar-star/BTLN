@@ -421,6 +421,14 @@ const ReportContent = () => {
         />
       )}
 
+      {analysisId && (
+        <SaveReportModal
+          open={showSave}
+          onClose={() => setShowSave(false)}
+          returnTo={`/report/${analysisId}`}
+        />
+      )}
+
       <Dialog open={shareFallbackOpen} onOpenChange={setShareFallbackOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
