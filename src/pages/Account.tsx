@@ -17,12 +17,8 @@ type AnalysisRow = {
 
 const Account = () => {
   const navigate = useNavigate();
-  const { user, loading, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const [rows, setRows] = useState<AnalysisRow[] | null>(null);
-
-  useEffect(() => {
-    if (!loading && !user) navigate("/auth", { replace: true });
-  }, [user, loading, navigate]);
 
   useEffect(() => {
     if (!user) return;
@@ -35,14 +31,6 @@ const Account = () => {
       setRows((data ?? []) as AnalysisRow[]);
     })();
   }, [user]);
-
-  if (loading || !user) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">

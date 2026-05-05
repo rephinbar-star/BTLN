@@ -23,9 +23,13 @@ const Auth = () => {
   const [busy, setBusy] = useState(false);
   const { user, loading } = useAuth();
 
+  const returnTo = params.get("return_to");
+  const safeReturnTo = returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//") ? returnTo : null;
+  const postAuthDest = safeReturnTo ?? "/account";
+
   useEffect(() => {
-    if (!loading && user) navigate("/account", { replace: true });
-  }, [user, loading, navigate]);
+    if (!loading && user) navigate(postAuthDest, { replace: true });
+  }, [user, loading, navigate, postAuthDest]);
 
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +39,7 @@ const Auth = () => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/account` },
+          options: { emailRedirectTo: `${window.location.origin}${postAuthDest}` },
         });
         if (error) {
           if (error.message.toLowerCase().includes("registered") || error.message.toLowerCase().includes("exists")) {
@@ -66,7 +70,7 @@ const Auth = () => {
   const handleGoogle = async () => {
     setBusy(true);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: `${window.location.origin}/account`,
+      redirect_uri: `${window.location.origin}${postAuthDest}`,
     });
     if (result.error) {
       toast.error(result.error.message ?? "Could not sign in with Google");
