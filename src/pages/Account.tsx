@@ -73,8 +73,8 @@ const Account = () => {
         ) : (
           <ul className="flex flex-col gap-3">
             {rows.map((r) => {
-              const score = r.result_json?.compatibility_score;
-              const tier = r.result_json?.tier_label;
+              const score = r.result_json?.headline?.score;
+              const tier = r.result_json?.headline?.tier_label;
               return (
                 <li key={r.id}>
                   <Link
