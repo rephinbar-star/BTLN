@@ -9,6 +9,8 @@ import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
+import { SaveReportModal } from "@/components/auth/SaveReportModal";
+import { useAuth } from "@/hooks/useAuth";
 import {
   Dialog,
   DialogContent,
