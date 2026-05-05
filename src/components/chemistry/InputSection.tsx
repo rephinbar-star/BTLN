@@ -1,4 +1,4 @@
-import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X } from "lucide-react";
+import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, Lock } from "lucide-react";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -402,8 +402,16 @@ export const InputSection = () => {
         onSubmit={handleSubmit}
         className="mx-auto mt-10 max-w-[720px] rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8"
       >
+        {/* Privacy reassurance */}
+        <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-foreground">
+          <Lock className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p className="text-[13px] leading-relaxed">
+            Your messages are deleted immediately after analysis. Nothing is stored.
+          </p>
+        </div>
+
         {/* Info callout */}
-        <div className="flex items-start gap-3 rounded-xl bg-pastel-blue-bg p-4 text-pastel-blue-fg">
+        <div className="mt-3 flex items-start gap-3 rounded-xl bg-pastel-blue-bg p-4 text-pastel-blue-fg">
           <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
           <p className="text-[13px] leading-relaxed">
             For best results: paste at least 50 messages. More is better — the analysis gets sharper with 100+

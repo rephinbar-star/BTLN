@@ -372,6 +372,9 @@ const ReportContent = () => {
 
             {/* Try again */}
             <div data-pdf-exclude="true" className="mt-16 text-center">
+              <p className="mb-6 text-[12px] text-muted-foreground">
+                Your messages have been deleted from our servers. Only your analysis results are kept.
+              </p>
               <h3 className="text-[24px] font-medium tracking-tight">
                 Curious about another relationship?
               </h3>
