@@ -356,6 +356,7 @@ ${messagesBlock}`;
       { role: "user", content: userBlock },
     ],
     response_format: { type: "json_object" },
+    temperature: 0.4,
     provider: { order: ["Anthropic"], allow_fallbacks: true },
   };
 
