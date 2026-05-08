@@ -9,6 +9,8 @@ import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
+import { CoupleTypeCard } from "@/components/chemistry/CoupleTypeCard";
+import type { CoupleType, RelationshipType } from "@/lib/coupleTypes";
 import { SaveReportModal } from "@/components/auth/SaveReportModal";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -26,6 +28,8 @@ type Row = {
   context_data: ContextData;
   message_count: number | null;
   error_message: string | null;
+  couple_type_id: number | null;
+  relationship_type: string | null;
 };
 
 type FlagValue = string | { title?: unknown; evidence?: unknown; description?: unknown };
@@ -103,6 +107,7 @@ const ReportContent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [row, setRow] = useState<Row | null>(null);
+  const [coupleType, setCoupleType] = useState<CoupleType | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -121,7 +126,7 @@ const ReportContent = () => {
     (async () => {
       const { data, error } = await supabase
         .from("analyses")
-        .select("id, status, result_json, context_data, message_count, error_message")
+        .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type")
         .eq("id", analysisId)
         .maybeSingle();
       if (cancelled) return;
@@ -134,6 +139,14 @@ const ReportContent = () => {
         return;
       }
       setRow(data as unknown as Row);
+      if (data.couple_type_id) {
+        const { data: ct } = await supabase
+          .from("couple_types")
+          .select("*")
+          .eq("id", data.couple_type_id)
+          .maybeSingle();
+        if (!cancelled && ct) setCoupleType(ct as unknown as CoupleType);
+      }
       setLoading(false);
     })();
     return () => {
