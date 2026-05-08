@@ -18,6 +18,7 @@ const MAX_OUTPUT_TOKENS = 8000;
 type ContextData = {
   name1: string;
   name2: string;
+  relationship_type?: "romantic" | "friend" | "family";
   relationship_stage?: string;
   duration?: string;
   goal?: string;
@@ -341,6 +342,7 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
 
   const userBlock = `CONTEXT:
 - Names: ${name1} and ${name2}
+- Relationship type: ${context_data.relationship_type ?? "romantic"}
 - Relationship stage: ${context_data.relationship_stage ?? ""}
 - Duration: ${context_data.duration ?? ""}
 - Goal for analysis: ${context_data.goal ?? ""}

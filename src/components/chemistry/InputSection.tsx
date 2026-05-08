@@ -18,6 +18,7 @@ import { HowToHelp } from "./HowToHelp";
 
 type FormState = {
   conversation: string;
+  relationshipType: "romantic" | "friend" | "family";
   stage: string;
   duration: string;
   goal: string;
@@ -28,6 +29,7 @@ type FormState = {
 
 const initialState: FormState = {
   conversation: "",
+  relationshipType: "romantic",
   stage: "",
   duration: "",
   goal: "",
@@ -271,6 +273,7 @@ export const InputSection = () => {
       const context_data = {
         name1: form.yourName.trim(),
         name2: form.theirName.trim(),
+        relationship_type: form.relationshipType,
         relationship_stage: form.stage,
         duration: form.duration,
         goal: form.goal,
@@ -308,6 +311,7 @@ export const InputSection = () => {
             context_data: context_data as never,
             input_method,
             status: "pending",
+            relationship_type: form.relationshipType,
           },
         ])
         .select("id")
@@ -655,6 +659,35 @@ export const InputSection = () => {
           </div>
 
           {/* Names */}
+          <div>
+            <label className={labelClass}>Relationship type</label>
+            <div className="mt-1.5 flex gap-2" role="radiogroup" aria-label="Relationship type">
+              {([
+                { value: "romantic", label: "Romantic" },
+                { value: "friend", label: "Friend" },
+                { value: "family", label: "Family" },
+              ] as const).map((opt) => {
+                const active = form.relationshipType === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => update("relationshipType", opt.value)}
+                    className={`flex-1 rounded-full border px-4 py-2.5 text-[14px] font-medium transition-colors ${
+                      active
+                        ? "border-foreground bg-foreground text-background"
+                        : "border-border bg-background text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={labelClass}>Your name</label>
