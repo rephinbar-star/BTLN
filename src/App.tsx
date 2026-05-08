@@ -13,8 +13,10 @@ import Auth from "./pages/Auth.tsx";
 import Account from "./pages/Account.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import AuthCallback from "./pages/AuthCallback.tsx";
+import CheckoutReturn from "./pages/CheckoutReturn.tsx";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { PaymentTestModeBanner } from "./components/PaymentTestModeBanner";
 
 const queryClient = new QueryClient();
 
@@ -25,10 +27,12 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+        <PaymentTestModeBanner />
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/processing/:analysisId" element={<Processing />} />
           <Route path="/report/:analysisId" element={<Report />} />
+          <Route path="/checkout/return" element={<CheckoutReturn />} />
           <Route path="/error" element={<ErrorPage />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/auth" element={<Auth />} />
