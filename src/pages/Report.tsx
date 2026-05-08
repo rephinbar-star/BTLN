@@ -11,6 +11,7 @@ import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { CoupleTypeCard } from "@/components/chemistry/CoupleTypeCard";
 import type { CoupleType, RelationshipType } from "@/lib/coupleTypes";
+import { UnlockReportButton } from "@/components/UnlockReportButton";
 import { SaveReportModal } from "@/components/auth/SaveReportModal";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -30,6 +31,7 @@ type Row = {
   error_message: string | null;
   couple_type_id: number | null;
   relationship_type: string | null;
+  is_paid: boolean | null;
 };
 
 type FlagValue = string | { title?: unknown; evidence?: unknown; description?: unknown };
@@ -126,7 +128,7 @@ const ReportContent = () => {
     (async () => {
       const { data, error } = await supabase
         .from("analyses")
-        .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type")
+        .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type, is_paid")
         .eq("id", analysisId)
         .maybeSingle();
       if (cancelled) return;
@@ -397,7 +399,17 @@ const ReportContent = () => {
               </div>
             )}
 
-            <DeepReport result={result} context={context} />
+            {row?.is_paid ? (
+              <DeepReport result={result} context={context} />
+            ) : (
+              <div data-pdf-exclude="true" className="mt-12 flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
+                <h3 className="text-[22px] font-medium tracking-tight">Unlock the full analysis</h3>
+                <p className="max-w-md text-[14px] text-muted-foreground">
+                  Get the deep dive: communication patterns, attachment styles, hidden dynamics, and personalized prompts — for this report, forever.
+                </p>
+                {analysisId && <UnlockReportButton analysisId={analysisId} />}
+              </div>
+            )}
 
             {/* Persistent feedback CTA */}
             <div data-pdf-exclude="true" className="mt-16 flex justify-center">
