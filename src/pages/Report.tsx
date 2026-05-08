@@ -337,6 +337,14 @@ const ReportContent = () => {
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
         {!safetyMode && (
           <div ref={reportRef}>
+            {coupleType && (
+              <div className="mb-8">
+                <CoupleTypeCard
+                  type={coupleType}
+                  relationship={(row?.relationship_type as RelationshipType) || "romantic"}
+                />
+              </div>
+            )}
             <div data-pdf-section>
               <ShareableCard ref={cardRef} result={result} context={context} />
             </div>
