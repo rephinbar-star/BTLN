@@ -18,6 +18,7 @@ import { HowToHelp } from "./HowToHelp";
 
 type FormState = {
   conversation: string;
+  relationshipType: "romantic" | "friend" | "family";
   stage: string;
   duration: string;
   goal: string;
@@ -28,6 +29,7 @@ type FormState = {
 
 const initialState: FormState = {
   conversation: "",
+  relationshipType: "romantic",
   stage: "",
   duration: "",
   goal: "",
@@ -271,6 +273,7 @@ export const InputSection = () => {
       const context_data = {
         name1: form.yourName.trim(),
         name2: form.theirName.trim(),
+        relationship_type: form.relationshipType,
         relationship_stage: form.stage,
         duration: form.duration,
         goal: form.goal,
@@ -308,6 +311,7 @@ export const InputSection = () => {
             context_data: context_data as never,
             input_method,
             status: "pending",
+            relationship_type: form.relationshipType,
           },
         ])
         .select("id")
