@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           completed_at: string | null
           context_data: Json
+          couple_type_id: number | null
           created_at: string
           error_message: string | null
           feedback_email: string | null
@@ -25,16 +26,20 @@ export type Database = {
           feedback_text: string | null
           id: string
           input_method: string
+          is_paid: boolean
           message_count: number | null
           prompt_version_id: string | null
+          relationship_type: string | null
           result_json: Json | null
           session_id: string
           status: string
+          subscription_tier_at_view: string
           user_id: string | null
         }
         Insert: {
           completed_at?: string | null
           context_data: Json
+          couple_type_id?: number | null
           created_at?: string
           error_message?: string | null
           feedback_email?: string | null
@@ -42,16 +47,20 @@ export type Database = {
           feedback_text?: string | null
           id?: string
           input_method: string
+          is_paid?: boolean
           message_count?: number | null
           prompt_version_id?: string | null
+          relationship_type?: string | null
           result_json?: Json | null
           session_id: string
           status?: string
+          subscription_tier_at_view?: string
           user_id?: string | null
         }
         Update: {
           completed_at?: string | null
           context_data?: Json
+          couple_type_id?: number | null
           created_at?: string
           error_message?: string | null
           feedback_email?: string | null
@@ -59,14 +68,24 @@ export type Database = {
           feedback_text?: string | null
           id?: string
           input_method?: string
+          is_paid?: boolean
           message_count?: number | null
           prompt_version_id?: string | null
+          relationship_type?: string | null
           result_json?: Json | null
           session_id?: string
           status?: string
+          subscription_tier_at_view?: string
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "analyses_couple_type_id_fkey"
+            columns: ["couple_type_id"]
+            isOneToOne: false
+            referencedRelation: "couple_types"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "analyses_prompt_version_id_fkey"
             columns: ["prompt_version_id"]
@@ -75,6 +94,66 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      couple_types: {
+        Row: {
+          background_color: string
+          created_at: string
+          decorative_element: string
+          family_description: string
+          family_name: string
+          family_superpower: string
+          family_tagline: string
+          friend_description: string
+          friend_name: string
+          friend_superpower: string
+          friend_tagline: string
+          id: number
+          romantic_description: string
+          romantic_name: string
+          romantic_superpower: string
+          romantic_tagline: string
+          text_color: string
+        }
+        Insert: {
+          background_color: string
+          created_at?: string
+          decorative_element: string
+          family_description: string
+          family_name: string
+          family_superpower: string
+          family_tagline: string
+          friend_description: string
+          friend_name: string
+          friend_superpower: string
+          friend_tagline: string
+          id: number
+          romantic_description: string
+          romantic_name: string
+          romantic_superpower: string
+          romantic_tagline: string
+          text_color: string
+        }
+        Update: {
+          background_color?: string
+          created_at?: string
+          decorative_element?: string
+          family_description?: string
+          family_name?: string
+          family_superpower?: string
+          family_tagline?: string
+          friend_description?: string
+          friend_name?: string
+          friend_superpower?: string
+          friend_tagline?: string
+          id?: number
+          romantic_description?: string
+          romantic_name?: string
+          romantic_superpower?: string
+          romantic_tagline?: string
+          text_color?: string
+        }
+        Relationships: []
       }
       email_captures: {
         Row: {
@@ -173,6 +252,41 @@ export type Database = {
           },
         ]
       }
+      one_time_unlocks: {
+        Row: {
+          amount_cents: number
+          analysis_id: string
+          created_at: string
+          id: string
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          analysis_id: string
+          created_at?: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "one_time_unlocks_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -262,6 +376,48 @@ export type Database = {
           },
         ]
       }
+      user_subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          id: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          status: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          id?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -283,6 +439,10 @@ export type Database = {
           p_text: string
         }
         Returns: undefined
+      }
+      user_has_paid_access: {
+        Args: { p_analysis_id: string; p_user_id: string }
+        Returns: boolean
       }
     }
     Enums: {
