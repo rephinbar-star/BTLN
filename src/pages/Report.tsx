@@ -1,6 +1,7 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
@@ -336,6 +337,18 @@ const ReportContent = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>{`Chemistry Report: ${context.name1} & ${context.name2} — ${Math.round(result.headline.score)}/100`}</title>
+        <meta
+          name="description"
+          content={`Chemistry score ${Math.round(result.headline.score)} — ${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
+        />
+        <link rel="canonical" href={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
+        <meta property="og:title" content={`Chemistry Score: ${Math.round(result.headline.score)}/100 — ${result.headline.tier_label}`} />
+        <meta property="og:description" content={result.headline.vibe_summary} />
+        <meta property="og:url" content={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
         {!safetyMode && (
           <div ref={reportRef}>

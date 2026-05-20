@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Helmet } from "react-helmet-async";
 import { FinalCta } from "@/components/chemistry/FinalCta";
 import { Footer } from "@/components/chemistry/Footer";
 import { Header } from "@/components/chemistry/Header";
@@ -21,6 +22,14 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Chemistry — AI relationship analysis from your texts</title>
+        <meta name="description" content="Paste your texts and get a detailed AI report on your communication style, attachment patterns, and relationship dynamics. No signup, results in 90 seconds." />
+        <link rel="canonical" href="https://couplechemistry1.lovable.app/" />
+        <meta property="og:title" content="Chemistry — AI relationship analysis from your texts" />
+        <meta property="og:description" content="Paste your texts and get a detailed AI report on your communication style, attachment patterns, and relationship dynamics." />
+        <meta property="og:url" content="https://couplechemistry1.lovable.app/" />
+      </Helmet>
       <Header />
       <main>
         <Hero />
