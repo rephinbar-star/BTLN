@@ -30,14 +30,16 @@ const cache = new Map<string, Promise<CoupleTypeRow | null>>();
 const fetchType = (id: string): Promise<CoupleTypeRow | null> => {
   const existing = cache.get(id);
   if (existing) return existing;
-  const p = supabase
-    .from("couple_types")
-    .select(
-      "id, romantic_name, friend_name, family_name, image_url_romantic, image_url_friend, image_url_family",
-    )
-    .eq("id", Number(id))
-    .maybeSingle()
-    .then(({ data }) => (data as CoupleTypeRow | null) ?? null);
+  const p: Promise<CoupleTypeRow | null> = (async () => {
+    const { data } = await supabase
+      .from("couple_types")
+      .select(
+        "id, romantic_name, friend_name, family_name, image_url_romantic, image_url_friend, image_url_family",
+      )
+      .eq("id", Number(id))
+      .maybeSingle();
+    return (data as CoupleTypeRow | null) ?? null;
+  })();
   cache.set(id, p);
   return p;
 };
