@@ -440,6 +440,14 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
+      set_couple_type_image_url: {
+        Args: {
+          p_image_url: string
+          p_relationship_type: string
+          p_type_id: number
+        }
+        Returns: undefined
+      }
       submit_feedback: {
         Args: {
           p_analysis_id: string
