@@ -109,6 +109,9 @@ export type Database = {
           friend_superpower: string
           friend_tagline: string
           id: number
+          image_url_family: string | null
+          image_url_friend: string | null
+          image_url_romantic: string | null
           romantic_description: string
           romantic_name: string
           romantic_superpower: string
@@ -128,6 +131,9 @@ export type Database = {
           friend_superpower: string
           friend_tagline: string
           id: number
+          image_url_family?: string | null
+          image_url_friend?: string | null
+          image_url_romantic?: string | null
           romantic_description: string
           romantic_name: string
           romantic_superpower: string
@@ -147,6 +153,9 @@ export type Database = {
           friend_superpower?: string
           friend_tagline?: string
           id?: number
+          image_url_family?: string | null
+          image_url_friend?: string | null
+          image_url_romantic?: string | null
           romantic_description?: string
           romantic_name?: string
           romantic_superpower?: string
