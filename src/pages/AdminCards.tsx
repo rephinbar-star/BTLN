@@ -162,7 +162,7 @@ const AdminCards = () => {
       const updateCol = `image_url_${relationship}` as const;
       const { error: updateErr } = await supabase
         .from("couple_types")
-        .update({ [updateCol]: publicUrl })
+        .update({ [updateCol]: publicUrl } as never)
         .eq("id", typeNumber);
 
       if (updateErr) {
