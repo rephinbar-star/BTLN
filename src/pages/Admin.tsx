@@ -369,6 +369,12 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            <Link
+              to="/admin/cards"
+              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Card uploads
+            </Link>
             <Button onClick={() => void load()} disabled={loading} size="sm">
               {loading ? "Refreshing…" : "Refresh"}
             </Button>
