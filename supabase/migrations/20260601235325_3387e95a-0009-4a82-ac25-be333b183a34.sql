@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.set_couple_type_image_url(integer, text, text) TO anon, authenticated, service_role;
