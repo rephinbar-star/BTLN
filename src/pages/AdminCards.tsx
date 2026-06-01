@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import imageCompression from "browser-image-compression";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
+import { logEvent } from "@/lib/session";
 import { cn } from "@/lib/utils";
 
 const ADMIN_AUTH_KEY = "chemistry_admin_authed";
@@ -41,9 +43,11 @@ type CoupleTypeRow = {
 
 type UploadResult = {
   filename: string;
-  status: "success" | "failed" | "skipped";
+  status: "compressing" | "uploading" | "success" | "failed" | "skipped";
   reason?: string;
   publicUrl?: string;
+  originalBytes?: number;
+  compressedBytes?: number;
 };
 
 const FILENAME_RE = /^t(\d{2})_([a-z_]+)_(romantic|friend|family)\.(png|jpe?g|webp)$/i;
@@ -51,6 +55,13 @@ const FILENAME_RE = /^t(\d{2})_([a-z_]+)_(romantic|friend|family)\.(png|jpe?g|we
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
 const publicUrlFor = (filename: string) =>
   `${SUPABASE_URL}/storage/v1/object/public/${BUCKET}/${filename}`;
+
+const formatBytes = (n?: number) => {
+  if (!n && n !== 0) return "";
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
+};
 
 const AdminCards = () => {
   const navigate = useNavigate();
@@ -101,13 +112,24 @@ const AdminCards = () => {
 
   const processFiles = async (files: File[]) => {
     setUploading(true);
-    const out: UploadResult[] = [];
+    const out: UploadResult[] = files.map((f) => ({
+      filename: f.name,
+      status: "compressing",
+      originalBytes: f.size,
+    }));
+    setResults([...out]);
 
-    for (const file of files) {
+    const updateRow = (i: number, patch: Partial<UploadResult>) => {
+      out[i] = { ...out[i], ...patch };
+      setResults([...out]);
+    };
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
       const filename = file.name;
       const m = filename.match(FILENAME_RE);
       if (!m) {
-        out.push({ filename, status: "failed", reason: "Invalid filename pattern" });
+        updateRow(i, { status: "failed", reason: "Invalid filename pattern" });
         continue;
       }
       const [, numStr, slug, relRaw] = m;
@@ -117,19 +139,11 @@ const AdminCards = () => {
       const row = rowsById.get(typeNumber);
 
       if (!row) {
-        out.push({
-          filename,
-          status: "failed",
-          reason: `No couple_types row for type_number ${numStr}`,
-        });
+        updateRow(i, { status: "failed", reason: `No couple_types row for type_number ${numStr}` });
         continue;
       }
       if (slugId && slugId !== typeNumber) {
-        out.push({
-          filename,
-          status: "failed",
-          reason: `Slug "${slug}" does not match type_number ${numStr}`,
-        });
+        updateRow(i, { status: "failed", reason: `Slug "${slug}" does not match type_number ${numStr}` });
         continue;
       }
 
@@ -141,20 +155,49 @@ const AdminCards = () => {
             : row.image_url_family;
 
       if (existingUrl && !replaceMode) {
-        out.push({
-          filename,
-          status: "skipped",
-          reason: "Already uploaded (enable Replace mode to overwrite)",
+        updateRow(i, { status: "skipped", reason: "Already uploaded (enable Replace mode to overwrite)" });
+        continue;
+      }
+
+      // 1) Compress (client-side, JPEG)
+      let compressed: File;
+      try {
+        const blob = await imageCompression(file, {
+          maxSizeMB: 0.8,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+          fileType: "image/jpeg",
+          initialQuality: 0.85,
+        });
+        // Preserve original filename (extension stays .png even though bytes are JPEG)
+        compressed = new File([blob], filename, { type: "image/jpeg" });
+      } catch (e) {
+        updateRow(i, {
+          status: "failed",
+          reason: `Compression failed: ${(e as Error).message}`,
         });
         continue;
       }
 
+      const compressedBytes = compressed.size;
+      const originalBytes = file.size;
+      const compression_ratio = originalBytes > 0 ? compressedBytes / originalBytes : 0;
+      logEvent("card_upload_compression_complete", {
+        filename,
+        original_bytes: originalBytes,
+        compressed_bytes: compressedBytes,
+        compression_ratio,
+      });
+
+      updateRow(i, { status: "uploading", compressedBytes });
+
+      // 2) Upload — Supabase content-sniffs the actual JPEG bytes
       const upload = await supabase.storage
         .from(BUCKET)
-        .upload(filename, file, { upsert: true, contentType: file.type });
+        .upload(filename, compressed, { upsert: true, contentType: "image/jpeg" });
 
       if (upload.error) {
-        out.push({ filename, status: "failed", reason: upload.error.message });
+        updateRow(i, { status: "failed", reason: upload.error.message });
         continue;
       }
 
@@ -166,14 +209,13 @@ const AdminCards = () => {
         .eq("id", typeNumber);
 
       if (updateErr) {
-        out.push({ filename, status: "failed", reason: `DB update: ${updateErr.message}` });
+        updateRow(i, { status: "failed", reason: `DB update: ${updateErr.message}` });
         continue;
       }
 
-      out.push({ filename, status: "success", publicUrl });
+      updateRow(i, { status: "success", publicUrl });
     }
 
-    setResults(out);
     setUploading(false);
     await loadRows();
   };
@@ -186,6 +228,9 @@ const AdminCards = () => {
   const succeeded = results.filter((r) => r.status === "success");
   const failed = results.filter((r) => r.status === "failed");
   const skipped = results.filter((r) => r.status === "skipped");
+  const inFlight = results.filter(
+    (r) => r.status === "compressing" || r.status === "uploading",
+  );
 
   const cellUrl = (row: CoupleTypeRow | undefined, rel: Relationship) => {
     if (!row) return null;
@@ -274,6 +319,9 @@ const AdminCards = () => {
                 {failed.length > 0 && (
                   <span className="text-destructive">✗ {failed.length} failed</span>
                 )}
+                {inFlight.length > 0 && (
+                  <span className="text-primary">… {inFlight.length} in progress</span>
+                )}
               </div>
               <ul className="max-h-60 overflow-y-auto rounded-md border border-border bg-muted/30 p-3 text-xs">
                 {results.map((r) => (
@@ -284,11 +332,30 @@ const AdminCards = () => {
                       r.status === "success" && "text-emerald-700",
                       r.status === "failed" && "text-destructive",
                       r.status === "skipped" && "text-muted-foreground",
+                      (r.status === "compressing" || r.status === "uploading") && "text-primary",
                     )}
                   >
-                    {r.status === "success" ? "✓" : r.status === "skipped" ? "↺" : "✗"}{" "}
+                    {r.status === "success"
+                      ? "✓"
+                      : r.status === "skipped"
+                        ? "↺"
+                        : r.status === "failed"
+                          ? "✗"
+                          : "…"}{" "}
                     <span className="font-mono">{r.filename}</span>
-                    {r.reason ? ` — ${r.reason}` : ""}
+                    {r.status === "compressing" &&
+                      ` — Compressing… (${formatBytes(r.originalBytes)})`}
+                    {r.status === "uploading" &&
+                      ` — Uploading… (${formatBytes(r.compressedBytes)})`}
+                    {r.status === "success" &&
+                      ` — ${formatBytes(r.compressedBytes)}${
+                        r.originalBytes
+                          ? ` (from ${formatBytes(r.originalBytes)})`
+                          : ""
+                      }`}
+                    {(r.status === "failed" || r.status === "skipped") && r.reason
+                      ? ` — ${r.reason}`
+                      : ""}
                   </li>
                 ))}
               </ul>
