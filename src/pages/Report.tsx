@@ -10,8 +10,8 @@ import { logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
-import { CoupleTypeCard } from "@/components/chemistry/CoupleTypeCard";
-import type { CoupleType, RelationshipType } from "@/lib/coupleTypes";
+import { CoupleTypeCard } from "@/components/CoupleTypeCard";
+import type { RelationshipType } from "@/lib/coupleTypes";
 import { UnlockReportButton } from "@/components/UnlockReportButton";
 import { SaveReportModal } from "@/components/auth/SaveReportModal";
 import { useAuth } from "@/hooks/useAuth";
@@ -110,7 +110,6 @@ const ReportContent = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [row, setRow] = useState<Row | null>(null);
-  const [coupleType, setCoupleType] = useState<CoupleType | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -142,14 +141,6 @@ const ReportContent = () => {
         return;
       }
       setRow(data as unknown as Row);
-      if (data.couple_type_id) {
-        const { data: ct } = await supabase
-          .from("couple_types")
-          .select("*")
-          .eq("id", data.couple_type_id)
-          .maybeSingle();
-        if (!cancelled && ct) setCoupleType(ct as unknown as CoupleType);
-      }
       setLoading(false);
     })();
     return () => {
@@ -352,11 +343,12 @@ const ReportContent = () => {
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
         {!safetyMode && (
           <div ref={reportRef}>
-            {coupleType && (
+            {row?.couple_type_id != null && (
               <div className="mb-8">
                 <CoupleTypeCard
-                  type={coupleType}
-                  relationship={(row?.relationship_type as RelationshipType) || "romantic"}
+                  coupleTypeId={row.couple_type_id}
+                  relationshipType={(row.relationship_type as RelationshipType) || "romantic"}
+                  size="full"
                 />
               </div>
             )}
