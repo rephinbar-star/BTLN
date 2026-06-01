@@ -43,7 +43,7 @@ type CoupleTypeRow = {
 
 type UploadResult = {
   filename: string;
-  status: "compressing" | "uploading" | "success" | "failed" | "skipped";
+  status: "compressing" | "uploading" | "success" | "failed" | "skipped" | "updating";
   reason?: string;
   publicUrl?: string;
   originalBytes?: number;
@@ -202,14 +202,16 @@ const AdminCards = () => {
       }
 
       const publicUrl = publicUrlFor(filename);
-      const updateCol = `image_url_${relationship}` as const;
-      const { error: updateErr } = await supabase
-        .from("couple_types")
-        .update({ [updateCol]: publicUrl } as never)
-        .eq("id", typeNumber);
+      updateRow(i, { status: "updating" });
+      const { error: rpcErr } = await supabase.rpc("set_couple_type_image_url" as never, {
+        p_type_id: typeNumber,
+        p_relationship_type: relationship,
+        p_image_url: publicUrl,
+      } as never);
 
-      if (updateErr) {
-        updateRow(i, { status: "failed", reason: `DB update: ${updateErr.message}` });
+      if (rpcErr) {
+        console.error("DB update failed", rpcErr);
+        updateRow(i, { status: "failed", reason: `DB update: ${rpcErr.message}` });
         continue;
       }
 
@@ -229,8 +231,61 @@ const AdminCards = () => {
   const failed = results.filter((r) => r.status === "failed");
   const skipped = results.filter((r) => r.status === "skipped");
   const inFlight = results.filter(
-    (r) => r.status === "compressing" || r.status === "uploading",
+    (r) => r.status === "compressing" || r.status === "uploading" || r.status === "updating",
   );
+
+  const [backfilling, setBackfilling] = useState(false);
+  const [backfillMsg, setBackfillMsg] = useState<string | null>(null);
+
+  const runBackfill = async () => {
+    setBackfilling(true);
+    setBackfillMsg(null);
+    try {
+      const { data: objects, error: listErr } = await supabase.storage
+        .from(BUCKET)
+        .list("", { limit: 1000 });
+      if (listErr) throw listErr;
+
+      let updated = 0;
+      let skipped = 0;
+      let failed = 0;
+      const errors: string[] = [];
+
+      for (const obj of objects ?? []) {
+        const m = obj.name.match(FILENAME_RE);
+        if (!m) {
+          skipped++;
+          continue;
+        }
+        const [, numStr, , relRaw] = m;
+        const typeNumber = parseInt(numStr, 10);
+        const relationship = relRaw.toLowerCase() as Relationship;
+        const publicUrl = publicUrlFor(obj.name);
+        const { error: rpcErr } = await supabase.rpc("set_couple_type_image_url" as never, {
+          p_type_id: typeNumber,
+          p_relationship_type: relationship,
+          p_image_url: publicUrl,
+        } as never);
+        if (rpcErr) {
+          failed++;
+          errors.push(`${obj.name}: ${rpcErr.message}`);
+        } else {
+          updated++;
+        }
+      }
+
+      setBackfillMsg(
+        `Backfill complete — ${updated} updated, ${skipped} skipped, ${failed} failed${
+          errors.length ? `\n${errors.slice(0, 5).join("\n")}` : ""
+        }`,
+      );
+      await loadRows();
+    } catch (e) {
+      setBackfillMsg(`Backfill failed: ${(e as Error).message}`);
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   const cellUrl = (row: CoupleTypeRow | undefined, rel: Relationship) => {
     if (!row) return null;
@@ -369,10 +424,25 @@ const AdminCards = () => {
             <h2 className="text-lg font-semibold tracking-tight">
               Status — {filledCount} / 39 uploaded
             </h2>
-            <Button size="sm" variant="outline" onClick={() => void loadRows()} disabled={loading}>
-              {loading ? "Refreshing…" : "Refresh"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => void runBackfill()}
+                disabled={backfilling}
+              >
+                {backfilling ? "Backfilling…" : "Backfill image URLs from storage"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => void loadRows()} disabled={loading}>
+                {loading ? "Refreshing…" : "Refresh"}
+              </Button>
+            </div>
           </div>
+          {backfillMsg && (
+            <pre className="whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-3 text-xs">
+              {backfillMsg}
+            </pre>
+          )}
           <Card>
             <CardContent className="p-0">
               <table className="w-full text-sm">
