@@ -945,7 +945,13 @@ const Report = () => (
 export default Report;
 
 // ----- Additional deep-report sections -----
-const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | undefined }) => {
+const BidsSection = ({
+  bids,
+  locked = false,
+}: {
+  bids: AnalysisResult["bids_for_connection"] | undefined;
+  locked?: boolean;
+}) => {
   if (!bids) return null;
   const items = [
     { label: "Turned toward", value: bids.turned_toward_pct, tone: "bg-pastel-green-bg text-pastel-green-fg-strong" },
@@ -958,7 +964,11 @@ const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | u
       <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
         5 · Bids for connection
       </h3>
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div
+        className={`mt-4 grid grid-cols-3 gap-2 ${locked ? "pointer-events-none select-none" : ""}`}
+        style={locked ? { filter: "blur(8px)" } : undefined}
+        aria-hidden={locked || undefined}
+      >
         {items.map((it) => (
           <div key={it.label} className={`rounded-xl p-3 text-center ${it.tone}`}>
             <div className="text-[11px] font-semibold uppercase tracking-wide">{it.label}</div>
@@ -970,7 +980,13 @@ const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | u
   );
 };
 
-const LoveLanguagesSection = ({ languages }: { languages: unknown }) => {
+const LoveLanguagesSection = ({
+  languages,
+  locked = false,
+}: {
+  languages: unknown;
+  locked?: boolean;
+}) => {
   if (!languages) return null;
   const ll = languages as {
     person1?: string;
@@ -984,7 +1000,11 @@ const LoveLanguagesSection = ({ languages }: { languages: unknown }) => {
       <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
         6 · Love languages
       </h3>
-      <div className="mt-4 rounded-xl border border-border bg-card p-4">
+      <div
+        className={`mt-4 rounded-xl border border-border bg-card p-4 ${locked ? "pointer-events-none select-none" : ""}`}
+        style={locked ? { filter: "blur(8px)" } : undefined}
+        aria-hidden={locked || undefined}
+      >
         {(ll.person1 || ll.person2) && (
           <div className="grid grid-cols-2 gap-3 text-[14px]">
             {ll.person1 && (
@@ -1016,11 +1036,13 @@ const FlagListSection = ({
   flags,
   tone,
   skipFirst = false,
+  locked = false,
 }: {
   title: string;
   flags: import("@/lib/analysis-types").ReportFlag[] | undefined;
   tone: "amber" | "red";
   skipFirst?: boolean;
+  locked?: boolean;
 }) => {
   const list = (flags ?? []).slice(skipFirst ? 1 : 0);
   if (list.length === 0) return null;
@@ -1031,7 +1053,11 @@ const FlagListSection = ({
   return (
     <section data-pdf-section className="mt-10">
       <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
-      <div className="mt-4 space-y-3">
+      <div
+        className={`mt-4 space-y-3 ${locked ? "pointer-events-none select-none" : ""}`}
+        style={locked ? { filter: "blur(8px)" } : undefined}
+        aria-hidden={locked || undefined}
+      >
         {list.map((flag, i) => {
           const obj = typeof flag === "object" && flag ? (flag as { title?: string; description?: string; evidence?: string }) : null;
           const heading = obj?.title ?? (typeof flag === "string" ? null : null);
