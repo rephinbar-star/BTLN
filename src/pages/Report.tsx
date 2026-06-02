@@ -788,12 +788,26 @@ const DeepReport = ({
   );
 };
 
-const Section = ({ title, children }: { title: string; children: ReactNode }) => (
+const Section = ({
+  title,
+  children,
+  locked = false,
+}: {
+  title: string;
+  children: ReactNode;
+  locked?: boolean;
+}) => (
   <section data-pdf-section className="mt-10">
     <h3 data-pdf-section className="text-[18px] font-medium tracking-tight sm:text-[20px]">
       {title}
     </h3>
-    <div className="mt-4">{children}</div>
+    <div
+      className={`mt-4 ${locked ? "pointer-events-none select-none" : ""}`}
+      style={locked ? { filter: "blur(8px)" } : undefined}
+      aria-hidden={locked || undefined}
+    >
+      {children}
+    </div>
   </section>
 );
 
