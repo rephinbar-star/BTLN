@@ -905,3 +905,61 @@ const Report = () => (
 );
 
 export default Report;
+
+// ----- Free-tier insights (visible to all viewers) -----
+const firstSentence = (text: string): string => {
+  if (!text) return "";
+  const match = text.match(/^[^.!?]+[.!?]/);
+  if (match) return match[0].replace(/[.!?]+$/, "") + "…";
+  return text + "…";
+};
+
+const FreeInsights = ({ result }: { result: AnalysisResult }) => {
+  const greenFlag = result.green_flags?.[0];
+  const greenObj =
+    typeof greenFlag === "object" && greenFlag
+      ? (greenFlag as { title?: string; description?: string; evidence?: string })
+      : null;
+  const greenTitle = greenObj?.title ?? (typeof greenFlag === "string" ? "Green flag" : null);
+  const greenDesc = greenObj?.description ?? (typeof greenFlag === "string" ? greenFlag : null);
+  const greenEvidence = greenObj?.evidence ?? null;
+
+  const hp = result.hidden_pattern;
+  const teaser = hp?.description ? firstSentence(hp.description) : null;
+
+  if (!greenTitle && !hp?.title) return null;
+
+  return (
+    <div className="mt-12 space-y-6">
+      {(greenTitle || greenDesc) && (
+        <section>
+          <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+            What&apos;s working
+          </h3>
+          <div className="mt-3 rounded-xl bg-pastel-green-bg p-4 text-pastel-green-fg-strong">
+            {greenTitle && <h4 className="text-[15px] font-semibold">{greenTitle}</h4>}
+            {greenDesc && (
+              <p className="mt-2 text-[14px] leading-relaxed">{greenDesc}</p>
+            )}
+            {greenEvidence && (
+              <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
+                &quot;{greenEvidence}&quot;
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+      {hp?.title && teaser && (
+        <section>
+          <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+            The pattern hiding in plain sight
+          </h3>
+          <div className="mt-3 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
+            <h4 className="text-[15px] font-semibold">{hp.title}</h4>
+            <p className="mt-2 text-[14px] leading-relaxed">{teaser}</p>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
