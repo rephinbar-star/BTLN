@@ -3,5 +3,8 @@ project_id = "ukycdbvasmeuralmvvcm"
 [functions.create-checkout]
 verify_jwt = false
 
+[functions.admin-update-product]
+verify_jwt = false
+
 [functions.payments-webhook]
 verify_jwt = false
