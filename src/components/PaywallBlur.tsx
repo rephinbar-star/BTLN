@@ -24,23 +24,27 @@ export function PaywallBlur({ locked, children, isOwner, analysisId, ctaPosition
 
   if (!locked) return <>{children}</>;
 
+  // Children are expected to render their own blur on the locked content
+  // (section headings remain unblurred so the user can see what's behind
+  // the paywall). The CTA floats at viewport eye-level via sticky
+  // positioning so it's visible the moment the user reaches the paywall.
   return (
     <div className="relative">
+      {children}
       <div
-        aria-hidden="true"
-        className="pointer-events-none select-none"
-        style={{ filter: "blur(8px)" }}
+        className="pointer-events-none absolute inset-0 flex justify-center"
+        aria-hidden="false"
       >
-        {children}
-      </div>
-      <div
-        className={`absolute inset-x-0 ${ctaPosition === "top" ? "top-8" : "top-1/2 -translate-y-1/2"} flex justify-center px-4`}
-      >
-        {isOwner ? (
-          <UnlockOptions analysisId={analysisId} />
-        ) : (
-          <VisitorCta />
-        )}
+        <div
+          className="pointer-events-auto sticky w-full px-4 flex justify-center"
+          style={{ top: "20vh", alignSelf: "flex-start" }}
+        >
+          {isOwner ? (
+            <UnlockOptions analysisId={analysisId} />
+          ) : (
+            <VisitorCta />
+          )}
+        </div>
       </div>
     </div>
   );

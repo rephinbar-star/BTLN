@@ -469,7 +469,7 @@ const ReportContent = () => {
                   isOwner={isOwner}
                   analysisId={analysisId}
                 >
-                  <DeepReport result={result} context={context} />
+                  <DeepReport result={result} context={context} locked={!hasFullAccess} />
                 </PaywallBlur>
               </div>
             )}
@@ -612,9 +612,11 @@ const SafetyOverride = ({ note }: { note: string }) => (
 const DeepReport = ({
   result,
   context,
+  locked = false,
 }: {
   result: AnalysisResult;
   context: ContextData;
+  locked?: boolean;
 }) => {
   const { name1, name2 } = context;
   const profile1 = result.attachment_profiles?.[name1];
@@ -646,7 +648,7 @@ const DeepReport = ({
       </div>
 
       {/* 1. Communication diagnostic */}
-      <Section title="1 · Communication diagnostic">
+      <Section title="1 · Communication diagnostic" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-3">
           <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
           <Tile label="Conversations initiated" value={textFromUnknown(result.communication_diagnostic?.initiator_balance)} />
@@ -662,7 +664,7 @@ const DeepReport = ({
       </Section>
 
       {/* 2. Attachment styles */}
-      <Section title="2 · Attachment styles">
+      <Section title="2 · Attachment styles" locked={locked}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {profile1 && (
             <div data-pdf-section>
@@ -689,7 +691,7 @@ const DeepReport = ({
       </Section>
 
       {/* 3. Four Horsemen */}
-      <Section title="3 · The Four Horsemen">
+      <Section title="3 · The Four Horsemen" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {horsemenList.map((x) => (
             <div
@@ -735,7 +737,7 @@ const DeepReport = ({
       </Section>
 
       {/* 4. Hidden pattern */}
-      <Section title="4 · The hidden pattern">
+      <Section title="4 · The hidden pattern" locked={locked}>
         <div data-pdf-section className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <h4 className="text-[15px] font-semibold">{result.hidden_pattern?.title}</h4>
           <p className="mt-2 text-[14px] leading-relaxed">
@@ -745,16 +747,17 @@ const DeepReport = ({
       </Section>
 
       {/* 5. Bids for connection */}
-      <BidsSection bids={result.bids_for_connection} />
+      <BidsSection bids={result.bids_for_connection} locked={locked} />
 
       {/* 6. Love languages */}
-      <LoveLanguagesSection languages={result.love_languages} />
+      <LoveLanguagesSection languages={result.love_languages} locked={locked} />
 
       {/* 7. Yellow flags */}
       <FlagListSection
         title="7 · Things to watch"
         flags={result.yellow_flags}
         tone="amber"
+        locked={locked}
       />
 
       {/* 8. Red flags */}
@@ -762,10 +765,11 @@ const DeepReport = ({
         title="8 · Red flags"
         flags={result.red_flags}
         tone="red"
+        locked={locked}
       />
 
       {/* 9. Conversation prompts */}
-      <Section title="9 · Personalized prompts for this week">
+      <Section title="9 · Personalized prompts for this week" locked={locked}>
         <div className="space-y-3">
           {(result.conversation_prompts ?? []).map((p, i) => (
             <div
@@ -784,12 +788,26 @@ const DeepReport = ({
   );
 };
 
-const Section = ({ title, children }: { title: string; children: ReactNode }) => (
+const Section = ({
+  title,
+  children,
+  locked = false,
+}: {
+  title: string;
+  children: ReactNode;
+  locked?: boolean;
+}) => (
   <section data-pdf-section className="mt-10">
     <h3 data-pdf-section className="text-[18px] font-medium tracking-tight sm:text-[20px]">
       {title}
     </h3>
-    <div className="mt-4">{children}</div>
+    <div
+      className={`mt-4 ${locked ? "pointer-events-none select-none" : ""}`}
+      style={locked ? { filter: "blur(8px)" } : undefined}
+      aria-hidden={locked || undefined}
+    >
+      {children}
+    </div>
   </section>
 );
 
@@ -927,7 +945,13 @@ const Report = () => (
 export default Report;
 
 // ----- Additional deep-report sections -----
-const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | undefined }) => {
+const BidsSection = ({
+  bids,
+  locked = false,
+}: {
+  bids: AnalysisResult["bids_for_connection"] | undefined;
+  locked?: boolean;
+}) => {
   if (!bids) return null;
   const items = [
     { label: "Turned toward", value: bids.turned_toward_pct, tone: "bg-pastel-green-bg text-pastel-green-fg-strong" },
@@ -940,7 +964,11 @@ const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | u
       <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
         5 · Bids for connection
       </h3>
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div
+        className={`mt-4 grid grid-cols-3 gap-2 ${locked ? "pointer-events-none select-none" : ""}`}
+        style={locked ? { filter: "blur(8px)" } : undefined}
+        aria-hidden={locked || undefined}
+      >
         {items.map((it) => (
           <div key={it.label} className={`rounded-xl p-3 text-center ${it.tone}`}>
             <div className="text-[11px] font-semibold uppercase tracking-wide">{it.label}</div>
@@ -952,7 +980,13 @@ const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | u
   );
 };
 
-const LoveLanguagesSection = ({ languages }: { languages: unknown }) => {
+const LoveLanguagesSection = ({
+  languages,
+  locked = false,
+}: {
+  languages: unknown;
+  locked?: boolean;
+}) => {
   if (!languages) return null;
   const ll = languages as {
     person1?: string;
@@ -966,7 +1000,11 @@ const LoveLanguagesSection = ({ languages }: { languages: unknown }) => {
       <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
         6 · Love languages
       </h3>
-      <div className="mt-4 rounded-xl border border-border bg-card p-4">
+      <div
+        className={`mt-4 rounded-xl border border-border bg-card p-4 ${locked ? "pointer-events-none select-none" : ""}`}
+        style={locked ? { filter: "blur(8px)" } : undefined}
+        aria-hidden={locked || undefined}
+      >
         {(ll.person1 || ll.person2) && (
           <div className="grid grid-cols-2 gap-3 text-[14px]">
             {ll.person1 && (
@@ -998,11 +1036,13 @@ const FlagListSection = ({
   flags,
   tone,
   skipFirst = false,
+  locked = false,
 }: {
   title: string;
   flags: import("@/lib/analysis-types").ReportFlag[] | undefined;
   tone: "amber" | "red";
   skipFirst?: boolean;
+  locked?: boolean;
 }) => {
   const list = (flags ?? []).slice(skipFirst ? 1 : 0);
   if (list.length === 0) return null;
@@ -1013,7 +1053,11 @@ const FlagListSection = ({
   return (
     <section data-pdf-section className="mt-10">
       <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
-      <div className="mt-4 space-y-3">
+      <div
+        className={`mt-4 space-y-3 ${locked ? "pointer-events-none select-none" : ""}`}
+        style={locked ? { filter: "blur(8px)" } : undefined}
+        aria-hidden={locked || undefined}
+      >
         {list.map((flag, i) => {
           const obj = typeof flag === "object" && flag ? (flag as { title?: string; description?: string; evidence?: string }) : null;
           const heading = obj?.title ?? (typeof flag === "string" ? null : null);
