@@ -9,24 +9,90 @@ function getSupabase() {
   return _supabase;
 }
 
+function resolveTier(lookupKey?: string | null): string {
+  if (lookupKey === "duo_annual") return "annual";
+  if (lookupKey === "duo_monthly") return "monthly";
+  return lookupKey ?? "unknown";
+}
+
+async function logWebhookEvent(eventName: string, metadata: Record<string, unknown>) {
+  try {
+    await getSupabase()
+      .from("events")
+      // session_id is required (uuid) — use the all-zero uuid for server-side events.
+      .insert({ session_id: "00000000-0000-0000-0000-000000000000", event_name: eventName, metadata });
+  } catch (e) {
+    console.error("events log failed:", (e as Error).message);
+  }
+}
+
 async function handleCheckoutCompleted(session: any, _env: StripeEnv) {
   const userId = session.metadata?.userId;
   const analysisId = session.metadata?.analysisId;
-  const amount = session.amount_total ?? 0;
-  const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id ?? null;
-  if (!userId || !analysisId) {
-    console.log("checkout.session.completed missing metadata", { session_id: session.id });
+  const mode = session.mode; // 'payment' | 'subscription'
+
+  // One-time unlock — only applies to payment mode.
+  if (mode === "payment") {
+    if (!userId || !analysisId) {
+      console.log("checkout.session.completed (payment) missing metadata", { session_id: session.id });
+      return;
+    }
+    const amount = session.amount_total ?? 0;
+    const paymentIntent =
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id ?? null;
+    const { error: insertError } = await getSupabase().from("one_time_unlocks").insert({
+      user_id: userId,
+      analysis_id: analysisId,
+      amount_cents: amount,
+      stripe_payment_intent_id: paymentIntent,
+    });
+    if (insertError) console.log("one_time_unlocks insert error:", insertError.message);
+    const { error: updateError } = await getSupabase()
+      .from("analyses")
+      .update({ is_paid: true })
+      .eq("id", analysisId);
+    if (updateError) console.error("analyses update is_paid error:", updateError.message);
+  }
+  // Subscription mode: the actual row gets written by customer.subscription.created.
+}
+
+async function handleSubscriptionUpsert(subscription: any) {
+  const userId = subscription.metadata?.userId;
+  if (!userId) {
+    console.log("subscription event missing userId metadata", { sub: subscription.id });
     return;
   }
-  const { error: insertError } = await getSupabase().from("one_time_unlocks").insert({
-    user_id: userId,
-    analysis_id: analysisId,
-    amount_cents: amount,
-    stripe_payment_intent_id: paymentIntent,
-  });
-  if (insertError) console.log("one_time_unlocks insert error:", insertError.message);
-  const { error: updateError } = await getSupabase().from("analyses").update({ is_paid: true }).eq("id", analysisId);
-  if (updateError) console.error("analyses update is_paid error:", updateError.message);
+  const item = subscription.items?.data?.[0];
+  const lookupKey = item?.price?.lookup_key ?? null;
+  const tier = resolveTier(lookupKey);
+  const periodStart = item?.current_period_start ?? subscription.current_period_start;
+  const periodEnd = item?.current_period_end ?? subscription.current_period_end;
+
+  const { error } = await getSupabase().from("user_subscriptions").upsert(
+    {
+      user_id: userId,
+      stripe_subscription_id: subscription.id,
+      stripe_customer_id: subscription.customer,
+      tier,
+      status: subscription.status,
+      current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
+      current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "stripe_subscription_id" },
+  );
+  if (error) console.error("user_subscriptions upsert error:", error.message);
+}
+
+async function handleSubscriptionDeleted(subscription: any) {
+  const { error } = await getSupabase()
+    .from("user_subscriptions")
+    .update({ status: "canceled", updated_at: new Date().toISOString() })
+    .eq("stripe_subscription_id", subscription.id);
+  if (error) console.error("user_subscriptions cancel error:", error.message);
 }
 
 Deno.serve(async (req) => {
@@ -38,10 +104,27 @@ Deno.serve(async (req) => {
   }
   try {
     const event = await verifyWebhook(req, rawEnv);
-    if (event.type === "checkout.session.completed") {
-      await handleCheckoutCompleted(event.data.object, rawEnv);
-    } else {
-      console.log("Unhandled event:", event.type);
+    await logWebhookEvent("stripe_webhook_received", { type: event.type, env: rawEnv });
+    switch (event.type) {
+      case "checkout.session.completed":
+        await handleCheckoutCompleted(event.data.object, rawEnv);
+        break;
+      case "customer.subscription.created":
+      case "customer.subscription.updated":
+        await handleSubscriptionUpsert(event.data.object);
+        break;
+      case "customer.subscription.deleted":
+        await handleSubscriptionDeleted(event.data.object);
+        break;
+      case "invoice.payment_failed":
+        await logWebhookEvent("stripe_payment_failed", {
+          invoice_id: (event.data.object as any)?.id,
+          customer: (event.data.object as any)?.customer,
+          subscription: (event.data.object as any)?.subscription,
+        });
+        break;
+      default:
+        console.log("Unhandled event:", event.type);
     }
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (e) {
