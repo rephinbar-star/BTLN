@@ -87,28 +87,20 @@ function AnonymousOwnerCta({ analysisId }: { analysisId: string }) {
       analysis_id: analysisId,
     });
   return (
-    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-7 text-center shadow-lg">
-      <h3 className="text-[22px] font-medium tracking-tight">
-        Save this report and unlock the full analysis
-      </h3>
-      <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
-        Create a free account to save your report permanently and unlock your couple's
-        full breakdown — communication patterns, attachment styles, hidden dynamics, and
-        your weekly plan.
-      </p>
+    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center shadow-lg">
       <Link
-        to={`/auth?return_to=${encodeURIComponent(returnTo)}`}
+        to={`/auth?return_to=${encodeURIComponent(returnTo)}&intent=unlock`}
         onClick={onClick}
-        className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
+        className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
       >
-        Sign up free →
+        Unlock the full analysis
       </Link>
-      <p className="mt-3 text-[12px] text-muted-foreground">
-        Free account to save. Unlock pricing after.
+      <p className="mt-3 text-[13px] text-muted-foreground">
+        Free account, then choose your option.
       </p>
       <Link
         to={`/auth?mode=signin&return_to=${encodeURIComponent(returnTo)}`}
-        className="mt-4 inline-block text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+        className="mt-2 inline-block text-[12px] text-muted-foreground underline-offset-2 hover:underline"
       >
         Already have an account? Sign in
       </Link>
