@@ -744,8 +744,28 @@ const DeepReport = ({
         </div>
       </Section>
 
-      {/* 5. Conversation prompts */}
-      <Section title="5 · Personalized prompts for this week">
+      {/* 5. Bids for connection */}
+      <BidsSection bids={result.bids_for_connection} />
+
+      {/* 6. Love languages */}
+      <LoveLanguagesSection languages={result.love_languages} />
+
+      {/* 7. Yellow flags */}
+      <FlagListSection
+        title="7 · Things to watch"
+        flags={result.yellow_flags}
+        tone="amber"
+      />
+
+      {/* 8. Red flags */}
+      <FlagListSection
+        title="8 · Red flags"
+        flags={result.red_flags}
+        tone="red"
+      />
+
+      {/* 9. Conversation prompts */}
+      <Section title="9 · Personalized prompts for this week">
         <div className="space-y-3">
           {(result.conversation_prompts ?? []).map((p, i) => (
             <div
