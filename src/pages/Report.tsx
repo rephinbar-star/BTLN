@@ -1,6 +1,6 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
@@ -12,7 +12,8 @@ import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { CoupleTypeCard } from "@/components/CoupleTypeCard";
 import type { RelationshipType } from "@/lib/coupleTypes";
-import { UnlockReportButton } from "@/components/UnlockReportButton";
+import { PaywallBlur } from "@/components/PaywallBlur";
+import { useEntitlement } from "@/hooks/useEntitlement";
 import { SaveReportModal } from "@/components/auth/SaveReportModal";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -109,6 +110,7 @@ const ReportContent = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -118,6 +120,7 @@ const ReportContent = () => {
   const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { isOwner, hasFullAccess, refresh: refreshEntitlement } = useEntitlement(analysisId);
 
   useEffect(() => {
     if (!analysisId) {
@@ -196,6 +199,59 @@ const ReportContent = () => {
   const context = (row?.context_data ?? null) as ContextData | null;
 
   const safetyMode = result?.meta?.safety_concern === true;
+
+  // ----- Checkout return handling -----
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (!checkout || !analysisId) return;
+
+    if (checkout === "cancel") {
+      toast("Checkout canceled — you can still unlock anytime.", { duration: 4000 });
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+
+    if (checkout !== "success") return;
+
+    const toastId = toast.loading("Payment successful — unlocking your full report…");
+    let elapsed = 0;
+    const interval = window.setInterval(() => {
+      elapsed += 2000;
+      refreshEntitlement();
+      if (elapsed >= 30_000) {
+        window.clearInterval(interval);
+        toast.error(
+          "Payment confirmed but unlock is taking longer than expected. Please refresh the page or contact support.",
+          { id: toastId },
+        );
+        logEvent("stripe_unlock_delay", { analysis_id: analysisId });
+        const next = new URLSearchParams(searchParams);
+        next.delete("checkout");
+        next.delete("session_id");
+        setSearchParams(next, { replace: true });
+      }
+    }, 2000);
+    // Kick off the first refresh immediately.
+    refreshEntitlement();
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get("checkout"), analysisId]);
+
+  // When entitlement flips to true while polling, clear toast + URL.
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+    if (!hasFullAccess) return;
+    toast.success("Unlocked. Enjoy your full report.", { duration: 3000 });
+    logEvent("entitlement_unlocked", { analysis_id: analysisId });
+    const next = new URLSearchParams(searchParams);
+    next.delete("checkout");
+    next.delete("session_id");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasFullAccess]);
 
   const handleDownload = async () => {
     if (!cardRef.current || !context || downloading) return;
@@ -404,15 +460,17 @@ const ReportContent = () => {
               </div>
             )}
 
-            {row?.is_paid ? (
-              <DeepReport result={result} context={context} />
-            ) : (
-              <div data-pdf-exclude="true" className="mt-12 flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
-                <h3 className="text-[22px] font-medium tracking-tight">Unlock the full analysis</h3>
-                <p className="max-w-md text-[14px] text-muted-foreground">
-                  Get the deep dive: communication patterns, attachment styles, hidden dynamics, and personalized prompts — for this report, forever.
-                </p>
-                {analysisId && <UnlockReportButton analysisId={analysisId} />}
+            <FreeInsights result={result} />
+
+            {analysisId && (
+              <div className="mt-12">
+                <PaywallBlur
+                  locked={!hasFullAccess}
+                  isOwner={isOwner}
+                  analysisId={analysisId}
+                >
+                  <DeepReport result={result} context={context} />
+                </PaywallBlur>
               </div>
             )}
 
@@ -686,8 +744,28 @@ const DeepReport = ({
         </div>
       </Section>
 
-      {/* 5. Conversation prompts */}
-      <Section title="5 · Personalized prompts for this week">
+      {/* 5. Bids for connection */}
+      <BidsSection bids={result.bids_for_connection} />
+
+      {/* 6. Love languages */}
+      <LoveLanguagesSection languages={result.love_languages} />
+
+      {/* 7. Yellow flags */}
+      <FlagListSection
+        title="7 · Things to watch"
+        flags={result.yellow_flags}
+        tone="amber"
+      />
+
+      {/* 8. Red flags */}
+      <FlagListSection
+        title="8 · Red flags"
+        flags={result.red_flags}
+        tone="red"
+      />
+
+      {/* 9. Conversation prompts */}
+      <Section title="9 · Personalized prompts for this week">
         <div className="space-y-3">
           {(result.conversation_prompts ?? []).map((p, i) => (
             <div
@@ -847,3 +925,171 @@ const Report = () => (
 );
 
 export default Report;
+
+// ----- Additional deep-report sections -----
+const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | undefined }) => {
+  if (!bids) return null;
+  const items = [
+    { label: "Turned toward", value: bids.turned_toward_pct, tone: "bg-pastel-green-bg text-pastel-green-fg-strong" },
+    { label: "Turned away", value: bids.turned_away_pct, tone: "bg-pastel-amber-bg text-pastel-amber-fg-strong" },
+    { label: "Turned against", value: bids.turned_against_pct, tone: "bg-pastel-pink-bg text-pastel-pink-fg" },
+  ].filter((x) => typeof x.value === "number");
+  if (items.length === 0) return null;
+  return (
+    <section data-pdf-section className="mt-10">
+      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+        5 · Bids for connection
+      </h3>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {items.map((it) => (
+          <div key={it.label} className={`rounded-xl p-3 text-center ${it.tone}`}>
+            <div className="text-[11px] font-semibold uppercase tracking-wide">{it.label}</div>
+            <div className="mt-1 text-[22px] font-medium">{Math.round(it.value as number)}%</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const LoveLanguagesSection = ({ languages }: { languages: unknown }) => {
+  if (!languages) return null;
+  const ll = languages as {
+    person1?: string;
+    person2?: string;
+    mismatch_note?: string;
+    [k: string]: unknown;
+  };
+  if (!ll.person1 && !ll.person2 && !ll.mismatch_note) return null;
+  return (
+    <section data-pdf-section className="mt-10">
+      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+        6 · Love languages
+      </h3>
+      <div className="mt-4 rounded-xl border border-border bg-card p-4">
+        {(ll.person1 || ll.person2) && (
+          <div className="grid grid-cols-2 gap-3 text-[14px]">
+            {ll.person1 && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Person 1</div>
+                <div className="mt-1">{ll.person1}</div>
+              </div>
+            )}
+            {ll.person2 && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Person 2</div>
+                <div className="mt-1">{ll.person2}</div>
+              </div>
+            )}
+          </div>
+        )}
+        {ll.mismatch_note && (
+          <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+            {ll.mismatch_note}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+};
+
+const FlagListSection = ({
+  title,
+  flags,
+  tone,
+  skipFirst = false,
+}: {
+  title: string;
+  flags: import("@/lib/analysis-types").ReportFlag[] | undefined;
+  tone: "amber" | "red";
+  skipFirst?: boolean;
+}) => {
+  const list = (flags ?? []).slice(skipFirst ? 1 : 0);
+  if (list.length === 0) return null;
+  const wrap =
+    tone === "red"
+      ? "bg-pastel-pink-bg text-pastel-pink-fg"
+      : "bg-pastel-amber-bg text-pastel-amber-fg-strong";
+  return (
+    <section data-pdf-section className="mt-10">
+      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
+      <div className="mt-4 space-y-3">
+        {list.map((flag, i) => {
+          const obj = typeof flag === "object" && flag ? (flag as { title?: string; description?: string; evidence?: string }) : null;
+          const heading = obj?.title ?? (typeof flag === "string" ? null : null);
+          const desc = obj?.description ?? (typeof flag === "string" ? flag : null);
+          const ev = obj?.evidence ?? null;
+          return (
+            <div key={i} className={`rounded-xl p-4 ${wrap}`}>
+              {heading && <h4 className="text-[15px] font-semibold">{heading}</h4>}
+              {desc && <p className="mt-2 text-[14px] leading-relaxed">{desc}</p>}
+              {ev && (
+                <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
+                  &quot;{ev}&quot;
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
+// ----- Free-tier insights (visible to all viewers) -----
+const firstSentence = (text: string): string => {
+  if (!text) return "";
+  const match = text.match(/^[^.!?]+[.!?]/);
+  if (match) return match[0].replace(/[.!?]+$/, "") + "…";
+  return text + "…";
+};
+
+const FreeInsights = ({ result }: { result: AnalysisResult }) => {
+  const greenFlag = result.green_flags?.[0];
+  const greenObj =
+    typeof greenFlag === "object" && greenFlag
+      ? (greenFlag as { title?: string; description?: string; evidence?: string })
+      : null;
+  const greenTitle = greenObj?.title ?? (typeof greenFlag === "string" ? "Green flag" : null);
+  const greenDesc = greenObj?.description ?? (typeof greenFlag === "string" ? greenFlag : null);
+  const greenEvidence = greenObj?.evidence ?? null;
+
+  const hp = result.hidden_pattern;
+  const teaser = hp?.description ? firstSentence(hp.description) : null;
+
+  if (!greenTitle && !hp?.title) return null;
+
+  return (
+    <div className="mt-12 space-y-6">
+      {(greenTitle || greenDesc) && (
+        <section>
+          <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+            What&apos;s working
+          </h3>
+          <div className="mt-3 rounded-xl bg-pastel-green-bg p-4 text-pastel-green-fg-strong">
+            {greenTitle && <h4 className="text-[15px] font-semibold">{greenTitle}</h4>}
+            {greenDesc && (
+              <p className="mt-2 text-[14px] leading-relaxed">{greenDesc}</p>
+            )}
+            {greenEvidence && (
+              <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
+                &quot;{greenEvidence}&quot;
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+      {hp?.title && teaser && (
+        <section>
+          <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+            The pattern hiding in plain sight
+          </h3>
+          <div className="mt-3 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
+            <h4 className="text-[15px] font-semibold">{hp.title}</h4>
+            <p className="mt-2 text-[14px] leading-relaxed">{teaser}</p>
+          </div>
+        </section>
+      )}
+    </div>
+  );
+};
