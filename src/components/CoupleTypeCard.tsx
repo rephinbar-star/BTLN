@@ -80,7 +80,7 @@ export const CoupleTypeCard = ({
 
   const widthClass = size === "compact" ? "max-w-[200px]" : "max-w-full sm:max-w-[360px]";
   const containerClass = cn(
-    "mx-auto w-full overflow-hidden rounded-[12px] border border-border bg-muted/30",
+    "mx-auto w-full rounded-[12px] border border-border bg-muted/30",
     widthClass,
     className,
   );
@@ -111,7 +111,7 @@ export const CoupleTypeCard = ({
       <img
         src={url}
         alt={label ? `${label} illustration` : "Couple type illustration"}
-        className="block aspect-square w-full object-cover"
+        className="block h-auto w-full rounded-[12px] object-contain"
         loading="lazy"
         onError={() => setImgFailed(true)}
       />
