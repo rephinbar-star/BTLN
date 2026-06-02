@@ -120,7 +120,7 @@ const ReportContent = () => {
   const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const { isOwner, hasFullAccess, refresh: refreshEntitlement } = useEntitlement(analysisId);
+  const { isOwner, isAnonymousOwner, hasFullAccess, refresh: refreshEntitlement } = useEntitlement(analysisId);
 
   useEffect(() => {
     if (!analysisId) {
@@ -440,13 +440,18 @@ const ReportContent = () => {
 
             {!user && analysisId && (
               <div data-pdf-exclude="true" className="mt-6 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => setShowSave(true)}
+                <Link
+                  to={`/auth?return_to=${encodeURIComponent(`/report/${analysisId}`)}`}
+                  onClick={() =>
+                    logEvent("signup_cta_clicked", {
+                      source: "top_banner",
+                      analysis_id: analysisId,
+                    })
+                  }
                   className="rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background shadow-sm transition-opacity hover:opacity-90"
                 >
                   Save this report — Free account
-                </button>
+                </Link>
               </div>
             )}
 
@@ -467,6 +472,7 @@ const ReportContent = () => {
                 <PaywallBlur
                   locked={!hasFullAccess}
                   isOwner={isOwner}
+                  isAnonymousOwner={isAnonymousOwner}
                   analysisId={analysisId}
                 >
                   <DeepReport result={result} context={context} locked={!hasFullAccess} />

@@ -11,16 +11,26 @@ type Props = {
   locked: boolean;
   children: React.ReactNode;
   isOwner: boolean;
+  isAnonymousOwner?: boolean;
   analysisId: string;
   ctaPosition?: "centered" | "top";
 };
 
-export function PaywallBlur({ locked, children, isOwner, analysisId, ctaPosition = "centered" }: Props) {
+export function PaywallBlur({ locked, children, isOwner, isAnonymousOwner = false, analysisId, ctaPosition = "centered" }: Props) {
   useEffect(() => {
     if (locked) {
-      logEvent("paywall_viewed", { analysis_id: analysisId, is_owner: isOwner });
+      const user_state = isOwner
+        ? "authed_owner"
+        : isAnonymousOwner
+          ? "anonymous_owner"
+          : "visitor";
+      logEvent("paywall_viewed", {
+        analysis_id: analysisId,
+        is_owner: isOwner,
+        user_state,
+      });
     }
-  }, [locked, isOwner, analysisId]);
+  }, [locked, isOwner, isAnonymousOwner, analysisId]);
 
   if (!locked) return <>{children}</>;
 
@@ -41,6 +51,8 @@ export function PaywallBlur({ locked, children, isOwner, analysisId, ctaPosition
         >
           {isOwner ? (
             <UnlockOptions analysisId={analysisId} />
+          ) : isAnonymousOwner ? (
+            <AnonymousOwnerCta analysisId={analysisId} />
           ) : (
             <VisitorCta />
           )}
@@ -62,6 +74,43 @@ function VisitorCta() {
         className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
       >
         Start your analysis
+      </Link>
+    </div>
+  );
+}
+
+function AnonymousOwnerCta({ analysisId }: { analysisId: string }) {
+  const returnTo = `/report/${analysisId}`;
+  const onClick = () =>
+    logEvent("signup_cta_clicked", {
+      source: "paywall",
+      analysis_id: analysisId,
+    });
+  return (
+    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-7 text-center shadow-lg">
+      <h3 className="text-[22px] font-medium tracking-tight">
+        Save this report and unlock the full analysis
+      </h3>
+      <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+        Create a free account to save your report permanently and unlock your couple's
+        full breakdown — communication patterns, attachment styles, hidden dynamics, and
+        your weekly plan.
+      </p>
+      <Link
+        to={`/auth?return_to=${encodeURIComponent(returnTo)}`}
+        onClick={onClick}
+        className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
+      >
+        Sign up free →
+      </Link>
+      <p className="mt-3 text-[12px] text-muted-foreground">
+        Free account to save. Unlock pricing after.
+      </p>
+      <Link
+        to={`/auth?mode=signin&return_to=${encodeURIComponent(returnTo)}`}
+        className="mt-4 inline-block text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+      >
+        Already have an account? Sign in
       </Link>
     </div>
   );
