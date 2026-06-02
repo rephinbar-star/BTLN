@@ -303,6 +303,8 @@ export const InputSection = () => {
       });
 
       // 1. Create analyses row first
+      const { data: userData } = await supabase.auth.getUser();
+      const currentUserId = userData?.user?.id ?? null;
       const { data: created, error: createErr } = await supabase
         .from("analyses")
         .insert([
@@ -312,6 +314,7 @@ export const InputSection = () => {
             input_method,
             status: "pending",
             relationship_type: form.relationshipType,
+            user_id: currentUserId,
           },
         ])
         .select("id")
