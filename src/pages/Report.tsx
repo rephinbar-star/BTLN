@@ -123,6 +123,10 @@ const ReportContent = () => {
   const { isOwner, isAnonymousOwner, hasFullAccess, refresh: refreshEntitlement } = useEntitlement(analysisId);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, []);
+
+  useEffect(() => {
     if (!analysisId) {
       navigate("/error?reason=not_found", { replace: true });
       return;
@@ -438,7 +442,7 @@ const ReportContent = () => {
               </button>
             </div>
 
-            {!user && analysisId && (
+            {!user && !isAnonymousOwner && analysisId && (
               <div data-pdf-exclude="true" className="mt-6 flex justify-center">
                 <Link
                   to={`/auth?return_to=${encodeURIComponent(`/report/${analysisId}`)}`}
