@@ -36,7 +36,7 @@ export function PaywallBlur({ locked, children, isOwner, analysisId, ctaPosition
         aria-hidden="false"
       >
         <div
-          className="pointer-events-auto sticky w-full max-w-md px-4"
+          className="pointer-events-auto sticky w-full px-4 flex justify-center"
           style={{ top: "20vh", alignSelf: "flex-start" }}
         >
           {isOwner ? (
