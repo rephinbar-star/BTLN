@@ -413,12 +413,17 @@ ${messagesBlock}`;
   // 5. Privacy: hard-delete temp messages
   await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);
 
+  // 5b. Deterministic couple_type mapping
+  const relationshipType = context_data.relationship_type ?? "romantic";
+  const couple_type_id = assignCoupleType(resultJson, relationshipType, analysis_id);
+
   // 6. Finalize
   const { error: updErr } = await supabase
     .from("analyses")
     .update({
       result_json: resultJson,
       message_count: messages.length,
+      couple_type_id,
       status: "complete",
       completed_at: new Date().toISOString(),
     })
