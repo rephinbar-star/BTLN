@@ -926,6 +926,116 @@ const Report = () => (
 
 export default Report;
 
+// ----- Additional deep-report sections -----
+const BidsSection = ({ bids }: { bids: AnalysisResult["bids_for_connection"] | undefined }) => {
+  if (!bids) return null;
+  const items = [
+    { label: "Turned toward", value: bids.turned_toward_pct, tone: "bg-pastel-green-bg text-pastel-green-fg-strong" },
+    { label: "Turned away", value: bids.turned_away_pct, tone: "bg-pastel-amber-bg text-pastel-amber-fg-strong" },
+    { label: "Turned against", value: bids.turned_against_pct, tone: "bg-pastel-pink-bg text-pastel-pink-fg" },
+  ].filter((x) => typeof x.value === "number");
+  if (items.length === 0) return null;
+  return (
+    <section data-pdf-section className="mt-10">
+      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+        5 · Bids for connection
+      </h3>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {items.map((it) => (
+          <div key={it.label} className={`rounded-xl p-3 text-center ${it.tone}`}>
+            <div className="text-[11px] font-semibold uppercase tracking-wide">{it.label}</div>
+            <div className="mt-1 text-[22px] font-medium">{Math.round(it.value as number)}%</div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+};
+
+const LoveLanguagesSection = ({ languages }: { languages: unknown }) => {
+  if (!languages) return null;
+  const ll = languages as {
+    person1?: string;
+    person2?: string;
+    mismatch_note?: string;
+    [k: string]: unknown;
+  };
+  if (!ll.person1 && !ll.person2 && !ll.mismatch_note) return null;
+  return (
+    <section data-pdf-section className="mt-10">
+      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+        6 · Love languages
+      </h3>
+      <div className="mt-4 rounded-xl border border-border bg-card p-4">
+        {(ll.person1 || ll.person2) && (
+          <div className="grid grid-cols-2 gap-3 text-[14px]">
+            {ll.person1 && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Person 1</div>
+                <div className="mt-1">{ll.person1}</div>
+              </div>
+            )}
+            {ll.person2 && (
+              <div>
+                <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Person 2</div>
+                <div className="mt-1">{ll.person2}</div>
+              </div>
+            )}
+          </div>
+        )}
+        {ll.mismatch_note && (
+          <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+            {ll.mismatch_note}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+};
+
+const FlagListSection = ({
+  title,
+  flags,
+  tone,
+  skipFirst = false,
+}: {
+  title: string;
+  flags: import("@/lib/analysis-types").ReportFlag[] | undefined;
+  tone: "amber" | "red";
+  skipFirst?: boolean;
+}) => {
+  const list = (flags ?? []).slice(skipFirst ? 1 : 0);
+  if (list.length === 0) return null;
+  const wrap =
+    tone === "red"
+      ? "bg-pastel-pink-bg text-pastel-pink-fg"
+      : "bg-pastel-amber-bg text-pastel-amber-fg-strong";
+  return (
+    <section data-pdf-section className="mt-10">
+      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">{title}</h3>
+      <div className="mt-4 space-y-3">
+        {list.map((flag, i) => {
+          const obj = typeof flag === "object" && flag ? (flag as { title?: string; description?: string; evidence?: string }) : null;
+          const heading = obj?.title ?? (typeof flag === "string" ? null : null);
+          const desc = obj?.description ?? (typeof flag === "string" ? flag : null);
+          const ev = obj?.evidence ?? null;
+          return (
+            <div key={i} className={`rounded-xl p-4 ${wrap}`}>
+              {heading && <h4 className="text-[15px] font-semibold">{heading}</h4>}
+              {desc && <p className="mt-2 text-[14px] leading-relaxed">{desc}</p>}
+              {ev && (
+                <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
+                  &quot;{ev}&quot;
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+};
+
 // ----- Free-tier insights (visible to all viewers) -----
 const firstSentence = (text: string): string => {
   if (!text) return "";
