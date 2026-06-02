@@ -1,0 +1,203 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { Lock } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { logEvent } from "@/lib/session";
+
+type ProductKey = "duo_monthly" | "duo_annual" | "report_unlock_one_time";
+
+type Props = {
+  locked: boolean;
+  children: React.ReactNode;
+  isOwner: boolean;
+  analysisId: string;
+  ctaPosition?: "centered" | "top";
+};
+
+export function PaywallBlur({ locked, children, isOwner, analysisId, ctaPosition = "centered" }: Props) {
+  useEffect(() => {
+    if (locked) {
+      logEvent("paywall_viewed", { analysis_id: analysisId, is_owner: isOwner });
+    }
+  }, [locked, isOwner, analysisId]);
+
+  if (!locked) return <>{children}</>;
+
+  return (
+    <div className="relative">
+      <div
+        aria-hidden="true"
+        className="pointer-events-none select-none"
+        style={{ filter: "blur(8px)" }}
+      >
+        {children}
+      </div>
+      <div
+        className={`absolute inset-x-0 ${ctaPosition === "top" ? "top-8" : "top-1/2 -translate-y-1/2"} flex justify-center px-4`}
+      >
+        {isOwner ? (
+          <UnlockOptions analysisId={analysisId} />
+        ) : (
+          <VisitorCta />
+        )}
+      </div>
+    </div>
+  );
+}
+
+function VisitorCta() {
+  return (
+    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-7 text-center shadow-lg">
+      <h3 className="text-[22px] font-medium tracking-tight">Run your own analysis to see this</h3>
+      <p className="mt-3 text-[14px] text-muted-foreground">
+        Get your couple's full breakdown — communication patterns, attachment styles, hidden dynamics, and a weekly plan.
+      </p>
+      <Link
+        to="/#input-section"
+        className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
+      >
+        Start your analysis
+      </Link>
+    </div>
+  );
+}
+
+function UnlockOptions({ analysisId }: { analysisId: string }) {
+  const { user } = useAuth();
+  const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
+  const [pending, setPending] = useState<ProductKey | null>(null);
+
+  const launch = (priceId: ProductKey) => {
+    setPending(priceId);
+    logEvent("unlock_cta_clicked", { product_key: priceId, analysis_id: analysisId });
+    try {
+      openCheckout({
+        priceId,
+        customerEmail: user?.email,
+        userId: user?.id,
+        analysisId,
+        returnUrl: `${window.location.origin}/report/${analysisId}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+      });
+      logEvent("checkout_session_created", { product_key: priceId, analysis_id: analysisId });
+    } catch (e) {
+      logEvent("checkout_session_failed", {
+        product_key: priceId,
+        analysis_id: analysisId,
+        error: (e as Error).message,
+      });
+    } finally {
+      setPending(null);
+    }
+  };
+
+  if (isOpen) {
+    return (
+      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-5 shadow-lg">
+        {checkoutElement}
+        <button
+          type="button"
+          onClick={closeCheckout}
+          className="mt-4 w-full text-center text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-lg sm:p-7">
+      <div className="flex justify-center">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+          <Lock className="h-4 w-4" />
+        </span>
+      </div>
+      <h3 className="mt-3 text-[22px] font-medium tracking-tight">Unlock your full report</h3>
+      <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+        See all four communication patterns, your full attachment profiles, the Four Horsemen check, and your personalized practice plan.
+      </p>
+
+      <div className="mt-6 flex flex-col gap-3 text-left">
+        <PriceOption
+          highlighted
+          label="Monthly subscription"
+          price="$7.99/mo"
+          subtext="Unlimited analyses + relationship insights"
+          buttonLabel="Subscribe monthly"
+          loading={pending === "duo_monthly"}
+          onClick={() => launch("duo_monthly")}
+        />
+        <PriceOption
+          label="Annual subscription"
+          price="$49/yr"
+          subtext="Just $4.08/mo — save 49%"
+          buttonLabel="Subscribe annually"
+          loading={pending === "duo_annual"}
+          onClick={() => launch("duo_annual")}
+        />
+        <PriceOption
+          deemphasized
+          label="Just this report"
+          price="$4.99 one-time"
+          subtext="Unlock only this analysis"
+          buttonLabel="Unlock this report"
+          loading={pending === "report_unlock_one_time"}
+          onClick={() => launch("report_unlock_one_time")}
+        />
+      </div>
+
+      <p className="mt-5 text-[12px] text-muted-foreground">
+        Secure checkout via Stripe. Cancel anytime.
+      </p>
+    </div>
+  );
+}
+
+function PriceOption({
+  label,
+  price,
+  subtext,
+  buttonLabel,
+  onClick,
+  loading,
+  highlighted,
+  deemphasized,
+}: {
+  label: string;
+  price: string;
+  subtext: string;
+  buttonLabel: string;
+  onClick: () => void;
+  loading: boolean;
+  highlighted?: boolean;
+  deemphasized?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-xl border p-4 ${
+        highlighted
+          ? "border-foreground/30 bg-muted/30"
+          : deemphasized
+            ? "border-border bg-card opacity-90"
+            : "border-border bg-card"
+      }`}
+    >
+      <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 text-[22px] font-medium tracking-tight">{price}</div>
+      <div className="text-[12px] text-muted-foreground">{subtext}</div>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={loading}
+        className={`mt-3 inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-[14px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50 ${
+          highlighted ? "bg-foreground text-background" : "border border-border bg-card text-foreground"
+        }`}
+      >
+        {loading ? "Opening checkout…" : buttonLabel}
+      </button>
+    </div>
+  );
+}
