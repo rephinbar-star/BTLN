@@ -612,9 +612,11 @@ const SafetyOverride = ({ note }: { note: string }) => (
 const DeepReport = ({
   result,
   context,
+  locked = false,
 }: {
   result: AnalysisResult;
   context: ContextData;
+  locked?: boolean;
 }) => {
   const { name1, name2 } = context;
   const profile1 = result.attachment_profiles?.[name1];
@@ -646,7 +648,7 @@ const DeepReport = ({
       </div>
 
       {/* 1. Communication diagnostic */}
-      <Section title="1 · Communication diagnostic">
+      <Section title="1 · Communication diagnostic" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-3">
           <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
           <Tile label="Conversations initiated" value={textFromUnknown(result.communication_diagnostic?.initiator_balance)} />
@@ -662,7 +664,7 @@ const DeepReport = ({
       </Section>
 
       {/* 2. Attachment styles */}
-      <Section title="2 · Attachment styles">
+      <Section title="2 · Attachment styles" locked={locked}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {profile1 && (
             <div data-pdf-section>
@@ -689,7 +691,7 @@ const DeepReport = ({
       </Section>
 
       {/* 3. Four Horsemen */}
-      <Section title="3 · The Four Horsemen">
+      <Section title="3 · The Four Horsemen" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {horsemenList.map((x) => (
             <div
@@ -735,7 +737,7 @@ const DeepReport = ({
       </Section>
 
       {/* 4. Hidden pattern */}
-      <Section title="4 · The hidden pattern">
+      <Section title="4 · The hidden pattern" locked={locked}>
         <div data-pdf-section className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <h4 className="text-[15px] font-semibold">{result.hidden_pattern?.title}</h4>
           <p className="mt-2 text-[14px] leading-relaxed">
@@ -745,16 +747,17 @@ const DeepReport = ({
       </Section>
 
       {/* 5. Bids for connection */}
-      <BidsSection bids={result.bids_for_connection} />
+      <BidsSection bids={result.bids_for_connection} locked={locked} />
 
       {/* 6. Love languages */}
-      <LoveLanguagesSection languages={result.love_languages} />
+      <LoveLanguagesSection languages={result.love_languages} locked={locked} />
 
       {/* 7. Yellow flags */}
       <FlagListSection
         title="7 · Things to watch"
         flags={result.yellow_flags}
         tone="amber"
+        locked={locked}
       />
 
       {/* 8. Red flags */}
@@ -762,10 +765,11 @@ const DeepReport = ({
         title="8 · Red flags"
         flags={result.red_flags}
         tone="red"
+        locked={locked}
       />
 
       {/* 9. Conversation prompts */}
-      <Section title="9 · Personalized prompts for this week">
+      <Section title="9 · Personalized prompts for this week" locked={locked}>
         <div className="space-y-3">
           {(result.conversation_prompts ?? []).map((p, i) => (
             <div
