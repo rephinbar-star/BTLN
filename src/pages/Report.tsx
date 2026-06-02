@@ -469,7 +469,7 @@ const ReportContent = () => {
                   isOwner={isOwner}
                   analysisId={analysisId}
                 >
-                  <DeepReport result={result} context={context} />
+                  <DeepReport result={result} context={context} locked={!hasFullAccess} />
                 </PaywallBlur>
               </div>
             )}
