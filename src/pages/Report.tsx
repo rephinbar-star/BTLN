@@ -1,6 +1,6 @@
 import { Component, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
@@ -12,7 +12,8 @@ import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { CoupleTypeCard } from "@/components/CoupleTypeCard";
 import type { RelationshipType } from "@/lib/coupleTypes";
-import { UnlockReportButton } from "@/components/UnlockReportButton";
+import { PaywallBlur } from "@/components/PaywallBlur";
+import { useEntitlement } from "@/hooks/useEntitlement";
 import { SaveReportModal } from "@/components/auth/SaveReportModal";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -109,6 +110,7 @@ const ReportContent = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
@@ -118,6 +120,7 @@ const ReportContent = () => {
   const [copied, setCopied] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const { isOwner, hasFullAccess, refresh: refreshEntitlement } = useEntitlement(analysisId);
 
   useEffect(() => {
     if (!analysisId) {
@@ -196,6 +199,59 @@ const ReportContent = () => {
   const context = (row?.context_data ?? null) as ContextData | null;
 
   const safetyMode = result?.meta?.safety_concern === true;
+
+  // ----- Checkout return handling -----
+  useEffect(() => {
+    const checkout = searchParams.get("checkout");
+    if (!checkout || !analysisId) return;
+
+    if (checkout === "cancel") {
+      toast("Checkout canceled — you can still unlock anytime.", { duration: 4000 });
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+      return;
+    }
+
+    if (checkout !== "success") return;
+
+    const toastId = toast.loading("Payment successful — unlocking your full report…");
+    let elapsed = 0;
+    const interval = window.setInterval(() => {
+      elapsed += 2000;
+      refreshEntitlement();
+      if (elapsed >= 30_000) {
+        window.clearInterval(interval);
+        toast.error(
+          "Payment confirmed but unlock is taking longer than expected. Please refresh the page or contact support.",
+          { id: toastId },
+        );
+        logEvent("stripe_unlock_delay", { analysis_id: analysisId });
+        const next = new URLSearchParams(searchParams);
+        next.delete("checkout");
+        next.delete("session_id");
+        setSearchParams(next, { replace: true });
+      }
+    }, 2000);
+    // Kick off the first refresh immediately.
+    refreshEntitlement();
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams.get("checkout"), analysisId]);
+
+  // When entitlement flips to true while polling, clear toast + URL.
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+    if (!hasFullAccess) return;
+    toast.success("Unlocked. Enjoy your full report.", { duration: 3000 });
+    logEvent("entitlement_unlocked", { analysis_id: analysisId });
+    const next = new URLSearchParams(searchParams);
+    next.delete("checkout");
+    next.delete("session_id");
+    setSearchParams(next, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasFullAccess]);
 
   const handleDownload = async () => {
     if (!cardRef.current || !context || downloading) return;
@@ -404,15 +460,17 @@ const ReportContent = () => {
               </div>
             )}
 
-            {row?.is_paid ? (
-              <DeepReport result={result} context={context} />
-            ) : (
-              <div data-pdf-exclude="true" className="mt-12 flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-8 text-center">
-                <h3 className="text-[22px] font-medium tracking-tight">Unlock the full analysis</h3>
-                <p className="max-w-md text-[14px] text-muted-foreground">
-                  Get the deep dive: communication patterns, attachment styles, hidden dynamics, and personalized prompts — for this report, forever.
-                </p>
-                {analysisId && <UnlockReportButton analysisId={analysisId} />}
+            <FreeInsights result={result} />
+
+            {analysisId && (
+              <div className="mt-12">
+                <PaywallBlur
+                  locked={!hasFullAccess}
+                  isOwner={isOwner}
+                  analysisId={analysisId}
+                >
+                  <DeepReport result={result} context={context} />
+                </PaywallBlur>
               </div>
             )}
 
