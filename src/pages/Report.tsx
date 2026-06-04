@@ -508,14 +508,21 @@ const ReportContent = () => {
 
             {analysisId && (
               <div className="mt-12">
-                <PaywallBlur
-                  locked={!hasFullAccess}
-                  isOwner={isOwner}
-                  isAnonymousOwner={isAnonymousOwner}
-                  analysisId={analysisId}
-                >
-                  <DeepReport result={result} context={context} locked={!hasFullAccess} />
-                </PaywallBlur>
+                {entitlementLoading ? (
+                  <div className="py-12 text-center text-[14px] text-muted-foreground">
+                    Loading access…
+                  </div>
+                ) : hasFullAccess ? (
+                  <DeepReport result={result} context={context} locked={false} />
+                ) : isOwner ? (
+                  <PaywallBlur locked isOwner={isOwner} analysisId={analysisId}>
+                    <DeepReport result={result} context={context} locked />
+                  </PaywallBlur>
+                ) : (
+                  <PaywallBlur locked isOwner={false} isAnonymousOwner={false} analysisId={analysisId}>
+                    <DeepReport result={result} context={context} locked />
+                  </PaywallBlur>
+                )}
               </div>
             )}
 
