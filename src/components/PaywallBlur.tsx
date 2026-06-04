@@ -220,12 +220,12 @@ function PriceOption({
 }) {
   return (
     <div
-      className={`rounded-xl border p-4 ${
+      className={`rounded-xl border p-4 transition-all duration-200 hover:shadow-md hover:scale-[1.01] ${
         highlighted
           ? "border-foreground/30 bg-muted/30"
           : deemphasized
-            ? "border-border bg-card opacity-90"
-            : "border-border bg-card"
+            ? "border-border bg-card opacity-90 hover:opacity-100 hover:border-foreground/20"
+            : "border-border bg-card hover:border-foreground/20"
       }`}
     >
       <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
@@ -237,8 +237,10 @@ function PriceOption({
         type="button"
         onClick={onClick}
         disabled={loading}
-        className={`mt-3 inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-[14px] font-medium transition-opacity hover:opacity-90 disabled:opacity-50 ${
-          highlighted ? "bg-foreground text-background" : "border border-border bg-card text-foreground"
+        className={`mt-3 inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-[14px] font-medium transition-all duration-200 hover:scale-[1.03] disabled:opacity-50 ${
+          highlighted
+            ? "bg-foreground text-background hover:shadow-lg hover:brightness-110"
+            : "border border-border bg-card text-foreground hover:bg-muted hover:border-foreground/30 hover:shadow-md"
         }`}
       >
         {loading ? "Opening checkout…" : buttonLabel}
