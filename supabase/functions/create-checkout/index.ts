@@ -47,7 +47,7 @@ Deno.serve(async (req) => {
     }
     const stripePrice = prices.data[0];
     const isRecurring = stripePrice.type === "recurring";
-    const useManagedPayments = shouldUseComplianceHandling(customerCountry);
+    const useManagedPayments = false; // disabled until Stripe head office address is set
 
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: stripePrice.id, quantity: quantity || 1 }],
