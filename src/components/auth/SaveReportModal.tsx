@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { getSessionId } from "@/lib/session";
+import { claimPendingAnalysis, getSessionId } from "@/lib/session";
 
 type Tab = "magic" | "password";
 type View = "form" | "sent";
@@ -86,6 +86,7 @@ export const SaveReportModal = ({ open, onClose, returnTo }: Props) => {
           }
         } else if (data.user) {
           // Immediately claim if session exists
+          await claimPendingAnalysis();
           const sid = getSessionId();
           await supabase.rpc("claim_anonymous_analyses", {
             p_session_id: sid,
