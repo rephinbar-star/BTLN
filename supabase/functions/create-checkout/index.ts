@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
         managed_payments: useManagedPayments ? "true" : "false",
       },
       ...(isRecurring && userId && { subscription_data: { metadata: { userId, ...(analysisId && { analysisId }) } } }),
-      ...(useManagedPayments ? { managed_payments: { enabled: true } } : { automatic_tax: { enabled: true } }),
+      ...(useManagedPayments ? { managed_payments: { enabled: true } } : {}),
     });
 
     return new Response(JSON.stringify({ clientSecret: session.client_secret }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
