@@ -237,11 +237,7 @@ function PriceOption({
         type="button"
         onClick={onClick}
         disabled={loading}
-        className={`mt-3 inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-[14px] font-medium transition-all duration-200 hover:scale-[1.03] disabled:opacity-50 ${
-          highlighted
-            ? "bg-foreground text-background hover:shadow-lg hover:brightness-110"
-            : "border border-border bg-card text-foreground hover:bg-muted hover:border-foreground/30 hover:shadow-md"
-        }`}
+        className={`mt-3 inline-flex w-full items-center justify-center rounded-full px-5 py-2.5 text-[14px] font-medium transition-all duration-200 hover:scale-[1.03] disabled:opacity-50 border border-border bg-card text-foreground hover:bg-foreground hover:text-background hover:shadow-lg`}
       >
         {loading ? "Opening checkout…" : buttonLabel}
       </button>
