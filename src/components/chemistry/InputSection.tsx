@@ -2,7 +2,7 @@ import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, Lock } from 
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { getSessionId, logEvent } from "@/lib/session";
+import { getSessionId, logEvent, setPendingClaimAnalysisId } from "@/lib/session";
 import { compressImage, dataUrlByteSize } from "@/lib/image-compress";
 import {
   AlertDialog,
@@ -329,6 +329,9 @@ export const InputSection = () => {
       }
 
       const analysis_id = created.id as string;
+      if (!currentUserId) {
+        setPendingClaimAnalysisId(analysis_id);
+      }
 
       // 2. Kick off the Edge Function. The function uses
       //    EdgeRuntime.waitUntil() and returns 202 almost immediately, so
