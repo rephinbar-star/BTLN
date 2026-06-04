@@ -119,6 +119,7 @@ const ReportContent = () => {
   const [showSave, setShowSave] = useState(false);
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [accessClaimChecked, setAccessClaimChecked] = useState(false);
   const [accessRefreshSignal, setAccessRefreshSignal] = useState(0);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -129,7 +130,7 @@ const ReportContent = () => {
     hasFullAccess,
     isLoading: entitlementLoading,
     refresh: refreshEntitlement,
-  } = useEntitlement(analysisId, accessRefreshSignal, !loading);
+  } = useEntitlement(analysisId, accessRefreshSignal, accessClaimChecked && !loading);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
@@ -155,6 +156,7 @@ const ReportContent = () => {
     if (authLoading) return;
     let cancelled = false;
     setLoading(true);
+    setAccessClaimChecked(false);
     (async () => {
       const claimResult = await claimPendingAnalysis();
       if (claimResult.attempted) {
@@ -171,6 +173,7 @@ const ReportContent = () => {
         return;
       }
       setRow(data);
+      setAccessClaimChecked(true);
       setLoading(false);
     })();
     return () => {
