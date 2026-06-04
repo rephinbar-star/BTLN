@@ -135,20 +135,34 @@ const ReportContent = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
+  const loadReport = useCallback(async () => {
+    if (!analysisId) return null;
+    const { data, error } = await supabase
+      .from("analyses")
+      .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type, is_paid, user_id")
+      .eq("id", analysisId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data as unknown as Row;
+  }, [analysisId]);
+
   useEffect(() => {
     if (!analysisId) {
       navigate("/error?reason=not_found", { replace: true });
       return;
     }
+    if (authLoading) return;
     let cancelled = false;
+    setLoading(true);
     (async () => {
-      const { data, error } = await supabase
-        .from("analyses")
-        .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type, is_paid")
-        .eq("id", analysisId)
-        .maybeSingle();
+      const claimResult = await claimPendingAnalysis();
+      if (claimResult.attempted) {
+        setAccessRefreshSignal((n) => n + 1);
+      }
+      const data = await loadReport();
       if (cancelled) return;
-      if (error || !data) {
+      if (!data) {
         navigate("/error?reason=not_found", { replace: true });
         return;
       }
@@ -156,13 +170,25 @@ const ReportContent = () => {
         navigate(`/processing/${analysisId}`, { replace: true });
         return;
       }
-      setRow(data as unknown as Row);
+      setRow(data);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [analysisId, navigate]);
+  }, [analysisId, authLoading, loadReport, navigate, user?.id]);
+
+  useEffect(() => {
+    if (!row || loading || entitlementLoading || accessLoggedRef.current) return;
+    accessLoggedRef.current = true;
+    console.log("[report-access]", {
+      authUserId: user?.id,
+      analysisUserId: row.user_id,
+      isOwner,
+      hasPaidAccess: hasFullAccess,
+      pendingClaim: localStorage.getItem("pending_claim_analysis_id"),
+    });
+  }, [row, loading, entitlementLoading, user?.id, isOwner, hasFullAccess]);
 
   // Show feedback modal when user scrolls near bottom of report, or after 90s — whichever first.
   useEffect(() => {
