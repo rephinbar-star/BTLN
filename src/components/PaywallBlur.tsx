@@ -47,7 +47,7 @@ export function PaywallBlur({ locked, children, isOwner, isAnonymousOwner = fals
       >
         <div
           className="pointer-events-auto sticky w-full px-4 flex justify-center"
-          style={{ top: "20vh", alignSelf: "flex-start" }}
+          style={{ top: "10vh", alignSelf: "flex-start", maxHeight: "85vh" }}
         >
           {isOwner ? (
             <UnlockOptions analysisId={analysisId} />
@@ -152,7 +152,7 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
   }
 
   return (
-    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 text-center shadow-lg sm:p-7">
+    <div className="w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl border border-border bg-card p-6 text-center shadow-lg sm:p-7">
       <div className="flex justify-center">
         <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-muted">
           <Lock className="h-4 w-4" />
@@ -164,6 +164,15 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
       </p>
 
       <div className="mt-6 flex flex-col gap-3 text-left">
+        <PriceOption
+          deemphasized
+          label="Just this report"
+          price="$4.99 one-time"
+          subtext="Unlock only this analysis"
+          buttonLabel="Unlock this report"
+          loading={pending === "report_unlock_one_time"}
+          onClick={() => launch("report_unlock_one_time")}
+        />
         <PriceOption
           highlighted
           label="Monthly subscription"
@@ -180,15 +189,6 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
           buttonLabel="Subscribe annually"
           loading={pending === "duo_annual"}
           onClick={() => launch("duo_annual")}
-        />
-        <PriceOption
-          deemphasized
-          label="Just this report"
-          price="$4.99 one-time"
-          subtext="Unlock only this analysis"
-          buttonLabel="Unlock this report"
-          loading={pending === "report_unlock_one_time"}
-          onClick={() => launch("report_unlock_one_time")}
         />
       </div>
 
