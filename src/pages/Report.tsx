@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState } from "react";
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { logEvent } from "@/lib/session";
+import { claimPendingAnalysis, logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
@@ -34,6 +34,7 @@ type Row = {
   couple_type_id: number | null;
   relationship_type: string | null;
   is_paid: boolean | null;
+  user_id: string | null;
 };
 
 type FlagValue = string | { title?: unknown; evidence?: unknown; description?: unknown };
@@ -109,7 +110,7 @@ const STYLE_BAR: Record<string, string> = {
 const ReportContent = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,9 +119,17 @@ const ReportContent = () => {
   const [showSave, setShowSave] = useState(false);
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [accessRefreshSignal, setAccessRefreshSignal] = useState(0);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const { isOwner, isAnonymousOwner, hasFullAccess, refresh: refreshEntitlement } = useEntitlement(analysisId);
+  const accessLoggedRef = useRef(false);
+  const {
+    isOwner,
+    isAnonymousOwner,
+    hasFullAccess,
+    isLoading: entitlementLoading,
+    refresh: refreshEntitlement,
+  } = useEntitlement(analysisId, accessRefreshSignal, !loading);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
