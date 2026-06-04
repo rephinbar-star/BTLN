@@ -5,6 +5,7 @@ import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/hooks/useAuth";
+import { claimPendingAnalysis } from "@/lib/session";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,7 +29,15 @@ const Auth = () => {
   const postAuthDest = safeReturnTo ?? "/account";
 
   useEffect(() => {
-    if (!loading && user) navigate(postAuthDest, { replace: true });
+    if (loading || !user) return;
+    let cancelled = false;
+    (async () => {
+      await claimPendingAnalysis();
+      if (!cancelled) navigate(postAuthDest, { replace: true });
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading, navigate, postAuthDest]);
 
   const handleEmail = async (e: React.FormEvent) => {
