@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { claimPendingAnalysis, logEvent } from "@/lib/session";
+import { claimPendingAnalysis, getSessionId, logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
@@ -161,6 +161,23 @@ const ReportContent = () => {
       const claimResult = await claimPendingAnalysis();
       if (claimResult.attempted) {
         setAccessRefreshSignal((n) => n + 1);
+      }
+      // Also try session-matched claim: if the logged-in user's
+      // chemistry_session_id matches the row's session_id and the row is
+      // unowned, attach it. Covers the case where the user signed in
+      // before opening the report (no pending_claim_analysis_id set).
+      if (user?.id) {
+        try {
+          const { data: claimed } = await supabase.rpc(
+            "claim_anonymous_analyses",
+            { p_session_id: getSessionId(), p_user_id: user.id },
+          );
+          if (typeof claimed === "number" && claimed > 0) {
+            setAccessRefreshSignal((n) => n + 1);
+          }
+        } catch {
+          // non-fatal
+        }
       }
       const data = await loadReport();
       if (cancelled) return;
