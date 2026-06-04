@@ -6,7 +6,6 @@ import { Header } from "@/components/chemistry/Header";
 import { Hero } from "@/components/chemistry/Hero";
 import { HowItWorks } from "@/components/chemistry/HowItWorks";
 import { InputSection } from "@/components/chemistry/InputSection";
-import { MobileStickyCta } from "@/components/chemistry/MobileStickyCta";
 import { WhatYouGet } from "@/components/chemistry/WhatYouGet";
 import { logEvent } from "@/lib/session";
 
@@ -39,7 +38,6 @@ const Index = () => {
         <FinalCta />
       </main>
       <Footer />
-      <MobileStickyCta />
     </div>
   );
 };
