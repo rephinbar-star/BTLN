@@ -521,6 +521,10 @@ const ReportContent = () => {
                   <PaywallBlur locked isOwner={isOwner} analysisId={analysisId}>
                     <DeepReport result={result} context={context} locked />
                   </PaywallBlur>
+                ) : isAnonymousOwner ? (
+                  <PaywallBlur locked isOwner={false} isAnonymousOwner analysisId={analysisId}>
+                    <DeepReport result={result} context={context} locked />
+                  </PaywallBlur>
                 ) : (
                   <PaywallBlur locked isOwner={false} isAnonymousOwner={false} analysisId={analysisId}>
                     <DeepReport result={result} context={context} locked />
