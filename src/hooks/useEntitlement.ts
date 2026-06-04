@@ -11,7 +11,11 @@ export type EntitlementResult = {
   refresh: () => void;
 };
 
-export function useEntitlement(analysisId: string | undefined): EntitlementResult {
+export function useEntitlement(
+  analysisId: string | undefined,
+  refreshSignal = 0,
+  enabled = true,
+): EntitlementResult {
   const { user, loading: authLoading } = useAuth();
   const [isOwner, setIsOwner] = useState(false);
   const [isAnonymousOwner, setIsAnonymousOwner] = useState(false);
@@ -22,7 +26,7 @@ export function useEntitlement(analysisId: string | undefined): EntitlementResul
   const refresh = useCallback(() => setNonce((n) => n + 1), []);
 
   useEffect(() => {
-    if (!analysisId || authLoading) return;
+    if (!analysisId || authLoading || !enabled) return;
     let cancelled = false;
     setIsLoading(true);
     (async () => {
@@ -52,7 +56,7 @@ export function useEntitlement(analysisId: string | undefined): EntitlementResul
     return () => {
       cancelled = true;
     };
-  }, [analysisId, user, authLoading, nonce]);
+  }, [analysisId, user, authLoading, enabled, nonce, refreshSignal]);
 
   return { isOwner, isAnonymousOwner, hasFullAccess, isLoading, refresh };
 }

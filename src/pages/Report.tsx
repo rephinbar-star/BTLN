@@ -1,4 +1,4 @@
-import { Component, useEffect, useMemo, useRef, useState } from "react";
+import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { logEvent } from "@/lib/session";
+import { claimPendingAnalysis, logEvent } from "@/lib/session";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
@@ -34,6 +34,7 @@ type Row = {
   couple_type_id: number | null;
   relationship_type: string | null;
   is_paid: boolean | null;
+  user_id: string | null;
 };
 
 type FlagValue = string | { title?: unknown; evidence?: unknown; description?: unknown };
@@ -109,7 +110,7 @@ const STYLE_BAR: Record<string, string> = {
 const ReportContent = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
@@ -118,28 +119,52 @@ const ReportContent = () => {
   const [showSave, setShowSave] = useState(false);
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [accessClaimChecked, setAccessClaimChecked] = useState(false);
+  const [accessRefreshSignal, setAccessRefreshSignal] = useState(0);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
-  const { isOwner, isAnonymousOwner, hasFullAccess, refresh: refreshEntitlement } = useEntitlement(analysisId);
+  const accessLoggedRef = useRef(false);
+  const {
+    isOwner,
+    isAnonymousOwner,
+    hasFullAccess,
+    isLoading: entitlementLoading,
+    refresh: refreshEntitlement,
+  } = useEntitlement(analysisId, accessRefreshSignal, accessClaimChecked && !loading);
 
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, []);
+
+  const loadReport = useCallback(async () => {
+    if (!analysisId) return null;
+    const { data, error } = await supabase
+      .from("analyses")
+      .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type, is_paid, user_id")
+      .eq("id", analysisId)
+      .maybeSingle();
+
+    if (error || !data) return null;
+    return data as unknown as Row;
+  }, [analysisId]);
 
   useEffect(() => {
     if (!analysisId) {
       navigate("/error?reason=not_found", { replace: true });
       return;
     }
+    if (authLoading) return;
     let cancelled = false;
+    setLoading(true);
+    setAccessClaimChecked(false);
     (async () => {
-      const { data, error } = await supabase
-        .from("analyses")
-        .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type, is_paid")
-        .eq("id", analysisId)
-        .maybeSingle();
+      const claimResult = await claimPendingAnalysis();
+      if (claimResult.attempted) {
+        setAccessRefreshSignal((n) => n + 1);
+      }
+      const data = await loadReport();
       if (cancelled) return;
-      if (error || !data) {
+      if (!data) {
         navigate("/error?reason=not_found", { replace: true });
         return;
       }
@@ -147,13 +172,26 @@ const ReportContent = () => {
         navigate(`/processing/${analysisId}`, { replace: true });
         return;
       }
-      setRow(data as unknown as Row);
+      setRow(data);
+      setAccessClaimChecked(true);
       setLoading(false);
     })();
     return () => {
       cancelled = true;
     };
-  }, [analysisId, navigate]);
+  }, [analysisId, authLoading, loadReport, navigate, user?.id]);
+
+  useEffect(() => {
+    if (!row || loading || entitlementLoading || accessLoggedRef.current) return;
+    accessLoggedRef.current = true;
+    console.log("[report-access]", {
+      authUserId: user?.id,
+      analysisUserId: row.user_id,
+      isOwner,
+      hasPaidAccess: hasFullAccess,
+      pendingClaim: localStorage.getItem("pending_claim_analysis_id"),
+    });
+  }, [row, loading, entitlementLoading, user?.id, isOwner, hasFullAccess]);
 
   // Show feedback modal when user scrolls near bottom of report, or after 90s — whichever first.
   useEffect(() => {
@@ -473,14 +511,25 @@ const ReportContent = () => {
 
             {analysisId && (
               <div className="mt-12">
-                <PaywallBlur
-                  locked={!hasFullAccess}
-                  isOwner={isOwner}
-                  isAnonymousOwner={isAnonymousOwner}
-                  analysisId={analysisId}
-                >
-                  <DeepReport result={result} context={context} locked={!hasFullAccess} />
-                </PaywallBlur>
+                {entitlementLoading ? (
+                  <div className="py-12 text-center text-[14px] text-muted-foreground">
+                    Loading access…
+                  </div>
+                ) : hasFullAccess ? (
+                  <DeepReport result={result} context={context} locked={false} />
+                ) : isOwner ? (
+                  <PaywallBlur locked isOwner={isOwner} analysisId={analysisId}>
+                    <DeepReport result={result} context={context} locked />
+                  </PaywallBlur>
+                ) : isAnonymousOwner ? (
+                  <PaywallBlur locked isOwner={false} isAnonymousOwner analysisId={analysisId}>
+                    <DeepReport result={result} context={context} locked />
+                  </PaywallBlur>
+                ) : (
+                  <PaywallBlur locked isOwner={false} isAnonymousOwner={false} analysisId={analysisId}>
+                    <DeepReport result={result} context={context} locked />
+                  </PaywallBlur>
+                )}
               </div>
             )}
 

@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 const KEY = "chemistry_session_id";
+const PENDING_CLAIM_ANALYSIS_KEY = "pending_claim_analysis_id";
 
 const uuidv4 = (): string => {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
@@ -22,6 +23,58 @@ export const getSessionId = (): string => {
     window.localStorage.setItem(KEY, id);
   }
   return id;
+};
+
+export const setPendingClaimAnalysisId = (analysisId: string): void => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(PENDING_CLAIM_ANALYSIS_KEY, analysisId);
+};
+
+export const getPendingClaimAnalysisId = (): string | null => {
+  if (typeof window === "undefined") return null;
+  return window.localStorage.getItem(PENDING_CLAIM_ANALYSIS_KEY);
+};
+
+export const clearPendingClaimAnalysisId = (): void => {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(PENDING_CLAIM_ANALYSIS_KEY);
+};
+
+export const claimPendingAnalysis = async (): Promise<{
+  attempted: boolean;
+  claimed: boolean;
+  analysisId: string | null;
+}> => {
+  const analysisId = getPendingClaimAnalysisId();
+  if (!analysisId) return { attempted: false, claimed: false, analysisId: null };
+
+  const { data: userData } = await supabase.auth.getUser();
+  if (!userData.user) return { attempted: false, claimed: false, analysisId };
+
+  const { data, error } = await supabase.rpc("claim_analysis", {
+    p_analysis_id: analysisId,
+  });
+
+  if (error) {
+    console.warn("[claim-analysis] failed", { analysisId, error: error.message });
+    return { attempted: true, claimed: false, analysisId };
+  }
+
+  if (data === true) {
+    clearPendingClaimAnalysisId();
+  } else {
+    const { data: row } = await supabase
+      .from("analyses")
+      .select("user_id")
+      .eq("id", analysisId)
+      .maybeSingle();
+    if (row?.user_id === userData.user.id) {
+      clearPendingClaimAnalysisId();
+      return { attempted: true, claimed: true, analysisId };
+    }
+  }
+
+  return { attempted: true, claimed: data === true, analysisId };
 };
 
 export const logEvent = (

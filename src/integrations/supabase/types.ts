@@ -436,6 +436,7 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: number
       }
+      claim_analysis: { Args: { p_analysis_id: string }; Returns: boolean }
       claim_anonymous_analyses: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
