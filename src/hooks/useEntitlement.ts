@@ -11,7 +11,7 @@ export type EntitlementResult = {
   refresh: () => void;
 };
 
-export function useEntitlement(analysisId: string | undefined): EntitlementResult {
+export function useEntitlement(analysisId: string | undefined, refreshSignal = 0): EntitlementResult {
   const { user, loading: authLoading } = useAuth();
   const [isOwner, setIsOwner] = useState(false);
   const [isAnonymousOwner, setIsAnonymousOwner] = useState(false);
@@ -52,7 +52,7 @@ export function useEntitlement(analysisId: string | undefined): EntitlementResul
     return () => {
       cancelled = true;
     };
-  }, [analysisId, user, authLoading, nonce]);
+  }, [analysisId, user, authLoading, nonce, refreshSignal]);
 
   return { isOwner, isAnonymousOwner, hasFullAccess, isLoading, refresh };
 }
