@@ -62,6 +62,16 @@ export const claimPendingAnalysis = async (): Promise<{
 
   if (data === true) {
     clearPendingClaimAnalysisId();
+  } else {
+    const { data: row } = await supabase
+      .from("analyses")
+      .select("user_id")
+      .eq("id", analysisId)
+      .maybeSingle();
+    if (row?.user_id === userData.user.id) {
+      clearPendingClaimAnalysisId();
+      return { attempted: true, claimed: true, analysisId };
+    }
   }
 
   return { attempted: true, claimed: data === true, analysisId };
