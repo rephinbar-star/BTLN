@@ -224,7 +224,7 @@ Deno.serve(async (req) => {
   const OPENROUTER_HTTP_REFERER =
     Deno.env.get("OPENROUTER_HTTP_REFERER") ??
     "https://couplechemistry.lovable.app";
-  const OPENROUTER_X_TITLE = Deno.env.get("OPENROUTER_X_TITLE") ?? "Chemistry";
+  const OPENROUTER_X_TITLE = Deno.env.get("OPENROUTER_X_TITLE") ?? "BetweenTheLines";
 
   if (!OPENROUTER_API_KEY) {
     return json(500, { error: "OPENROUTER_API_KEY is not configured" });

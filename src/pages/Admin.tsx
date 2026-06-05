@@ -67,7 +67,7 @@ const PasswordGate = ({ onSuccess }: { onSuccess: () => void }) => {
         onSubmit={submit}
         className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-sm"
       >
-        <h1 className="text-xl font-semibold tracking-tight">Chemistry admin</h1>
+            <h1 className="text-xl font-semibold tracking-tight">BetweenTheLines admin</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Enter the admin password to continue.
         </p>
@@ -362,7 +362,7 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
         {/* Header */}
         <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Chemistry admin</h1>
+            <h1 className="text-2xl font-semibold tracking-tight">BetweenTheLines admin</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Last refreshed:{" "}
               {refreshedAt ? refreshedAt.toLocaleString() : "—"}

@@ -27,7 +27,7 @@ export const Header = () => {
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <Link to="/" className="flex items-center gap-2">
           <Heart className="h-5 w-5 fill-foreground text-foreground" strokeWidth={0} />
-          <span className="text-base font-medium tracking-tight">Chemistry</span>
+          <span className="text-base font-medium tracking-tight">BetweenTheLines</span>
         </Link>
         <div className="flex items-center gap-2">
           {!loading && user ? (

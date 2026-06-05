@@ -386,7 +386,7 @@ const ReportContent = () => {
       typeof (navigator as Navigator).share === "function";
     if (canWebShare) {
       try {
-        await (navigator as Navigator).share({ title: "Chemistry report", text, url });
+        await (navigator as Navigator).share({ title: "BetweenTheLines report", text, url });
         void supabase.from("share_clicks").insert([
           { analysis_id: analysisId!, platform: "web_share" },
         ]);
@@ -444,7 +444,7 @@ const ReportContent = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
-        <title>{`Chemistry Report: ${context.name1} & ${context.name2} — ${Math.round(result.headline.score)}/100`}</title>
+        <title>{`BetweenTheLines Report: ${context.name1} & ${context.name2} — ${Math.round(result.headline.score)}/100`}</title>
         <meta
           name="description"
           content={`Chemistry score ${Math.round(result.headline.score)} — ${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}

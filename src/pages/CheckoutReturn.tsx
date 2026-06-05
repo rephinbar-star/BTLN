@@ -50,7 +50,7 @@ export default function CheckoutReturn() {
             Payment complete
           </h1>
           <p className="mt-3 max-w-md text-[15px] text-muted-foreground">
-            Your full report is unlocked. Thanks for supporting Couple Chemistry.
+            Your full report is unlocked. Thanks for supporting BetweenTheLines.
           </p>
           <Link
             to={analysisId ? `/report/${analysisId}` : "/"}
