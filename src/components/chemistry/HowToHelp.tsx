@@ -127,14 +127,26 @@ const guides: {
 
 export const HowToHelp = () => {
   const [open, setOpen] = useState<GuideId | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="rounded-xl border border-border bg-background">
-      <div className="flex items-center gap-2 px-4 pt-3 pb-2">
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-center gap-2 px-4 py-3 text-left transition-colors hover:bg-muted/40"
+        aria-expanded={expanded}
+      >
         <MessageSquare className="h-3.5 w-3.5 text-muted-foreground" />
-        <p className="text-[13px] font-medium text-foreground">How To?</p>
-      </div>
-      <div className="divide-y divide-border">
+        <p className="flex-1 text-[13px] font-medium text-foreground">How To?</p>
+        <ChevronDown
+          className={`h-4 w-4 flex-shrink-0 text-muted-foreground transition-transform duration-200 ${
+            expanded ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+      {expanded && (
+      <div className="divide-y divide-border border-t border-border">
         {guides.map((g) => {
           const Icon = g.icon;
           const isOpen = open === g.id;
@@ -177,6 +189,7 @@ export const HowToHelp = () => {
           );
         })}
       </div>
+      )}
     </div>
   );
 };
