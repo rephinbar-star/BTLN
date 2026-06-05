@@ -402,7 +402,7 @@ export const InputSection = () => {
   return (
     <section id="input-section" className="scroll-mt-24 px-5 pb-12 pt-8 sm:px-8 sm:pb-16 sm:pt-12">
       <div className="mx-auto max-w-3xl text-center">
-        <h2 className="text-[28px] font-medium tracking-tight sm:text-[36px]">Try it now</h2>
+        <h2 className="text-[28px] font-medium tracking-tight sm:text-[36px]">Are you a Power Couple? Find out for free</h2>
         <p className="mt-3 text-[16px] text-muted-foreground sm:text-[18px]">
           Takes about 90 seconds. Free, no signup.
         </p>
