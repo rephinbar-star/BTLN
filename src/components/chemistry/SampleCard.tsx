@@ -16,7 +16,7 @@ export const SampleCard = () => {
       <div className="mt-6 flex flex-col items-center text-center">
         <span className="text-xs text-muted-foreground">Maya &amp; Daniel</span>
         <span className="mt-1 text-[80px] font-medium leading-none tracking-tight">96</span>
-        <span className="mt-3 inline-flex items-center rounded-full bg-pastel-pink-bg px-3 py-1 text-xs font-medium text-pastel-pink-fg-strong">
+        <span className="mt-3 inline-flex items-center rounded-full bg-pastel-pink-bg px-3 py-1 text-xs font-medium text-pastel-pink-fg">
           Power couple
         </span>
       </div>
