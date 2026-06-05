@@ -412,25 +412,8 @@ export const InputSection = () => {
         onSubmit={handleSubmit}
         className="mx-auto mt-10 max-w-[720px] rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8"
       >
-        {/* Privacy reassurance */}
-        <div className="flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-foreground">
-          <Lock className="mt-0.5 h-4 w-4 flex-shrink-0" />
-          <p className="text-[13px] leading-relaxed">
-            Your messages are deleted immediately after analysis. Nothing is stored.
-          </p>
-        </div>
-
-        {/* Info callout */}
-        <div className="mt-3 flex items-start gap-3 rounded-xl bg-pastel-blue-bg p-4 text-pastel-blue-fg">
-          <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-          <p className="text-[13px] leading-relaxed">
-            For best results: paste at least 50 messages. More is better — the analysis gets sharper with 100+
-            messages spanning a few weeks. Below 30 messages, we can only give you a rough read.
-          </p>
-        </div>
-
         {/* How-to help */}
-        <div className="mt-4">
+        <div>
           <HowToHelp />
         </div>
 
@@ -598,6 +581,23 @@ export const InputSection = () => {
               {imageError && <p className="mt-2 text-[12px] text-destructive">{imageError}</p>}
             </div>
           )}
+        </div>
+
+        {/* Privacy reassurance */}
+        <div className="mt-4 flex items-start gap-3 rounded-xl border border-border bg-muted/40 p-4 text-foreground">
+          <Lock className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p className="text-[13px] leading-relaxed">
+            Your messages are deleted immediately after analysis. Nothing is stored.
+          </p>
+        </div>
+
+        {/* Info callout */}
+        <div className="mt-3 flex items-start gap-3 rounded-xl bg-pastel-blue-bg p-4 text-pastel-blue-fg">
+          <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+          <p className="text-[13px] leading-relaxed">
+            For best results: paste at least 50 messages. More is better — the analysis gets sharper with 100+
+            messages spanning a few weeks. Below 30 messages, we can only give you a rough read.
+          </p>
         </div>
 
         {/* Dropdowns */}
