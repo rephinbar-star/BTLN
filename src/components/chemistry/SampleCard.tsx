@@ -14,24 +14,24 @@ export const SampleCard = () => {
 
       {/* Score */}
       <div className="mt-6 flex flex-col items-center text-center">
-        <span className="text-xs text-muted-foreground">Alex &amp; Jordan</span>
-        <span className="mt-1 text-[80px] font-medium leading-none tracking-tight">78</span>
-        <span className="mt-3 inline-flex items-center rounded-full bg-pastel-purple-bg px-3 py-1 text-xs font-medium text-pastel-purple-fg-strong">
-          In sync
+        <span className="text-xs text-muted-foreground">Maya &amp; Daniel</span>
+        <span className="mt-1 text-[80px] font-medium leading-none tracking-tight">96</span>
+        <span className="mt-3 inline-flex items-center rounded-full bg-pastel-pink-bg px-3 py-1 text-xs font-medium text-pastel-pink-fg-strong">
+          Power couple
         </span>
       </div>
 
       {/* Vibe quote */}
       <p className="mt-5 text-center text-[13px] italic leading-relaxed text-muted-foreground">
-        &ldquo;You communicate like best friends, but emotional vulnerability is mostly Alex&apos;s job.&rdquo;
+        &ldquo;You finish each other&apos;s sentences and still flirt like it&apos;s the first week.&rdquo;
       </p>
 
       {/* Score cards */}
       <div className="mt-5 grid grid-cols-3 gap-2">
         {[
-          { label: "Communication", value: 82 },
-          { label: "Safety", value: 71 },
-          { label: "Spark", value: 80 },
+          { label: "Communication", value: 95 },
+          { label: "Safety", value: 97 },
+          { label: "Spark", value: 94 },
         ].map((s) => (
           <div key={s.label} className="rounded-lg bg-muted px-2 py-2.5 text-center">
             <div className="text-[10px] uppercase tracking-wide text-muted-foreground">{s.label}</div>
@@ -45,13 +45,13 @@ export const SampleCard = () => {
         <div className="rounded-lg bg-pastel-green-bg p-3">
           <div className="text-[10px] font-semibold uppercase tracking-wide text-pastel-green-fg">Green flag</div>
           <p className="mt-1 text-[11px] leading-snug text-pastel-green-fg">
-            Repair attempts after disagreements happen quickly — usually within 2 hours.
+            Daily &ldquo;thinking of you&rdquo; texts — unprompted, on both sides.
           </p>
         </div>
-        <div className="rounded-lg bg-pastel-amber-bg p-3">
-          <div className="text-[10px] font-semibold uppercase tracking-wide text-pastel-amber-fg">Watch</div>
-          <p className="mt-1 text-[11px] leading-snug text-pastel-amber-fg">
-            Jordan&apos;s reply time grows 3x slower when topics get emotional.
+        <div className="rounded-lg bg-pastel-pink-bg p-3">
+          <div className="text-[10px] font-semibold uppercase tracking-wide text-pastel-pink-fg">Spark</div>
+          <p className="mt-1 text-[11px] leading-snug text-pastel-pink-fg">
+            Inside jokes and flirty callbacks woven through every conversation.
           </p>
         </div>
       </div>
@@ -62,7 +62,7 @@ export const SampleCard = () => {
           Attachment styles
         </div>
         <div className="mt-1 text-[13px]">
-          Alex secure <span className="text-muted-foreground">·</span> Jordan avoidant
+          Maya secure <span className="text-muted-foreground">·</span> Daniel secure
         </div>
       </div>
     </div>
