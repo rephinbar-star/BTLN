@@ -446,8 +446,16 @@ export const InputSection = () => {
         onSubmit={handleSubmit}
         className="mx-auto mt-10 max-w-[720px] rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8"
       >
+        {/* How many messages Q&A */}
+        <QACard
+          icon={Info}
+          question="How many messages should I paste?"
+          answer="For best results: paste at least 50 messages. More is better — the analysis gets sharper with 100+ messages spanning a few weeks. Below 30 messages, we can only give you a rough read."
+          tone="blue"
+        />
+
         {/* How-to help */}
-        <div>
+        <div className="mt-3">
           <HowToHelp />
         </div>
 
@@ -624,12 +632,6 @@ export const InputSection = () => {
             question="Is my data private?"
             answer="Your messages are deleted immediately after analysis. Nothing is stored."
             tone="muted"
-          />
-          <QACard
-            icon={Info}
-            question="How many messages should I paste?"
-            answer="For best results: paste at least 50 messages. More is better — the analysis gets sharper with 100+ messages spanning a few weeks. Below 30 messages, we can only give you a rough read."
-            tone="blue"
           />
         </div>
 
