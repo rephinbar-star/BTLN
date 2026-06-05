@@ -1,4 +1,4 @@
-import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, Lock } from "lucide-react";
+import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, Lock, ChevronDown } from "lucide-react";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -70,6 +70,40 @@ const formatBytes = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+};
+
+type QACardProps = {
+  icon: typeof Lock;
+  question: string;
+  answer: string;
+  tone: "muted" | "blue";
+};
+
+const QACard = ({ icon: Icon, question, answer, tone }: QACardProps) => {
+  const [open, setOpen] = useState(false);
+  const toneClasses =
+    tone === "blue"
+      ? "bg-pastel-blue-bg text-pastel-blue-fg"
+      : "border border-border bg-muted/40 text-foreground";
+  return (
+    <div className={`rounded-xl ${toneClasses}`}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="flex w-full items-center gap-3 p-4 text-left"
+      >
+        <Icon className="h-4 w-4 flex-shrink-0" />
+        <p className="flex-1 text-[13px] font-semibold leading-relaxed">{question}</p>
+        <ChevronDown
+          className={`h-4 w-4 flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+      {open && (
+        <p className="animate-fade-in px-4 pb-4 pl-11 text-[13px] leading-relaxed">{answer}</p>
+      )}
+    </div>
+  );
 };
 
 export const InputSection = () => {
