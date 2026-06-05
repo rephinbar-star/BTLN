@@ -400,7 +400,7 @@ export const InputSection = () => {
   ];
 
   return (
-    <section id="input-section" className="scroll-mt-24 px-5 pb-12 pt-[12px] sm:px-8 sm:pb-16 sm:pt-[28px]">
+    <section id="input-section" className="scroll-mt-24 px-5 pb-12 pt-0 sm:px-8 sm:pb-16 sm:pt-[13px]">
       <div className="mx-auto max-w-3xl text-center">
         <h2 className="text-[28px] font-medium tracking-tight sm:text-[36px]">Are you a Power Couple? Find out for free</h2>
         <p className="mt-3 text-[16px] text-muted-foreground sm:text-[18px]">
