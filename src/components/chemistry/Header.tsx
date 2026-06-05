@@ -68,7 +68,7 @@ export const Header = () => {
                   to="/auth?mode=signin"
                   className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
                 >
-                  Sign in
+                  Sign Up/In
                 </Link>
               )}
             </>
