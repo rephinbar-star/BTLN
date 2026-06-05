@@ -66,17 +66,11 @@ export const Header = () => {
               {!loading && (
                 <Link
                   to="/auth?mode=signin"
-                  className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
                 >
                   Sign in
                 </Link>
               )}
-              <button
-                onClick={() => scrollToInput("header")}
-                className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
-              >
-                Try it free
-              </button>
             </>
           )}
         </div>
