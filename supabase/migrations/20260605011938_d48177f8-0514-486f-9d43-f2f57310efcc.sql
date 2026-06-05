@@ -1,0 +1,1 @@
+UPDATE public.couple_types SET image_url_romantic = 'https://ukycdbvasmeuralmvvcm.supabase.co/storage/v1/object/public/couple_types/t01_powercouple_romantic.png' WHERE id = 1;
