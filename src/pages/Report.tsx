@@ -259,6 +259,7 @@ const ReportContent = () => {
   const context = (row?.context_data ?? null) as ContextData | null;
 
   const safetyMode = result?.meta?.safety_concern === true;
+  const hasUnlockedReport = hasFullAccess || (isOwner && row?.is_paid === true);
 
   // ----- Checkout return handling -----
   useEffect(() => {
@@ -279,24 +280,27 @@ const ReportContent = () => {
     const toastId = "checkout-unlock";
     toast.loading("Payment successful — unlocking your full report…", { id: toastId });
     let elapsed = 0;
+    const checkAccess = async () => {
+      refreshEntitlement();
+      const latest = await loadReport();
+      if (latest?.is_paid) {
+        setRow(latest);
+      }
+    };
     const interval = window.setInterval(() => {
       elapsed += 2000;
-      refreshEntitlement();
-      if (elapsed >= 30_000) {
+      void checkAccess();
+      if (elapsed >= 120_000) {
         window.clearInterval(interval);
         toast.error(
-          "Payment confirmed but unlock is taking longer than expected. Please refresh the page or contact support.",
+          "Payment confirmed but unlock is still syncing. Please refresh in a moment or contact support.",
           { id: toastId },
         );
         logEvent("stripe_unlock_delay", { analysis_id: analysisId });
-        const next = new URLSearchParams(searchParams);
-        next.delete("checkout");
-        next.delete("session_id");
-        setSearchParams(next, { replace: true });
       }
     }, 2000);
     // Kick off the first refresh immediately.
-    refreshEntitlement();
+    void checkAccess();
     return () => {
       window.clearInterval(interval);
       toast.dismiss(toastId);
@@ -307,7 +311,7 @@ const ReportContent = () => {
   // When entitlement flips to true while polling, clear toast + URL.
   useEffect(() => {
     if (searchParams.get("checkout") !== "success") return;
-    if (!hasFullAccess) return;
+    if (!hasUnlockedReport) return;
     toast.success("Unlocked. Enjoy your full report.", { id: "checkout-unlock", duration: 3000 });
     logEvent("entitlement_unlocked", { analysis_id: analysisId });
     const next = new URLSearchParams(searchParams);
@@ -315,7 +319,7 @@ const ReportContent = () => {
     next.delete("session_id");
     setSearchParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasFullAccess]);
+  }, [hasUnlockedReport]);
 
   const handleDownload = async () => {
     if (!cardRef.current || !context || downloading) return;
