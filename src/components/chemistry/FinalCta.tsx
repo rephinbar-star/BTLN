@@ -97,17 +97,17 @@ export const FinalCta = () => {
     <section className="px-5 py-20 sm:px-8 sm:py-28">
       <div className="mx-auto max-w-2xl text-center">
         <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="relative -top-[20px] mb-6 inline-flex w-full max-w-[280px] items-center justify-center gap-2.5 rounded-full border-2 border-[hsl(24,100%,45%)] bg-[hsl(25,95%,53%)] px-6 py-3 text-base font-bold text-white shadow-md transition-all hover:scale-110 hover:-translate-y-1 hover:shadow-2xl hover:bg-[hsl(24,100%,45%)] animate-[pulse_2s_ease-in-out_infinite]"
-        >
-          <Mail className="h-5 w-5" /> Invite friends
-        </button>
-        <button
           onClick={startNewAnalysis}
           className="inline-flex w-full max-w-[280px] items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
         >
           Start a new analysis <ArrowRight className="h-4 w-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="mt-4 inline-flex w-full max-w-[280px] items-center justify-center gap-2.5 rounded-full border-2 border-[hsl(24,100%,45%)] bg-[hsl(25,95%,53%)] px-6 py-3 text-base font-bold text-white shadow-md transition-all hover:scale-110 hover:-translate-y-1 hover:shadow-2xl hover:bg-[hsl(24,100%,45%)] animate-[pulse_2s_ease-in-out_infinite]"
+        >
+          <Mail className="h-5 w-5" /> Invite friends
         </button>
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
           {["🔒 Private by default", "⚡ Results in 90s", "💬 Optional feedback at the end"].map((p) => (
