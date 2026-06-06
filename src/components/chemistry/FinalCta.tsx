@@ -99,9 +99,9 @@ export const FinalCta = () => {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mb-5 inline-flex items-center gap-2 text-[14px] font-medium text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          className="mb-6 inline-flex items-center gap-2.5 rounded-full border-2 border-pastel-amber-fg-strong bg-pastel-amber-bg px-6 py-3 text-base font-bold text-pastel-amber-fg-strong transition-all hover:scale-105 hover:shadow-lg"
         >
-          <Mail className="h-4 w-4" /> Invite friends
+          <Mail className="h-5 w-5" /> Invite friends
         </button>
         <button
           onClick={startNewAnalysis}
