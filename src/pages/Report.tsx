@@ -582,6 +582,7 @@ const ReportContent = () => {
               >
                 Start a new analysis <ArrowRight className="h-4 w-4" />
               </Link>
+              <InviteFriendsButton className="mt-4" />
             </div>
           </div>
         )}
