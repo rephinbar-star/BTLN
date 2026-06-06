@@ -285,10 +285,14 @@ const ReportContent = () => {
     const checkAccess = async () => {
       refreshEntitlement();
       if (user?.id) {
-        await supabase.functions.invoke("sync-subscription", {
-          body: { environment: getStripeEnvironment(), analysisId, sessionId: checkoutSessionId },
-        });
-        refreshEntitlement();
+        try {
+          await supabase.functions.invoke("sync-subscription", {
+            body: { environment: getStripeEnvironment(), analysisId, sessionId: checkoutSessionId },
+          });
+          refreshEntitlement();
+        } catch (e) {
+          console.warn("subscription sync retry failed", e);
+        }
       }
       const latest = await loadReport();
       if (latest?.is_paid) {
