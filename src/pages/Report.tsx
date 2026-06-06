@@ -275,7 +275,8 @@ const ReportContent = () => {
 
     if (checkout !== "success") return;
 
-    const toastId = toast.loading("Payment successful — unlocking your full report…");
+    const toastId = "checkout-unlock";
+    toast.loading("Payment successful — unlocking your full report…", { id: toastId });
     let elapsed = 0;
     const interval = window.setInterval(() => {
       elapsed += 2000;
@@ -295,7 +296,10 @@ const ReportContent = () => {
     }, 2000);
     // Kick off the first refresh immediately.
     refreshEntitlement();
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearInterval(interval);
+      toast.dismiss(toastId);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams.get("checkout"), analysisId]);
 
@@ -303,7 +307,7 @@ const ReportContent = () => {
   useEffect(() => {
     if (searchParams.get("checkout") !== "success") return;
     if (!hasFullAccess) return;
-    toast.success("Unlocked. Enjoy your full report.", { duration: 3000 });
+    toast.success("Unlocked. Enjoy your full report.", { id: "checkout-unlock", duration: 3000 });
     logEvent("entitlement_unlocked", { analysis_id: analysisId });
     const next = new URLSearchParams(searchParams);
     next.delete("checkout");
