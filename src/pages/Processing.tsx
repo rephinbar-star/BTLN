@@ -2,14 +2,20 @@ import { Heart } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import readingGif from "@/assets/processing/reading.gif.asset.json";
+import patternsGif from "@/assets/processing/patterns.gif.asset.json";
+import attachmentGif from "@/assets/processing/attachment.gif.asset.json";
+import horsemenGif from "@/assets/processing/horsemen.gif.asset.json";
+import hiddenGif from "@/assets/processing/hidden.gif.asset.json";
+import almostGif from "@/assets/processing/almost.gif.asset.json";
 
-const ROTATING_MESSAGES = [
-  "Reading the messages…",
-  "Looking for patterns…",
-  "Checking attachment styles…",
-  "Listening for the Four Horsemen…",
-  "Finding the hidden patterns…",
-  "Almost there…",
+const ROTATING_MESSAGES: { text: string; gif: string }[] = [
+  { text: "Reading the messages…", gif: readingGif.url },
+  { text: "Looking for patterns…", gif: patternsGif.url },
+  { text: "Checking attachment styles…", gif: attachmentGif.url },
+  { text: "Listening for the Four Horsemen…", gif: horsemenGif.url },
+  { text: "Finding the hidden patterns…", gif: hiddenGif.url },
+  { text: "Almost there…", gif: almostGif.url },
 ];
 
 const POLL_INTERVAL_MS = 2000;
@@ -27,7 +33,7 @@ const Processing = () => {
   useEffect(() => {
     const t = setInterval(
       () => setPhraseIdx((i) => (i + 1) % ROTATING_MESSAGES.length),
-      3500,
+      5000,
     );
     return () => clearInterval(t);
   }, []);
@@ -98,6 +104,16 @@ const Processing = () => {
         <span className="text-[14px] font-medium tracking-tight">betweenthelines.app</span>
       </div>
 
+      <img
+        key={`gif-${phraseIdx}`}
+        src={ROTATING_MESSAGES[phraseIdx].gif}
+        alt=""
+        aria-hidden="true"
+        width={80}
+        height={80}
+        className="mt-10 h-20 w-20 animate-in fade-in duration-700"
+      />
+
       <h1 className="mt-10 text-[28px] font-medium tracking-tight sm:text-[36px]">
         Reading the conversation…
       </h1>
@@ -106,7 +122,7 @@ const Processing = () => {
         key={phraseIdx}
         className="mt-6 animate-in fade-in text-[16px] text-muted-foreground duration-700 sm:text-[18px]"
       >
-        {ROTATING_MESSAGES[phraseIdx]}
+        {ROTATING_MESSAGES[phraseIdx].text}
       </p>
 
       <div className="mt-8 flex items-center gap-2" aria-label="loading">
@@ -124,6 +140,13 @@ const Processing = () => {
           Taking longer than expected… still working.
         </p>
       )}
+
+      {/* Preload remaining GIFs so swaps are instant */}
+      <div aria-hidden="true" className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0">
+        {ROTATING_MESSAGES.map((m, i) => (
+          <img key={i} src={m.gif} alt="" width={1} height={1} />
+        ))}
+      </div>
     </div>
   );
 };
