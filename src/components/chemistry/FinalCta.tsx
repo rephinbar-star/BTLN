@@ -99,7 +99,7 @@ export const FinalCta = () => {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mb-6 inline-flex items-center gap-2.5 rounded-full border-2 border-pastel-amber-fg-strong bg-pastel-amber-bg px-6 py-3 text-base font-bold text-pastel-amber-fg-strong transition-all hover:scale-105 hover:shadow-lg"
+          className="relative -top-[10px] mb-6 inline-flex items-center gap-2.5 rounded-full border-2 border-[hsl(24,100%,45%)] bg-[hsl(25,95%,53%)] px-6 py-3 text-base font-bold text-white shadow-md transition-all hover:scale-110 hover:-translate-y-1 hover:shadow-2xl hover:bg-[hsl(24,100%,45%)] animate-[pulse_2s_ease-in-out_infinite]"
         >
           <Mail className="h-5 w-5" /> Invite friends
         </button>
