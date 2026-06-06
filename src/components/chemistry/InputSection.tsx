@@ -760,7 +760,7 @@ export const InputSection = () => {
             disabled={submitting}
             className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 sm:w-auto sm:min-w-[280px]"
           >
-            {submitting ? "Starting…" : "Analyze my chemistry"} <ArrowRight className="h-4 w-4" />
+            {submitting ? "Starting…" : "Read Between The Lines"} <ArrowRight className="h-4 w-4" />
           </button>
           {submitError && <p className="mt-3 text-[12px] text-destructive">{submitError}</p>}
           <p className="mt-4 max-w-md text-center text-[12px] leading-relaxed text-muted-foreground">
