@@ -1,69 +1,36 @@
-## Update model slugs + system prompt for Sonnet 4.6
+## Plan: Add rotating GIFs above subtitle on Processing screen
 
-The Edge Function (`supabase/functions/analyze-conversation/index.ts`) is already complete and reads `model_string`, `vision_model_string`, and `prompt_text` from the active `prompt_versions` row. It sends no `reasoning` parameter and caps output at 8000 tokens — both already match your spec. No function code changes needed.
+**Goal:** Show one GIF per rotating message, swapping in sync every 5 seconds, on the Processing screen.
 
-This round is purely a database update.
+### Changes
 
-### Step 1: Schema migration — column defaults
+1. **Upload the 6 GIFs to Lovable Assets CDN** and write pointer files under `src/assets/processing/`:
+   - `reading.gif.asset.json`
+   - `patterns.gif.asset.json`
+   - `attachment.gif.asset.json`
+   - `horsemen.gif.asset.json`
+   - `hidden.gif.asset.json`
+   - `almost.gif.asset.json`
 
-Update the column defaults on `prompt_versions` so any future row inserts pick up the new slugs:
+2. **Edit `src/pages/Processing.tsx`:**
+   - Convert `ROTATING_MESSAGES` from `string[]` to `{ text, gif }[]`, pairing each message with its imported asset URL.
+   - Change rotation interval from `3500ms` → `5000ms`.
+   - Render an **80×80px** `<img>` above the H1 ("Reading the conversation…"), keyed by index so it fades in with the subtitle.
+   - Preload all 6 GIFs (hidden offscreen `<img>` set) so swaps are instant with no flash.
+   - `alt=""` + `aria-hidden="true"` (decorative).
 
-```sql
-ALTER TABLE public.prompt_versions
-  ALTER COLUMN model_string SET DEFAULT 'anthropic/claude-sonnet-4.6',
-  ALTER COLUMN vision_model_string SET DEFAULT 'google/gemini-3-flash-preview';
+### Layout (top → bottom)
+```
+[betweenthelines.app logo]
+[80×80 GIF]         ← new, swaps every 5s
+[H1: Reading the conversation…]
+[rotating subtitle] ← swaps every 5s, in sync with GIF
+[loading dots]
+[footer note]
 ```
 
-### Step 2: Data update — seeded row
-
-Update the existing `version_number = 1` row (data operation, runs via the insert/update tool — not a migration):
-
-```sql
-UPDATE public.prompt_versions
-   SET model_string        = 'anthropic/claude-sonnet-4.6',
-       vision_model_string = 'google/gemini-3-flash-preview'
- WHERE version_number = 1;
-```
-
-### Step 3: System prompt — needs your text
-
-Your earlier message gave only the **closing line** of the system prompt:
-
-> "The output is JSON only. No preamble, no explanation, no markdown outside the JSON. Begin your response with { and end with }."
-
-I don't have the full prompt body (the long Compatibility Scorecard prompt v1.0 you tested in Claude.ai). I will not invent it.
-
-Two options for how to handle this:
-
-**Option A (recommended) — you paste the full prompt here in your next message.**
-I'll then run a single `UPDATE` setting `prompt_text` to the full text, with the closing JSON-only line appended verbatim if it isn't already the last paragraph. Cleanest, single-source-of-truth in the DB.
-
-**Option B — you paste it directly in the database UI.**
-Go to Cloud → Database → Tables → `prompt_versions` → row where `version_number = 1` → edit `prompt_text`. Make sure the closing line above is the final paragraph. I'll skip step 3 entirely.
-
-Either way, the closing line you quoted will be the final paragraph of the prompt — that's the Sonnet 4.6 compatibility guard against reasoning preamble breaking JSON parsing.
-
-### Step 4: Confirm Edge Function is unchanged (no edits)
-
-Re-verify (read-only) that `supabase/functions/analyze-conversation/index.ts`:
-- Sends no `reasoning` field in either OpenRouter call. ✅
-- Keeps `MAX_OUTPUT_TOKENS = 8000` cost guard. ✅
-- Reads `model_string` / `vision_model_string` / `prompt_text` from the active `prompt_versions` row at call time. ✅
-
-### Step 5: Hand off function URL for curl test
-
-After steps 1–3 are done, the function is live at:
-
-```
-https://ukycdbvasmeuralmvvcm.supabase.co/functions/v1/analyze-conversation
-```
-
-I'll provide a ready-to-paste curl command (text-paste path, since that's faster to validate than vision) and wait for your test result before any frontend wiring.
-
-### What I will NOT do this round
-
-- No frontend wiring, no `/processing/{id}`, no `/report/{analysis_id}`, no feedback modal, no share buttons, no `/error` route. All of that waits for your green light from the curl test.
-
-### Decision needed before I start
-
-Pick **A** (paste the full system prompt in your next message — I'll handle the DB update) or **B** (you'll paste it via the database UI yourself — I'll skip that step).
+### Decisions locked
+- **Size:** 80×80px
+- **Position:** Above the H1
+- **Sync:** One GIF per message, cycling together every 5s
+- **Hosting:** Lovable Assets CDN
