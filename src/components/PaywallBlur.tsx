@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 
 type ProductKey = "duo_monthly" | "duo_annual" | "report_unlock_one_time";
@@ -112,6 +113,28 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
   const { user } = useAuth();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [pending, setPending] = useState<ProductKey | null>(null);
+  const [priorUnlockCount, setPriorUnlockCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setPriorUnlockCount(0);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { count } = await supabase
+        .from("one_time_unlocks")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", user.id)
+        .neq("analysis_id", analysisId);
+      if (!cancelled) setPriorUnlockCount(count ?? 0);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, analysisId]);
+
+  const isReturning = (priorUnlockCount ?? 0) > 0;
 
   const launch = (priceId: ProductKey) => {
     setPending(priceId);
@@ -167,26 +190,21 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
           <Lock className="h-4 w-4" />
         </span>
       </div>
-      <h3 className="mt-3 text-[22px] font-medium tracking-tight">Unlock your full report</h3>
+      <h3 className="mt-3 text-[22px] font-medium tracking-tight">
+        {isReturning ? "This is a new read" : "Unlock your full report"}
+      </h3>
       <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-        See all four communication patterns, your full attachment profiles, the Four Horsemen check, and your personalized practice plan.
+        {isReturning
+          ? "You've unlocked 1 report. Go unlimited for $7.99/mo — every analysis opens automatically, no paywall."
+          : "See all four communication patterns, your full attachment profiles, the Four Horsemen check, and your personalized practice plan."}
       </p>
 
       <div className="mt-6 flex flex-col gap-3 text-left">
         <PriceOption
-          deemphasized
-          label="Just this report"
-          price="$4.99 one-time"
-          subtext="Unlock only this analysis"
-          buttonLabel="Unlock this report"
-          loading={pending === "report_unlock_one_time"}
-          onClick={() => launch("report_unlock_one_time")}
-        />
-        <PriceOption
           highlighted
           label="Monthly subscription"
           price="$7.99/mo"
-          subtext="Unlimited analyses + relationship insights"
+          subtext={isReturning ? "Every analysis opens automatically — no paywall" : "Unlimited analyses + relationship insights"}
           buttonLabel="Subscribe monthly"
           loading={pending === "duo_monthly"}
           onClick={() => launch("duo_monthly")}
@@ -198,6 +216,15 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
           buttonLabel="Subscribe annually"
           loading={pending === "duo_annual"}
           onClick={() => launch("duo_annual")}
+        />
+        <PriceOption
+          deemphasized
+          label={isReturning ? "Unlock just this one" : "Just this report"}
+          price="$4.99 one-time"
+          subtext="Unlock only this analysis"
+          buttonLabel={isReturning ? "Unlock just this one" : "Unlock this report"}
+          loading={pending === "report_unlock_one_time"}
+          onClick={() => launch("report_unlock_one_time")}
         />
       </div>
 
