@@ -114,7 +114,7 @@ const Processing = () => {
         className="mt-10 h-20 w-20 animate-in fade-in duration-700"
       />
 
-      <h1 className="mt-10 text-[28px] font-medium tracking-tight sm:text-[36px]">
+      <h1 className="mt-6 text-[28px] font-medium tracking-tight sm:text-[36px]">
         Reading the conversation…
       </h1>
 
