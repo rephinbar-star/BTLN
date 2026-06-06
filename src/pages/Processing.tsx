@@ -33,7 +33,7 @@ const Processing = () => {
   useEffect(() => {
     const t = setInterval(
       () => setPhraseIdx((i) => (i + 1) % ROTATING_MESSAGES.length),
-      5000,
+      8000,
     );
     return () => clearInterval(t);
   }, []);
@@ -114,16 +114,16 @@ const Processing = () => {
         className="mt-10 h-20 w-20 animate-in fade-in duration-700"
       />
 
-      <h1 className="mt-6 text-[28px] font-medium tracking-tight sm:text-[36px]">
-        Reading Between The Lines
-      </h1>
-
-      <p
-        key={phraseIdx}
-        className="mt-6 animate-in fade-in text-[16px] text-muted-foreground duration-700 sm:text-[18px]"
+      <h2
+        key={`stage-${phraseIdx}`}
+        className="mt-6 animate-in fade-in text-[24px] font-medium tracking-tight duration-700 sm:text-[32px]"
       >
         {ROTATING_MESSAGES[phraseIdx].text}
-      </p>
+      </h2>
+
+      <h3 className="mt-3 text-[14px] font-medium tracking-tight text-muted-foreground sm:text-[16px]">
+        Reading Between The Lines
+      </h3>
 
       <div className="mt-8 flex items-center gap-2" aria-label="loading">
         <span className="h-2 w-2 animate-pulse rounded-full bg-foreground/60 [animation-delay:-0.3s]" />
