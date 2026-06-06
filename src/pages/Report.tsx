@@ -279,13 +279,14 @@ const ReportContent = () => {
     if (checkout !== "success") return;
 
     const toastId = "checkout-unlock";
+    const checkoutSessionId = searchParams.get("session_id");
     toast.loading("Payment successful — unlocking your full report…", { id: toastId });
     let elapsed = 0;
     const checkAccess = async () => {
       refreshEntitlement();
       if (user?.id) {
         await supabase.functions.invoke("sync-subscription", {
-          body: { environment: getStripeEnvironment(), analysisId },
+          body: { environment: getStripeEnvironment(), analysisId, sessionId: checkoutSessionId },
         });
         refreshEntitlement();
       }
