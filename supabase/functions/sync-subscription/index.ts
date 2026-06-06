@@ -26,8 +26,8 @@ function isoFromUnix(seconds?: number | null): string | null {
   return seconds ? new Date(seconds * 1000).toISOString() : null;
 }
 
-async function syncSubscription(subscription: any, analysisId?: string | null) {
-  const userId = subscription.metadata?.userId;
+async function syncSubscription(subscription: any, analysisId?: string | null, fallbackUserId?: string | null) {
+  const userId = subscription.metadata?.userId ?? fallbackUserId;
   if (!userId) return false;
 
   const item = subscription.items?.data?.[0];
@@ -76,19 +76,33 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { environment, analysisId } = body ?? {};
+    const { environment, analysisId, sessionId } = body ?? {};
     if (environment !== "sandbox" && environment !== "live") {
       return new Response(JSON.stringify({ error: "Invalid environment" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const stripe = createStripeClient(environment as StripeEnv);
     const synced = new Set<string>();
+    if (sessionId && typeof sessionId === "string") {
+      const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
+      const sessionUserId = session.metadata?.userId;
+      if (sessionUserId !== user.id) {
+        return new Response(JSON.stringify({ error: "Unauthorized session" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const sub = typeof session.subscription === "string"
+        ? await stripe.subscriptions.retrieve(session.subscription)
+        : session.subscription;
+      if (sub && await syncSubscription(sub, analysisId ?? session.metadata?.analysisId, user.id)) {
+        synced.add(sub.id);
+      }
+    }
+
     const subscriptions = await stripe.subscriptions.search({
       query: `metadata['userId']:'${user.id}'`,
       limit: 10,
     });
     for (const sub of subscriptions.data) {
-      if (await syncSubscription(sub, analysisId)) synced.add(sub.id);
+      if (await syncSubscription(sub, analysisId, user.id)) synced.add(sub.id);
     }
 
     if (synced.size === 0 && user.email) {
@@ -96,7 +110,7 @@ Deno.serve(async (req) => {
       for (const customer of customers.data) {
         const list = await stripe.subscriptions.list({ customer: customer.id, status: "all", limit: 10 });
         for (const sub of list.data) {
-          if (sub.metadata?.userId === user.id && await syncSubscription(sub, analysisId)) {
+          if (sub.metadata?.userId === user.id && await syncSubscription(sub, analysisId, user.id)) {
             synced.add(sub.id);
           }
         }
