@@ -15,6 +15,20 @@ function resolveTier(lookupKey?: string | null): string {
   return lookupKey ?? "unknown";
 }
 
+function isAccessGrantingStatus(status?: string | null): boolean {
+  return status === "active" || status === "trialing" || status === "past_due";
+}
+
+async function unlockAnalysisForUser(analysisId?: string | null, userId?: string | null) {
+  if (!analysisId || !userId) return;
+  const { error } = await getSupabase()
+    .from("analyses")
+    .update({ is_paid: true })
+    .eq("id", analysisId)
+    .eq("user_id", userId);
+  if (error) console.error("analyses subscription unlock error:", error.message);
+}
+
 async function logWebhookEvent(eventName: string, metadata: Record<string, unknown>) {
   try {
     await getSupabase()
@@ -42,30 +56,36 @@ async function handleCheckoutCompleted(session: any, _env: StripeEnv) {
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id ?? null;
-    const { error: insertError } = await getSupabase().from("one_time_unlocks").insert({
-      user_id: userId,
-      analysis_id: analysisId,
-      amount_cents: amount,
-      stripe_payment_intent_id: paymentIntent,
-    });
+    const { error: insertError } = await getSupabase().from("one_time_unlocks").upsert(
+      {
+        user_id: userId,
+        analysis_id: analysisId,
+        amount_cents: amount,
+        stripe_payment_intent_id: paymentIntent,
+      },
+      { onConflict: "user_id,analysis_id" },
+    );
     if (insertError) console.log("one_time_unlocks insert error:", insertError.message);
-    const { error: updateError } = await getSupabase()
-      .from("analyses")
-      .update({ is_paid: true })
-      .eq("id", analysisId);
-    if (updateError) console.error("analyses update is_paid error:", updateError.message);
+    await unlockAnalysisForUser(analysisId, userId);
+    return;
   }
-  // Subscription mode: the actual row gets written by customer.subscription.created.
+
+  // Subscription rows are written by customer.subscription.* events, but
+  // checkout completion can arrive first. Unlock this report immediately.
+  if (mode === "subscription") {
+    await unlockAnalysisForUser(analysisId, userId);
+  }
 }
 
 async function handleSubscriptionUpsert(subscription: any) {
   const userId = subscription.metadata?.userId;
+  const analysisId = subscription.metadata?.analysisId;
   if (!userId) {
     console.log("subscription event missing userId metadata", { sub: subscription.id });
     return;
   }
   const item = subscription.items?.data?.[0];
-  const lookupKey = item?.price?.lookup_key ?? null;
+  const lookupKey = item?.price?.lookup_key ?? item?.price?.metadata?.lovable_external_id ?? item?.price?.id ?? null;
   const tier = resolveTier(lookupKey);
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
@@ -85,6 +105,9 @@ async function handleSubscriptionUpsert(subscription: any) {
     { onConflict: "stripe_subscription_id" },
   );
   if (error) console.error("user_subscriptions upsert error:", error.message);
+  if (!error && isAccessGrantingStatus(subscription.status)) {
+    await unlockAnalysisForUser(analysisId, userId);
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: any) {
