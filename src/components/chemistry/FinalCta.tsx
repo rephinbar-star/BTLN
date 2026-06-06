@@ -103,7 +103,6 @@ export const FinalCta = () => {
         >
           <Mail className="h-4 w-4" /> Invite friends
         </button>
-        <div />
         <button
           onClick={startNewAnalysis}
           className="inline-flex items-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
