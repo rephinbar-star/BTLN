@@ -115,7 +115,7 @@ const Processing = () => {
       />
 
       <h1 className="mt-6 text-[28px] font-medium tracking-tight sm:text-[36px]">
-        Reading the conversation…
+        Reading Between The Lines
       </h1>
 
       <p
