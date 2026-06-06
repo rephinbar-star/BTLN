@@ -541,7 +541,7 @@ const ReportContent = () => {
                   <div className="py-12 text-center text-[14px] text-muted-foreground">
                     Loading access…
                   </div>
-                ) : hasFullAccess ? (
+                ) : hasUnlockedReport ? (
                   <>
                     {isOwner && row?.is_paid === false && (
                       <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-pastel-green-bg px-3 py-1.5 text-[12px] font-medium text-pastel-green-fg-strong">
