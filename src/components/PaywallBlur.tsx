@@ -138,15 +138,24 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
 
   if (isOpen) {
     return (
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card p-5 shadow-lg">
-        {checkoutElement}
-        <button
-          type="button"
-          onClick={closeCheckout}
-          className="mt-4 w-full text-center text-[13px] text-muted-foreground underline-offset-2 hover:underline"
-        >
-          Cancel
-        </button>
+      <div className="fixed inset-0 z-50 flex justify-center overflow-y-auto bg-background/80 backdrop-blur-sm p-4 sm:p-6">
+        <div className="my-auto w-full max-w-2xl rounded-2xl border border-border bg-card p-5 shadow-lg">
+          <button
+            type="button"
+            onClick={closeCheckout}
+            className="mb-3 w-full text-right text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+          >
+            Close
+          </button>
+          {checkoutElement}
+          <button
+            type="button"
+            onClick={closeCheckout}
+            className="mt-4 w-full text-center text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
     );
   }
