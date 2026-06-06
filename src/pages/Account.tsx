@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Mail, X } from "lucide-react";
+import { Loader2, Mail, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
+import { getStripeEnvironment } from "@/lib/stripe";
 import type { AnalysisResult } from "@/lib/analysis-types";
 
 type AnalysisRow = {
@@ -27,6 +28,21 @@ type AnalysisRow = {
   status: string;
   result_json: AnalysisResult | null;
 };
+
+type SubscriptionRow = {
+  id: string;
+  tier: string;
+  status: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  stripe_subscription_id: string | null;
+};
+
+type MembershipStatus =
+  | { kind: "none" }
+  | { kind: "single" }
+  | { kind: "monthly"; sub: SubscriptionRow }
+  | { kind: "annual"; sub: SubscriptionRow };
 
 const Account = () => {
   const navigate = useNavigate();
@@ -38,6 +54,13 @@ const Account = () => {
   const [pwBusy, setPwBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [displayName, setDisplayName] = useState("");
+  const [nameBusy, setNameBusy] = useState(false);
+  const [reportToDelete, setReportToDelete] = useState<string | null>(null);
+  const [deletingReport, setDeletingReport] = useState(false);
+  const [membership, setMembership] = useState<MembershipStatus>({ kind: "none" });
+  const [confirmCancelSub, setConfirmCancelSub] = useState(false);
+  const [cancelingSub, setCancelingSub] = useState(false);
 
   const isPasswordUser = !!user?.identities?.some((i) => i.provider === "email");
   const verified = !!user?.email_confirmed_at;
@@ -54,11 +77,105 @@ const Account = () => {
     })();
   }, [user]);
 
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      setDisplayName(data?.display_name ?? "");
+    })();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      const { data: sub } = await supabase
+        .from("user_subscriptions")
+        .select("id, tier, status, current_period_end, cancel_at_period_end, stripe_subscription_id")
+        .eq("user_id", user.id)
+        .in("status", ["active", "trialing", "past_due"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sub) {
+        const tier = (sub.tier || "").toLowerCase();
+        if (tier.includes("annual") || tier.includes("year")) {
+          setMembership({ kind: "annual", sub: sub as SubscriptionRow });
+        } else {
+          setMembership({ kind: "monthly", sub: sub as SubscriptionRow });
+        }
+        return;
+      }
+      const { data: unlock } = await supabase
+        .from("one_time_unlocks")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1)
+        .maybeSingle();
+      setMembership(unlock ? { kind: "single" } : { kind: "none" });
+    })();
+  }, [user]);
+
   const resendVerification = async () => {
     if (!user?.email) return;
     const { error } = await supabase.auth.resend({ type: "signup", email: user.email });
     if (error) toast.error(error.message);
     else toast.success("Verification email sent.");
+  };
+
+  const saveName = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    setNameBusy(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ display_name: displayName.trim() || null })
+      .eq("user_id", user.id);
+    setNameBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success("Name saved.");
+  };
+
+  const handleDeleteReport = async () => {
+    if (!reportToDelete) return;
+    setDeletingReport(true);
+    const { error } = await supabase.from("analyses").delete().eq("id", reportToDelete);
+    setDeletingReport(false);
+    if (error) {
+      toast.error("Couldn't delete report.");
+      return;
+    }
+    setRows((prev) => (prev ? prev.filter((r) => r.id !== reportToDelete) : prev));
+    setReportToDelete(null);
+    toast.success("Report deleted.");
+  };
+
+  const handleCancelSubscription = async () => {
+    setCancelingSub(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("cancel-subscription", {
+        body: { environment: getStripeEnvironment() },
+      });
+      if (error || (data as any)?.error) {
+        toast.error("Couldn't cancel subscription. Please try again.");
+        setCancelingSub(false);
+        return;
+      }
+      setMembership((m) =>
+        m.kind === "monthly" || m.kind === "annual"
+          ? { ...m, sub: { ...m.sub, cancel_at_period_end: true } }
+          : m,
+      );
+      setConfirmCancelSub(false);
+      toast.success("Subscription will end at the end of your billing period.");
+    } catch {
+      toast.error("Couldn't cancel subscription. Please try again.");
+    } finally {
+      setCancelingSub(false);
+    }
   };
 
   const updatePassword = async (e: React.FormEvent) => {
@@ -96,6 +213,19 @@ const Account = () => {
       setDeleting(false);
     }
   };
+
+  const membershipLabel = (() => {
+    switch (membership.kind) {
+      case "single":
+        return "Paid for single report";
+      case "monthly":
+        return "Subscribed $7.99/month";
+      case "annual":
+        return "Subscribed $49.99/Year";
+      default:
+        return "Free";
+    }
+  })();
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -141,6 +271,50 @@ const Account = () => {
           </div>
         </div>
 
+        <form onSubmit={saveName} className="flex flex-col gap-2">
+          <Label htmlFor="display-name">Name (optional)</Label>
+          <div className="flex gap-2">
+            <Input
+              id="display-name"
+              type="text"
+              value={displayName}
+              maxLength={80}
+              placeholder="Your name"
+              onChange={(e) => setDisplayName(e.target.value)}
+            />
+            <Button type="submit" disabled={nameBusy} className="rounded-full">
+              {nameBusy && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Save
+            </Button>
+          </div>
+        </form>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="text-[18px] font-medium tracking-tight">Membership</h2>
+          <div className="flex flex-col gap-3 rounded-xl border border-border p-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm font-medium">{membershipLabel}</div>
+              {(membership.kind === "monthly" || membership.kind === "annual") &&
+                membership.sub.current_period_end && (
+                  <div className="text-xs text-muted-foreground">
+                    {membership.sub.cancel_at_period_end ? "Ends" : "Renews"} on{" "}
+                    {new Date(membership.sub.current_period_end).toLocaleDateString()}
+                  </div>
+                )}
+            </div>
+            {(membership.kind === "monthly" || membership.kind === "annual") &&
+              !membership.sub.cancel_at_period_end && (
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setConfirmCancelSub(true)}
+                >
+                  Cancel subscription
+                </Button>
+              )}
+          </div>
+        </section>
+
         <section>
           <h2 className="mb-3 text-[18px] font-medium tracking-tight">Past reports</h2>
         {rows === null ? (
@@ -164,11 +338,8 @@ const Account = () => {
               const tier = r.result_json?.headline?.tier_label;
               return (
                 <li key={r.id}>
-                  <Link
-                    to={`/report/${r.id}`}
-                    className="flex items-center justify-between rounded-xl border border-border p-4 transition-colors hover:bg-muted/40"
-                  >
-                    <div>
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-border p-4 transition-colors hover:bg-muted/40">
+                    <Link to={`/report/${r.id}`} className="flex-1 min-w-0">
                       <div className="text-sm font-medium">
                         {tier ?? (r.status === "complete" ? "Report" : r.status)}
                         {typeof score === "number" && (
@@ -178,9 +349,24 @@ const Account = () => {
                       <div className="text-xs text-muted-foreground">
                         {new Date(r.created_at).toLocaleString()}
                       </div>
+                    </Link>
+                    <div className="flex items-center gap-1">
+                      <Link
+                        to={`/report/${r.id}`}
+                        className="text-xs text-muted-foreground hover:text-foreground"
+                      >
+                        View →
+                      </Link>
+                      <button
+                        type="button"
+                        aria-label="Delete report"
+                        onClick={() => setReportToDelete(r.id)}
+                        className="ml-2 rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-destructive"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
-                    <span className="text-xs text-muted-foreground">View →</span>
-                  </Link>
+                  </div>
                 </li>
               );
             })}
@@ -271,6 +457,60 @@ const Account = () => {
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Delete account
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!reportToDelete}
+        onOpenChange={(open) => !open && setReportToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this report?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the report from your account. This can't be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingReport}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleDeleteReport();
+              }}
+              disabled={deletingReport}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletingReport && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Delete report
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmCancelSub} onOpenChange={setConfirmCancelSub}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel your subscription?</AlertDialogTitle>
+            <AlertDialogDescription>
+              You'll keep access until the end of your current billing period, then your
+              subscription will end. You won't be charged again.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelingSub}>Keep subscription</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void handleCancelSubscription();
+              }}
+              disabled={cancelingSub}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelingSub && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Cancel subscription
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
