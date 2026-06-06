@@ -1,36 +1,7 @@
-## Plan: Add rotating GIFs above subtitle on Processing screen
+## Plan: Update Processing screen H1 text
 
-**Goal:** Show one GIF per rotating message, swapping in sync every 5 seconds, on the Processing screen.
+Change the H1 on `src/pages/Processing.tsx` from `"Reading the conversation…"` to `"Reading Between The Lines"` (no trailing ellipsis, matching the wording you specified).
 
-### Changes
+One-line edit in one file.
 
-1. **Upload the 6 GIFs to Lovable Assets CDN** and write pointer files under `src/assets/processing/`:
-   - `reading.gif.asset.json`
-   - `patterns.gif.asset.json`
-   - `attachment.gif.asset.json`
-   - `horsemen.gif.asset.json`
-   - `hidden.gif.asset.json`
-   - `almost.gif.asset.json`
-
-2. **Edit `src/pages/Processing.tsx`:**
-   - Convert `ROTATING_MESSAGES` from `string[]` to `{ text, gif }[]`, pairing each message with its imported asset URL.
-   - Change rotation interval from `3500ms` → `5000ms`.
-   - Render an **80×80px** `<img>` above the H1 ("Reading the conversation…"), keyed by index so it fades in with the subtitle.
-   - Preload all 6 GIFs (hidden offscreen `<img>` set) so swaps are instant with no flash.
-   - `alt=""` + `aria-hidden="true"` (decorative).
-
-### Layout (top → bottom)
-```
-[betweenthelines.app logo]
-[80×80 GIF]         ← new, swaps every 5s
-[H1: Reading the conversation…]
-[rotating subtitle] ← swaps every 5s, in sync with GIF
-[loading dots]
-[footer note]
-```
-
-### Decisions locked
-- **Size:** 80×80px
-- **Position:** Above the H1
-- **Sync:** One GIF per message, cycling together every 5s
-- **Hosting:** Lovable Assets CDN
+Tip: changes like this can be done instantly for free via Visual Edits — click the Edit button in the chat box, select the text, and retype it.
