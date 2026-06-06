@@ -5,7 +5,7 @@ export const SampleCard = () => {
     <div className="mx-auto w-full max-w-[360px]">
       <img
         src={solidBondAsset.url}
-        alt="Sample BetweenTheLines result card — Solid Bond, a romantic couple type"
+        alt="Sample BetweenTheLines™ result card — Solid Bond, a romantic couple type"
         width={1024}
         height={1280}
         loading="lazy"
