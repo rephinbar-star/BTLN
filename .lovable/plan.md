@@ -1,23 +1,18 @@
-## 1. Fix the persistent "Payment successful — unlocking your full report…" toast
+## Plan
 
-**File:** `src/pages/Report.tsx`
+1. **Fix the backend subscription write failure**
+   - Add/repair the database uniqueness needed for subscription upserts so successful subscription webhook events can save the user’s membership row instead of failing.
+   - Keep the existing entitlement function working so active monthly/annual subscriptions unlock reports.
 
-The loading toast is created with a generated id in one effect, but the success effect (that runs once entitlement flips) calls `toast.success(...)` without dismissing the loading toast — so the spinner banner stays on screen.
+2. **Make webhook handling more robust**
+   - Update the payments webhook to upsert subscriptions using a conflict target that matches the actual table constraints.
+   - Ensure subscription purchases tied to a report also mark that report as paid/unlocked when the checkout completes or when the subscription event arrives.
 
-Fix:
-- Use a stable toast id constant (e.g. `"checkout-unlock"`) for the loading toast.
-- In the success effect, replace the loading toast by reusing the same id: `toast.success("Unlocked. Enjoy your full report.", { id: "checkout-unlock", duration: 3000 })`.
-- Also clear the polling interval and dismiss the toast on unmount / when checkout param is removed, so it can't linger if the user navigates.
+3. **Stop the stuck toast / paywall loop**
+   - Improve the report checkout-success polling so it checks both entitlement and the report row after checkout.
+   - If the webhook is still delayed, keep the user on the report with a clear “still syncing” message instead of sending them back into checkout.
+   - Dismiss/replace the “Payment successful — unlocking…” toast reliably once access is detected or the URL state is cleared.
 
-## 2. Move "Invite friends" below "Start a new analysis"
-
-**File:** `src/components/chemistry/FinalCta.tsx`
-
-Currently the orange "Invite friends" button renders above "Start a new analysis". Swap the order so the layout becomes:
-
-1. Start a new analysis (primary dark button)
-2. Invite friends (orange animated button)
-
-Keep all existing styling (size, color, animation, hover) intact — only the DOM order changes, and remove the `-top-[20px]` offset on the orange button since it's no longer the top element (replace with normal `mt-3` spacing for visual balance).
-
-No other files affected.
+4. **Verify with live backend signals**
+   - Re-check the affected user/report rows after the migration/function change.
+   - Confirm the webhook no longer logs the `ON CONFLICT` error and the report unlocks for the subscribed user.
