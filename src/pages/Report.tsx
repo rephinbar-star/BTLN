@@ -538,7 +538,14 @@ const ReportContent = () => {
                     Loading access…
                   </div>
                 ) : hasFullAccess ? (
-                  <DeepReport result={result} context={context} locked={false} />
+                  <>
+                    {isOwner && row?.is_paid === false && (
+                      <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-pastel-green-bg px-3 py-1.5 text-[12px] font-medium text-pastel-green-fg-strong">
+                        Unlocked by your subscription
+                      </div>
+                    )}
+                    <DeepReport result={result} context={context} locked={false} />
+                  </>
                 ) : isOwner ? (
                   <PaywallBlur locked isOwner={isOwner} analysisId={analysisId}>
                     <DeepReport result={result} context={context} locked />
