@@ -7,6 +7,7 @@ import * as htmlToImage from "html-to-image";
 import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { claimPendingAnalysis, getSessionId, logEvent } from "@/lib/session";
+import { getStripeEnvironment } from "@/lib/stripe";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
@@ -282,6 +283,12 @@ const ReportContent = () => {
     let elapsed = 0;
     const checkAccess = async () => {
       refreshEntitlement();
+      if (user?.id) {
+        await supabase.functions.invoke("sync-subscription", {
+          body: { environment: getStripeEnvironment(), analysisId },
+        });
+        refreshEntitlement();
+      }
       const latest = await loadReport();
       if (latest?.is_paid) {
         setRow(latest);
