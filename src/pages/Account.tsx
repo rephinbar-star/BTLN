@@ -219,7 +219,7 @@ const Account = () => {
       case "single":
         return "Paid for single report";
       case "monthly":
-        return "Subscribed $7.99/month";
+        return "Subscribed $9.99/month";
       case "annual":
         return "Subscribed $49.99/Year";
       default:

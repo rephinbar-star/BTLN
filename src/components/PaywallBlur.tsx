@@ -195,7 +195,7 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
       </h3>
       <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
         {isReturning
-          ? "You've unlocked 1 report. Go unlimited for $7.99/mo — every analysis opens automatically, no paywall."
+          ? "You've unlocked 1 report. Go unlimited for $9.99/mo — every analysis opens automatically, no paywall."
           : "See all four communication patterns, your full attachment profiles, the Four Horsemen check, and your personalized practice plan."}
       </p>
 
@@ -203,7 +203,7 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
         <PriceOption
           highlighted
           label="Monthly subscription"
-          price="$7.99/mo"
+          price="$9.99/mo"
           subtext={isReturning ? "Every analysis opens automatically — no paywall" : "Unlimited analyses + relationship insights"}
           buttonLabel="Subscribe monthly"
           loading={pending === "duo_monthly"}
@@ -211,8 +211,8 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
         />
         <PriceOption
           label="Annual subscription"
-          price="$49/yr"
-          subtext="Just $4.08/mo — save 49%"
+          price="$49.99/yr"
+          subtext="Just $4.17/mo — save 58%"
           buttonLabel="Subscribe annually"
           loading={pending === "duo_annual"}
           onClick={() => launch("duo_annual")}
