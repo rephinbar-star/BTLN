@@ -482,17 +482,22 @@ const ReportContent = () => {
         {!safetyMode && (
           <div ref={reportRef}>
             {row?.couple_type_id != null && (
-              <div className="mb-8">
-                <CoupleTypeCard
-                  coupleTypeId={row.couple_type_id}
-                  relationshipType={(row.relationship_type as RelationshipType) || "romantic"}
-                  size="full"
-                />
+              <div ref={cardRef} data-pdf-section>
+                <div className="mb-8">
+                  <CoupleTypeCard
+                    coupleTypeId={row.couple_type_id}
+                    relationshipType={(row.relationship_type as RelationshipType) || "romantic"}
+                    size="full"
+                  />
+                </div>
+                <ShareableCard result={result} context={context} />
               </div>
             )}
-            <div data-pdf-section>
-              <ShareableCard ref={cardRef} result={result} context={context} />
-            </div>
+            {row?.couple_type_id == null && (
+              <div ref={cardRef} data-pdf-section>
+                <ShareableCard result={result} context={context} />
+              </div>
+            )}
 
             {/* Action buttons */}
             <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
