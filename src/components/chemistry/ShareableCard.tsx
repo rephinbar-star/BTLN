@@ -165,12 +165,14 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
         {(profile1 || profile2) && (
           <>
             <div className="my-4 h-px w-full bg-border" />
-            <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Attachment styles
+            <div className="text-center">
+              <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                Attachment styles
+              </div>
+              <p className="mt-1 text-[12px] text-foreground">
+                {name1} {profile1?.primary_style ?? "—"} · {name2} {profile2?.primary_style ?? "—"}
+              </p>
             </div>
-            <p className="mt-1 text-[12px] text-foreground">
-              {name1} {profile1?.primary_style ?? "—"} · {name2} {profile2?.primary_style ?? "—"}
-            </p>
           </>
         )}
       </div>
