@@ -36,13 +36,25 @@ type SubscriptionRow = {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   stripe_subscription_id: string | null;
+  updated_at?: string | null;
 };
 
 type MembershipStatus =
   | { kind: "none" }
-  | { kind: "single" }
+  | { kind: "single"; unlockedAt?: string | null }
   | { kind: "monthly"; sub: SubscriptionRow }
   | { kind: "annual"; sub: SubscriptionRow };
+
+type WebhookEventRow = {
+  id: string;
+  created_at: string;
+  event_type: string;
+  status: string;
+  checkout_session_id: string | null;
+  amount_cents: number | null;
+  changes: Record<string, unknown> | null;
+  error_message: string | null;
+};
 
 const Account = () => {
   const navigate = useNavigate();
@@ -59,6 +71,10 @@ const Account = () => {
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [deletingReport, setDeletingReport] = useState(false);
   const [membership, setMembership] = useState<MembershipStatus>({ kind: "none" });
+  const [lastSync, setLastSync] = useState<string | null>(null);
+  const [unlockCount, setUnlockCount] = useState<number>(0);
+  const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[] | null>(null);
+  const [showEvents, setShowEvents] = useState(false);
   const [confirmCancelSub, setConfirmCancelSub] = useState(false);
   const [cancelingSub, setCancelingSub] = useState(false);
 
@@ -94,12 +110,19 @@ const Account = () => {
     (async () => {
       const { data: sub } = await supabase
         .from("user_subscriptions")
-        .select("id, tier, status, current_period_end, cancel_at_period_end, stripe_subscription_id")
+        .select("id, tier, status, current_period_end, cancel_at_period_end, stripe_subscription_id, updated_at")
         .eq("user_id", user.id)
         .in("status", ["active", "trialing", "past_due"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      const { data: unlocks } = await supabase
+        .from("one_time_unlocks")
+        .select("id, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      const unlockList = (unlocks ?? []) as Array<{ id: string; created_at: string }>;
+      setUnlockCount(unlockList.length);
       if (sub) {
         const tier = (sub.tier || "").toLowerCase();
         if (tier.includes("annual") || tier.includes("year")) {
@@ -107,15 +130,27 @@ const Account = () => {
         } else {
           setMembership({ kind: "monthly", sub: sub as SubscriptionRow });
         }
-        return;
+        setLastSync(sub.updated_at ?? null);
+      } else if (unlockList.length > 0) {
+        setMembership({ kind: "single", unlockedAt: unlockList[0].created_at });
+        setLastSync(unlockList[0].created_at);
+      } else {
+        setMembership({ kind: "none" });
+        setLastSync(null);
       }
-      const { data: unlock } = await supabase
-        .from("one_time_unlocks")
-        .select("id")
+      const { data: events } = await supabase
+        .from("webhook_events")
+        .select("id, created_at, event_type, status, checkout_session_id, amount_cents, changes, error_message")
         .eq("user_id", user.id)
-        .limit(1)
-        .maybeSingle();
-      setMembership(unlock ? { kind: "single" } : { kind: "none" });
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setWebhookEvents((events ?? []) as WebhookEventRow[]);
+      if (events && events.length > 0) {
+        const latest = events[0].created_at;
+        if (!sub || new Date(latest) > new Date(sub.updated_at ?? 0)) {
+          setLastSync(latest);
+        }
+      }
     })();
   }, [user]);
 
