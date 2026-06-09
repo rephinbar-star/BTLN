@@ -537,6 +537,8 @@ const ReportContent = () => {
               </div>
             )}
 
+            <FreeInsights result={result} />
+
             {result.meta.analysis_confidence === "low" && (
               <div data-pdf-section className="mt-8 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
                 <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
@@ -546,8 +548,6 @@ const ReportContent = () => {
                 </p>
               </div>
             )}
-
-            <FreeInsights result={result} />
 
             {analysisId && (
               <div className="mt-12">
