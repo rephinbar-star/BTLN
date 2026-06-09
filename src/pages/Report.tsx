@@ -13,6 +13,7 @@ import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { InviteFriendsButton } from "@/components/chemistry/InviteFriendsButton";
 import { CoupleTypeCard } from "@/components/CoupleTypeCard";
+import { Header } from "@/components/chemistry/Header";
 import type { RelationshipType } from "@/lib/coupleTypes";
 import { PaywallBlur } from "@/components/PaywallBlur";
 import { useEntitlement } from "@/hooks/useEntitlement";
