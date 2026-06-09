@@ -106,7 +106,7 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
         </p>
 
         {lowConfidence && (
-          <div className="mt-4 flex items-start gap-2 rounded-xl bg-pastel-amber-bg p-3 text-pastel-amber-fg">
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-pastel-pink-bg p-3 text-pastel-pink-fg">
             <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
             <p className="text-[12px] leading-relaxed">
               Low confidence: only {result.meta.messages_analyzed} messages were available.
