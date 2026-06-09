@@ -36,13 +36,25 @@ type SubscriptionRow = {
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   stripe_subscription_id: string | null;
+  updated_at?: string | null;
 };
 
 type MembershipStatus =
   | { kind: "none" }
-  | { kind: "single" }
+  | { kind: "single"; unlockedAt?: string | null }
   | { kind: "monthly"; sub: SubscriptionRow }
   | { kind: "annual"; sub: SubscriptionRow };
+
+type WebhookEventRow = {
+  id: string;
+  created_at: string;
+  event_type: string;
+  status: string;
+  checkout_session_id: string | null;
+  amount_cents: number | null;
+  changes: Record<string, unknown> | null;
+  error_message: string | null;
+};
 
 const Account = () => {
   const navigate = useNavigate();
@@ -59,6 +71,10 @@ const Account = () => {
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
   const [deletingReport, setDeletingReport] = useState(false);
   const [membership, setMembership] = useState<MembershipStatus>({ kind: "none" });
+  const [lastSync, setLastSync] = useState<string | null>(null);
+  const [unlockCount, setUnlockCount] = useState<number>(0);
+  const [webhookEvents, setWebhookEvents] = useState<WebhookEventRow[] | null>(null);
+  const [showEvents, setShowEvents] = useState(false);
   const [confirmCancelSub, setConfirmCancelSub] = useState(false);
   const [cancelingSub, setCancelingSub] = useState(false);
 
@@ -94,12 +110,19 @@ const Account = () => {
     (async () => {
       const { data: sub } = await supabase
         .from("user_subscriptions")
-        .select("id, tier, status, current_period_end, cancel_at_period_end, stripe_subscription_id")
+        .select("id, tier, status, current_period_end, cancel_at_period_end, stripe_subscription_id, updated_at")
         .eq("user_id", user.id)
         .in("status", ["active", "trialing", "past_due"])
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
+      const { data: unlocks } = await supabase
+        .from("one_time_unlocks")
+        .select("id, created_at")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+      const unlockList = (unlocks ?? []) as Array<{ id: string; created_at: string }>;
+      setUnlockCount(unlockList.length);
       if (sub) {
         const tier = (sub.tier || "").toLowerCase();
         if (tier.includes("annual") || tier.includes("year")) {
@@ -107,15 +130,27 @@ const Account = () => {
         } else {
           setMembership({ kind: "monthly", sub: sub as SubscriptionRow });
         }
-        return;
+        setLastSync(sub.updated_at ?? null);
+      } else if (unlockList.length > 0) {
+        setMembership({ kind: "single", unlockedAt: unlockList[0].created_at });
+        setLastSync(unlockList[0].created_at);
+      } else {
+        setMembership({ kind: "none" });
+        setLastSync(null);
       }
-      const { data: unlock } = await supabase
-        .from("one_time_unlocks")
-        .select("id")
+      const { data: events } = await supabase
+        .from("webhook_events")
+        .select("id, created_at, event_type, status, checkout_session_id, amount_cents, changes, error_message")
         .eq("user_id", user.id)
-        .limit(1)
-        .maybeSingle();
-      setMembership(unlock ? { kind: "single" } : { kind: "none" });
+        .order("created_at", { ascending: false })
+        .limit(20);
+      setWebhookEvents((events ?? []) as WebhookEventRow[]);
+      if (events && events.length > 0) {
+        const latest = events[0].created_at;
+        if (!sub || new Date(latest) > new Date(sub.updated_at ?? 0)) {
+          setLastSync(latest);
+        }
+      }
     })();
   }, [user]);
 
@@ -270,6 +305,102 @@ const Account = () => {
             </p>
           </div>
         </div>
+
+        <section className="flex flex-col gap-3 rounded-2xl border border-border bg-muted/20 p-5">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-[18px] font-medium tracking-tight">Subscription status</h2>
+            <span className="text-[11px] text-muted-foreground">
+              Last sync: {lastSync ? new Date(lastSync).toLocaleString() : "—"}
+            </span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-xl border border-border bg-background p-3">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Active plan</div>
+              <div className="mt-1 text-sm font-medium">{membershipLabel}</div>
+              {(membership.kind === "monthly" || membership.kind === "annual") && membership.sub.current_period_end && (
+                <div className="mt-0.5 text-xs text-muted-foreground">
+                  {membership.sub.cancel_at_period_end ? "Ends" : "Renews"}{" "}
+                  {new Date(membership.sub.current_period_end).toLocaleDateString()}
+                </div>
+              )}
+            </div>
+            <div className="rounded-xl border border-border bg-background p-3">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">One-time unlocks</div>
+              <div className="mt-1 text-sm font-medium">
+                {unlockCount === 0 ? "None" : `${unlockCount} report${unlockCount === 1 ? "" : "s"} unlocked`}
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-background p-3">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Webhook events</div>
+              <div className="mt-1 text-sm font-medium">
+                {webhookEvents === null ? "…" : `${webhookEvents.length} recent`}
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowEvents((s) => !s)}
+                className="mt-1 text-xs text-muted-foreground underline hover:text-foreground"
+              >
+                {showEvents ? "Hide" : "View"} audit log
+              </button>
+            </div>
+          </div>
+          {showEvents && (
+            <div className="mt-2 overflow-x-auto rounded-xl border border-border bg-background">
+              {webhookEvents && webhookEvents.length > 0 ? (
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-muted/40 text-muted-foreground">
+                    <tr>
+                      <th className="px-3 py-2 font-medium">Time</th>
+                      <th className="px-3 py-2 font-medium">Event</th>
+                      <th className="px-3 py-2 font-medium">Status</th>
+                      <th className="px-3 py-2 font-medium">Amount</th>
+                      <th className="px-3 py-2 font-medium">DB changes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {webhookEvents.map((ev) => (
+                      <tr key={ev.id} className="border-t border-border">
+                        <td className="px-3 py-2 align-top text-muted-foreground">
+                          {new Date(ev.created_at).toLocaleString()}
+                        </td>
+                        <td className="px-3 py-2 align-top font-mono">{ev.event_type}</td>
+                        <td className="px-3 py-2 align-top">
+                          <span
+                            className={
+                              ev.status === "error"
+                                ? "text-destructive"
+                                : ev.status === "skipped" || ev.status === "ignored"
+                                  ? "text-muted-foreground"
+                                  : "text-emerald-700"
+                            }
+                          >
+                            {ev.status}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          {ev.amount_cents != null ? `$${(ev.amount_cents / 100).toFixed(2)}` : "—"}
+                        </td>
+                        <td className="px-3 py-2 align-top">
+                          <code className="text-[10px]">
+                            {ev.error_message
+                              ? ev.error_message
+                              : ev.changes && Object.keys(ev.changes).length > 0
+                                ? JSON.stringify(ev.changes)
+                                : "—"}
+                          </code>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="p-4 text-center text-xs text-muted-foreground">
+                  No webhook events yet.
+                </div>
+              )}
+            </div>
+          )}
+        </section>
 
         <form onSubmit={saveName} className="flex flex-col gap-2">
           <Label htmlFor="display-name">Name (optional)</Label>
