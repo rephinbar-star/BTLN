@@ -975,9 +975,6 @@ const AttachmentCard = ({
                 style={{ width: `${Math.max(0, Math.min(100, val))}%` }}
               />
             </div>
-            <span className="w-8 text-right text-[12px] tabular-nums text-foreground">
-              {Math.round(val)}
-            </span>
           </div>
         ))}
       </div>
