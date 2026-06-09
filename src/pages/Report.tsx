@@ -465,6 +465,7 @@ const ReportContent = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Header />
       <Helmet>
         <title>{`BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${Math.round(result.headline.score)}/100`}</title>
         <meta
