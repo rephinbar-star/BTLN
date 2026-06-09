@@ -87,16 +87,16 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
 
         {/* Headline tier — no numeric score */}
         <div className="mt-6 flex flex-col items-center text-center">
-          <span className="text-xs text-muted-foreground">
+          <h2 className="text-[26px] font-bold tracking-tight sm:text-[32px]">
             {name1} & {name2}
-          </span>
-          <span
-            className={`mt-3 inline-flex items-center rounded-full px-4 py-1.5 text-[28px] font-medium leading-tight tracking-tight sm:text-[32px] ${tierClass(
+          </h2>
+          <h3
+            className={`mt-3 inline-flex items-center rounded-full px-4 py-1.5 text-[20px] font-medium leading-tight tracking-tight sm:text-[24px] ${tierClass(
               result.headline.tier_label,
             )}`}
           >
-            {lowConfidence ? `Maybe ${result.headline.tier_label}` : result.headline.tier_label}
-          </span>
+            {lowConfidence ? `${result.headline.tier_label}?` : result.headline.tier_label}
+          </h3>
         </div>
 
         {/* Vibe quote */}
