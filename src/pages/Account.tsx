@@ -81,6 +81,11 @@ const Account = () => {
   const isPasswordUser = !!user?.identities?.some((i) => i.provider === "email");
   const verified = !!user?.email_confirmed_at;
 
+  // Always land at the top of the page on mount (e.g. after post-signup redirect).
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, []);
+
   useEffect(() => {
     if (!user) return;
     (async () => {

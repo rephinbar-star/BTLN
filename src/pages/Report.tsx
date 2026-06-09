@@ -401,7 +401,7 @@ const ReportContent = () => {
   const handleShare = async () => {
     const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
     const text = result
-      ? `Our chemistry score: ${Math.round(result.headline.score)} — ${result.headline.tier_label}`
+      ? `Our chemistry read: ${result.headline.tier_label}`
       : "Check our chemistry analysis";
     const canWebShare =
       typeof navigator !== "undefined" &&
@@ -428,7 +428,7 @@ const ReportContent = () => {
 
   const shareUrl = `https://couplechemistry.lovable.app/report/${analysisId}`;
   const shareText = result
-    ? `Our chemistry score: ${Math.round(result.headline.score)} — ${result.headline.tier_label}`
+    ? `Our chemistry read: ${result.headline.tier_label}`
     : "Check our chemistry analysis";
 
   const copyFromFallback = async () => {
@@ -467,13 +467,13 @@ const ReportContent = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <Helmet>
-        <title>{`BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${Math.round(result.headline.score)}/100`}</title>
+        <title>{`BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${result.headline.tier_label}`}</title>
         <meta
           name="description"
-          content={`Chemistry score ${Math.round(result.headline.score)} — ${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
+          content={`${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
         />
         <link rel="canonical" href={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
-        <meta property="og:title" content={`Chemistry Score: ${Math.round(result.headline.score)}/100 — ${result.headline.tier_label}`} />
+        <meta property="og:title" content={`Chemistry read: ${result.headline.tier_label}`} />
         <meta property="og:description" content={result.headline.vibe_summary} />
         <meta property="og:url" content={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
         <meta name="robots" content="noindex" />
@@ -975,9 +975,6 @@ const AttachmentCard = ({
                 style={{ width: `${Math.max(0, Math.min(100, val))}%` }}
               />
             </div>
-            <span className="w-8 text-right text-[12px] tabular-nums text-foreground">
-              {Math.round(val)}
-            </span>
           </div>
         ))}
       </div>
