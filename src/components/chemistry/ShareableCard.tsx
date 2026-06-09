@@ -88,7 +88,7 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
 
         {/* Headline tier — no numeric score */}
         <div className="mt-6 flex flex-col items-center text-center">
-          <h2 className="text-[26px] font-bold tracking-tight sm:text-[32px]">
+          <h2 className="whitespace-nowrap text-[26px] font-bold tracking-tight sm:text-[32px]">
             {name1} & {name2}
           </h2>
           <h3
