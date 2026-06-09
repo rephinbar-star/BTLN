@@ -1,4 +1,5 @@
 import { Heart } from "lucide-react";
+import { Info } from "lucide-react";
 import { forwardRef } from "react";
 import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
 import {
@@ -103,6 +104,16 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
         <p className="mt-5 text-center text-[13px] italic leading-relaxed text-muted-foreground">
           “{result.headline.vibe_summary}”
         </p>
+
+        {lowConfidence && (
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-pastel-amber-bg p-3 text-pastel-amber-fg">
+            <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+            <p className="text-[12px] leading-relaxed">
+              Low confidence: only {result.meta.messages_analyzed} messages were available.
+              Treat this as a snapshot, not a portrait of the relationship.
+            </p>
+          </div>
+        )}
 
         {/* Sub-scores — qualitative labels only */}
         {subScoreItems.length > 0 && (
