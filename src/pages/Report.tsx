@@ -494,6 +494,16 @@ const ReportContent = () => {
               <ShareableCard ref={cardRef} result={result} context={context} />
             </div>
 
+            {result.meta.analysis_confidence === "low" && (
+              <div data-pdf-section className="mt-6 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
+                <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
+                <p className="text-[13px] leading-relaxed">
+                  Low confidence: only {result.meta.messages_analyzed} messages were available.
+                  Treat this as a snapshot, not a portrait of the relationship.
+                </p>
+              </div>
+            )}
+
             {/* Action buttons */}
             <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
@@ -538,16 +548,6 @@ const ReportContent = () => {
             )}
 
             <FreeInsights result={result} />
-
-            {result.meta.analysis_confidence === "low" && (
-              <div data-pdf-section className="mt-8 flex items-start gap-3 rounded-xl bg-pastel-amber-bg p-4 text-pastel-amber-fg">
-                <Info className="mt-0.5 h-4 w-4 flex-shrink-0" />
-                <p className="text-[13px] leading-relaxed">
-                  Low confidence: only {result.meta.messages_analyzed} messages were available.
-                  Treat this as a snapshot, not a portrait of the relationship.
-                </p>
-              </div>
-            )}
 
             {analysisId && (
               <div className="mt-12">
