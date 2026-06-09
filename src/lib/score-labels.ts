@@ -53,4 +53,4 @@ export const bandToneClass = (band: Band | null): string => {
 
 // Hedge labels for low-confidence analyses — never present as definitive.
 export const hedgeLabel = (label: string | null): string | null =>
-  label ? `Maybe ${label.toLowerCase()}` : null;
+  label ? `${label}?` : null;
