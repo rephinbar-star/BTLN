@@ -1,6 +1,14 @@
 import { Heart } from "lucide-react";
 import { forwardRef } from "react";
 import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
+import {
+  AXIS_DISPLAY,
+  bandToneClass,
+  hedgeLabel,
+  scoreBand,
+  scoreLabel,
+  type ScoreAxis,
+} from "@/lib/score-labels";
 
 const TIER_PILL: Record<string, string> = {
   "Soulmate Energy": "bg-pastel-green-bg text-pastel-green-fg-strong",
@@ -13,9 +21,6 @@ const TIER_PILL: Record<string, string> = {
 
 const tierClass = (label: string) =>
   TIER_PILL[label] ?? "bg-muted text-foreground";
-
-const fmtScore = (n: number | null | undefined) =>
-  n === null || n === undefined ? "—" : String(Math.round(n));
 
 const flagText = (flag: unknown) => {
   if (!flag) return "";
@@ -46,6 +51,24 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
     const profile1 = result.attachment_profiles?.[name1];
     const profile2 = result.attachment_profiles?.[name2];
 
+    const lowConfidence = result.meta?.analysis_confidence === "low";
+    const subAxes: ScoreAxis[] = [
+      "communication",
+      "emotional_safety",
+      "reciprocity",
+      "spark",
+    ];
+    const subScoreItems = subAxes
+      .map((axis) => {
+        const raw = (result.sub_scores as Record<string, number | null | undefined>)?.[axis];
+        const label = scoreLabel(axis, raw);
+        if (!label) return null;
+        const band = scoreBand(raw);
+        const display = lowConfidence ? hedgeLabel(label) : label;
+        return { axis, label: display!, band };
+      })
+      .filter((x): x is { axis: ScoreAxis; label: string; band: ReturnType<typeof scoreBand> } => !!x);
+
     return (
       <div
         ref={ref}
@@ -62,20 +85,17 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
           </span>
         </div>
 
-        {/* Score */}
+        {/* Headline tier — no numeric score */}
         <div className="mt-6 flex flex-col items-center text-center">
           <span className="text-xs text-muted-foreground">
             {name1} & {name2}
           </span>
-          <span className="mt-1 text-[80px] font-medium leading-none tracking-tight">
-            {fmtScore(result.headline.score)}
-          </span>
           <span
-            className={`mt-3 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${tierClass(
+            className={`mt-3 inline-flex items-center rounded-full px-4 py-1.5 text-[28px] font-medium leading-tight tracking-tight sm:text-[32px] ${tierClass(
               result.headline.tier_label,
             )}`}
           >
-            {result.headline.tier_label}
+            {lowConfidence ? `Maybe ${result.headline.tier_label}` : result.headline.tier_label}
           </span>
         </div>
 
@@ -84,21 +104,29 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
           “{result.headline.vibe_summary}”
         </p>
 
-        {/* Sub-scores */}
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          {[
-            { label: "Communication", value: result.sub_scores.communication },
-            { label: "Safety", value: result.sub_scores.emotional_safety },
-            { label: "Spark", value: result.sub_scores.spark },
-          ].map((s) => (
-            <div key={s.label} className="rounded-lg bg-muted px-2 py-2.5 text-center">
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {s.label}
+        {/* Sub-scores — qualitative labels only */}
+        {subScoreItems.length > 0 && (
+          <div
+            className={`mt-5 grid gap-2 ${
+              subScoreItems.length >= 4 ? "grid-cols-2" : "grid-cols-3"
+            }`}
+          >
+            {subScoreItems.map((s) => (
+              <div key={s.axis} className="rounded-lg bg-muted px-2 py-2.5 text-center">
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {AXIS_DISPLAY[s.axis]}
+                </div>
+                <div
+                  className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${bandToneClass(
+                    s.band,
+                  )}`}
+                >
+                  {s.label}
+                </div>
               </div>
-              <div className="mt-0.5 text-base font-medium">{fmtScore(s.value)}</div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Flag callouts */}
         <div className={`mt-4 grid gap-2 ${showBoth ? "grid-cols-2" : "grid-cols-1"}`}>
