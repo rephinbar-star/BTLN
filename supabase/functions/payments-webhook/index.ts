@@ -40,6 +40,45 @@ async function logWebhookEvent(eventName: string, metadata: Record<string, unkno
   }
 }
 
+type AuditEntry = {
+  environment: string;
+  event_id?: string | null;
+  event_type: string;
+  checkout_session_id?: string | null;
+  stripe_customer_id?: string | null;
+  stripe_subscription_id?: string | null;
+  user_id?: string | null;
+  analysis_id?: string | null;
+  amount_cents?: number | null;
+  status?: string;
+  changes?: Record<string, unknown>;
+  error_message?: string | null;
+  payload_summary?: Record<string, unknown>;
+};
+
+async function recordAudit(entry: AuditEntry) {
+  try {
+    await getSupabase().from("webhook_events").insert({
+      provider: "stripe",
+      environment: entry.environment,
+      event_id: entry.event_id ?? null,
+      event_type: entry.event_type,
+      checkout_session_id: entry.checkout_session_id ?? null,
+      stripe_customer_id: entry.stripe_customer_id ?? null,
+      stripe_subscription_id: entry.stripe_subscription_id ?? null,
+      user_id: entry.user_id ?? null,
+      analysis_id: entry.analysis_id ?? null,
+      amount_cents: entry.amount_cents ?? null,
+      status: entry.status ?? "processed",
+      changes: entry.changes ?? {},
+      error_message: entry.error_message ?? null,
+      payload_summary: entry.payload_summary ?? {},
+    });
+  } catch (e) {
+    console.error("webhook_events insert failed:", (e as Error).message);
+  }
+}
+
 async function handleCheckoutCompleted(session: any, _env: StripeEnv) {
   const userId = session.metadata?.userId;
   const analysisId = session.metadata?.analysisId;
