@@ -493,6 +493,72 @@ const ReportContent = () => {
     setShareFallbackOpen(true);
   };
 
+  const handleShareCoupleCard = async () => {
+    const node = coupleCardRef.current;
+    const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
+    const title = "BetweenTheLines™ — our couple type";
+    const text = result
+      ? `We're ${result.headline.tier_label} on BetweenTheLines™`
+      : "Check our couple type";
+
+    // Try to capture the card as an image and share it as a file.
+    let file: File | null = null;
+    if (node) {
+      try {
+        if (typeof document !== "undefined" && (document as Document & { fonts?: FontFaceSet }).fonts) {
+          try {
+            await (document as Document & { fonts: FontFaceSet }).fonts.ready;
+          } catch {
+            // ignore
+          }
+        }
+        const rect = node.getBoundingClientRect();
+        const captureWidth = Math.ceil(rect.width);
+        const captureHeight = Math.ceil(rect.height);
+        const dataUrl = await htmlToImage.toPng(node, {
+          quality: 1.0,
+          pixelRatio: 2,
+          backgroundColor: "#ffffff",
+          cacheBust: true,
+          skipFonts: false,
+          width: captureWidth,
+          height: captureHeight,
+          style: {
+            width: `${captureWidth}px`,
+            height: `${captureHeight}px`,
+            margin: "0",
+          },
+        });
+        const blob = await (await fetch(dataUrl)).blob();
+        file = new File([blob], `betweenthelines-couple-type.png`, { type: "image/png" });
+      } catch (e) {
+        console.warn("couple card capture failed", e);
+      }
+    }
+
+    const nav = typeof navigator !== "undefined" ? (navigator as Navigator & { canShare?: (data: ShareData) => boolean }) : null;
+    const canWebShare = !!nav && typeof nav.share === "function";
+    const canShareFiles = !!nav && !!file && typeof nav.canShare === "function" && nav.canShare({ files: [file] });
+
+    if (canWebShare) {
+      try {
+        await nav!.share(
+          canShareFiles ? { title, text, url, files: [file!] } : { title, text, url },
+        );
+        void supabase.from("share_clicks").insert([
+          { analysis_id: analysisId!, platform: canShareFiles ? "web_share_card_image" : "web_share_card" },
+        ]);
+        return;
+      } catch (err: unknown) {
+        const e = err as { name?: string; message?: string };
+        if (e?.name === "AbortError") return;
+        console.warn("navigator.share failed, falling back", e);
+      }
+    }
+    setCopied(false);
+    setShareFallbackOpen(true);
+  };
+
   const shareUrl = `https://couplechemistry.lovable.app/report/${analysisId}`;
   const shareText = result
     ? `Our chemistry read: ${result.headline.tier_label}`
