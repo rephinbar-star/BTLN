@@ -616,12 +616,21 @@ const ReportContent = () => {
           <div ref={reportRef}>
             {row?.couple_type_id != null && (
               <div ref={cardRef} data-pdf-section>
-                <div className="mb-8">
+                <div ref={coupleCardRef} className="mb-3">
                   <CoupleTypeCard
                     coupleTypeId={row.couple_type_id}
                     relationshipType={(row.relationship_type as RelationshipType) || "romantic"}
                     size="full"
                   />
+                </div>
+                <div data-pdf-exclude="true" className="mb-8 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={handleShareCoupleCard}
+                    className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
+                  >
+                    <Share2 className="h-4 w-4" /> Share…
+                  </button>
                 </div>
                 <ShareableCard result={result} context={context} />
               </div>
