@@ -507,7 +507,7 @@ const ReportContent = () => {
                 disabled={downloading}
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
               >
-                <Download className="h-4 w-4" /> {downloading ? "Preparing image…" : "Download as image"}
+                <Download className="h-4 w-4" /> {downloading ? "Preparing image…" : "Download Highlights"}
               </button>
               <button
                 type="button"
