@@ -21,6 +21,8 @@ const ROTATING_MESSAGES: { text: string; gif: string }[] = [
 const POLL_INTERVAL_MS = 2000;
 const SLOW_THRESHOLD_MS = 180_000;
 const TIMEOUT_MS = 240_000;
+const GIF_LOAD_TIMEOUT_MS = 10_000;
+const MAX_GIF_RETRIES = 2;
 
 const Processing = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
@@ -28,32 +30,74 @@ const Processing = () => {
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [showSlow, setShowSlow] = useState(false);
   const [loadedGifs, setLoadedGifs] = useState<Set<number>>(() => new Set());
+  const [failedGifs, setFailedGifs] = useState<Set<number>>(() => new Set());
+  const [retryNonce, setRetryNonce] = useState(0);
+  const retriesRef = useRef<Record<number, number>>({});
   const startedAt = useRef<number>(Date.now());
   const stopped = useRef(false);
 
-  // Preload all GIFs up front and track which are ready
+  // Preload all GIFs up front, track readiness, and apply a per-GIF timeout
   useEffect(() => {
     const imgs: HTMLImageElement[] = [];
+    const timers: ReturnType<typeof setTimeout>[] = [];
     ROTATING_MESSAGES.forEach((m, i) => {
+      if (loadedGifs.has(i)) return;
       const img = new Image();
-      img.onload = () =>
+      const markLoaded = () => {
+        clearTimeout(timer);
         setLoadedGifs((prev) => {
           if (prev.has(i)) return prev;
           const next = new Set(prev);
           next.add(i);
           return next;
         });
-      img.onerror = img.onload;
-      img.src = m.gif;
+        setFailedGifs((prev) => {
+          if (!prev.has(i)) return prev;
+          const next = new Set(prev);
+          next.delete(i);
+          return next;
+        });
+      };
+      const markFailed = () => {
+        clearTimeout(timer);
+        img.src = "";
+        setFailedGifs((prev) => {
+          if (prev.has(i)) return prev;
+          const next = new Set(prev);
+          next.add(i);
+          return next;
+        });
+      };
+      img.onload = markLoaded;
+      img.onerror = markFailed;
+      const timer = setTimeout(markFailed, GIF_LOAD_TIMEOUT_MS);
+      timers.push(timer);
+      // cache-bust on retries so a stuck/broken cache entry is bypassed
+      const retryN = retriesRef.current[i] ?? 0;
+      img.src = retryN > 0 ? `${m.gif}${m.gif.includes("?") ? "&" : "?"}r=${retryN}` : m.gif;
       imgs.push(img);
     });
     return () => {
+      timers.forEach((t) => clearTimeout(t));
       imgs.forEach((img) => {
         img.onload = null;
         img.onerror = null;
       });
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [retryNonce]);
+
+  const handleRetryGifs = () => {
+    failedGifs.forEach((i) => {
+      retriesRef.current[i] = (retriesRef.current[i] ?? 0) + 1;
+    });
+    setFailedGifs(new Set());
+    setRetryNonce((n) => n + 1);
+  };
+
+  const currentFailed = failedGifs.has(phraseIdx) && !loadedGifs.has(phraseIdx);
+  const retriesUsed = retriesRef.current[phraseIdx] ?? 0;
+  const canRetryGif = currentFailed && retriesUsed < MAX_GIF_RETRIES;
 
   useEffect(() => {
     const t = setInterval(
@@ -144,6 +188,33 @@ const Processing = () => {
         className="mt-10 h-20 w-20 animate-in fade-in duration-700"
         style={{ visibility: loadedGifs.has(phraseIdx) ? "visible" : "hidden" }}
       />
+
+      {currentFailed && (
+        <div className="mt-4 flex max-w-md flex-col items-center gap-2">
+          <p className="text-[13px] text-pastel-amber-fg-strong">
+            Couldn't load this step's animation.
+          </p>
+          {canRetryGif ? (
+            <button
+              type="button"
+              onClick={handleRetryGifs}
+              className="rounded-md border border-foreground/20 bg-background px-3 py-1 text-[13px] font-medium tracking-tight hover:bg-foreground/5"
+            >
+              Retry
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() =>
+                navigate(`/error?reason=${encodeURIComponent("asset_unavailable")}`, { replace: true })
+              }
+              className="rounded-md border border-foreground/20 bg-background px-3 py-1 text-[13px] font-medium tracking-tight hover:bg-foreground/5"
+            >
+              Continue
+            </button>
+          )}
+        </div>
+      )}
 
       <h2
         key={`stage-${phraseIdx}`}
