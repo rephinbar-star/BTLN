@@ -27,6 +27,9 @@
     --accent: 40 22% 95%;
     --accent-foreground: 0 0% 7%;
 
+    --accent-brand: 17 52% 50%;
+    --accent-brand-foreground: 0 0% 100%;
+
     --destructive: 0 75% 45%;
     --destructive-foreground: 0 0% 100%;
 
