@@ -32,7 +32,7 @@ const Processing = () => {
 
   useEffect(() => {
     const t = setInterval(
-      () => setPhraseIdx((i) => (i + 1) % ROTATING_MESSAGES.length),
+      () => setPhraseIdx((i) => (i >= ROTATING_MESSAGES.length - 1 ? i : i + 1)),
       8000,
     );
     return () => clearInterval(t);
