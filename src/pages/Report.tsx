@@ -387,6 +387,82 @@ const ReportContent = () => {
     }
   };
 
+  const handleDownloadPdf = async () => {
+    if (!cardRef.current || !context || downloadingPdf) return;
+    setDownloadingPdf(true);
+    try {
+      if (typeof document !== "undefined" && (document as Document & { fonts?: FontFaceSet }).fonts) {
+        try {
+          await (document as Document & { fonts: FontFaceSet }).fonts.ready;
+        } catch {
+          // ignore
+        }
+      }
+
+      const node = cardRef.current;
+      const rect = node.getBoundingClientRect();
+      const captureWidth = Math.ceil(rect.width);
+      const captureHeight = Math.ceil(rect.height);
+      const dataUrl = await htmlToImage.toPng(node, {
+        quality: 1.0,
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+        cacheBust: true,
+        skipFonts: false,
+        width: captureWidth,
+        height: captureHeight,
+        style: {
+          width: `${captureWidth}px`,
+          height: `${captureHeight}px`,
+          margin: "0",
+        },
+      });
+
+      // Build a Letter-sized PDF and fit the captured image across pages.
+      const pdf = new jsPDF({ unit: "pt", format: "letter", orientation: "portrait" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 24;
+      const usableWidth = pageWidth - margin * 2;
+      const imgRatio = captureHeight / captureWidth;
+      const renderedWidth = usableWidth;
+      const renderedHeight = renderedWidth * imgRatio;
+      const usableHeight = pageHeight - margin * 2;
+
+      if (renderedHeight <= usableHeight) {
+        pdf.addImage(dataUrl, "PNG", margin, margin, renderedWidth, renderedHeight);
+      } else {
+        // Slice the long image across multiple pages.
+        let positionY = 0;
+        let pageIndex = 0;
+        while (positionY < renderedHeight) {
+          if (pageIndex > 0) pdf.addPage();
+          pdf.addImage(
+            dataUrl,
+            "PNG",
+            margin,
+            margin - positionY,
+            renderedWidth,
+            renderedHeight,
+          );
+          positionY += usableHeight;
+          pageIndex += 1;
+        }
+      }
+
+      const filename = `betweenthelines-highlights-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.pdf`;
+      pdf.save(filename);
+
+      void supabase.from("share_clicks").insert([
+        { analysis_id: analysisId!, platform: "download_pdf" },
+      ]);
+    } catch (e) {
+      toast.error("Could not generate PDF.");
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const handleCopyLink = async () => {
     const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
     try {
