@@ -6,8 +6,6 @@ import {
   AXIS_DISPLAY,
   axisLabels,
   bandIndex,
-  bandToneClass,
-  hedgeLabel,
   scoreBand,
   scoreLabel,
   type ScoreAxis,
