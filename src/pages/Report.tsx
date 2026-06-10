@@ -569,6 +569,13 @@ const ReportContent = () => {
             <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
                 type="button"
+                onClick={handleShare}
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
+              >
+                <Share2 className="h-4 w-4" /> Share…
+              </button>
+              <button
+                type="button"
                 onClick={handleDownload}
                 disabled={downloading}
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
@@ -581,13 +588,6 @@ const ReportContent = () => {
                 className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
               >
                 <Copy className="h-4 w-4" /> Copy link
-              </button>
-              <button
-                type="button"
-                onClick={handleShare}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-border bg-card px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
-              >
-                <Share2 className="h-4 w-4" /> Share…
               </button>
               <button
                 type="button"
