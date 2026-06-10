@@ -740,7 +740,7 @@ const ReportContent = () => {
             </div>
 
             {/* Try again */}
-            <div data-pdf-exclude="true" className="mt-12 text-center">
+            <div data-pdf-exclude="true" className="mt-10 text-center">
               <h3 className="text-[24px] font-medium tracking-tight">
                 Curious about another relationship?
               </h3>
