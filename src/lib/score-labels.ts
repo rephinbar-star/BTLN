@@ -23,7 +23,7 @@ export const bandIndex = (band: Band | null): 0 | 1 | 2 | null => {
 };
 
 export const AXIS_DISPLAY: Record<ScoreAxis, string> = {
-  communication: "Communication",
+  communication: "Communications",
   emotional_safety: "Emotional Safety",
   reciprocity: "Reciprocity",
   spark: "Spark",
