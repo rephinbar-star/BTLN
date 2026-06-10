@@ -57,14 +57,14 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
                 first ? "sm:rounded-l-md" : "sm:border-l-0",
                 last ? "sm:rounded-r-md" : "",
                 isEarned
-                  ? "bg-sage-muted text-foreground"
+                  ? "bg-sage-muted text-white"
                   : "bg-muted/40 text-foreground",
               ].join(" ")}
             >
               {isEarned && (
                 <span
                   aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-foreground"
+                  className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white"
                 />
               )}
               <span
