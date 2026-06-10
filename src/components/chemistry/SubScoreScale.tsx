@@ -24,7 +24,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
   return (
     <div className="w-full">
       <div className="flex items-baseline justify-between gap-2">
-        <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <div className="text-[11px] font-bold uppercase tracking-wide text-olive-deep">
           {category}
         </div>
         {tentative && (
@@ -57,14 +57,14 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
                 first ? "sm:rounded-l-md" : "sm:border-l-0",
                 last ? "sm:rounded-r-md" : "",
                 isEarned
-                  ? "bg-accent-brand text-accent-brand-foreground"
-                  : "bg-muted/40 text-muted-foreground",
+                  ? "bg-sage-muted text-foreground"
+                  : "bg-muted/40 text-foreground",
               ].join(" ")}
             >
               {isEarned && (
                 <span
                   aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-brand-foreground"
+                  className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-foreground"
                 />
               )}
               <span

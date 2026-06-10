@@ -59,6 +59,8 @@ export default {
           brand: "hsl(var(--accent-brand))",
           "brand-foreground": "hsl(var(--accent-brand-foreground))",
         },
+        "olive-deep": "hsl(var(--olive-deep))",
+        "sage-muted": "hsl(var(--sage-muted))",
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
