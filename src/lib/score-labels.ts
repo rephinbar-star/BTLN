@@ -15,6 +15,13 @@ const LABELS: Record<ScoreAxis, [string, string, string]> = {
   spark: ["Dim", "Glow", "Lightning"],
 };
 
+export const axisLabels = (axis: ScoreAxis): [string, string, string] => LABELS[axis];
+
+export const bandIndex = (band: Band | null): 0 | 1 | 2 | null => {
+  if (!band) return null;
+  return band === "low" ? 0 : band === "mid" ? 1 : 2;
+};
+
 export const AXIS_DISPLAY: Record<ScoreAxis, string> = {
   communication: "Communication",
   emotional_safety: "Emotional Safety",
