@@ -740,14 +740,14 @@ const ReportContent = () => {
             </div>
 
             {/* Try again */}
-            <div data-pdf-exclude="true" className="mt-16 text-center">
+            <div data-pdf-exclude="true" className="mt-12 text-center">
               <h3 className="text-[24px] font-medium tracking-tight">
                 Curious about another relationship?
               </h3>
-              <p className="mt-2 text-[15px] text-muted-foreground">
-                Run another analysis. It&apos;s still free during testing.
-              </p>
               <Link
+                to="/#input-section"
+                className="mt-5 inline-flex w-full max-w-[280px] items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
+              >
                 to="/#input-section"
                 className="mt-5 inline-flex w-full max-w-[280px] items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
               >
