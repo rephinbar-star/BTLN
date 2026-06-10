@@ -27,16 +27,46 @@ const Processing = () => {
   const navigate = useNavigate();
   const [phraseIdx, setPhraseIdx] = useState(0);
   const [showSlow, setShowSlow] = useState(false);
+  const [loadedGifs, setLoadedGifs] = useState<Set<number>>(() => new Set());
   const startedAt = useRef<number>(Date.now());
   const stopped = useRef(false);
 
+  // Preload all GIFs up front and track which are ready
+  useEffect(() => {
+    const imgs: HTMLImageElement[] = [];
+    ROTATING_MESSAGES.forEach((m, i) => {
+      const img = new Image();
+      img.onload = () =>
+        setLoadedGifs((prev) => {
+          if (prev.has(i)) return prev;
+          const next = new Set(prev);
+          next.add(i);
+          return next;
+        });
+      img.onerror = img.onload;
+      img.src = m.gif;
+      imgs.push(img);
+    });
+    return () => {
+      imgs.forEach((img) => {
+        img.onload = null;
+        img.onerror = null;
+      });
+    };
+  }, []);
+
   useEffect(() => {
     const t = setInterval(
-      () => setPhraseIdx((i) => (i >= ROTATING_MESSAGES.length - 1 ? i : i + 1)),
+      () =>
+        setPhraseIdx((i) => {
+          if (i >= ROTATING_MESSAGES.length - 1) return i;
+          // Only advance if the next GIF has finished loading
+          return loadedGifs.has(i + 1) ? i + 1 : i;
+        }),
       8000,
     );
     return () => clearInterval(t);
-  }, []);
+  }, [loadedGifs]);
 
   useEffect(() => {
     if (!analysisId) {
@@ -112,6 +142,7 @@ const Processing = () => {
         width={80}
         height={80}
         className="mt-10 h-20 w-20 animate-in fade-in duration-700"
+        style={{ visibility: loadedGifs.has(phraseIdx) ? "visible" : "hidden" }}
       />
 
       <h2
@@ -141,12 +172,6 @@ const Processing = () => {
         </p>
       )}
 
-      {/* Preload remaining GIFs so swaps are instant */}
-      <div aria-hidden="true" className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0">
-        {ROTATING_MESSAGES.map((m, i) => (
-          <img key={i} src={m.gif} alt="" width={1} height={1} />
-        ))}
-      </div>
     </div>
   );
 };
