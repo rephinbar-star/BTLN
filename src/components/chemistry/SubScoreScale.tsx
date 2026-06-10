@@ -73,12 +73,6 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
               </span>
 
               <span className="flex items-center gap-1.5">
-                {isEarned && (
-                  <span
-                    aria-hidden="true"
-                    className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white"
-                  />
-                )}
                 <span
                   className={[
                     "min-w-0 break-words text-[11px] leading-tight",
