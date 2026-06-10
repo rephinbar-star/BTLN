@@ -10,7 +10,7 @@ export const SCORE_THRESHOLDS = {
 
 const LABELS: Record<ScoreAxis, [string, string, string]> = {
   communication: ["Pigeons", "Airmail", "Psychic"],
-  emotional_safety: ["On Guard", "Secure", "Like a Rock"],
+  emotional_safety: ["Guarded", "Secure", "Like a Rock"],
   reciprocity: ["Tower of Pisa", "Golden Gate Bridge", "Taj Mahal"],
   spark: ["Dim", "Glow", "Lightning"],
 };
