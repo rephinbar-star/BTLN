@@ -424,31 +424,19 @@ const ReportContent = () => {
       const pageHeight = pdf.internal.pageSize.getHeight();
       const margin = 24;
       const usableWidth = pageWidth - margin * 2;
-      const imgRatio = captureHeight / captureWidth;
-      const renderedWidth = usableWidth;
-      const renderedHeight = renderedWidth * imgRatio;
       const usableHeight = pageHeight - margin * 2;
-
-      if (renderedHeight <= usableHeight) {
-        pdf.addImage(dataUrl, "PNG", margin, margin, renderedWidth, renderedHeight);
-      } else {
-        // Slice the long image across multiple pages.
-        let positionY = 0;
-        let pageIndex = 0;
-        while (positionY < renderedHeight) {
-          if (pageIndex > 0) pdf.addPage();
-          pdf.addImage(
-            dataUrl,
-            "PNG",
-            margin,
-            margin - positionY,
-            renderedWidth,
-            renderedHeight,
-          );
-          positionY += usableHeight;
-          pageIndex += 1;
-        }
+      const imgRatio = captureHeight / captureWidth;
+      // Fit to one page: scale to whichever dimension is the binding constraint
+      // so content is never split mid-element.
+      let renderedWidth = usableWidth;
+      let renderedHeight = renderedWidth * imgRatio;
+      if (renderedHeight > usableHeight) {
+        renderedHeight = usableHeight;
+        renderedWidth = renderedHeight / imgRatio;
       }
+      const offsetX = (pageWidth - renderedWidth) / 2;
+      const offsetY = (pageHeight - renderedHeight) / 2;
+      pdf.addImage(dataUrl, "PNG", offsetX, offsetY, renderedWidth, renderedHeight);
 
       const filename = `betweenthelines-highlights-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.pdf`;
       pdf.save(filename);
