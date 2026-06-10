@@ -1,3 +1,4 @@
+import { Star } from "lucide-react";
 import { type ScoreAxis } from "@/lib/score-labels";
 
 type Props = {
