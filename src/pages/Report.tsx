@@ -4,7 +4,8 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
-import { ArrowRight, Copy, Download, Info, Share2 } from "lucide-react";
+import { ArrowRight, Copy, Download, FileText, Info, Share2 } from "lucide-react";
+import { jsPDF } from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { claimPendingAnalysis, getSessionId, logEvent } from "@/lib/session";
 import { getStripeEnvironment } from "@/lib/stripe";
@@ -118,6 +119,7 @@ const ReportContent = () => {
   const [row, setRow] = useState<Row | null>(null);
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [showSave, setShowSave] = useState(false);
   const [shareFallbackOpen, setShareFallbackOpen] = useState(false);
