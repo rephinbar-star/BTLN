@@ -4,12 +4,13 @@ import { forwardRef } from "react";
 import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
 import {
   AXIS_DISPLAY,
-  bandToneClass,
-  hedgeLabel,
+  axisLabels,
+  bandIndex,
   scoreBand,
   scoreLabel,
   type ScoreAxis,
 } from "@/lib/score-labels";
+import { SubScoreScale } from "./SubScoreScale";
 
 const TIER_PILL: Record<string, string> = {
   "Soulmate Energy": "bg-pastel-green-bg text-pastel-green-fg-strong",
@@ -65,10 +66,16 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
         const label = scoreLabel(axis, raw);
         if (!label) return null;
         const band = scoreBand(raw);
-        const display = lowConfidence ? hedgeLabel(label) : label;
-        return { axis, label: display!, band };
+        return { axis, label, band, earnedIndex: bandIndex(band) };
       })
-      .filter((x): x is { axis: ScoreAxis; label: string; band: ReturnType<typeof scoreBand> } => !!x);
+      .filter(
+        (x): x is {
+          axis: ScoreAxis;
+          label: string;
+          band: ReturnType<typeof scoreBand>;
+          earnedIndex: ReturnType<typeof bandIndex>;
+        } => !!x,
+      );
 
     return (
       <div
@@ -117,24 +124,16 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
 
         {/* Sub-scores — qualitative labels only */}
         {subScoreItems.length > 0 && (
-          <div
-            className={`mt-5 grid gap-2 ${
-              subScoreItems.length >= 4 ? "grid-cols-2" : "grid-cols-3"
-            }`}
-          >
+          <div className="mt-5 space-y-3">
             {subScoreItems.map((s) => (
-              <div key={s.axis} className="rounded-lg bg-muted px-2 py-2.5 text-center">
-                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                  {AXIS_DISPLAY[s.axis]}
-                </div>
-                <div
-                  className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ${bandToneClass(
-                    s.band,
-                  )}`}
-                >
-                  {s.label}
-                </div>
-              </div>
+              <SubScoreScale
+                key={s.axis}
+                axis={s.axis}
+                category={AXIS_DISPLAY[s.axis]}
+                labels={axisLabels(s.axis)}
+                earnedIndex={s.earnedIndex}
+                lowConfidence={lowConfidence}
+              />
             ))}
           </div>
         )}
