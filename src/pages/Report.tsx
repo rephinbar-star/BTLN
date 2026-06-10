@@ -730,7 +730,7 @@ const ReportContent = () => {
               <button
                 type="button"
                 onClick={openFeedbackManually}
-                className="rounded-full border border-orange-200 bg-orange-100 px-5 py-2.5 text-[14px] font-medium text-orange-900 shadow-md transition-colors hover:bg-orange-500 hover:text-white hover:border-orange-500"
+                className="rounded-full border border-[#4D5C3E]/30 bg-[#4D5C3E]/10 px-5 py-2.5 text-[14px] font-medium text-[#4D5C3E] shadow-md transition-colors hover:bg-[#4D5C3E] hover:text-white hover:border-[#4D5C3E]"
               >
                 Give feedback
               </button>
