@@ -9,12 +9,17 @@ type Props = {
 };
 
 /**
- * 3-segment connected stepper showing worst -> best progression.
- * Highlights earned rung with brand accent fill, bold weight, and a dot marker —
+ * 3-segment connected stepper showing best -> worst progression (top = better).
+ * Highlights earned rung with primary fill, bold weight, and a dot marker —
  * never color alone. On narrow screens, stacks vertically so long labels stay legible.
+ * All colors reference design-system tokens so the component adapts to theme changes.
  */
 export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: Props) => {
   const tentative = lowConfidence || earnedIndex === null;
+
+  // Render best -> worst; earnedIndex (0=worst, 2=best) inverts to display position.
+  const displayLabels = [labels[2], labels[1], labels[0]] as const;
+  const displayEarnedIndex = earnedIndex !== null ? (2 - earnedIndex) : null;
 
   return (
     <div className="w-full">
@@ -32,13 +37,13 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
       {/* Stepper: horizontal on sm+, stacked vertical on narrow screens */}
       <div
         role="group"
-        aria-label={`${category} scale, worst to best`}
+        aria-label={`${category} scale, best to worst`}
         className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:gap-0"
       >
-        {labels.map((label, i) => {
-          const isEarned = !tentative && earnedIndex === i;
+        {displayLabels.map((label, i) => {
+          const isEarned = !tentative && displayEarnedIndex === i;
           const first = i === 0;
-          const last = i === labels.length - 1;
+          const last = i === displayLabels.length - 1;
 
           return (
             <div
@@ -52,14 +57,14 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
                 first ? "sm:rounded-l-md" : "sm:border-l-0",
                 last ? "sm:rounded-r-md" : "",
                 isEarned
-                  ? "bg-foreground text-background"
+                  ? "bg-primary text-primary-foreground"
                   : "bg-muted/40 text-muted-foreground",
               ].join(" ")}
             >
               {isEarned && (
                 <span
                   aria-hidden="true"
-                  className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-background"
+                  className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary-foreground"
                 />
               )}
               <span
@@ -70,7 +75,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
               >
                 {label}
               </span>
-              {isEarned && <span className="sr-only">(you're here)</span>}
+              {isEarned && <span className="sr-only">(you&apos;re here)</span>}
             </div>
           );
         })}
