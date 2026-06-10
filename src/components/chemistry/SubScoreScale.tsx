@@ -68,6 +68,15 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
                   className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full bg-white"
                 />
               )}
+              <span className="flex items-center gap-0.5">
+                {Array.from({ length: 3 - i }).map((_, starIdx) => (
+                  <Star
+                    key={starIdx}
+                    aria-hidden="true"
+                    className="h-2.5 w-2.5 fill-current"
+                  />
+                ))}
+              </span>
               <span
                 className={[
                   "min-w-0 break-words text-[11px] leading-tight",
