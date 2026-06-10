@@ -128,6 +128,7 @@ const ReportContent = () => {
   const [accessRefreshSignal, setAccessRefreshSignal] = useState(0);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const coupleCardRef = useRef<HTMLDivElement>(null);
   const accessLoggedRef = useRef(false);
   const {
     isOwner,
