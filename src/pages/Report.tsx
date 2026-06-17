@@ -392,7 +392,7 @@ const ReportContent = () => {
 
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = `chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.png`;
+      link.download = `betweenthelines-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
