@@ -58,5 +58,49 @@ export function useEntitlement(
     };
   }, [analysisId, user, authLoading, enabled, nonce, refreshSignal]);
 
+  // Realtime: when the user's entitlement changes elsewhere (subscription
+  // webhook fires, one-time unlock inserted, or the analysis row is
+  // flipped to is_paid), refresh immediately so the report unblurs
+  // without a full page reload.
+  useEffect(() => {
+    if (!analysisId || !user?.id) return;
+    const channel = supabase
+      .channel(`entitlement:${user.id}:${analysisId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "one_time_unlocks",
+          filter: `analysis_id=eq.${analysisId}`,
+        },
+        () => refresh(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "user_subscriptions",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => refresh(),
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "analyses",
+          filter: `id=eq.${analysisId}`,
+        },
+        () => refresh(),
+      )
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [analysisId, user?.id, refresh]);
+
   return { isOwner, isAnonymousOwner, hasFullAccess, isLoading, refresh };
 }
