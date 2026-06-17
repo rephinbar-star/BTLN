@@ -81,7 +81,7 @@ function VisitorCta() {
 }
 
 function AnonymousOwnerCta({ analysisId }: { analysisId: string }) {
-  const returnTo = `/report/${analysisId}`;
+  const returnTo = `/report/${analysisId}?intent=unlock`;
   const onClick = () =>
     logEvent("signup_cta_clicked", {
       source: "paywall",
@@ -90,7 +90,7 @@ function AnonymousOwnerCta({ analysisId }: { analysisId: string }) {
   return (
     <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-5 text-center shadow-lg">
       <Link
-        to={`/auth?return_to=${encodeURIComponent(returnTo)}&intent=unlock`}
+        to={`/auth?return_to=${encodeURIComponent(returnTo)}`}
         onClick={onClick}
         className="inline-flex w-full items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
       >
