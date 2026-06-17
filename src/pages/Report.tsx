@@ -142,24 +142,7 @@ const ReportContent = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
-  // If the user arrived from the sign-in flow with intent=unlock, scroll
-  // the paywall section into view once entitlement has resolved and the
-  // report is still locked — so the billing card is the first thing they
-  // see instead of having to scroll past the free preview.
   const paywallScrolledRef = useRef(false);
-  useEffect(() => {
-    if (paywallScrolledRef.current) return;
-    if (searchParams.get("intent") !== "unlock") return;
-    if (entitlementLoading) return;
-    if (hasUnlockedReport) return;
-    const el = document.getElementById("paywall-section");
-    if (!el) return;
-    paywallScrolledRef.current = true;
-    // Defer one frame so sticky positioning settles.
-    requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, [searchParams, entitlementLoading, hasUnlockedReport]);
 
   const loadReport = useCallback(async () => {
     if (!analysisId) return null;
