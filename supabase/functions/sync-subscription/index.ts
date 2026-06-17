@@ -13,8 +13,8 @@ const supabase = createClient(
 );
 
 function resolveTier(lookupKey?: string | null): string {
-  if (lookupKey === "duo_annual") return "annual";
-  if (lookupKey === "duo_monthly") return "monthly";
+  if (lookupKey === "BTLN_annual" || lookupKey === "duo_annual") return "annual";
+  if (lookupKey === "BTLN_monthly" || lookupKey === "duo_monthly") return "monthly";
   return lookupKey ?? "unknown";
 }
 
