@@ -142,6 +142,8 @@ const ReportContent = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
+  const paywallScrolledRef = useRef(false);
+
   const loadReport = useCallback(async () => {
     if (!analysisId) return null;
     const { data, error } = await supabase
@@ -266,6 +268,23 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
   const hasUnlockedReport = hasFullAccess || (isOwner && row?.is_paid === true);
 
+  // If the user arrived from the sign-in flow with intent=unlock, scroll
+  // the paywall section into view once entitlement has resolved and the
+  // report is still locked — so the billing card is the first thing they
+  // see instead of having to scroll past the free preview.
+  useEffect(() => {
+    if (paywallScrolledRef.current) return;
+    if (searchParams.get("intent") !== "unlock") return;
+    if (entitlementLoading) return;
+    if (hasUnlockedReport) return;
+    const el = document.getElementById("paywall-section");
+    if (!el) return;
+    paywallScrolledRef.current = true;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [searchParams, entitlementLoading, hasUnlockedReport]);
+
   // ----- Checkout return handling -----
   useEffect(() => {
     const checkout = searchParams.get("checkout");
@@ -373,7 +392,7 @@ const ReportContent = () => {
 
       const link = document.createElement("a");
       link.href = dataUrl;
-      link.download = `chemistry-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.png`;
+      link.download = `betweenthelines-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -453,7 +472,7 @@ const ReportContent = () => {
   };
 
   const handleCopyLink = async () => {
-    const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}`;
     try {
       await navigator.clipboard.writeText(url);
       toast("Link copied", { duration: 2000 });
@@ -466,10 +485,10 @@ const ReportContent = () => {
   };
 
   const handleShare = async () => {
-    const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}`;
     const text = result
-      ? `Our chemistry read: ${result.headline.tier_label}`
-      : "Check our chemistry analysis";
+      ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+      : "Check our BetweenTheLines analysis";
     const canWebShare =
       typeof navigator !== "undefined" &&
       typeof (navigator as Navigator).share === "function";
@@ -495,7 +514,7 @@ const ReportContent = () => {
 
   const handleShareCoupleCard = async () => {
     const node = coupleCardRef.current;
-    const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}`;
     const title = "BetweenTheLines™ — our couple type";
     const text = result
       ? `We're ${result.headline.tier_label} on BetweenTheLines™`
@@ -559,10 +578,10 @@ const ReportContent = () => {
     setShareFallbackOpen(true);
   };
 
-  const shareUrl = `https://couplechemistry.lovable.app/report/${analysisId}`;
+  const shareUrl = `https://betweenthelines.app/report/${analysisId}`;
   const shareText = result
-    ? `Our chemistry read: ${result.headline.tier_label}`
-    : "Check our chemistry analysis";
+    ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+    : "Check our BetweenTheLines analysis";
 
   const copyFromFallback = async () => {
     try {
@@ -605,10 +624,10 @@ const ReportContent = () => {
           name="description"
           content={`${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
         />
-        <link rel="canonical" href={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
-        <meta property="og:title" content={`Chemistry read: ${result.headline.tier_label}`} />
+        <link rel="canonical" href={`https://betweenthelines.app/report/${analysisId}`} />
+        <meta property="og:title" content={`BetweenTheLines read: ${result.headline.tier_label}`} />
         <meta property="og:description" content={result.headline.vibe_summary} />
-        <meta property="og:url" content={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
+        <meta property="og:url" content={`https://betweenthelines.app/report/${analysisId}`} />
         <meta name="robots" content="noindex" />
       </Helmet>
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
@@ -695,7 +714,7 @@ const ReportContent = () => {
             <FreeInsights result={result} />
 
             {analysisId && (
-              <div className="mt-12">
+              <div id="paywall-section" className="mt-12 scroll-mt-20">
                 {entitlementLoading ? (
                   <div className="py-12 text-center text-[14px] text-muted-foreground">
                     Loading access…

@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://couplechemistry1.lovable.app/sitemap.xml
+Sitemap: https://betweenthelines.app/sitemap.xml

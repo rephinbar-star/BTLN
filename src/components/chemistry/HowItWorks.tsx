@@ -30,7 +30,7 @@ export const HowItWorks = () => {
       <div className="mx-auto max-w-6xl">
         <p className="text-sm text-muted-foreground">How it works</p>
         <h2 className="mt-3 max-w-2xl text-[28px] font-medium tracking-tight sm:text-[36px]">
-          Three steps. Chemistry, decoded.
+          Three steps. BetweenTheLines, decoded.
         </h2>
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           {steps.map((s) => {

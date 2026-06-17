@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
   const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
   const OPENROUTER_HTTP_REFERER =
     Deno.env.get("OPENROUTER_HTTP_REFERER") ??
-    "https://couplechemistry.lovable.app";
+    "https://betweenthelines.app";
   const OPENROUTER_X_TITLE = Deno.env.get("OPENROUTER_X_TITLE") ?? "BetweenTheLines";
 
   if (!OPENROUTER_API_KEY) {
