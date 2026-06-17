@@ -272,18 +272,11 @@ const ReportContent = () => {
   // the paywall section into view once entitlement has resolved and the
   // report is still locked — so the billing card is the first thing they
   // see instead of having to scroll past the free preview.
-  useEffect(() => {
-    if (paywallScrolledRef.current) return;
-    if (searchParams.get("intent") !== "unlock") return;
-    if (entitlementLoading) return;
-    if (hasUnlockedReport) return;
-    const el = document.getElementById("paywall-section");
-    if (!el) return;
-    paywallScrolledRef.current = true;
-    requestAnimationFrame(() => {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-  }, [searchParams, entitlementLoading, hasUnlockedReport]);
+  usePaywallScroll({
+    intent: searchParams.get("intent"),
+    entitlementLoading,
+    hasUnlockedReport,
+  });
 
   // ----- Checkout return handling -----
   useEffect(() => {
