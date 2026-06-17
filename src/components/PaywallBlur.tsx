@@ -6,7 +6,7 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 
-type ProductKey = "duo_monthly" | "duo_annual" | "report_unlock_one_time";
+type ProductKey = "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
 
 type Props = {
   locked: boolean;
@@ -206,16 +206,16 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
           price="$9.99/mo"
           subtext={isReturning ? "Every analysis opens automatically — no paywall" : "Unlimited analyses + relationship insights"}
           buttonLabel="Subscribe monthly"
-          loading={pending === "duo_monthly"}
-          onClick={() => launch("duo_monthly")}
+          loading={pending === "BTLN_monthly"}
+          onClick={() => launch("BTLN_monthly")}
         />
         <PriceOption
           label="Annual subscription"
           price="$49.99/yr"
           subtext="Just $4.17/mo — save 58%"
           buttonLabel="Subscribe annually"
-          loading={pending === "duo_annual"}
-          onClick={() => launch("duo_annual")}
+          loading={pending === "BTLN_annual"}
+          onClick={() => launch("BTLN_annual")}
         />
         <PriceOption
           deemphasized
@@ -223,8 +223,8 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
           price="$4.99 one-time"
           subtext="Unlock only this analysis"
           buttonLabel={isReturning ? "Unlock just this one" : "Unlock this report"}
-          loading={pending === "report_unlock_one_time"}
-          onClick={() => launch("report_unlock_one_time")}
+          loading={pending === "BTLN_report_unlock"}
+          onClick={() => launch("BTLN_report_unlock")}
         />
       </div>
 
