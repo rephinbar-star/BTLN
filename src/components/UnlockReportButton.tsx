@@ -13,7 +13,7 @@ export function UnlockReportButton({ analysisId, priceLabel = "$4.99" }: Props) 
 
   const handleClick = () => {
     openCheckout({
-      priceId: "report_unlock_one_time",
+      priceId: "BTLN_report_unlock",
       customerEmail: user?.email,
       userId: user?.id,
       analysisId,
