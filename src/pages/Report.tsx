@@ -18,6 +18,7 @@ import { Header } from "@/components/chemistry/Header";
 import type { RelationshipType } from "@/lib/coupleTypes";
 import { PaywallBlur } from "@/components/PaywallBlur";
 import { useEntitlement } from "@/hooks/useEntitlement";
+import { usePaywallScroll } from "@/hooks/usePaywallScroll";
 import { SaveReportModal } from "@/components/auth/SaveReportModal";
 import { useAuth } from "@/hooks/useAuth";
 import {
@@ -142,7 +143,6 @@ const ReportContent = () => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, []);
 
-  const paywallScrolledRef = useRef(false);
 
   const loadReport = useCallback(async () => {
     if (!analysisId) return null;
