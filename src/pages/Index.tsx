@@ -62,10 +62,10 @@ const Index = () => {
       <Helmet>
         <title>BetweenTheLines™ — AI relationship analysis from your texts</title>
         <meta name="description" content="Paste your texts and get a detailed AI report on your communication style, attachment patterns, and relationship dynamics. No signup, results in 90 seconds." />
-        <link rel="canonical" href="https://couplechemistry1.lovable.app/" />
+        <link rel="canonical" href="https://betweenthelines.app/" />
         <meta property="og:title" content="BetweenTheLines™ — AI relationship analysis from your texts" />
         <meta property="og:description" content="Paste your texts and get a detailed AI report on your communication style, attachment patterns, and relationship dynamics." />
-        <meta property="og:url" content="https://couplechemistry1.lovable.app/" />
+        <meta property="og:url" content="https://betweenthelines.app/" />
       </Helmet>
       <Header />
       <main>

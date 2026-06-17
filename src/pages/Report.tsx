@@ -472,7 +472,7 @@ const ReportContent = () => {
   };
 
   const handleCopyLink = async () => {
-    const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}`;
     try {
       await navigator.clipboard.writeText(url);
       toast("Link copied", { duration: 2000 });
@@ -485,7 +485,7 @@ const ReportContent = () => {
   };
 
   const handleShare = async () => {
-    const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}`;
     const text = result
       ? `Our chemistry read: ${result.headline.tier_label}`
       : "Check our chemistry analysis";
@@ -514,7 +514,7 @@ const ReportContent = () => {
 
   const handleShareCoupleCard = async () => {
     const node = coupleCardRef.current;
-    const url = `https://couplechemistry.lovable.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}`;
     const title = "BetweenTheLines™ — our couple type";
     const text = result
       ? `We're ${result.headline.tier_label} on BetweenTheLines™`
@@ -578,7 +578,7 @@ const ReportContent = () => {
     setShareFallbackOpen(true);
   };
 
-  const shareUrl = `https://couplechemistry.lovable.app/report/${analysisId}`;
+  const shareUrl = `https://betweenthelines.app/report/${analysisId}`;
   const shareText = result
     ? `Our chemistry read: ${result.headline.tier_label}`
     : "Check our chemistry analysis";
@@ -624,10 +624,10 @@ const ReportContent = () => {
           name="description"
           content={`${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
         />
-        <link rel="canonical" href={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
+        <link rel="canonical" href={`https://betweenthelines.app/report/${analysisId}`} />
         <meta property="og:title" content={`Chemistry read: ${result.headline.tier_label}`} />
         <meta property="og:description" content={result.headline.vibe_summary} />
-        <meta property="og:url" content={`https://couplechemistry1.lovable.app/report/${analysisId}`} />
+        <meta property="og:url" content={`https://betweenthelines.app/report/${analysisId}`} />
         <meta name="robots" content="noindex" />
       </Helmet>
       <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8 sm:pt-14">
