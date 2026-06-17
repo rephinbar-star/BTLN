@@ -487,8 +487,8 @@ const ReportContent = () => {
   const handleShare = async () => {
     const url = `https://betweenthelines.app/report/${analysisId}`;
     const text = result
-      ? `Our chemistry read: ${result.headline.tier_label}`
-      : "Check our chemistry analysis";
+      ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+      : "Check our BetweenTheLines analysis";
     const canWebShare =
       typeof navigator !== "undefined" &&
       typeof (navigator as Navigator).share === "function";
@@ -580,8 +580,8 @@ const ReportContent = () => {
 
   const shareUrl = `https://betweenthelines.app/report/${analysisId}`;
   const shareText = result
-    ? `Our chemistry read: ${result.headline.tier_label}`
-    : "Check our chemistry analysis";
+    ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+    : "Check our BetweenTheLines analysis";
 
   const copyFromFallback = async () => {
     try {
@@ -625,7 +625,7 @@ const ReportContent = () => {
           content={`${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
         />
         <link rel="canonical" href={`https://betweenthelines.app/report/${analysisId}`} />
-        <meta property="og:title" content={`Chemistry read: ${result.headline.tier_label}`} />
+        <meta property="og:title" content={`BetweenTheLines read: ${result.headline.tier_label}`} />
         <meta property="og:description" content={result.headline.vibe_summary} />
         <meta property="og:url" content={`https://betweenthelines.app/report/${analysisId}`} />
         <meta name="robots" content="noindex" />
