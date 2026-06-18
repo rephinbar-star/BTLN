@@ -574,6 +574,26 @@ const ReportContent = () => {
             // ignore
           }
         }
+        // Wait for all images inside the card to fully load (and decode).
+        // Without this, html-to-image captures a blank/partial canvas when
+        // the couple-type illustration hasn't finished loading yet.
+        const imgs = Array.from(node.querySelectorAll("img"));
+        await Promise.all(
+          imgs.map(async (img) => {
+            if (!img.complete || img.naturalWidth === 0) {
+              await new Promise<void>((resolve) => {
+                const done = () => resolve();
+                img.addEventListener("load", done, { once: true });
+                img.addEventListener("error", done, { once: true });
+              });
+            }
+            try {
+              await img.decode();
+            } catch {
+              // ignore decode errors
+            }
+          }),
+        );
         const rect = node.getBoundingClientRect();
         const captureWidth = Math.ceil(rect.width);
         const captureHeight = Math.ceil(rect.height);
