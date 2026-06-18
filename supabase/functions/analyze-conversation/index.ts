@@ -272,11 +272,28 @@ Deno.serve(async (req) => {
   if (provided_analysis_id) {
     const { data: existing, error: exErr } = await supabase
       .from("analyses")
-      .select("id")
+      .select("id, session_id, user_id")
       .eq("id", provided_analysis_id)
       .maybeSingle();
     if (exErr || !existing) {
       return json(404, { error: `Analysis row ${provided_analysis_id} not found` });
+    }
+    // Ownership check: caller must either own the row (matching JWT user_id)
+    // or present the original session_id. Analysis UUIDs are shareable via
+    // /report/:id, so existence alone is not authorization.
+    let jwt_user_id: string | null = null;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData } = await supabase.auth.getClaims(token);
+      jwt_user_id = (claimsData?.claims?.sub as string) ?? null;
+    }
+    const ownsByUser =
+      jwt_user_id !== null && existing.user_id === jwt_user_id;
+    const ownsBySession =
+      !!session_id && existing.session_id === session_id;
+    if (!ownsByUser && !ownsBySession) {
+      return json(403, { error: "Not authorized to re-run this analysis" });
     }
     analysis_id = existing.id as string;
     await supabase
