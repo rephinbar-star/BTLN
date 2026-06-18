@@ -63,15 +63,37 @@ const flagSummary = (flag: FlagValue | null | undefined) => {
 const evidenceText = (horseman: { evidence_quote?: unknown; evidence?: unknown } | undefined) =>
   textFromUnknown(horseman?.evidence_quote ?? horseman?.evidence, "");
 
-class ReportErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+class ReportErrorBoundary extends Component<
+  { children: ReactNode; label?: string; inline?: boolean; onError?: (err: unknown) => void },
+  { hasError: boolean }
+> {
   state = { hasError: false };
 
   static getDerivedStateFromError() {
     return { hasError: true };
   }
 
+  componentDidCatch(error: unknown, info: unknown) {
+    const label = this.props.label ?? "report";
+    // Always log so we can see what's going wrong in production console.
+    // eslint-disable-next-line no-console
+    console.error(`[report-render-error:${label}]`, error, info);
+    try {
+      this.props.onError?.(error);
+    } catch {
+      // swallow
+    }
+  }
+
   render() {
     if (this.state.hasError) {
+      if (this.props.inline) {
+        return (
+          <div className="rounded-xl border border-border bg-muted p-4 text-[13px] text-muted-foreground">
+            This part of your report couldn&apos;t be displayed.
+          </div>
+        );
+      }
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
           <h1 className="text-[28px] font-medium tracking-tight sm:text-[36px]">
@@ -912,6 +934,7 @@ const DeepReport = ({
       </div>
 
       {/* 1. Communication diagnostic */}
+      <ReportErrorBoundary label="communication-diagnostic" inline>
       <Section title="1 · Communication diagnostic" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-3">
           <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
@@ -926,8 +949,10 @@ const DeepReport = ({
           </p>
         </div>
       </Section>
+      </ReportErrorBoundary>
 
       {/* 2. Attachment styles */}
+      <ReportErrorBoundary label="attachment-styles" inline>
       <Section title="2 · Attachment styles" locked={locked}>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {profile1 && (
@@ -953,8 +978,10 @@ const DeepReport = ({
           </p>
         )}
       </Section>
+      </ReportErrorBoundary>
 
       {/* 3. Four Horsemen */}
+      <ReportErrorBoundary label="four-horsemen" inline>
       <Section title="3 · The Four Horsemen" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {horsemenList.map((x) => (
@@ -999,8 +1026,10 @@ const DeepReport = ({
           </div>
         )}
       </Section>
+      </ReportErrorBoundary>
 
       {/* 4. Hidden pattern */}
+      <ReportErrorBoundary label="hidden-pattern" inline>
       <Section title="4 · The hidden pattern" locked={locked}>
         <div data-pdf-section className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <h4 className="text-[15px] font-semibold">{result.hidden_pattern?.title}</h4>
@@ -1009,33 +1038,43 @@ const DeepReport = ({
           </p>
         </div>
       </Section>
+      </ReportErrorBoundary>
 
       {/* 5. Bids for connection */}
-      <BidsSection bids={result.bids_for_connection} locked={locked} />
+      <ReportErrorBoundary label="bids" inline>
+        <BidsSection bids={result.bids_for_connection} locked={locked} />
+      </ReportErrorBoundary>
 
       {/* 6. Love languages */}
-      <LoveLanguagesSection languages={result.love_languages} locked={locked} />
+      <ReportErrorBoundary label="love-languages" inline>
+        <LoveLanguagesSection languages={result.love_languages} locked={locked} />
+      </ReportErrorBoundary>
 
       {/* 7. Yellow flags */}
-      <FlagListSection
-        title="7 · Things to watch"
-        flags={result.yellow_flags}
-        tone="amber"
-        locked={locked}
-      />
+      <ReportErrorBoundary label="yellow-flags" inline>
+        <FlagListSection
+          title="7 · Things to watch"
+          flags={result.yellow_flags}
+          tone="amber"
+          locked={locked}
+        />
+      </ReportErrorBoundary>
 
       {/* 8. Red flags */}
-      <FlagListSection
-        title="8 · Red flags"
-        flags={result.red_flags}
-        tone="red"
-        locked={locked}
-      />
+      <ReportErrorBoundary label="red-flags" inline>
+        <FlagListSection
+          title="8 · Red flags"
+          flags={result.red_flags}
+          tone="red"
+          locked={locked}
+        />
+      </ReportErrorBoundary>
 
       {/* 9. Conversation prompts */}
+      <ReportErrorBoundary label="conversation-prompts" inline>
       <Section title="9 · Personalized prompts for this week" locked={locked}>
         <div className="space-y-3">
-          {(result.conversation_prompts ?? []).map((p, i) => (
+          {(Array.isArray(result.conversation_prompts) ? result.conversation_prompts : []).map((p, i) => (
             <div
               key={i}
               data-pdf-section
@@ -1048,6 +1087,7 @@ const DeepReport = ({
           ))}
         </div>
       </Section>
+      </ReportErrorBoundary>
     </div>
   );
 };
@@ -1163,16 +1203,18 @@ const EvidenceQuotes = ({
     profile1?.primary_style === "secure" && profile2?.primary_style === "secure";
 
   const blocks: Array<{ name: string; quotes: string[] }> = [];
+  const quotesOf = (p?: import("@/lib/analysis-types").AttachmentProfile) =>
+    Array.isArray(p?.evidence_quotes) ? (p!.evidence_quotes.filter((q): q is string => typeof q === "string")) : [];
   if (both) {
-    if (profile1?.evidence_quotes?.length)
-      blocks.push({ name: name1, quotes: profile1.evidence_quotes });
-    if (profile2?.evidence_quotes?.length)
-      blocks.push({ name: name2, quotes: profile2.evidence_quotes });
+    const q1 = quotesOf(profile1);
+    const q2 = quotesOf(profile2);
+    if (q1.length) blocks.push({ name: name1, quotes: q1 });
+    if (q2.length) blocks.push({ name: name2, quotes: q2 });
   } else {
     const pick = nonSecureScore(profile1) >= nonSecureScore(profile2) ? profile1 : profile2;
     const pickName = pick === profile1 ? name1 : name2;
-    if (pick?.evidence_quotes?.length)
-      blocks.push({ name: pickName, quotes: pick.evidence_quotes });
+    const pq = quotesOf(pick);
+    if (pq.length) blocks.push({ name: pickName, quotes: pq });
   }
 
   if (blocks.length === 0) return null;
@@ -1305,7 +1347,7 @@ const FlagListSection = ({
   skipFirst?: boolean;
   locked?: boolean;
 }) => {
-  const list = (flags ?? []).slice(skipFirst ? 1 : 0);
+  const list = (Array.isArray(flags) ? flags : []).slice(skipFirst ? 1 : 0);
   if (list.length === 0) return null;
   const wrap =
     tone === "red"
