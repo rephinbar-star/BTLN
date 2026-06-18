@@ -617,7 +617,7 @@ const ReportContent = () => {
 
   const shareUrl = `https://betweenthelines.app/report/${analysisId}`;
   const shareText = result
-    ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+    ? safeField(() => `Our BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")
     : "Check our BetweenTheLines analysis";
 
   const copyFromFallback = async () => {
