@@ -368,8 +368,9 @@ const ReportContent = () => {
         }
       }
       const latest = await loadReport();
-      if (latest?.is_paid) {
-        setRow(latest);
+      if (latest?.row?.is_paid) {
+        setRow(latest.row);
+        setIsSharedView(latest.shared);
       }
     };
     const interval = window.setInterval(() => {
