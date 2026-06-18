@@ -96,9 +96,10 @@ class ReportErrorBoundary extends Component<
 
   componentDidCatch(error: unknown, info: unknown) {
     const label = this.props.label ?? "report";
+    const fieldPath = error instanceof ReportFieldError ? error.fieldPath : "unknown";
     // Always log so we can see what's going wrong in production console.
     // eslint-disable-next-line no-console
-    console.error(`[report-render-error:${label}]`, error, info);
+    console.error(`[report-render-error:${label}] field=${fieldPath}`, error, info);
     try {
       this.props.onError?.(error);
     } catch {
