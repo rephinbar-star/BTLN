@@ -343,10 +343,19 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       // 1. Create analyses row first
       const { data: userData } = await supabase.auth.getUser();
       const currentUserId = userData?.user?.id ?? null;
-      const { data: created, error: createErr } = await supabase
+      const analysis_id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+              const r = (Math.random() * 16) | 0;
+              const v = c === "x" ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            });
+      const { error: createErr } = await supabase
         .from("analyses")
         .insert([
           {
+            id: analysis_id,
             session_id,
             context_data: context_data as never,
             input_method,
@@ -354,19 +363,16 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             relationship_type: form.relationshipType,
             user_id: currentUserId,
           },
-        ])
-        .select("id")
-        .single();
+        ]);
 
-      if (createErr || !created) {
+      if (createErr) {
         setSubmitError(
-          createErr?.message ?? "Could not start the analysis. Please try again.",
+          createErr.message ?? "Could not start the analysis. Please try again.",
         );
         setSubmitting(false);
         return;
       }
 
-      const analysis_id = created.id as string;
       if (!currentUserId) {
         setPendingClaimAnalysisId(analysis_id);
       }
