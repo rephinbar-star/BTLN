@@ -1,7 +1,7 @@
-import { Heart } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { logEvent } from "@/lib/session";
 import { useAuth } from "@/hooks/useAuth";
+import logoAsset from "@/assets/logo.png.asset.json";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,8 +26,7 @@ export const Header = () => {
     <header className="sticky top-0 z-40 w-full bg-background/90 backdrop-blur border-b border-border/70">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
         <Link to="/" className="flex items-center gap-2">
-          <Heart className="h-5 w-5 fill-foreground text-foreground" strokeWidth={0} />
-          <span className="text-base font-medium tracking-tight">BetweenTheLines™</span>
+          <img src={logoAsset.url} alt="BetweenTheLines™" className="h-8 w-auto" />
         </Link>
         <div className="flex items-center gap-2">
           {!loading && user ? (

@@ -1,7 +1,7 @@
-import { Heart } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import logoAsset from "@/assets/logo.png.asset.json";
 import readingGif from "@/assets/processing/reading.gif.asset.json";
 import patternsGif from "@/assets/processing/patterns.gif.asset.json";
 import attachmentGif from "@/assets/processing/attachment.gif.asset.json";
@@ -174,8 +174,7 @@ const Processing = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
       <div className="flex items-center gap-2">
-        <Heart className="h-4 w-4 fill-foreground text-foreground" strokeWidth={0} />
-        <span className="text-[14px] font-medium tracking-tight">betweenthelines.app</span>
+        <img src={logoAsset.url} alt="BetweenTheLines™" className="h-8 w-auto" />
       </div>
 
       <img

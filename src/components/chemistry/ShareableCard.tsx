@@ -1,6 +1,7 @@
 import { Heart } from "lucide-react";
 import { Info } from "lucide-react";
 import { forwardRef } from "react";
+import logoAsset from "@/assets/logo.png.asset.json";
 import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
 import {
   AXIS_DISPLAY,
@@ -85,8 +86,7 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
         {/* Top row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Heart className="h-3.5 w-3.5 fill-foreground text-foreground" strokeWidth={0} />
-            <span className="text-[13px] font-medium tracking-tight">betweenthelines.app</span>
+            <img src={logoAsset.url} alt="BetweenTheLines™" className="h-5 w-auto" />
           </div>
           <span className="text-[11px] text-muted-foreground">
             {result.meta.messages_analyzed} messages analyzed
