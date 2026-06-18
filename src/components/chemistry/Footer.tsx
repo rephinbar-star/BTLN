@@ -2,7 +2,7 @@ import logoAsset from "@/assets/logo.png.asset.json";
 
 export const Footer = () => {
   return (
-    <footer className="border-t border-border px-5 pt-3 pb-8 sm:px-8">
+    <footer className="border-t border-border px-5 pt-0.5 pb-8 sm:px-8">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-px sm:flex-row">
         <img src={logoAsset.url} alt="BetweenTheLines™" className="h-24 w-auto" />
         <nav className="flex items-center gap-6 text-[14px] text-muted-foreground">
