@@ -400,27 +400,21 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         .invoke("analyze-conversation", { body: payload })
         .then(async ({ error }) => {
           if (error) {
-            await supabase
-              .from("analyses")
-              .update({
-                status: "failed",
-                error_message:
-                  "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images.",
-                completed_at: new Date().toISOString(),
-              })
-              .eq("id", analysis_id);
+            await supabase.rpc("mark_analysis_failed", {
+              p_id: analysis_id,
+              p_session_id: session_id,
+              p_error_message:
+                "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images.",
+            });
           }
         })
         .catch(async () => {
-          await supabase
-            .from("analyses")
-            .update({
-              status: "failed",
-              error_message:
-                "We couldn't reach the analyzer. Please check your connection and try again.",
-              completed_at: new Date().toISOString(),
-            })
-            .eq("id", analysis_id);
+          await supabase.rpc("mark_analysis_failed", {
+            p_id: analysis_id,
+            p_session_id: session_id,
+            p_error_message:
+              "We couldn't reach the analyzer. Please check your connection and try again.",
+          });
         });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unexpected error.";
