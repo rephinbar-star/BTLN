@@ -1,4 +1,4 @@
-import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, Lock, ChevronDown } from "lucide-react";
+import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, ChevronDown, type LucideIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +73,7 @@ const formatBytes = (bytes: number) => {
 };
 
 type QACardProps = {
-  icon: typeof Lock;
+  icon: LucideIcon;
   question: string;
   answer: string;
   tone: "muted" | "blue";
@@ -631,15 +631,6 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           )}
         </div>
 
-        {/* Q&A cards */}
-        <div className="mt-4 space-y-3">
-          <QACard
-            icon={Lock}
-            question="Is my data private?"
-            answer="Your messages are deleted immediately after analysis. Nothing is stored."
-            tone="muted"
-          />
-        </div>
 
         {/* Relationship type */}
         <div className="mt-5">
