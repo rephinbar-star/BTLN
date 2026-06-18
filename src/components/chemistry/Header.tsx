@@ -19,7 +19,25 @@ const scrollToInput = (location: string) => {
 export const Header = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
-  const initial = (user?.email ?? "?").charAt(0).toUpperCase();
+
+  const initials = (() => {
+    if (!user) return "??";
+    const name =
+      (user.user_metadata?.full_name as string | undefined) ||
+      (user.user_metadata?.name as string | undefined) ||
+      "";
+    if (name.trim()) {
+      const parts = name.trim().split(/\s+/);
+      if (parts.length >= 2) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return name.slice(0, 2).toUpperCase();
+    }
+    // Fallback to email
+    const email = user.email ?? "";
+    return email.slice(0, 2).toUpperCase() || "??";
+  })();
+
   const truncEmail =
     user?.email && user.email.length > 24 ? `${user.email.slice(0, 21)}…` : user?.email ?? "";
   return (
