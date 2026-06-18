@@ -112,7 +112,8 @@ export const CoupleTypeCard = ({
         src={url}
         alt={label ? `${label} illustration` : "Couple type illustration"}
         className="block h-auto w-full rounded-[12px] object-contain"
-        loading="lazy"
+        loading="eager"
+        crossOrigin="anonymous"
         onError={() => setImgFailed(true)}
       />
     </div>
