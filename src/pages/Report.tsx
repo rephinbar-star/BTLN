@@ -63,15 +63,37 @@ const flagSummary = (flag: FlagValue | null | undefined) => {
 const evidenceText = (horseman: { evidence_quote?: unknown; evidence?: unknown } | undefined) =>
   textFromUnknown(horseman?.evidence_quote ?? horseman?.evidence, "");
 
-class ReportErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+class ReportErrorBoundary extends Component<
+  { children: ReactNode; label?: string; inline?: boolean; onError?: (err: unknown) => void },
+  { hasError: boolean }
+> {
   state = { hasError: false };
 
   static getDerivedStateFromError() {
     return { hasError: true };
   }
 
+  componentDidCatch(error: unknown, info: unknown) {
+    const label = this.props.label ?? "report";
+    // Always log so we can see what's going wrong in production console.
+    // eslint-disable-next-line no-console
+    console.error(`[report-render-error:${label}]`, error, info);
+    try {
+      this.props.onError?.(error);
+    } catch {
+      // swallow
+    }
+  }
+
   render() {
     if (this.state.hasError) {
+      if (this.props.inline) {
+        return (
+          <div className="rounded-xl border border-border bg-muted p-4 text-[13px] text-muted-foreground">
+            This part of your report couldn&apos;t be displayed.
+          </div>
+        );
+      }
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
           <h1 className="text-[28px] font-medium tracking-tight sm:text-[36px]">
