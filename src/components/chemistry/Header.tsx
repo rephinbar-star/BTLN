@@ -26,7 +26,7 @@ export const Header = () => {
     <header className="sticky top-0 z-40 w-full bg-background/90 backdrop-blur border-b border-border/70">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-0 sm:px-8">
         <Link to="/" className="flex items-center">
-          <img src={logoAsset.url} alt="BetweenTheLines™" className="h-[144px] w-auto object-contain -my-5" />
+          <img src={logoAsset.url} alt="BetweenTheLines™" className="h-[144px] w-auto object-contain" />
         </Link>
         <div className="flex items-center gap-2">
           {!loading && user ? (
