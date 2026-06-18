@@ -1,6 +1,7 @@
 import { Heart } from "lucide-react";
 import { Info } from "lucide-react";
 import { forwardRef } from "react";
+import logoAsset from "@/assets/logo.png.asset.json";
 import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
 import {
   AXIS_DISPLAY,

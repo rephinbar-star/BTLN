@@ -1,7 +1,7 @@
-import { Heart } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import logoAsset from "@/assets/logo.png.asset.json";
 import readingGif from "@/assets/processing/reading.gif.asset.json";
 import patternsGif from "@/assets/processing/patterns.gif.asset.json";
 import attachmentGif from "@/assets/processing/attachment.gif.asset.json";
