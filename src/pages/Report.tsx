@@ -1347,7 +1347,7 @@ const FlagListSection = ({
   skipFirst?: boolean;
   locked?: boolean;
 }) => {
-  const list = (flags ?? []).slice(skipFirst ? 1 : 0);
+  const list = (Array.isArray(flags) ? flags : []).slice(skipFirst ? 1 : 0);
   if (list.length === 0) return null;
   const wrap =
     tone === "red"
