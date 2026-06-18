@@ -1,4 +1,4 @@
-import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, ChevronDown } from "lucide-react";
+import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, ChevronDown, type LucideIcon } from "lucide-react";
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -73,7 +73,7 @@ const formatBytes = (bytes: number) => {
 };
 
 type QACardProps = {
-  icon: typeof Lock;
+  icon: LucideIcon;
   question: string;
   answer: string;
   tone: "muted" | "blue";
