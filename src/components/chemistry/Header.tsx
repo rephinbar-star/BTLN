@@ -34,7 +34,7 @@ export const Header = () => {
               <DropdownMenuTrigger asChild>
                 <button
                   aria-label="Account menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-90"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4D5C3E] text-sm font-medium text-white transition-opacity hover:opacity-90"
                 >
                   {initial}
                 </button>
