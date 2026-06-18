@@ -63,6 +63,27 @@ const flagSummary = (flag: FlagValue | null | undefined) => {
 const evidenceText = (horseman: { evidence_quote?: unknown; evidence?: unknown } | undefined) =>
   textFromUnknown(horseman?.evidence_quote ?? horseman?.evidence, "");
 
+class ReportFieldError extends Error {
+  constructor(
+    public fieldPath: string,
+    public originalError: unknown,
+  ) {
+    super(
+      `Field error at ${fieldPath}: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
+    );
+    this.name = "ReportFieldError";
+  }
+}
+
+const safeField = <T,>(getter: () => T, path: string): T => {
+  try {
+    return getter();
+  } catch (err) {
+    throw new ReportFieldError(path, err);
+  }
+};
+
+
 class ReportErrorBoundary extends Component<
   { children: ReactNode; label?: string; inline?: boolean; onError?: (err: unknown) => void },
   { hasError: boolean }
