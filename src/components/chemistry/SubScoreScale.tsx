@@ -19,9 +19,9 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
   const tentative = lowConfidence || earnedIndex === null;
   const hasEarned = earnedIndex !== null;
 
-  // Render best -> worst; earnedIndex (0=worst, 2=best) inverts to display position.
-  const displayLabels = [labels[2], labels[1], labels[0]] as const;
-  const displayEarnedIndex = earnedIndex !== null ? (2 - earnedIndex) : null;
+  // Render worst -> best; earnedIndex maps directly to display position.
+  const displayLabels = [labels[0], labels[1], labels[2]] as const;
+  const displayEarnedIndex = earnedIndex;
 
   return (
     <div className="w-full">
@@ -39,7 +39,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
       {/* Stepper: horizontal on sm+, stacked vertical on narrow screens */}
       <div
         role="group"
-        aria-label={`${category} scale, best to worst`}
+        aria-label={`${category} scale, worst to best`}
         className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:gap-0"
       >
         {displayLabels.map((label, i) => {
