@@ -38,9 +38,13 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
         p_email: email.trim() || null,
       });
       if (email.trim()) {
-        await supabase
-          .from("email_captures")
-          .insert([{ email: email.trim(), analysis_id: analysisId, source: "feedback_modal" }]);
+        const { getSessionId } = await import("@/lib/session");
+        await supabase.rpc("capture_email", {
+          p_email: email.trim(),
+          p_analysis_id: analysisId,
+          p_source: "feedback_modal",
+          p_session_id: getSessionId(),
+        });
       }
       logEvent("feedback_submitted", {
         score,

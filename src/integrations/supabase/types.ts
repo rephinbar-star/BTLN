@@ -206,6 +206,7 @@ export type Database = {
           id: string
           metadata: Json | null
           session_id: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -213,6 +214,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           session_id: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -220,6 +222,7 @@ export type Database = {
           id?: string
           metadata?: Json | null
           session_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -510,6 +513,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      capture_email: {
+        Args: {
+          p_analysis_id: string
+          p_email: string
+          p_session_id: string
+          p_source: string
+        }
+        Returns: undefined
+      }
       claim_analyses_for_session: {
         Args: { p_session_id: string }
         Returns: number
@@ -542,9 +554,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      log_event: {
+        Args: { p_event_name: string; p_metadata: Json; p_session_id: string }
+        Returns: undefined
+      }
       mark_analysis_failed: {
         Args: { p_error_message: string; p_id: string; p_session_id: string }
         Returns: boolean
+      }
+      record_share_click: {
+        Args: {
+          p_analysis_id: string
+          p_platform: string
+          p_session_id: string
+        }
+        Returns: undefined
       }
       set_couple_type_image_url: {
         Args: {
