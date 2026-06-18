@@ -1,4 +1,5 @@
 import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,7 +64,38 @@ Deno.serve(async (req) => {
   }
   try {
     const body = await req.json();
-    const { priceId, quantity, customerEmail, userId, analysisId, customerCountry, returnUrl, environment } = body ?? {};
+    const { priceId, quantity, customerEmail, userId: bodyUserId, analysisId, customerCountry, returnUrl, environment } = body ?? {};
+
+    // Derive userId from the verified JWT — never trust a body-supplied userId,
+    // since it ends up in Stripe metadata and grants subscription/unlock access
+    // in the webhook. Anonymous one-time checkouts (no Authorization header)
+    // are still permitted, but with no userId attached.
+    let userId: string | undefined;
+    const authHeader = req.headers.get("Authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const supabaseAuth = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_ANON_KEY")!,
+        { auth: { persistSession: false } },
+      );
+      const token = authHeader.replace("Bearer ", "");
+      const { data: claimsData, error: claimsErr } = await supabaseAuth.auth.getClaims(token);
+      const jwtUserId = (claimsData?.claims?.sub as string) ?? null;
+      if (claimsErr || !jwtUserId) {
+        return new Response(JSON.stringify({ error: "Invalid auth token" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (bodyUserId && bodyUserId !== jwtUserId) {
+        return new Response(JSON.stringify({ error: "userId does not match authenticated user" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      userId = jwtUserId;
+    }
+
     if (!priceId || typeof priceId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(priceId)) {
       return new Response(JSON.stringify({ error: "Invalid priceId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
