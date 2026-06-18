@@ -691,7 +691,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             {fieldErrors.stage && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.stage}</p>}
           </div>
           <div>
-            <label className={labelClass}>How long have you been together</label>
+            <label className={labelClass}>How long have you been together or have known each other</label>
             <select
               value={form.duration}
               onChange={(e) => update("duration", e.target.value)}
