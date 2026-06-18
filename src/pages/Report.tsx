@@ -435,9 +435,7 @@ const ReportContent = () => {
       link.click();
       document.body.removeChild(link);
 
-      void supabase.from("share_clicks").insert([
-        { analysis_id: analysisId!, platform: "download" },
-      ]);
+      void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "download", p_session_id: getSessionId() });
     } catch (e) {
       toast.error("Could not generate image.");
     } finally {
@@ -499,9 +497,7 @@ const ReportContent = () => {
       const filename = `betweenthelines-highlights-${sanitizeName(context.name1)}-${sanitizeName(context.name2)}.pdf`;
       pdf.save(filename);
 
-      void supabase.from("share_clicks").insert([
-        { analysis_id: analysisId!, platform: "download_pdf" },
-      ]);
+      void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "download_pdf", p_session_id: getSessionId() });
     } catch (e) {
       toast.error("Could not generate PDF.");
     } finally {
@@ -514,9 +510,7 @@ const ReportContent = () => {
     try {
       await navigator.clipboard.writeText(url);
       toast("Link copied", { duration: 2000 });
-      void supabase.from("share_clicks").insert([
-        { analysis_id: analysisId!, platform: "copy_link" },
-      ]);
+      void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "copy_link", p_session_id: getSessionId() });
     } catch {
       toast.error("Could not copy link.");
     }
@@ -533,9 +527,7 @@ const ReportContent = () => {
     if (canWebShare) {
       try {
         await (navigator as Navigator).share({ title: "BetweenTheLines™ report", text, url });
-        void supabase.from("share_clicks").insert([
-          { analysis_id: analysisId!, platform: "web_share" },
-        ]);
+        void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "web_share", p_session_id: getSessionId() });
         return;
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string };
@@ -602,9 +594,7 @@ const ReportContent = () => {
         await nav!.share(
           canShareFiles ? { title, text, url, files: [file!] } : { title, text, url },
         );
-        void supabase.from("share_clicks").insert([
-          { analysis_id: analysisId!, platform: canShareFiles ? "web_share_card_image" : "web_share_card" },
-        ]);
+        void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: canShareFiles ? "web_share_card_image" : "web_share_card", p_session_id: getSessionId() });
         return;
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string };
@@ -626,9 +616,7 @@ const ReportContent = () => {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
       toast("Link copied", { duration: 2000 });
-      void supabase.from("share_clicks").insert([
-        { analysis_id: analysisId!, platform: "copy_link" },
-      ]);
+      void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "copy_link", p_session_id: getSessionId() });
     } catch {
       // Last-resort: select text in the input so user can long-press copy.
       const input = document.getElementById("share-fallback-url") as HTMLInputElement | null;
@@ -640,9 +628,7 @@ const ReportContent = () => {
   const openX = () => {
     const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(x, "_blank", "noopener,noreferrer");
-    void supabase.from("share_clicks").insert([
-      { analysis_id: analysisId!, platform: "x" },
-    ]);
+    void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "x", p_session_id: getSessionId() });
   };
 
   if (loading || !result || !context) {
