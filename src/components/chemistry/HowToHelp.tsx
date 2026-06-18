@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, MessageSquare, Copy, Download } from "lucide-react";
+import { ChevronDown, MessageSquare, Copy, Download, Camera } from "lucide-react";
 
 type GuideId = "whatsapp" | "copypaste";
 
