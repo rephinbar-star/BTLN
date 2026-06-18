@@ -1203,16 +1203,18 @@ const EvidenceQuotes = ({
     profile1?.primary_style === "secure" && profile2?.primary_style === "secure";
 
   const blocks: Array<{ name: string; quotes: string[] }> = [];
+  const quotesOf = (p?: import("@/lib/analysis-types").AttachmentProfile) =>
+    Array.isArray(p?.evidence_quotes) ? (p!.evidence_quotes.filter((q): q is string => typeof q === "string")) : [];
   if (both) {
-    if (profile1?.evidence_quotes?.length)
-      blocks.push({ name: name1, quotes: profile1.evidence_quotes });
-    if (profile2?.evidence_quotes?.length)
-      blocks.push({ name: name2, quotes: profile2.evidence_quotes });
+    const q1 = quotesOf(profile1);
+    const q2 = quotesOf(profile2);
+    if (q1.length) blocks.push({ name: name1, quotes: q1 });
+    if (q2.length) blocks.push({ name: name2, quotes: q2 });
   } else {
     const pick = nonSecureScore(profile1) >= nonSecureScore(profile2) ? profile1 : profile2;
     const pickName = pick === profile1 ? name1 : name2;
-    if (pick?.evidence_quotes?.length)
-      blocks.push({ name: pickName, quotes: pick.evidence_quotes });
+    const pq = quotesOf(pick);
+    if (pq.length) blocks.push({ name: pickName, quotes: pq });
   }
 
   if (blocks.length === 0) return null;
