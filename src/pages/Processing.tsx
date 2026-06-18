@@ -122,11 +122,11 @@ const Processing = () => {
 
     const poll = async () => {
       if (stopped.current) return;
-      const { data, error } = await supabase
-        .from("analyses")
-        .select("status, error_message")
-        .eq("id", analysisId)
-        .maybeSingle();
+      const { data: rows, error } = await supabase.rpc("get_analysis_for_session", {
+        p_id: analysisId,
+        p_session_id: getSessionId(),
+      });
+      const data = Array.isArray(rows) ? rows[0] : rows;
 
       if (error || !data) {
         if (firstQuery) {
