@@ -1,6 +1,45 @@
 import { createStripeClient } from "../_shared/stripe.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+async function requireAdmin(req: Request): Promise<Response | null> {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const token = authHeader.replace("Bearer ", "");
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    { auth: { persistSession: false } },
+  );
+  const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
+  const userId = (claimsData?.claims?.sub as string) ?? null;
+  if (claimsErr || !userId) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  const { data: isAdmin, error: roleErr } = await supabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  if (roleErr || !isAdmin) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      status: 403,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  return null;
+}
 
 Deno.serve(async (req) => {
+  const unauthorized = await requireAdmin(req);
+  if (unauthorized) return unauthorized;
+
   const url = new URL(req.url);
   if (req.method === "GET" && url.searchParams.get("list") === "1") {
     try {
