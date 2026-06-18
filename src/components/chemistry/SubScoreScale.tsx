@@ -17,6 +17,7 @@ type Props = {
  */
 export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: Props) => {
   const tentative = lowConfidence || earnedIndex === null;
+  const hasEarned = earnedIndex !== null;
 
   // Render best -> worst; earnedIndex (0=worst, 2=best) inverts to display position.
   const displayLabels = [labels[2], labels[1], labels[0]] as const;
