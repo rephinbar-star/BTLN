@@ -64,7 +64,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
               ].join(" ")}
             >
               <span className="flex flex-shrink-0 items-center gap-0.5">
-                {Array.from({ length: 3 - i }).map((_, starIdx) => (
+                {Array.from({ length: i + 1 }).map((_, starIdx) => (
                   <Star
                     key={starIdx}
                     aria-hidden="true"
