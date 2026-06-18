@@ -1,0 +1,112 @@
+import { Link } from "react-router-dom";
+import logoAsset from "@/assets/logo.png.asset.json";
+
+export default function Trust() {
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="border-b border-border px-5 py-4 sm:px-8">
+        <div className="mx-auto flex max-w-3xl items-center justify-between">
+          <Link to="/" className="flex items-center">
+            <img src={logoAsset.url} alt="BetweenTheLines" className="h-12 w-auto" />
+          </Link>
+          <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
+            ← Back
+          </Link>
+        </div>
+      </header>
+
+      <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-16">
+        <h1 className="text-[32px] font-medium tracking-tight sm:text-[40px]">
+          Trust &amp; Security
+        </h1>
+        <p className="mt-3 text-[15px] text-muted-foreground">
+          This page is maintained by BetweenTheLines to answer common security
+          and privacy questions. It describes app-visible controls and current
+          practices — it is not an independent certification.
+        </p>
+
+        <section className="mt-10 space-y-3">
+          <h2 className="text-[20px] font-medium">What BetweenTheLines does</h2>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            BetweenTheLines analyzes pasted text or uploaded screenshots of a
+            conversation and returns a private relationship report. You don't
+            need an account to start — you can purchase or unlock a report
+            anonymously, then optionally sign in to save it.
+          </p>
+        </section>
+
+        <section className="mt-10 space-y-3">
+          <h2 className="text-[20px] font-medium">Authentication</h2>
+          <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
+            <li>Email + password sign-in, with password reset via email.</li>
+            <li>Google sign-in for users who prefer single sign-on.</li>
+            <li>Sessions are managed by our backend provider with secure tokens.</li>
+          </ul>
+        </section>
+
+        <section className="mt-10 space-y-3">
+          <h2 className="text-[20px] font-medium">Data access</h2>
+          <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
+            <li>
+              Reports are scoped to their creator. Signed-in users can only
+              read their own reports. Anonymous reports can only be opened from
+              the same browser session that created them.
+            </li>
+            <li>
+              Row-level security is enabled on every customer-facing table in
+              our database.
+            </li>
+            <li>
+              Payment data (card details) is never seen or stored by us — it is
+              handled directly by Stripe.
+            </li>
+          </ul>
+        </section>
+
+        <section className="mt-10 space-y-3">
+          <h2 className="text-[20px] font-medium">What we collect</h2>
+          <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
+            <li>The conversation content you paste or upload, used only to generate your report.</li>
+            <li>Basic context you provide (relationship type, names you choose to enter).</li>
+            <li>Account email and display name if you sign in.</li>
+            <li>Aggregated, anonymous usage events to improve the product.</li>
+          </ul>
+        </section>
+
+        <section className="mt-10 space-y-3">
+          <h2 className="text-[20px] font-medium">Subprocessors</h2>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            We rely on the following providers to operate the app:
+          </p>
+          <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
+            <li>Supabase — hosted database, authentication, and edge functions.</li>
+            <li>Stripe — payment processing.</li>
+            <li>OpenRouter / Lovable AI — model inference for the analysis itself.</li>
+          </ul>
+        </section>
+
+        <section className="mt-10 space-y-3">
+          <h2 className="text-[20px] font-medium">Deleting your data</h2>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            Signed-in users can delete individual reports from their Account
+            page. For full account deletion, contact us using the link below.
+          </p>
+        </section>
+
+        <section className="mt-10 space-y-3">
+          <h2 className="text-[20px] font-medium">Reporting a security issue</h2>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            If you believe you've found a vulnerability, please email us and we
+            will respond as quickly as we can. Please don't publicly disclose
+            the issue before we've had a chance to investigate.
+          </p>
+        </section>
+
+        <p className="mt-12 text-[13px] text-muted-foreground">
+          This page describes current practices and may be updated as the
+          product evolves.
+        </p>
+      </main>
+    </div>
+  );
+}
