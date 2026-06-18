@@ -24,9 +24,9 @@ export const Header = () => {
     user?.email && user.email.length > 24 ? `${user.email.slice(0, 21)}…` : user?.email ?? "";
   return (
     <header className="sticky top-0 z-40 w-full bg-background/90 backdrop-blur border-b border-border/70">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3 sm:px-8">
         <Link to="/" className="flex items-center">
-          <img src={logoAsset.url} alt="BetweenTheLines™" className="h-14 max-w-[200px] w-auto object-contain" />
+          <img src={logoAsset.url} alt="BetweenTheLines™" className="h-16 max-w-[220px] w-auto object-contain" />
         </Link>
         <div className="flex items-center gap-2">
           {!loading && user ? (
