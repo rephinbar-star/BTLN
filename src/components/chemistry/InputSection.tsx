@@ -343,10 +343,19 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       // 1. Create analyses row first
       const { data: userData } = await supabase.auth.getUser();
       const currentUserId = userData?.user?.id ?? null;
-      const { data: created, error: createErr } = await supabase
+      const analysis_id =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+              const r = (Math.random() * 16) | 0;
+              const v = c === "x" ? r : (r & 0x3) | 0x8;
+              return v.toString(16);
+            });
+      const { error: createErr } = await supabase
         .from("analyses")
         .insert([
           {
+            id: analysis_id,
             session_id,
             context_data: context_data as never,
             input_method,
@@ -354,19 +363,16 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             relationship_type: form.relationshipType,
             user_id: currentUserId,
           },
-        ])
-        .select("id")
-        .single();
+        ]);
 
-      if (createErr || !created) {
+      if (createErr) {
         setSubmitError(
-          createErr?.message ?? "Could not start the analysis. Please try again.",
+          createErr.message ?? "Could not start the analysis. Please try again.",
         );
         setSubmitting(false);
         return;
       }
 
-      const analysis_id = created.id as string;
       if (!currentUserId) {
         setPendingClaimAnalysisId(analysis_id);
       }
@@ -400,27 +406,21 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         .invoke("analyze-conversation", { body: payload })
         .then(async ({ error }) => {
           if (error) {
-            await supabase
-              .from("analyses")
-              .update({
-                status: "failed",
-                error_message:
-                  "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images.",
-                completed_at: new Date().toISOString(),
-              })
-              .eq("id", analysis_id);
+            await supabase.rpc("mark_analysis_failed", {
+              p_id: analysis_id,
+              p_session_id: session_id,
+              p_error_message:
+                "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images.",
+            });
           }
         })
         .catch(async () => {
-          await supabase
-            .from("analyses")
-            .update({
-              status: "failed",
-              error_message:
-                "We couldn't reach the analyzer. Please check your connection and try again.",
-              completed_at: new Date().toISOString(),
-            })
-            .eq("id", analysis_id);
+          await supabase.rpc("mark_analysis_failed", {
+            p_id: analysis_id,
+            p_session_id: session_id,
+            p_error_message:
+              "We couldn't reach the analyzer. Please check your connection and try again.",
+          });
         });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unexpected error.";

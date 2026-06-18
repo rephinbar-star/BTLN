@@ -6,6 +6,7 @@ export const Footer = () => {
       <div className="mx-auto flex max-w-6xl flex-col items-center space-y-1.5 sm:flex-row sm:-space-x-10 sm:space-y-0">
         <img src={logoAsset.url} alt="BetweenTheLines™" className="h-24 w-auto -mt-[3px]" />
         <nav className="flex items-center gap-6 text-[14px] text-muted-foreground">
+          <a href="/trust" className="hover:text-foreground">Trust</a>
           <a href="#" className="hover:text-foreground">Privacy</a>
           <a href="#" className="hover:text-foreground">Terms</a>
           <a href="#" className="hover:text-foreground">Feedback</a>

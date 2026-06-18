@@ -63,11 +63,11 @@ export const claimPendingAnalysis = async (): Promise<{
   if (data === true) {
     clearPendingClaimAnalysisId();
   } else {
-    const { data: row } = await supabase
-      .from("analyses")
-      .select("user_id")
-      .eq("id", analysisId)
-      .maybeSingle();
+    const { data } = await supabase.rpc("get_analysis_for_session", {
+      p_id: analysisId,
+      p_session_id: getSessionId(),
+    });
+    const row = Array.isArray(data) ? data[0] : data;
     if (row?.user_id === userData.user.id) {
       clearPendingClaimAnalysisId();
       return { attempted: true, claimed: true, analysisId };

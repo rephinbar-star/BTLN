@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getSessionId } from "@/lib/session";
 import logoAsset from "@/assets/logo.png.asset.json";
 import readingGif from "@/assets/processing/reading.gif.asset.json";
 import patternsGif from "@/assets/processing/patterns.gif.asset.json";
@@ -122,11 +123,11 @@ const Processing = () => {
 
     const poll = async () => {
       if (stopped.current) return;
-      const { data, error } = await supabase
-        .from("analyses")
-        .select("status, error_message")
-        .eq("id", analysisId)
-        .maybeSingle();
+      const { data: rows, error } = await supabase.rpc("get_analysis_for_session", {
+        p_id: analysisId,
+        p_session_id: getSessionId(),
+      });
+      const data = Array.isArray(rows) ? rows[0] : rows;
 
       if (error || !data) {
         if (firstQuery) {

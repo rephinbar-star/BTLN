@@ -190,14 +190,15 @@ const ReportContent = () => {
 
   const loadReport = useCallback(async () => {
     if (!analysisId) return null;
-    const { data, error } = await supabase
-      .from("analyses")
-      .select("id, status, result_json, context_data, message_count, error_message, couple_type_id, relationship_type, is_paid, user_id")
-      .eq("id", analysisId)
-      .maybeSingle();
+    const { data, error } = await supabase.rpc("get_analysis_for_session", {
+      p_id: analysisId,
+      p_session_id: getSessionId(),
+    });
 
-    if (error || !data) return null;
-    return data as unknown as Row;
+    if (error) return null;
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) return null;
+    return row as unknown as Row;
   }, [analysisId]);
 
   useEffect(() => {

@@ -30,11 +30,11 @@ export function useEntitlement(
     let cancelled = false;
     setIsLoading(true);
     (async () => {
-      const { data: row } = await supabase
-        .from("analyses")
-        .select("user_id, session_id")
-        .eq("id", analysisId)
-        .maybeSingle();
+      const { data } = await supabase.rpc("get_analysis_for_session", {
+        p_id: analysisId,
+        p_session_id: getSessionId(),
+      });
+      const row = Array.isArray(data) ? data[0] : (data as { user_id: string | null; session_id: string | null } | null);
       if (cancelled) return;
       const owner = !!user && !!row?.user_id && row.user_id === user.id;
       const anonOwner =
