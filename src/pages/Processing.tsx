@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { getSessionId } from "@/lib/session";
 import logoAsset from "@/assets/logo.png.asset.json";
 import readingGif from "@/assets/processing/reading.gif.asset.json";
 import patternsGif from "@/assets/processing/patterns.gif.asset.json";
