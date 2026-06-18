@@ -641,6 +641,36 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           />
         </div>
 
+        {/* Relationship type */}
+        <div className="mt-5">
+          <label className={labelClass}>Relationship type</label>
+          <div className="mt-1.5 flex gap-2" role="radiogroup" aria-label="Relationship type">
+            {([
+              { value: "romantic", label: "Romantic" },
+              { value: "friend", label: "Friend" },
+              { value: "family", label: "Family" },
+            ] as const).map((opt) => {
+              const active = form.relationshipType === opt.value;
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={active}
+                  onClick={() => update("relationshipType", opt.value)}
+                  className={`flex-1 rounded-full border px-4 py-2.5 text-[14px] font-medium transition-colors ${
+                    active
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border bg-background text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Dropdowns */}
         <div className="mt-5 flex flex-col gap-4">
           <div>
