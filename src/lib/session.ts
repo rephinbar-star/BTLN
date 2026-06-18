@@ -84,9 +84,11 @@ export const logEvent = (
   try {
     const session_id = getSessionId();
     // Fire-and-forget — never await, never throw
-    void supabase
-      .from("events")
-      .insert([{ session_id, event_name, metadata: metadata as never }]);
+    void supabase.rpc("log_event", {
+      p_session_id: session_id,
+      p_event_name: event_name,
+      p_metadata: metadata as never,
+    });
   } catch {
     // swallow
   }
