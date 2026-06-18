@@ -684,6 +684,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               <option>Dating, not exclusive</option>
               <option>Dating, exclusive</option>
               <option>Living together</option>
+              <option>Living Apart</option>
               <option>Engaged</option>
               <option>Married</option>
               <option>Other</option>
