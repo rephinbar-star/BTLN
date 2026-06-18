@@ -631,6 +631,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           )}
         </div>
 
+        <p className="mt-4 text-[12px] text-muted-foreground">
+          Your messages are deleted immediately after analysis. Nothing is stored.
+        </p>
 
         {/* Relationship type */}
         <div className="mt-5">
