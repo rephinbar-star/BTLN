@@ -1153,13 +1153,14 @@ const AttachmentCard = ({
   name: string;
   profile: import("@/lib/analysis-types").AttachmentProfile;
 }) => {
-  const primary = profile.primary_style;
+  const primary = safeField(() => profile.primary_style, "attachment_profiles.primary_style");
   const pillClass = STYLE_PILL[primary] ?? "bg-muted text-muted-foreground";
 
   // Top 3 dimensions sorted desc; ensure primary (if a dimension) is included.
-  const entries = Object.entries(profile.scores ?? {}) as Array<
-    [AttachmentDimension | string, number]
-  >;
+  const entries = safeField(
+    () => Object.entries(profile.scores ?? {}) as Array<[AttachmentDimension | string, number]>,
+    "attachment_profiles.scores",
+  );
   entries.sort((a, b) => b[1] - a[1]);
   let top = entries.slice(0, 3);
   const primaryIsDimension =
@@ -1198,7 +1199,7 @@ const AttachmentCard = ({
         ))}
       </div>
       <p className="mt-4 text-[11px] text-muted-foreground">
-        Confidence: {profile.confidence}
+        Confidence: {safeField(() => profile.confidence, "attachment_profiles.confidence")}
       </p>
     </div>
   );
