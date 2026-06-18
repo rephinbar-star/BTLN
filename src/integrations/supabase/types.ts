@@ -547,6 +547,22 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_shared_analysis: {
+        Args: { p_id: string }
+        Returns: {
+          context_data: Json
+          couple_type_id: number
+          error_message: string
+          id: string
+          is_paid: boolean
+          message_count: number
+          relationship_type: string
+          result_json: Json
+          session_id: string
+          status: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
