@@ -959,15 +959,15 @@ const DeepReport = ({
       <ReportErrorBoundary label="communication-diagnostic" inline>
       <Section title="1 · Communication diagnostic" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-3">
-          <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
-          <Tile label="Conversations initiated" value={textFromUnknown(result.communication_diagnostic?.initiator_balance)} />
-          <Tile label="Message length ratio" value={textFromUnknown(result.communication_diagnostic?.message_length_asymmetry)} />
-          <Tile label="Questions asked" value={textFromUnknown(result.communication_diagnostic?.question_ratio)} />
+          <Tile label="Avg reply time" value={safeField(() => textFromUnknown(result.communication_diagnostic?.response_time_asymmetry), "communication_diagnostic.response_time_asymmetry")} />
+          <Tile label="Conversations initiated" value={safeField(() => textFromUnknown(result.communication_diagnostic?.initiator_balance), "communication_diagnostic.initiator_balance")} />
+          <Tile label="Message length ratio" value={safeField(() => textFromUnknown(result.communication_diagnostic?.message_length_asymmetry), "communication_diagnostic.message_length_asymmetry")} />
+          <Tile label="Questions asked" value={safeField(() => textFromUnknown(result.communication_diagnostic?.question_ratio), "communication_diagnostic.question_ratio")} />
         </div>
         <div data-pdf-section className="mt-4 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <p className="text-[14px] leading-relaxed">
             <span className="font-medium">Key observation:</span>{" "}
-            {textFromUnknown(result.communication_diagnostic?.key_observation)}
+            {safeField(() => textFromUnknown(result.communication_diagnostic?.key_observation), "communication_diagnostic.key_observation")}
           </p>
         </div>
       </Section>
