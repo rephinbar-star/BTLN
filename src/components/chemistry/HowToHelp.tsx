@@ -173,7 +173,7 @@ const guides: {
       "Take screenshots of your conversation — both sides of the chat.",
       "Most phones: press Power + Volume Down (Android) or Power + Volume Up + Side button (iPhone).",
       "PNG or JPG both work. Upload multiple screenshots to hit 50+ messages.",
-      "Switch to the Chat file tab and upload your images.",
+      "Switch to the Screenshots tab and upload your screenshot images.",
     ],
     animation: <ScreenshotAnimation />,
   },
