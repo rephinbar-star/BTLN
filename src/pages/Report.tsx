@@ -1417,7 +1417,7 @@ const firstSentence = (text: string): string => {
 };
 
 const FreeInsights = ({ result }: { result: AnalysisResult }) => {
-  const greenFlag = result.green_flags?.[0];
+  const greenFlag = safeField(() => result.green_flags?.[0], "green_flags.0");
   const greenObj =
     typeof greenFlag === "object" && greenFlag
       ? (greenFlag as { title?: string; description?: string; evidence?: string })
@@ -1426,7 +1426,7 @@ const FreeInsights = ({ result }: { result: AnalysisResult }) => {
   const greenDesc = greenObj?.description ?? (typeof greenFlag === "string" ? greenFlag : null);
   const greenEvidence = greenObj?.evidence ?? null;
 
-  const hp = result.hidden_pattern;
+  const hp = safeField(() => result.hidden_pattern, "hidden_pattern");
   const teaser = hp?.description ? firstSentence(hp.description) : null;
 
   if (!greenTitle && !hp?.title) return null;
