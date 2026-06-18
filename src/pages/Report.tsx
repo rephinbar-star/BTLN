@@ -656,14 +656,14 @@ const ReportContent = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <Helmet>
-        <title>{`BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${result.headline.tier_label}`}</title>
+        <title>{safeField(() => `BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${result.headline.tier_label}`, "headline.tier_label")}</title>
         <meta
           name="description"
-          content={`${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
+          content={safeField(() => `${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160), "headline.vibe_summary")}
         />
         <link rel="canonical" href={`https://betweenthelines.app/report/${analysisId}`} />
-        <meta property="og:title" content={`BetweenTheLines read: ${result.headline.tier_label}`} />
-        <meta property="og:description" content={result.headline.vibe_summary} />
+        <meta property="og:title" content={safeField(() => `BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")} />
+        <meta property="og:description" content={safeField(() => result.headline.vibe_summary, "headline.vibe_summary")} />
         <meta property="og:url" content={`https://betweenthelines.app/report/${analysisId}`} />
         <meta name="robots" content="noindex" />
       </Helmet>
