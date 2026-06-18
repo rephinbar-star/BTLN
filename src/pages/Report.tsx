@@ -63,6 +63,27 @@ const flagSummary = (flag: FlagValue | null | undefined) => {
 const evidenceText = (horseman: { evidence_quote?: unknown; evidence?: unknown } | undefined) =>
   textFromUnknown(horseman?.evidence_quote ?? horseman?.evidence, "");
 
+class ReportFieldError extends Error {
+  constructor(
+    public fieldPath: string,
+    public originalError: unknown,
+  ) {
+    super(
+      `Field error at ${fieldPath}: ${originalError instanceof Error ? originalError.message : String(originalError)}`,
+    );
+    this.name = "ReportFieldError";
+  }
+}
+
+const safeField = <T,>(getter: () => T, path: string): T => {
+  try {
+    return getter();
+  } catch (err) {
+    throw new ReportFieldError(path, err);
+  }
+};
+
+
 class ReportErrorBoundary extends Component<
   { children: ReactNode; label?: string; inline?: boolean; onError?: (err: unknown) => void },
   { hasError: boolean }
@@ -75,9 +96,10 @@ class ReportErrorBoundary extends Component<
 
   componentDidCatch(error: unknown, info: unknown) {
     const label = this.props.label ?? "report";
+    const fieldPath = error instanceof ReportFieldError ? error.fieldPath : "unknown";
     // Always log so we can see what's going wrong in production console.
     // eslint-disable-next-line no-console
-    console.error(`[report-render-error:${label}]`, error, info);
+    console.error(`[report-render-error:${label}] field=${fieldPath}`, error, info);
     try {
       this.props.onError?.(error);
     } catch {
@@ -502,7 +524,7 @@ const ReportContent = () => {
   const handleShare = async () => {
     const url = `https://betweenthelines.app/report/${analysisId}`;
     const text = result
-      ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+      ? safeField(() => `Our BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")
       : "Check our BetweenTheLines analysis";
     const canWebShare =
       typeof navigator !== "undefined" &&
@@ -532,7 +554,7 @@ const ReportContent = () => {
     const url = `https://betweenthelines.app/report/${analysisId}`;
     const title = "BetweenTheLines™ — our couple type";
     const text = result
-      ? `We're ${result.headline.tier_label} on BetweenTheLines™`
+      ? safeField(() => `We're ${result.headline.tier_label} on BetweenTheLines™`, "headline.tier_label")
       : "Check our couple type";
 
     // Try to capture the card as an image and share it as a file.
@@ -595,7 +617,7 @@ const ReportContent = () => {
 
   const shareUrl = `https://betweenthelines.app/report/${analysisId}`;
   const shareText = result
-    ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+    ? safeField(() => `Our BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")
     : "Check our BetweenTheLines analysis";
 
   const copyFromFallback = async () => {
@@ -634,14 +656,14 @@ const ReportContent = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Header />
       <Helmet>
-        <title>{`BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${result.headline.tier_label}`}</title>
+        <title>{safeField(() => `BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${result.headline.tier_label}`, "headline.tier_label")}</title>
         <meta
           name="description"
-          content={`${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160)}
+          content={safeField(() => `${result.headline.tier_label}. ${result.headline.vibe_summary}`.slice(0, 160), "headline.vibe_summary")}
         />
         <link rel="canonical" href={`https://betweenthelines.app/report/${analysisId}`} />
-        <meta property="og:title" content={`BetweenTheLines read: ${result.headline.tier_label}`} />
-        <meta property="og:description" content={result.headline.vibe_summary} />
+        <meta property="og:title" content={safeField(() => `BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")} />
+        <meta property="og:description" content={safeField(() => result.headline.vibe_summary, "headline.vibe_summary")} />
         <meta property="og:url" content={`https://betweenthelines.app/report/${analysisId}`} />
         <meta name="robots" content="noindex" />
       </Helmet>
@@ -937,15 +959,15 @@ const DeepReport = ({
       <ReportErrorBoundary label="communication-diagnostic" inline>
       <Section title="1 · Communication diagnostic" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-3">
-          <Tile label="Avg reply time" value={textFromUnknown(result.communication_diagnostic?.response_time_asymmetry)} />
-          <Tile label="Conversations initiated" value={textFromUnknown(result.communication_diagnostic?.initiator_balance)} />
-          <Tile label="Message length ratio" value={textFromUnknown(result.communication_diagnostic?.message_length_asymmetry)} />
-          <Tile label="Questions asked" value={textFromUnknown(result.communication_diagnostic?.question_ratio)} />
+          <Tile label="Avg reply time" value={safeField(() => textFromUnknown(result.communication_diagnostic?.response_time_asymmetry), "communication_diagnostic.response_time_asymmetry")} />
+          <Tile label="Conversations initiated" value={safeField(() => textFromUnknown(result.communication_diagnostic?.initiator_balance), "communication_diagnostic.initiator_balance")} />
+          <Tile label="Message length ratio" value={safeField(() => textFromUnknown(result.communication_diagnostic?.message_length_asymmetry), "communication_diagnostic.message_length_asymmetry")} />
+          <Tile label="Questions asked" value={safeField(() => textFromUnknown(result.communication_diagnostic?.question_ratio), "communication_diagnostic.question_ratio")} />
         </div>
         <div data-pdf-section className="mt-4 rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <p className="text-[14px] leading-relaxed">
             <span className="font-medium">Key observation:</span>{" "}
-            {textFromUnknown(result.communication_diagnostic?.key_observation)}
+            {safeField(() => textFromUnknown(result.communication_diagnostic?.key_observation), "communication_diagnostic.key_observation")}
           </p>
         </div>
       </Section>
@@ -972,9 +994,9 @@ const DeepReport = ({
           profile1={profile1}
           profile2={profile2}
         />
-        {result.compatibility_implication && (
+        {safeField(() => result.compatibility_implication, "compatibility_implication") && (
           <p data-pdf-section className="mt-5 text-[15px] leading-relaxed text-foreground">
-            {result.compatibility_implication}
+            {safeField(() => result.compatibility_implication, "compatibility_implication")}
           </p>
         )}
       </Section>
@@ -1032,9 +1054,9 @@ const DeepReport = ({
       <ReportErrorBoundary label="hidden-pattern" inline>
       <Section title="4 · The hidden pattern" locked={locked}>
         <div data-pdf-section className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
-          <h4 className="text-[15px] font-semibold">{result.hidden_pattern?.title}</h4>
+          <h4 className="text-[15px] font-semibold">{safeField(() => result.hidden_pattern?.title, "hidden_pattern.title")}</h4>
           <p className="mt-2 text-[14px] leading-relaxed">
-            {result.hidden_pattern?.description}
+            {safeField(() => result.hidden_pattern?.description, "hidden_pattern.description")}
           </p>
         </div>
       </Section>
@@ -1131,13 +1153,14 @@ const AttachmentCard = ({
   name: string;
   profile: import("@/lib/analysis-types").AttachmentProfile;
 }) => {
-  const primary = profile.primary_style;
+  const primary = safeField(() => profile.primary_style, "attachment_profiles.primary_style");
   const pillClass = STYLE_PILL[primary] ?? "bg-muted text-muted-foreground";
 
   // Top 3 dimensions sorted desc; ensure primary (if a dimension) is included.
-  const entries = Object.entries(profile.scores ?? {}) as Array<
-    [AttachmentDimension | string, number]
-  >;
+  const entries = safeField(
+    () => Object.entries(profile.scores ?? {}) as Array<[AttachmentDimension | string, number]>,
+    "attachment_profiles.scores",
+  );
   entries.sort((a, b) => b[1] - a[1]);
   let top = entries.slice(0, 3);
   const primaryIsDimension =
@@ -1176,7 +1199,7 @@ const AttachmentCard = ({
         ))}
       </div>
       <p className="mt-4 text-[11px] text-muted-foreground">
-        Confidence: {profile.confidence}
+        Confidence: {safeField(() => profile.confidence, "attachment_profiles.confidence")}
       </p>
     </div>
   );
@@ -1195,12 +1218,14 @@ const EvidenceQuotes = ({
 }) => {
   const nonSecureScore = (p?: import("@/lib/analysis-types").AttachmentProfile) => {
     if (!p) return -1;
-    const { anxious = 0, avoidant = 0, disorganized = 0 } = p.scores ?? {};
+    const scores = safeField(() => (typeof p.scores === "object" && p.scores !== null ? p.scores : {}), "attachment_profiles.scores");
+    const { anxious = 0, avoidant = 0, disorganized = 0 } = scores as Record<string, number>;
     return Math.max(anxious, avoidant, disorganized);
   };
 
   const both =
-    profile1?.primary_style === "secure" && profile2?.primary_style === "secure";
+    safeField(() => profile1?.primary_style, "attachment_profiles.primary_style") === "secure" &&
+    safeField(() => profile2?.primary_style, "attachment_profiles.primary_style") === "secure";
 
   const blocks: Array<{ name: string; quotes: string[] }> = [];
   const quotesOf = (p?: import("@/lib/analysis-types").AttachmentProfile) =>
@@ -1392,7 +1417,7 @@ const firstSentence = (text: string): string => {
 };
 
 const FreeInsights = ({ result }: { result: AnalysisResult }) => {
-  const greenFlag = result.green_flags?.[0];
+  const greenFlag = safeField(() => result.green_flags?.[0], "green_flags.0");
   const greenObj =
     typeof greenFlag === "object" && greenFlag
       ? (greenFlag as { title?: string; description?: string; evidence?: string })
@@ -1401,7 +1426,7 @@ const FreeInsights = ({ result }: { result: AnalysisResult }) => {
   const greenDesc = greenObj?.description ?? (typeof greenFlag === "string" ? greenFlag : null);
   const greenEvidence = greenObj?.evidence ?? null;
 
-  const hp = result.hidden_pattern;
+  const hp = safeField(() => result.hidden_pattern, "hidden_pattern");
   const teaser = hp?.description ? firstSentence(hp.description) : null;
 
   if (!greenTitle && !hp?.title) return null;
