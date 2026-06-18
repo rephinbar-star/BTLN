@@ -554,7 +554,7 @@ const ReportContent = () => {
     const url = `https://betweenthelines.app/report/${analysisId}`;
     const title = "BetweenTheLines™ — our couple type";
     const text = result
-      ? `We're ${result.headline.tier_label} on BetweenTheLines™`
+      ? safeField(() => `We're ${result.headline.tier_label} on BetweenTheLines™`, "headline.tier_label")
       : "Check our couple type";
 
     // Try to capture the card as an image and share it as a file.
