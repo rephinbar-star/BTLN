@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getSessionId } from "@/lib/session";
 
 export default function CheckoutReturn() {
   const [searchParams] = useSearchParams();
@@ -18,11 +19,11 @@ export default function CheckoutReturn() {
     let attempts = 0;
     const tick = async () => {
       attempts += 1;
-      const { data } = await supabase
-        .from("analyses")
-        .select("is_paid")
-        .eq("id", analysisId)
-        .maybeSingle();
+      const { data: rows } = await supabase.rpc("get_analysis_for_session", {
+        p_id: analysisId,
+        p_session_id: getSessionId(),
+      });
+      const data = Array.isArray(rows) ? rows[0] : rows;
       if (cancelled) return;
       if (data?.is_paid || attempts >= 6) {
         setStatus("ready");
