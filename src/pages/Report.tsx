@@ -141,6 +141,80 @@ class ReportErrorBoundary extends Component<
 const sanitizeName = (s: string) =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") || "person";
 
+const waitForNodeImages = async (node: HTMLElement) => {
+  const imgs = Array.from(node.querySelectorAll("img"));
+  await Promise.all(
+    imgs.map(async (img) => {
+      if (!img.complete || img.naturalWidth === 0) {
+        await new Promise<void>((resolve) => {
+          const done = () => resolve();
+          img.addEventListener("load", done, { once: true });
+          img.addEventListener("error", done, { once: true });
+        });
+      }
+      try {
+        await img.decode();
+      } catch {
+        // ignore decode errors
+      }
+    }),
+  );
+};
+
+const blobToDataUrl = (blob: Blob) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(blob);
+  });
+
+const loadImageElement = (src: string) =>
+  new Promise<HTMLImageElement>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Could not load couple-card image"));
+    image.src = src;
+  });
+
+const canvasToBlob = (canvas: HTMLCanvasElement) =>
+  new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error("Could not render couple-card image"));
+    }, "image/png");
+  });
+
+const renderCoupleCardImageBlob = async (node: HTMLElement) => {
+  await waitForNodeImages(node);
+  const img = node.querySelector("img");
+  if (!img) return null;
+
+  const src = img.currentSrc || img.src;
+  if (!src) return null;
+
+  const response = await fetch(src, { cache: "no-store", mode: "cors" });
+  if (!response.ok) throw new Error("Could not fetch couple-card image");
+  const image = await loadImageElement(await blobToDataUrl(await response.blob()));
+
+  const rect = node.getBoundingClientRect();
+  const width = Math.max(1, Math.ceil(rect.width || img.clientWidth || image.naturalWidth));
+  const imageAspect = image.naturalHeight / Math.max(1, image.naturalWidth);
+  const height = Math.max(1, Math.ceil(width * imageAspect));
+  const scale = Math.min(3, Math.max(2, window.devicePixelRatio || 2));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(width * scale);
+  canvas.height = Math.ceil(height * scale);
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Could not render couple-card image");
+
+  ctx.scale(scale, scale);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, width, height);
+  ctx.drawImage(image, 0, 0, width, height);
+  return canvasToBlob(canvas);
+};
+
 const STYLE_PILL: Record<string, string> = {
   secure: "bg-pastel-green-bg text-pastel-green-fg-strong",
   anxious: "bg-pastel-pink-bg text-pastel-pink-fg",
@@ -574,44 +648,15 @@ const ReportContent = () => {
             // ignore
           }
         }
-        // Wait for all images inside the card to fully load (and decode).
-        // Without this, html-to-image captures a blank/partial canvas when
-        // the couple-type illustration hasn't finished loading yet.
-        const imgs = Array.from(node.querySelectorAll("img"));
-        await Promise.all(
-          imgs.map(async (img) => {
-            if (!img.complete || img.naturalWidth === 0) {
-              await new Promise<void>((resolve) => {
-                const done = () => resolve();
-                img.addEventListener("load", done, { once: true });
-                img.addEventListener("error", done, { once: true });
-              });
-            }
-            try {
-              await img.decode();
-            } catch {
-              // ignore decode errors
-            }
-          }),
-        );
-        const rect = node.getBoundingClientRect();
-        const captureWidth = Math.ceil(rect.width);
-        const captureHeight = Math.ceil(rect.height);
-        const dataUrl = await htmlToImage.toPng(node, {
-          quality: 1.0,
-          pixelRatio: 2,
-          backgroundColor: "#ffffff",
-          cacheBust: true,
-          skipFonts: false,
-          width: captureWidth,
-          height: captureHeight,
-          style: {
-            width: `${captureWidth}px`,
-            height: `${captureHeight}px`,
-            margin: "0",
-          },
-        });
-        const blob = await (await fetch(dataUrl)).blob();
+        const blob =
+          (await renderCoupleCardImageBlob(node)) ??
+          (await (await fetch(await htmlToImage.toPng(node, {
+            quality: 1.0,
+            pixelRatio: 2,
+            backgroundColor: "#ffffff",
+            cacheBust: true,
+            skipFonts: false,
+          }))).blob());
         file = new File([blob], `betweenthelines-couple-type.png`, { type: "image/png" });
       } catch (e) {
         console.warn("couple card capture failed", e);
