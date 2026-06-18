@@ -524,7 +524,7 @@ const ReportContent = () => {
   const handleShare = async () => {
     const url = `https://betweenthelines.app/report/${analysisId}`;
     const text = result
-      ? `Our BetweenTheLines read: ${result.headline.tier_label}`
+      ? safeField(() => `Our BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")
       : "Check our BetweenTheLines analysis";
     const canWebShare =
       typeof navigator !== "undefined" &&
