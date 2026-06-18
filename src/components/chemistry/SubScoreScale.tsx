@@ -52,7 +52,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
               key={label}
               aria-current={isEarned ? "true" : undefined}
               className={[
-                "relative flex min-w-0 flex-1 items-center justify-center px-2 py-2 text-center",
+                "relative flex min-w-0 flex-1 items-center justify-center gap-1.5 px-2 py-2 text-center",
                 "border border-border",
                 // Rounded ends: full radius when stacked, side-radius when in a row
                 "rounded-md sm:rounded-none",
@@ -63,7 +63,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
                   : "bg-muted/40 text-foreground",
               ].join(" ")}
             >
-              <span className="absolute left-2 flex items-center gap-0.5">
+              <span className="flex flex-shrink-0 items-center gap-0.5">
                 {Array.from({ length: 3 - i }).map((_, starIdx) => (
                   <Star
                     key={starIdx}
@@ -73,7 +73,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
                 ))}
               </span>
 
-              <span className="flex items-center gap-1.5">
+              <span className="flex min-w-0 items-center gap-1.5">
                 <span
                   className={[
                     "min-w-0 break-words text-[11px] leading-tight",
