@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ChevronDown, MessageSquare, Copy, Download, Camera } from "lucide-react";
 
-type GuideId = "whatsapp" | "copypaste";
+type GuideId = "whatsapp" | "copypaste" | "screenshots";
 
 const WhatsAppAnimation = () => {
   // Looping 3-step animation: open chat -> tap menu -> Export chat
