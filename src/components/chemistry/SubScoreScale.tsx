@@ -43,7 +43,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
         className="mt-1.5 flex flex-col gap-1 sm:flex-row sm:gap-0"
       >
         {displayLabels.map((label, i) => {
-          const isEarned = !tentative && displayEarnedIndex === i;
+          const isEarned = hasEarned && displayEarnedIndex === i;
           const first = i === 0;
           const last = i === displayLabels.length - 1;
 
