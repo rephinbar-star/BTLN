@@ -519,11 +519,31 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
+      get_analysis_for_session: {
+        Args: { p_id: string; p_session_id: string }
+        Returns: {
+          context_data: Json
+          couple_type_id: number
+          error_message: string
+          id: string
+          is_paid: boolean
+          message_count: number
+          relationship_type: string
+          result_json: Json
+          session_id: string
+          status: string
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      mark_analysis_failed: {
+        Args: { p_error_message: string; p_id: string; p_session_id: string }
         Returns: boolean
       }
       set_couple_type_image_url: {
