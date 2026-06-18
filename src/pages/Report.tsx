@@ -171,6 +171,7 @@ const ReportContent = () => {
   const [copied, setCopied] = useState(false);
   const [accessClaimChecked, setAccessClaimChecked] = useState(false);
   const [accessRefreshSignal, setAccessRefreshSignal] = useState(0);
+  const [isSharedView, setIsSharedView] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const coupleCardRef = useRef<HTMLDivElement>(null);
@@ -195,10 +196,18 @@ const ReportContent = () => {
       p_session_id: getSessionId(),
     });
 
-    if (error) return null;
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row) return null;
-    return row as unknown as Row;
+    if (!error) {
+      const row = Array.isArray(data) ? data[0] : data;
+      if (row) return { row: row as unknown as Row, shared: false };
+    }
+    // Fallback: shareable-link view. Anyone with the link can read a
+    // completed analysis (UUIDs are unguessable; owner chose to share).
+    const { data: sharedData } = await supabase.rpc("get_shared_analysis", {
+      p_id: analysisId,
+    });
+    const sharedRow = Array.isArray(sharedData) ? sharedData[0] : sharedData;
+    if (sharedRow) return { row: sharedRow as unknown as Row, shared: true };
+    return null;
   }, [analysisId]);
 
   useEffect(() => {
@@ -232,17 +241,19 @@ const ReportContent = () => {
           // non-fatal
         }
       }
-      const data = await loadReport();
+      const loaded = await loadReport();
       if (cancelled) return;
-      if (!data) {
+      if (!loaded) {
         navigate("/error?reason=not_found", { replace: true });
         return;
       }
+      const data = loaded.row;
       if (data.status !== "complete" || !data.result_json) {
         navigate(`/processing/${analysisId}`, { replace: true });
         return;
       }
       setRow(data);
+      setIsSharedView(loaded.shared);
       setAccessClaimChecked(true);
       setLoading(false);
     })();
@@ -311,7 +322,8 @@ const ReportContent = () => {
   const context = (row?.context_data ?? null) as ContextData | null;
 
   const safetyMode = result?.meta?.safety_concern === true;
-  const hasUnlockedReport = hasFullAccess || (isOwner && row?.is_paid === true);
+  const hasUnlockedReport =
+    isSharedView || hasFullAccess || (isOwner && row?.is_paid === true);
 
   // If the user arrived from the sign-in flow with intent=unlock, scroll
   // the paywall section into view once entitlement has resolved and the
