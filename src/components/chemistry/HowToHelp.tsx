@@ -90,6 +90,48 @@ const CopyPasteAnimation = () => {
   );
 };
 
+const ScreenshotAnimation = () => {
+  return (
+    <div className="relative mx-auto h-[180px] w-[140px] overflow-hidden rounded-[18px] border border-border bg-background shadow-sm">
+      <div className="flex h-5 items-center justify-between bg-pastel-amber-bg px-2 text-[8px] text-pastel-amber-fg-strong">
+        <span>9:41</span>
+        <span>●●●</span>
+      </div>
+      <div className="space-y-1 px-2 py-2">
+        <div className="relative w-[55%] rounded-md bg-muted px-1.5 py-1 text-[7px] text-foreground">
+          hey, are we still on for tonight?
+        </div>
+        <div className="relative ml-auto w-[60%] rounded-md bg-pastel-amber-bg px-1.5 py-1 text-[7px] text-pastel-amber-fg-strong">
+          yes! 7pm right?
+        </div>
+        <div className="relative w-[58%] rounded-md bg-muted px-1.5 py-1 text-[7px] text-foreground">
+          perfect, can't wait
+        </div>
+      </div>
+      {/* Flash overlay */}
+      <div className="pointer-events-none absolute inset-0 animate-[flash_3s_ease-in-out_infinite] bg-white/60" />
+      {/* Shutter button */}
+      <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 animate-[shutter_3s_ease-in-out_infinite]">
+        <div className="h-6 w-6 rounded-full border-2 border-pastel-amber-fg-strong bg-white/80" />
+      </div>
+      <style>{`
+        @keyframes flash {
+          0%, 60% { opacity: 0; }
+          65% { opacity: 1; }
+          75% { opacity: 0; }
+          100% { opacity: 0; }
+        }
+        @keyframes shutter {
+          0%, 55% { transform: translate(-50%, 0) scale(1); }
+          62% { transform: translate(-50%, 0) scale(0.85); }
+          70% { transform: translate(-50%, 0) scale(1); }
+          100% { transform: translate(-50%, 0) scale(1); }
+        }
+      `}</style>
+    </div>
+  );
+};
+
 const guides: {
   id: GuideId;
   title: string;
