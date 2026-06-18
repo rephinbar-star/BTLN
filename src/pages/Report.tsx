@@ -1218,7 +1218,8 @@ const EvidenceQuotes = ({
 }) => {
   const nonSecureScore = (p?: import("@/lib/analysis-types").AttachmentProfile) => {
     if (!p) return -1;
-    const { anxious = 0, avoidant = 0, disorganized = 0 } = p.scores ?? {};
+    const scores = safeField(() => (typeof p.scores === "object" && p.scores !== null ? p.scores : {}), "attachment_profiles.scores");
+    const { anxious = 0, avoidant = 0, disorganized = 0 } = scores as Record<string, number>;
     return Math.max(anxious, avoidant, disorganized);
   };
 
