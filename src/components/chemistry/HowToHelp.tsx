@@ -165,6 +165,18 @@ const guides: {
     ],
     animation: <CopyPasteAnimation />,
   },
+  {
+    id: "screenshots",
+    title: "Upload screenshots instead",
+    icon: Camera,
+    steps: [
+      "Take screenshots of your conversation — both sides of the chat.",
+      "Most phones: press Power + Volume Down (Android) or Power + Volume Up + Side button (iPhone).",
+      "PNG or JPG both work. Upload multiple screenshots to hit 50+ messages.",
+      "Switch to the Chat file tab and upload your images.",
+    ],
+    animation: <ScreenshotAnimation />,
+  },
 ];
 
 export const HowToHelp = () => {
