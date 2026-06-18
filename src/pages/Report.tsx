@@ -1054,9 +1054,9 @@ const DeepReport = ({
       <ReportErrorBoundary label="hidden-pattern" inline>
       <Section title="4 · The hidden pattern" locked={locked}>
         <div data-pdf-section className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
-          <h4 className="text-[15px] font-semibold">{result.hidden_pattern?.title}</h4>
+          <h4 className="text-[15px] font-semibold">{safeField(() => result.hidden_pattern?.title, "hidden_pattern.title")}</h4>
           <p className="mt-2 text-[14px] leading-relaxed">
-            {result.hidden_pattern?.description}
+            {safeField(() => result.hidden_pattern?.description, "hidden_pattern.description")}
           </p>
         </div>
       </Section>
