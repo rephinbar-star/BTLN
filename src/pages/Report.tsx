@@ -994,9 +994,9 @@ const DeepReport = ({
           profile1={profile1}
           profile2={profile2}
         />
-        {result.compatibility_implication && (
+        {safeField(() => result.compatibility_implication, "compatibility_implication") && (
           <p data-pdf-section className="mt-5 text-[15px] leading-relaxed text-foreground">
-            {result.compatibility_implication}
+            {safeField(() => result.compatibility_implication, "compatibility_implication")}
           </p>
         )}
       </Section>
@@ -1224,7 +1224,8 @@ const EvidenceQuotes = ({
   };
 
   const both =
-    profile1?.primary_style === "secure" && profile2?.primary_style === "secure";
+    safeField(() => profile1?.primary_style, "attachment_profiles.primary_style") === "secure" &&
+    safeField(() => profile2?.primary_style, "attachment_profiles.primary_style") === "secure";
 
   const blocks: Array<{ name: string; quotes: string[] }> = [];
   const quotesOf = (p?: import("@/lib/analysis-types").AttachmentProfile) =>
