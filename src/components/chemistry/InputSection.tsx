@@ -499,7 +499,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                   update("conversation", e.target.value);
                   fireInputStarted();
                 }}
-                placeholder="Upload your screenshots of your messages or paste a chunk of your conversation here. Both sides - at least 30 messages work best. We'll figure out who said what."
+                placeholder="Paste a chunk of your conversation here. Both sides - at least 30 messages work best. We'll figure out who said what."
                 className={`${fieldClass} h-[200px] resize-none leading-relaxed`}
               />
               {fieldErrors.conversation && (
