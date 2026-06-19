@@ -78,8 +78,13 @@ export const WhatYouGet = () => {
                     <HelpCircle className="h-3.5 w-3.5" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 space-y-2 text-[13px] leading-relaxed" side="top" align="start">
-                  <p className="font-medium text-foreground">Attachment Styles</p>
+                <PopoverContent
+                  className="w-80 space-y-2 text-[13px] leading-relaxed"
+                  side="top"
+                  align="start"
+                  aria-labelledby="attachment-styles-title"
+                >
+                  <h3 id="attachment-styles-title" className="text-[13px] font-medium text-foreground">Attachment Styles</h3>
                   <p className="text-muted-foreground">
                     Based on attachment theory, these patterns describe how people emotionally bond and respond to intimacy in relationships.
                   </p>
