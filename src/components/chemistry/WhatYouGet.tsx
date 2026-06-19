@@ -154,10 +154,10 @@ export const WhatYouGet = () => {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="ml-1 inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     aria-label="What are the four horsemen?"
                   >
-                    <HelpCircle className="h-3.5 w-3.5" />
+                    <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent
