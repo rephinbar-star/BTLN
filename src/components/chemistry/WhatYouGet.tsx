@@ -117,8 +117,30 @@ export const WhatYouGet = () => {
 
           {/* 3 — Four horsemen */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               3 · The four horsemen
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="ml-1 inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="What are the four horsemen?"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 space-y-2 text-[13px] leading-relaxed" side="top" align="start">
+                  <p className="font-medium text-foreground">The Four Horsemen</p>
+                  <p className="text-muted-foreground">
+                    A concept from Dr. John Gottman&apos;s research on relationship health. These four communication
+                    styles — criticism, contempt, defensiveness, and stonewalling — are strong predictors of
+                    relationship breakdown if they become habitual.
+                  </p>
+                  <p className="text-muted-foreground">
+                    Occasional instances are normal; the risk is when they become the default response pattern.
+                  </p>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
               {horsemen.map((h) => (
