@@ -160,8 +160,13 @@ export const WhatYouGet = () => {
                     <HelpCircle className="h-3.5 w-3.5" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 space-y-2 text-[13px] leading-relaxed" side="top" align="start">
-                  <p className="font-medium text-foreground">The Four Horsemen</p>
+                <PopoverContent
+                  className="w-80 space-y-2 text-[13px] leading-relaxed"
+                  side="top"
+                  align="start"
+                  aria-labelledby="four-horsemen-title"
+                >
+                  <h3 id="four-horsemen-title" className="text-[13px] font-medium text-foreground">The Four Horsemen</h3>
                   <p className="text-muted-foreground">
                     A concept from Dr. John Gottman&apos;s research on relationship health. These four communication
                     styles — criticism, contempt, defensiveness, and stonewalling — are strong predictors of
