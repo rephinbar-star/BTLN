@@ -26,7 +26,7 @@ const steps = [
 
 export const HowItWorks = () => {
   return (
-    <section className="-mt-10 px-5 py-20 sm:px-8 sm:py-24">
+    <section className="-mt-[60px] px-5 py-20 sm:px-8 sm:py-24">
       <div className="mx-auto max-w-6xl">
         <p className="text-sm text-muted-foreground">How it works</p>
         <h2 className="mt-3 max-w-2xl text-[28px] font-medium tracking-tight sm:text-[36px]">
