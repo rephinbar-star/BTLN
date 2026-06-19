@@ -4,7 +4,7 @@ const steps = [
   {
     icon: MessageCircle,
     title: "Drop in your texts",
-    body: "Paste a chunk of your conversation. Takes 30 seconds.",
+    body: "Upload your messages screenshots, copy and paste or upload an export file of your conversation. Takes 30 seconds.",
     headerBg: "bg-pastel-pink-bg",
     iconColor: "text-pastel-pink-fg",
   },
