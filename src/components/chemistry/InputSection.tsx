@@ -112,7 +112,7 @@ type InputSectionProps = {
 
 export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const [form, setForm] = useState<FormState>(initialState);
-  const [mode, setMode] = useState<InputMode>("paste");
+  const [mode, setMode] = useState<InputMode>("screenshots");
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [pendingMode, setPendingMode] = useState<InputMode | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
@@ -432,9 +432,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const totalImageBytes = screenshots.reduce((acc, s) => acc + s.size, 0);
 
   const tabs: { id: InputMode; label: string; shortLabel: string; icon: typeof FileText }[] = [
+    { id: "screenshots", label: "Screenshots", shortLabel: "Screenshots", icon: ImageIcon },
     { id: "paste", label: "Paste Messages", shortLabel: "Paste Messages", icon: FileText },
     { id: "file", label: "Chat file", shortLabel: "Chat file", icon: Upload },
-    { id: "screenshots", label: "Screenshots", shortLabel: "Screenshots", icon: ImageIcon },
   ];
 
   return (
@@ -499,7 +499,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                   update("conversation", e.target.value);
                   fireInputStarted();
                 }}
-                placeholder="Paste a chunk of your conversation here. Both sides — at least 30 messages works best. We'll figure out who said what."
+                placeholder="Upload your screenshots of your messages or paste a chunk of your conversation here. Both sides - at least 30 messages work best. We'll figure out who said what."
                 className={`${fieldClass} h-[200px] resize-none leading-relaxed`}
               />
               {fieldErrors.conversation && (
