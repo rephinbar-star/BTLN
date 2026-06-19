@@ -584,7 +584,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                       ? `Maximum of ${MAX_SCREENSHOTS} images reached`
                       : "Drop screenshots or click to browse"}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each.</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">For best results have at least 30 messages. PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each.</p>
                 </div>
               </button>
 
