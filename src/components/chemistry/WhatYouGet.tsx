@@ -1,3 +1,6 @@
+import { HelpCircle } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+
 const Bar = ({ label, value, color }: { label: string; value: number; color: string }) => (
   <div>
     <div className="flex items-center justify-between text-[12px]">
