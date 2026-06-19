@@ -38,6 +38,8 @@ const Index = () => {
         <Helmet>
           <title>BetweenTheLines™ — Read another conversation</title>
           <meta name="description" content="Paste a new chat or thread and we'll show you what's really being said." />
+          <link rel="canonical" href="https://betweenthelines.app/" />
+          <meta property="og:url" content="https://betweenthelines.app/" />
         </Helmet>
         <Header />
         <main>
