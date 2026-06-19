@@ -5,6 +5,12 @@ import logoAsset from "@/assets/logo.png.asset.json";
 export default function Trust() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Trust &amp; Security — BetweenTheLines™</title>
+        <meta name="description" content="Learn how BetweenTheLines protects your data, handles your conversations, and keeps your relationship analysis private and secure." />
+        <link rel="canonical" href="https://betweenthelines.app/trust" />
+        <meta property="og:url" content="https://betweenthelines.app/trust" />
+      </Helmet>
       <header className="border-b border-border px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="flex items-center">

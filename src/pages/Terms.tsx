@@ -5,6 +5,12 @@ import logoAsset from "@/assets/logo.png.asset.json";
 export default function Terms() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Terms of Service — BetweenTheLines™</title>
+        <meta name="description" content="Read the BetweenTheLines Terms of Service. By using our relationship coaching tool, you agree to these terms and conditions." />
+        <link rel="canonical" href="https://betweenthelines.app/terms" />
+        <meta property="og:url" content="https://betweenthelines.app/terms" />
+      </Helmet>
       <header className="border-b border-border px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="flex items-center">

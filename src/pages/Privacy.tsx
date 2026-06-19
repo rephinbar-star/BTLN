@@ -5,6 +5,12 @@ import logoAsset from "@/assets/logo.png.asset.json";
 export default function Privacy() {
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Privacy Policy — BetweenTheLines™</title>
+        <meta name="description" content="Read the BetweenTheLines Privacy Policy to understand how we collect, use, and protect your information when you use our relationship coaching tool." />
+        <link rel="canonical" href="https://betweenthelines.app/privacy" />
+        <meta property="og:url" content="https://betweenthelines.app/privacy" />
+      </Helmet>
       <header className="border-b border-border px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="flex items-center">
