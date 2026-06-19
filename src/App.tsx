@@ -16,6 +16,8 @@ import ResetPassword from "./pages/ResetPassword.tsx";
 import AuthCallback from "./pages/AuthCallback.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn";
 import Trust from "./pages/Trust";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { PaymentTestModeBanner } from "./components/PaymentTestModeBanner";
@@ -51,6 +53,8 @@ const App = () => (
           />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/trust" element={<Trust />} />
+          <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
