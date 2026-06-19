@@ -72,14 +72,19 @@ export const WhatYouGet = () => {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="ml-1 inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     aria-label="What are attachment styles?"
                   >
-                    <HelpCircle className="h-3.5 w-3.5" />
+                    <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 space-y-2 text-[13px] leading-relaxed" side="top" align="start">
-                  <p className="font-medium text-foreground">Attachment Styles</p>
+                <PopoverContent
+                  className="w-80 space-y-2 text-[13px] leading-relaxed"
+                  side="top"
+                  align="start"
+                  aria-labelledby="attachment-styles-title"
+                >
+                  <h3 id="attachment-styles-title" className="text-[13px] font-medium text-foreground">Attachment Styles</h3>
                   <p className="text-muted-foreground">
                     Based on attachment theory, these patterns describe how people emotionally bond and respond to intimacy in relationships.
                   </p>
@@ -149,14 +154,19 @@ export const WhatYouGet = () => {
                 <PopoverTrigger asChild>
                   <button
                     type="button"
-                    className="ml-1 inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     aria-label="What are the four horsemen?"
                   >
-                    <HelpCircle className="h-3.5 w-3.5" />
+                    <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 space-y-2 text-[13px] leading-relaxed" side="top" align="start">
-                  <p className="font-medium text-foreground">The Four Horsemen</p>
+                <PopoverContent
+                  className="w-80 space-y-2 text-[13px] leading-relaxed"
+                  side="top"
+                  align="start"
+                  aria-labelledby="four-horsemen-title"
+                >
+                  <h3 id="four-horsemen-title" className="text-[13px] font-medium text-foreground">The Four Horsemen</h3>
                   <p className="text-muted-foreground">
                     A concept from Dr. John Gottman&apos;s research on relationship health. These four communication
                     styles — criticism, contempt, defensiveness, and stonewalling — are strong predictors of
