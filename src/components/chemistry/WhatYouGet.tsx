@@ -66,8 +66,34 @@ export const WhatYouGet = () => {
 
           {/* 2 — Attachment styles */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
-            <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+            <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
               2 · Attachment styles
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="ml-1 inline-flex items-center justify-center rounded-full p-0.5 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    aria-label="What are attachment styles?"
+                  >
+                    <HelpCircle className="h-3.5 w-3.5" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 space-y-2 text-[13px] leading-relaxed" side="top" align="start">
+                  <p className="font-medium text-foreground">Attachment Styles</p>
+                  <p className="text-muted-foreground">
+                    Based on attachment theory, these patterns describe how people emotionally bond and respond to intimacy in relationships.
+                  </p>
+                  <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+                    <li><span className="font-medium text-foreground">Secure</span> — Comfortable with closeness and independence.</li>
+                    <li><span className="font-medium text-foreground">Anxious</span> — Seeks reassurance; fears abandonment.</li>
+                    <li><span className="font-medium text-foreground">Avoidant</span> — Values autonomy; may distance under stress.</li>
+                    <li><span className="font-medium text-foreground">Disorganized</span> — Mixed approach; often from unresolved trauma.</li>
+                  </ul>
+                  <p className="text-muted-foreground">
+                    Styles can shift over time, especially within a secure relationship.
+                  </p>
+                </PopoverContent>
+              </Popover>
             </div>
             <div className="mt-5 grid grid-cols-1 gap-4 md:grid-cols-2">
               <div className="rounded-xl border border-border p-5">
