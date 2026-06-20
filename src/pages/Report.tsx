@@ -86,12 +86,13 @@ const safeField = <T,>(getter: () => T, path: string): T => {
 
 class ReportErrorBoundary extends Component<
   { children: ReactNode; label?: string; inline?: boolean; onError?: (err: unknown) => void },
-  { hasError: boolean }
+  { hasError: boolean; fieldPath: string; label: string }
 > {
-  state = { hasError: false };
+  state = { hasError: false, fieldPath: "unknown", label: "report" };
 
-  static getDerivedStateFromError() {
-    return { hasError: true };
+  static getDerivedStateFromError(error: unknown) {
+    const fieldPath = error instanceof ReportFieldError ? error.fieldPath : "unknown";
+    return { hasError: true, fieldPath, label: "report" };
   }
 
   componentDidCatch(error: unknown, info: unknown) {
@@ -100,6 +101,18 @@ class ReportErrorBoundary extends Component<
     // Always log so we can see what's going wrong in production console.
     // eslint-disable-next-line no-console
     console.error(`[report-render-error:${label}] field=${fieldPath}`, error, info);
+    // Telemetry: persist so we can diagnose without the user's console.
+    try {
+      const message = error instanceof Error ? error.message : String(error);
+      logEvent("report_render_error", {
+        label,
+        field_path: fieldPath,
+        message: message.slice(0, 500),
+      });
+    } catch {
+      // swallow
+    }
+    this.setState({ label, fieldPath });
     try {
       this.props.onError?.(error);
     } catch {
@@ -113,6 +126,9 @@ class ReportErrorBoundary extends Component<
         return (
           <div className="rounded-xl border border-border bg-muted p-4 text-[13px] text-muted-foreground">
             This part of your report couldn&apos;t be displayed.
+            {this.state.fieldPath !== "unknown" && (
+              <span className="ml-1 opacity-60">({this.state.fieldPath})</span>
+            )}
           </div>
         );
       }
@@ -124,6 +140,11 @@ class ReportErrorBoundary extends Component<
           <p className="mt-4 max-w-md text-[15px] text-muted-foreground">
             The analysis finished, but one report field came back in an unexpected format.
           </p>
+          {this.state.fieldPath !== "unknown" && (
+            <p className="mt-2 max-w-md font-mono text-[12px] text-muted-foreground/70">
+              {this.state.label}: {this.state.fieldPath}
+            </p>
+          )}
           <Link
             to="/#input-section"
             className="mt-8 inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
@@ -736,6 +757,7 @@ const ReportContent = () => {
         {!safetyMode && (
           <div ref={reportRef}>
             {row?.couple_type_id != null && (
+              <ReportErrorBoundary label="couple-card" inline>
               <div ref={cardRef} data-pdf-section>
                 <div ref={coupleCardRef} className="mb-3">
                   <CoupleTypeCard
@@ -755,11 +777,14 @@ const ReportContent = () => {
                 </div>
                 <ShareableCard result={result} context={context} />
               </div>
+              </ReportErrorBoundary>
             )}
             {row?.couple_type_id == null && (
-              <div ref={cardRef} data-pdf-section>
-                <ShareableCard result={result} context={context} />
-              </div>
+              <ReportErrorBoundary label="shareable-card" inline>
+                <div ref={cardRef} data-pdf-section>
+                  <ShareableCard result={result} context={context} />
+                </div>
+              </ReportErrorBoundary>
             )}
 
             {/* Action buttons */}
@@ -813,7 +838,9 @@ const ReportContent = () => {
               </div>
             )}
 
-            <FreeInsights result={result} />
+            <ReportErrorBoundary label="free-insights" inline>
+              <FreeInsights result={result} />
+            </ReportErrorBoundary>
 
             {analysisId && (
               <div id="paywall-section" className="mt-12 scroll-mt-20">
