@@ -479,33 +479,37 @@ const Account = () => {
               return (
                 <li key={r.id}>
                   <div className="flex items-center justify-between gap-2 rounded-xl border border-border p-4 transition-colors hover:bg-muted/40">
-                    <Link to={`/report/${r.id}`} className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">
-                        Chat between {name1} and {name2} on {dateStr}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {tier ?? (r.status === "complete" ? "Report" : r.status)}
-                        {typeof score === "number" && (
-                          <span className="ml-2">{score}/100</span>
-                        )}
-                      </div>
-                    </Link>
-                    <div className="flex items-center gap-1">
-                      <Link
-                        to={`/report/${r.id}`}
-                        className="text-xs text-muted-foreground hover:text-foreground"
-                      >
-                        View →
-                      </Link>
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
                       <button
                         type="button"
                         aria-label="Delete report"
-                        onClick={() => setReportToDelete(r.id)}
-                        className="ml-2 rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-destructive"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setReportToDelete(r.id);
+                        }}
+                        className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-destructive flex-shrink-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
+                      <Link to={`/report/${r.id}`} className="min-w-0">
+                        <div className="text-sm font-medium truncate">
+                          Chat between {name1} and {name2} on {dateStr}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {tier ?? (r.status === "complete" ? "Report" : r.status)}
+                          {typeof score === "number" && (
+                            <span className="ml-2">{score}/100</span>
+                          )}
+                        </div>
+                      </Link>
                     </div>
+                    <Link
+                      to={`/report/${r.id}`}
+                      className="text-xs text-muted-foreground hover:text-foreground flex-shrink-0"
+                    >
+                      View →
+                    </Link>
                   </div>
                 </li>
               );
