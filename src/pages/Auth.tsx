@@ -109,7 +109,7 @@ const Auth = () => {
       <Header />
       <main className="mx-auto flex max-w-md flex-col gap-4 px-5 py-12 sm:px-8">
         <h1 className="text-[28px] font-medium tracking-tight">
-          {mode === "signup" ? "Create your account" : mode === "forgot" ? "Reset password" : "Sign in"}
+          {mode === "signup" ? "Create your account" : mode === "forgot" ? "Reset password" : "Sign In or Sign Up"}
         </h1>
 
         {mode !== "forgot" && (
