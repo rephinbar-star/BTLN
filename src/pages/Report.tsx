@@ -267,6 +267,7 @@ const ReportContent = () => {
   const [accessClaimChecked, setAccessClaimChecked] = useState(false);
   const [accessRefreshSignal, setAccessRefreshSignal] = useState(0);
   const [isSharedView, setIsSharedView] = useState(false);
+  const [showUnlockOverlay, setShowUnlockOverlay] = useState(false);
   const reportRef = useRef<HTMLDivElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const coupleCardRef = useRef<HTMLDivElement>(null);
