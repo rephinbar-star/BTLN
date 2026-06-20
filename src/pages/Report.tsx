@@ -4,7 +4,7 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
-import { ArrowRight, Copy, Download, FileText, Info, Share2 } from "lucide-react";
+import { ArrowRight, Copy, Download, FileText, HelpCircle, Info, Share2 } from "lucide-react";
 import { jsPDF } from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { claimPendingAnalysis, getSessionId, logEvent } from "@/lib/session";
@@ -28,6 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 type Row = {
   id: string;
@@ -1107,7 +1108,43 @@ const DeepReport = ({
 
       {/* 2. Attachment styles */}
       <ReportErrorBoundary label="attachment-styles" inline>
-      <Section title="2 · Attachment styles" locked={locked}>
+      <Section
+        title="2 · Attachment styles"
+        locked={locked}
+        helpContent={
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                aria-label="What are attachment styles?"
+              >
+                <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-80 space-y-2 text-[13px] leading-relaxed"
+              side="top"
+              align="start"
+              aria-labelledby="attachment-styles-title"
+            >
+              <h3 id="attachment-styles-title" className="text-[13px] font-medium text-foreground">Attachment Styles</h3>
+              <p className="text-muted-foreground">
+                Based on attachment theory, these patterns describe how people emotionally bond and respond to intimacy in relationships.
+              </p>
+              <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+                <li><span className="font-medium text-foreground">Secure</span> — Comfortable with closeness and independence.</li>
+                <li><span className="font-medium text-foreground">Anxious</span> — Seeks reassurance; fears abandonment.</li>
+                <li><span className="font-medium text-foreground">Avoidant</span> — Values autonomy; may distance under stress.</li>
+                <li><span className="font-medium text-foreground">Disorganized</span> — Mixed approach; often from unresolved trauma.</li>
+              </ul>
+              <p className="text-muted-foreground">
+                Styles can shift over time, especially within a secure relationship.
+              </p>
+            </PopoverContent>
+          </Popover>
+        }
+      >
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           {profile1 && (
             <div data-pdf-section>
@@ -1136,7 +1173,39 @@ const DeepReport = ({
 
       {/* 3. Four Horsemen */}
       <ReportErrorBoundary label="four-horsemen" inline>
-      <Section title="3 · The Four Horsemen" locked={locked}>
+      <Section
+        title="3 · The Four Horsemen"
+        locked={locked}
+        helpContent={
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                aria-label="What are the four horsemen?"
+              >
+                <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-80 space-y-2 text-[13px] leading-relaxed"
+              side="top"
+              align="start"
+              aria-labelledby="four-horsemen-title"
+            >
+              <h3 id="four-horsemen-title" className="text-[13px] font-medium text-foreground">The Four Horsemen</h3>
+              <p className="text-muted-foreground">
+                A concept from Dr. John Gottman&apos;s research on relationship health. These four communication
+                styles — criticism, contempt, defensiveness, and stonewalling — are strong predictors of
+                relationship breakdown if they become habitual.
+              </p>
+              <p className="text-muted-foreground">
+                Occasional instances are normal; the risk is when they become the default response pattern.
+              </p>
+            </PopoverContent>
+          </Popover>
+        }
+      >
         <div data-pdf-section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
           {horsemenList.map((x) => (
             <div
@@ -1250,14 +1319,17 @@ const Section = ({
   title,
   children,
   locked = false,
+  helpContent,
 }: {
   title: string;
   children: ReactNode;
   locked?: boolean;
+  helpContent?: ReactNode;
 }) => (
   <section data-pdf-section className="mt-10">
-    <h3 data-pdf-section className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+    <h3 data-pdf-section className="flex items-center gap-1.5 text-[18px] font-medium tracking-tight sm:text-[20px]">
       {title}
+      {helpContent}
     </h3>
     <div
       className={`mt-4 ${locked ? "pointer-events-none select-none" : ""}`}
