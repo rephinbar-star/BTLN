@@ -483,7 +483,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               >
                 <Icon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{t.label}</span>
-                <span className="sm:hidden">{t.shortLabel}</span>
+                <span className="whitespace-nowrap sm:hidden">{t.shortLabel}</span>
               </button>
             );
           })}
