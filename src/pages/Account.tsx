@@ -27,6 +27,7 @@ type AnalysisRow = {
   created_at: string;
   status: string;
   result_json: AnalysisResult | null;
+  context_data: { name1?: string; name2?: string } | null;
 };
 
 type SubscriptionRow = {
@@ -91,7 +92,7 @@ const Account = () => {
     (async () => {
       const { data } = await supabase
         .from("analyses")
-        .select("id, created_at, status, result_json")
+        .select("id, created_at, status, result_json, context_data")
         .eq("user_id", user.id)
         .order("created_at", { ascending: false });
       setRows((data ?? []) as AnalysisRow[]);
@@ -472,18 +473,21 @@ const Account = () => {
             {rows.map((r) => {
               const score = r.result_json?.headline?.score;
               const tier = r.result_json?.headline?.tier_label;
+              const name1 = r.context_data?.name1 ?? "User";
+              const name2 = r.context_data?.name2 ?? "Partner";
+              const dateStr = new Date(r.created_at).toLocaleString();
               return (
                 <li key={r.id}>
                   <div className="flex items-center justify-between gap-2 rounded-xl border border-border p-4 transition-colors hover:bg-muted/40">
                     <Link to={`/report/${r.id}`} className="flex-1 min-w-0">
-                      <div className="text-sm font-medium">
-                        {tier ?? (r.status === "complete" ? "Report" : r.status)}
-                        {typeof score === "number" && (
-                          <span className="ml-2 text-muted-foreground">{score}/100</span>
-                        )}
+                      <div className="text-sm font-medium truncate">
+                        Chat between {name1} and {name2} on {dateStr}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {new Date(r.created_at).toLocaleString()}
+                        {tier ?? (r.status === "complete" ? "Report" : r.status)}
+                        {typeof score === "number" && (
+                          <span className="ml-2">{score}/100</span>
+                        )}
                       </div>
                     </Link>
                     <div className="flex items-center gap-1">
