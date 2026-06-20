@@ -1529,8 +1529,40 @@ const LoveLanguagesSection = ({
   if (!ll.person1 && !ll.person2 && !ll.mismatch_note) return null;
   return (
     <section data-pdf-section className="mt-10">
-      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+      <h3 className="flex items-center gap-1.5 text-[18px] font-medium tracking-tight sm:text-[20px]">
         6 · Love languages
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="What are love languages?"
+            >
+              <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-80 space-y-2 text-[13px] leading-relaxed"
+            side="top"
+            align="start"
+            aria-labelledby="love-languages-title"
+          >
+            <h3 id="love-languages-title" className="text-[13px] font-medium text-foreground">Love Languages</h3>
+            <p className="text-muted-foreground">
+              A framework by Dr. Gary Chapman describing how people prefer to give and receive affection. The five languages are:
+            </p>
+            <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+              <li><span className="font-medium text-foreground">Words of Affirmation</span> — Verbal encouragement and appreciation.</li>
+              <li><span className="font-medium text-foreground">Acts of Service</span> — Helpful actions that ease a partner&apos;s burden.</li>
+              <li><span className="font-medium text-foreground">Receiving Gifts</span> — Thoughtful tokens that show you were thinking of them.</li>
+              <li><span className="font-medium text-foreground">Quality Time</span> — Undivided attention and shared experiences.</li>
+              <li><span className="font-medium text-foreground">Physical Touch</span> — Hugs, hand-holding, and physical closeness.</li>
+            </ul>
+            <p className="text-muted-foreground">
+              Mismatches are common and solvable once each person feels understood.
+            </p>
+          </PopoverContent>
+        </Popover>
       </h3>
       <div
         className={`mt-4 rounded-xl border border-border bg-card p-4 ${locked ? "pointer-events-none select-none" : ""}`}
