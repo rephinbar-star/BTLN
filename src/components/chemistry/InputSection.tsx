@@ -432,9 +432,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const totalImageBytes = screenshots.reduce((acc, s) => acc + s.size, 0);
 
   const tabs: { id: InputMode; label: string; shortLabel: string; icon: typeof FileText }[] = [
-    { id: "screenshots", label: "Screenshots", shortLabel: "Screenshots", icon: ImageIcon },
-    { id: "paste", label: "Paste Messages", shortLabel: "Paste Messages", icon: FileText },
-    { id: "file", label: "Chat file", shortLabel: "Chat file", icon: Upload },
+    { id: "screenshots", label: "Screenshots", shortLabel: "Images", icon: ImageIcon },
+    { id: "paste", label: "Paste Messages", shortLabel: "Paste", icon: FileText },
+    { id: "file", label: "Chat file", shortLabel: "File", icon: Upload },
   ];
 
   return (
@@ -483,7 +483,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               >
                 <Icon className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">{t.label}</span>
-                <span className="sm:hidden">{t.shortLabel}</span>
+                <span className="whitespace-nowrap sm:hidden">{t.shortLabel}</span>
               </button>
             );
           })}
