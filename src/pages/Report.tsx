@@ -449,7 +449,8 @@ const ReportContent = () => {
 
     const toastId = "checkout-unlock";
     const checkoutSessionId = searchParams.get("session_id");
-    toast.loading("Payment successful — unlocking your full report…", { id: toastId });
+    setShowUnlockOverlay(true);
+    toast.dismiss(toastId);
     let elapsed = 0;
     const checkAccess = async () => {
       refreshEntitlement();
@@ -494,12 +495,17 @@ const ReportContent = () => {
   useEffect(() => {
     if (searchParams.get("checkout") !== "success") return;
     if (!hasUnlockedReport) return;
-    toast.success("Unlocked. Enjoy your full report.", { id: "checkout-unlock", duration: 3000 });
     logEvent("entitlement_unlocked", { analysis_id: analysisId });
-    const next = new URLSearchParams(searchParams);
-    next.delete("checkout");
-    next.delete("session_id");
-    setSearchParams(next, { replace: true });
+    // Hold the success overlay briefly so the user sees the confirmation
+    // before the full report is revealed.
+    const timer = window.setTimeout(() => {
+      setShowUnlockOverlay(false);
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+    }, 2000);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasUnlockedReport]);
 
