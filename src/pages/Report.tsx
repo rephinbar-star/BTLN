@@ -1493,8 +1493,38 @@ const BidsSection = ({
   if (items.length === 0) return null;
   return (
     <section data-pdf-section className="mt-10">
-      <h3 className="text-[18px] font-medium tracking-tight sm:text-[20px]">
+      <h3 className="flex items-center gap-1.5 text-[18px] font-medium tracking-tight sm:text-[20px]">
         5 · Bids for connection
+        <Popover>
+          <PopoverTrigger asChild>
+            <button
+              type="button"
+              className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="What are bids for connection?"
+            >
+              <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
+            </button>
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-80 space-y-2 text-[13px] leading-relaxed"
+            side="top"
+            align="start"
+            aria-labelledby="bids-for-connection-title"
+          >
+            <h3 id="bids-for-connection-title" className="text-[13px] font-medium text-foreground">Bids for Connection</h3>
+            <p className="text-muted-foreground">
+              From Dr. John Gottman&apos;s research: a &quot;bid&quot; is any attempt one partner makes to connect with the other — a question, a comment, a touch, or even a look. How the partner responds predicts relationship health.
+            </p>
+            <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+              <li><span className="font-medium text-foreground">Turned toward</span> — The partner notices and responds positively. This builds trust and intimacy.</li>
+              <li><span className="font-medium text-foreground">Turned away</span> — The partner ignores or misses the bid. Over time this creates distance.</li>
+              <li><span className="font-medium text-foreground">Turned against</span> — The partner responds with hostility or contempt. This actively damages the bond.</li>
+            </ul>
+            <p className="text-muted-foreground">
+              The goal isn&apos;t 100% toward — that&apos;s unrealistic. But consistent turning away or against is a signal to address.
+            </p>
+          </PopoverContent>
+        </Popover>
       </h3>
       <div
         className={`mt-4 grid grid-cols-3 gap-2 ${locked ? "pointer-events-none select-none" : ""}`}
