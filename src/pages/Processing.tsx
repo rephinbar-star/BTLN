@@ -175,7 +175,7 @@ const Processing = () => {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
       <div className="flex items-center gap-2">
-        <img src={logoAsset.url} alt="BetweenTheLines™" className="h-8 w-auto" />
+        <img src={logoAsset.url} alt="BetweenTheLines™" className="h-24 w-auto" />
       </div>
 
       <img
