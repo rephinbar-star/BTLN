@@ -757,6 +757,7 @@ const ReportContent = () => {
         {!safetyMode && (
           <div ref={reportRef}>
             {row?.couple_type_id != null && (
+              <ReportErrorBoundary label="couple-card" inline>
               <div ref={cardRef} data-pdf-section>
                 <div ref={coupleCardRef} className="mb-3">
                   <CoupleTypeCard
@@ -776,11 +777,14 @@ const ReportContent = () => {
                 </div>
                 <ShareableCard result={result} context={context} />
               </div>
+              </ReportErrorBoundary>
             )}
             {row?.couple_type_id == null && (
-              <div ref={cardRef} data-pdf-section>
-                <ShareableCard result={result} context={context} />
-              </div>
+              <ReportErrorBoundary label="shareable-card" inline>
+                <div ref={cardRef} data-pdf-section>
+                  <ShareableCard result={result} context={context} />
+                </div>
+              </ReportErrorBoundary>
             )}
 
             {/* Action buttons */}
@@ -834,7 +838,9 @@ const ReportContent = () => {
               </div>
             )}
 
-            <FreeInsights result={result} />
+            <ReportErrorBoundary label="free-insights" inline>
+              <FreeInsights result={result} />
+            </ReportErrorBoundary>
 
             {analysisId && (
               <div id="paywall-section" className="mt-12 scroll-mt-20">
