@@ -748,6 +748,39 @@ const ReportContent = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Header />
+      {showUnlockOverlay && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-background/95 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="mx-4 max-w-md rounded-2xl border border-border bg-card px-8 py-10 text-center shadow-xl">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-7 w-7"
+                aria-hidden="true"
+              >
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h2 className="mt-5 text-[22px] font-medium tracking-tight">
+              {hasUnlockedReport ? "Payment received — report unlocked" : "Payment received"}
+            </h2>
+            <p className="mt-2 text-[14px] text-muted-foreground">
+              {hasUnlockedReport
+                ? "Opening your full report…"
+                : "Unlocking your full report…"}
+            </p>
+          </div>
+        </div>
+      )}
       <Helmet>
         <title>{safeField(() => `BetweenTheLines™ Report: ${context.name1} & ${context.name2} — ${result.headline.tier_label}`, "headline.tier_label")}</title>
         <meta
