@@ -597,7 +597,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                         className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
                       >
                         {s.status === "ready" ? (
-                          <img src={s.dataUrl} alt={s.name} className="h-full w-full object-cover" />
+                         <img src={s.dataUrl} alt={`Uploaded screenshot: ${s.name}`} className="h-full w-full object-cover" />
                         ) : (
                           <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
                             Compressing…
