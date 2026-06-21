@@ -1082,10 +1082,10 @@ const DeepReport = ({
         <p className="text-[12px] font-semibold uppercase tracking-wide text-muted-foreground">
           Your full report
         </p>
-        <h2 className="mt-1 text-[26px] font-medium tracking-tight sm:text-[32px]">
+        <h1 className="mt-1 text-[26px] font-medium tracking-tight sm:text-[32px]">
           {name1} & {name2}
           {context.duration ? ` · ${context.duration} together` : ""}
-        </h2>
+        </h1>
       </div>
 
       {/* 1. Communication diagnostic */}
