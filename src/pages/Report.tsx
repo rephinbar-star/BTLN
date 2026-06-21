@@ -760,7 +760,24 @@ const ReportContent = () => {
           aria-live="polite"
           className="fixed inset-0 z-[60] flex items-center justify-center bg-background/95 backdrop-blur-sm animate-in fade-in duration-200"
         >
-          <div className="mx-4 max-w-md rounded-2xl border border-border bg-card px-8 py-10 text-center shadow-xl">
+          <div className="relative mx-4 max-w-md rounded-2xl border border-border bg-card px-8 py-10 text-center shadow-xl">
+            <button
+              type="button"
+              aria-label="Dismiss"
+              onClick={() => {
+                setShowUnlockOverlay(false);
+                const next = new URLSearchParams(searchParams);
+                next.delete("checkout");
+                next.delete("session_id");
+                setSearchParams(next, { replace: true });
+              }}
+              className="absolute right-3 top-3 rounded-full p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden="true">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
