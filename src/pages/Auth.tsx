@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -106,6 +107,30 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>
+          {mode === "signup"
+            ? "Create your account — BetweenTheLines™"
+            : mode === "forgot"
+            ? "Reset password — BetweenTheLines™"
+            : "Sign in or sign up — BetweenTheLines™"}
+        </title>
+        <meta
+          name="description"
+          content={
+            mode === "signup"
+              ? "Create a BetweenTheLines account to save your relationship reports and revisit them anytime."
+              : mode === "forgot"
+              ? "Reset your BetweenTheLines password and get back to your saved relationship reports."
+              : "Sign in or sign up to save your BetweenTheLines reports and revisit your relationship insights."
+          }
+        />
+        <link rel="canonical" href="https://betweenthelines.app/auth" />
+        <meta property="og:title" content="Sign in to BetweenTheLines™" />
+        <meta property="og:description" content="Save your reports and revisit your relationship insights." />
+        <meta property="og:url" content="https://betweenthelines.app/auth" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <Header />
       <main className="mx-auto flex max-w-md flex-col gap-4 px-5 py-12 sm:px-8">
         <h1 className="text-[28px] font-medium tracking-tight">
