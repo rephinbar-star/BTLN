@@ -9,6 +9,8 @@ export default function Terms() {
         <title>Terms of Service — BetweenTheLines™</title>
         <meta name="description" content="Read the BetweenTheLines Terms of Service. By using our relationship coaching tool, you agree to these terms and conditions." />
         <link rel="canonical" href="https://betweenthelines.app/terms" />
+        <meta property="og:title" content="Terms of Service — BetweenTheLines™" />
+        <meta property="og:description" content="The terms and conditions for using BetweenTheLines." />
         <meta property="og:url" content="https://betweenthelines.app/terms" />
       </Helmet>
       <header className="border-b border-border px-5 py-4 sm:px-8">
