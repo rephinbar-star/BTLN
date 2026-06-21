@@ -9,5 +9,7 @@ Disallow: /reset-password
 Disallow: /checkout/return
 Disallow: /error
 Disallow: /not-found
+Disallow: /processing/
+Disallow: /report/
 
 Sitemap: https://betweenthelines.app/sitemap.xml

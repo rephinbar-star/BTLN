@@ -9,6 +9,8 @@ export default function Trust() {
         <title>Trust &amp; Security — BetweenTheLines™</title>
         <meta name="description" content="Learn how BetweenTheLines protects your data, handles your conversations, and keeps your relationship analysis private and secure." />
         <link rel="canonical" href="https://betweenthelines.app/trust" />
+        <meta property="og:title" content="Trust & Security — BetweenTheLines™" />
+        <meta property="og:description" content="How we protect your data, handle your conversations, and keep your relationship analysis private." />
         <meta property="og:url" content="https://betweenthelines.app/trust" />
       </Helmet>
       <header className="border-b border-border px-5 py-4 sm:px-8">
