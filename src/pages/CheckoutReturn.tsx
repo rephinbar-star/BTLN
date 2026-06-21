@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
@@ -39,6 +40,15 @@ export default function CheckoutReturn() {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
+      <Helmet>
+        <title>Payment complete — BetweenTheLines™</title>
+        <meta name="description" content="Confirming your payment and unlocking your full BetweenTheLines relationship report." />
+        <link rel="canonical" href="https://betweenthelines.app/checkout/return" />
+        <meta property="og:title" content="Payment complete — BetweenTheLines™" />
+        <meta property="og:description" content="Your full report is unlocked." />
+        <meta property="og:url" content="https://betweenthelines.app/checkout/return" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       {status === "loading" ? (
         <>
           <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />

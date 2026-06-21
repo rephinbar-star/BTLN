@@ -1,4 +1,5 @@
 import { Link, useSearchParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import logoAsset from "@/assets/logo.png.asset.json";
 
 const ErrorPage = () => {
@@ -17,6 +18,15 @@ const ErrorPage = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
+      <Helmet>
+        <title>Something went wrong — BetweenTheLines™</title>
+        <meta name="description" content="We couldn't complete your relationship analysis. Head back and try again — your messages weren't stored." />
+        <link rel="canonical" href="https://betweenthelines.app/error" />
+        <meta property="og:title" content="Something went wrong — BetweenTheLines™" />
+        <meta property="og:description" content="We couldn't complete your analysis. Try again." />
+        <meta property="og:url" content="https://betweenthelines.app/error" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="flex items-center gap-2">
         <img src={logoAsset.url} alt="BetweenTheLines™" className="h-8 w-auto" />
       </div>

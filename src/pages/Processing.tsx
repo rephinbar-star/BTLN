@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 import logoAsset from "@/assets/logo.png.asset.json";
@@ -174,6 +175,15 @@ const Processing = () => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
+      <Helmet>
+        <title>Analyzing your conversation — BetweenTheLines™</title>
+        <meta name="description" content="Reading between the lines of your messages. Your relationship analysis is being prepared and will be ready in 30–90 seconds." />
+        <link rel="canonical" href="https://betweenthelines.app/processing" />
+        <meta property="og:title" content="Analyzing your conversation — BetweenTheLines™" />
+        <meta property="og:description" content="Your relationship analysis is being prepared." />
+        <meta property="og:url" content="https://betweenthelines.app/processing" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <div className="flex items-center gap-2">
         <img src={logoAsset.url} alt="BetweenTheLines™" className="h-24 w-auto" />
       </div>

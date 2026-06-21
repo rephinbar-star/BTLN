@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -29,6 +30,15 @@ const ResetPassword = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>Reset password — BetweenTheLines™</title>
+        <meta name="description" content="Set a new password for your BetweenTheLines account and get back to your saved relationship reports." />
+        <link rel="canonical" href="https://betweenthelines.app/reset-password" />
+        <meta property="og:title" content="Reset password — BetweenTheLines™" />
+        <meta property="og:description" content="Set a new password for your BetweenTheLines account." />
+        <meta property="og:url" content="https://betweenthelines.app/reset-password" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <Header />
       <main className="mx-auto flex max-w-md flex-col gap-6 px-5 py-12 sm:px-8">
         <h1 className="text-[28px] font-medium tracking-tight">Set a new password</h1>
