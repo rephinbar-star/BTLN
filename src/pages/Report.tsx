@@ -515,6 +515,23 @@ const ReportContent = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasUnlockedReport]);
 
+  // Allow Escape to dismiss the unlock overlay so users are never trapped
+  // behind it if the entitlement sync stalls.
+  useEffect(() => {
+    if (!showUnlockOverlay) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setShowUnlockOverlay(false);
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("session_id");
+      setSearchParams(next, { replace: true });
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showUnlockOverlay]);
+
   const handleDownload = async () => {
     if (!cardRef.current || !context || downloading) return;
     setDownloading(true);
