@@ -202,9 +202,9 @@ export const WhatYouGet = () => {
               4 · The hidden pattern
             </div>
             <div className="mt-5 rounded-xl bg-pastel-purple-bg p-5 text-pastel-purple-fg-strong">
-              <h4 className="text-[16px] font-semibold tracking-tight">
+              <h3 className="text-[16px] font-semibold tracking-tight">
                 You both go quiet on Sunday evenings.
-              </h4>
+              </h3>
               <p className="mt-2 text-[14px] leading-relaxed">
                 Across 14 of the past 16 Sundays, message volume drops to nearly zero between 6pm and 11pm.
                 This may be Sunday-night anxiety about the week ahead leaking into the relationship. Worth
