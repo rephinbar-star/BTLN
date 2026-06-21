@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Loader2, Mail, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -270,6 +271,15 @@ const Account = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      <Helmet>
+        <title>My account — BetweenTheLines™</title>
+        <meta name="description" content="Manage your BetweenTheLines account, subscription, and saved relationship reports." />
+        <link rel="canonical" href="https://betweenthelines.app/account" />
+        <meta property="og:title" content="My account — BetweenTheLines™" />
+        <meta property="og:description" content="Manage your account, subscription, and saved relationship reports." />
+        <meta property="og:url" content="https://betweenthelines.app/account" />
+        <meta name="robots" content="noindex" />
+      </Helmet>
       <Header />
       <main className="mx-auto flex max-w-3xl flex-col gap-8 px-5 py-12 sm:px-8">
         {!verified && !bannerDismissed && (
