@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.user_has_paid_access(uuid, uuid) TO authenticated;
