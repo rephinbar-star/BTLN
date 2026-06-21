@@ -476,6 +476,11 @@ const ReportContent = () => {
       void checkAccess();
       if (elapsed >= 120_000) {
         window.clearInterval(interval);
+        setShowUnlockOverlay(false);
+        const next = new URLSearchParams(searchParams);
+        next.delete("checkout");
+        next.delete("session_id");
+        setSearchParams(next, { replace: true });
         toast.error(
           "Payment confirmed but unlock is still syncing. Please refresh in a moment or contact support.",
           { id: toastId },
