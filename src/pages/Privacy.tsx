@@ -9,6 +9,8 @@ export default function Privacy() {
         <title>Privacy Policy — BetweenTheLines™</title>
         <meta name="description" content="Read the BetweenTheLines Privacy Policy to understand how we collect, use, and protect your information when you use our relationship coaching tool." />
         <link rel="canonical" href="https://betweenthelines.app/privacy" />
+        <meta property="og:title" content="Privacy Policy — BetweenTheLines™" />
+        <meta property="og:description" content="How BetweenTheLines collects, uses, and protects your information." />
         <meta property="og:url" content="https://betweenthelines.app/privacy" />
       </Helmet>
       <header className="border-b border-border px-5 py-4 sm:px-8">

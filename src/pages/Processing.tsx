@@ -216,16 +216,16 @@ const Processing = () => {
         </div>
       )}
 
-      <h2
+      <h1
         key={`stage-${phraseIdx}`}
         className="mt-6 animate-in fade-in text-[24px] font-medium tracking-tight duration-700 sm:text-[32px]"
       >
         {ROTATING_MESSAGES[phraseIdx].text}
-      </h2>
+      </h1>
 
-      <h3 className="mt-3 text-[14px] font-medium tracking-tight text-muted-foreground sm:text-[16px]">
+      <p className="mt-3 text-[14px] font-medium tracking-tight text-muted-foreground sm:text-[16px]">
         Reading Between The Lines
-      </h3>
+      </p>
 
       <div className="mt-8 flex items-center gap-2" aria-label="loading">
         <span className="h-2 w-2 animate-pulse rounded-full bg-foreground/60 [animation-delay:-0.3s]" />
