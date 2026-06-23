@@ -22,6 +22,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           feedback_email: string | null
+          feedback_question_variant: string | null
           feedback_score: number | null
           feedback_text: string | null
           id: string
@@ -43,6 +44,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           feedback_email?: string | null
+          feedback_question_variant?: string | null
           feedback_score?: number | null
           feedback_text?: string | null
           id?: string
@@ -64,6 +66,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           feedback_email?: string | null
+          feedback_question_variant?: string | null
           feedback_score?: number | null
           feedback_text?: string | null
           id?: string
@@ -231,6 +234,7 @@ export type Database = {
           created_at: string | null
           email: string | null
           id: string
+          question_variant: string | null
           score: number | null
           source: string | null
           text: string | null
@@ -239,6 +243,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          question_variant?: string | null
           score?: number | null
           source?: string | null
           text?: string | null
@@ -247,6 +252,7 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           id?: string
+          question_variant?: string | null
           score?: number | null
           source?: string | null
           text?: string | null
@@ -621,15 +627,26 @@ export type Database = {
         }
         Returns: undefined
       }
-      submit_feedback: {
-        Args: {
-          p_analysis_id: string
-          p_email: string
-          p_score: number
-          p_text: string
-        }
-        Returns: undefined
-      }
+      submit_feedback:
+        | {
+            Args: {
+              p_analysis_id: string
+              p_email: string
+              p_score: number
+              p_text: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_analysis_id: string
+              p_email: string
+              p_question_variant?: string
+              p_score: number
+              p_text: string
+            }
+            Returns: undefined
+          }
       user_has_paid_access: {
         Args: { p_analysis_id: string; p_user_id: string }
         Returns: boolean

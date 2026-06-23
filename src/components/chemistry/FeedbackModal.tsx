@@ -11,7 +11,7 @@ type Props = {
 };
 
 export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
-  const [score, setScore] = useState(5);
+  const [score, setScore] = useState<number | null>(null);
   const [text, setText] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -31,7 +31,9 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
   };
 
   const handleSubmit = async () => {
+    if (score === null) return;
     setSubmitting(true);
+    const questionVariant: "wrong" | "balanced" = score <= 3 ? "wrong" : "balanced";
     try {
       if (analysisId) {
         await supabase.rpc("submit_feedback", {
@@ -39,6 +41,7 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
           p_score: score,
           p_text: text.trim() || null,
           p_email: email.trim() || null,
+          p_question_variant: questionVariant,
         });
       } else {
         await (supabase as any).from("general_feedback").insert([
@@ -47,6 +50,7 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
             text: text.trim() || null,
             email: email.trim() || null,
             source: "footer",
+            question_variant: questionVariant,
           },
         ]);
       }
@@ -63,6 +67,7 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
 
       logEvent("feedback_submitted", {
         score,
+        question_variant: questionVariant,
         has_text: text.trim().length > 0,
         has_email: email.trim().length > 0,
         has_analysis_id: !!analysisId,
@@ -74,6 +79,13 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
       setSubmitting(false);
     }
   };
+
+  const variant: "wrong" | "balanced" = score !== null && score <= 3 ? "wrong" : "balanced";
+  const textLabel =
+    variant === "wrong"
+      ? "What did we get wrong? (optional)"
+      : "Anything we got really right or really wrong? (optional)";
+  const textPlaceholder = variant === "wrong" ? "The part that missed was…" : "";
 
   return (
     <div
@@ -94,16 +106,21 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
         </button>
 
         <h3 className="text-[20px] font-medium tracking-tight">How accurate did this feel?</h3>
+        <p className="mt-2 text-[13px] leading-snug text-muted-foreground">
+          You're one of our first testers — your honest take, especially the critical bits, shapes what we build next.
+        </p>
 
         <div className="mt-6 text-center">
-          <div className="text-[32px] font-medium leading-none">{score}</div>
+          <div className="text-[32px] font-medium leading-none">
+            {score === null ? <span className="text-muted-foreground">–</span> : score}
+          </div>
         </div>
         <input
           type="range"
           min={1}
           max={10}
           step={1}
-          value={score}
+          value={score ?? 5}
           onChange={(e) => setScore(Number(e.target.value))}
           className="mt-3 w-full accent-foreground"
         />
@@ -114,19 +131,20 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
 
         <div className="mt-5">
           <label className="text-[13px] font-medium text-foreground">
-            Anything we got really right or really wrong? (optional)
+            {textLabel}
           </label>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             rows={3}
+            placeholder={textPlaceholder}
             className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-3 text-[14px] focus:border-foreground focus:outline-none"
           />
         </div>
 
         <div className="mt-4">
           <label className="text-[13px] font-medium text-foreground">
-            Want updates as we improve this? (optional)
+            Want a say in where this goes? Drop your email for early updates (optional).
           </label>
           <input
             type="email"
@@ -147,7 +165,7 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
           </button>
           <button
             type="button"
-            disabled={submitting}
+            disabled={submitting || score === null}
             onClick={handleSubmit}
             className="rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-60"
           >
