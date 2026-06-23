@@ -133,6 +133,9 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
           <label className="text-[13px] font-medium text-foreground">
             {textLabel}
           </label>
+          <p className="mt-1 text-[13px] text-muted-foreground">
+            What could we do better/improve?
+          </p>
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
