@@ -1,11 +1,11 @@
-import { X } from "lucide-react";
 import { useState } from "react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 
 type Props = {
-  analysisId: string;
+  analysisId?: string;
   open: boolean;
   onClose: () => void;
 };
@@ -19,37 +19,53 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
   if (!open) return null;
 
   const close = () => {
-    sessionStorage.setItem(`chemistry_feedback_shown_${analysisId}`, "1");
+    if (analysisId) {
+      sessionStorage.setItem(`chemistry_feedback_shown_${analysisId}`, "1");
+    }
     onClose();
   };
 
   const handleSkip = () => {
-    logEvent("feedback_shown", { skipped: true });
+    logEvent("feedback_shown", { skipped: true, has_analysis_id: !!analysisId });
     close();
   };
 
   const handleSubmit = async () => {
     setSubmitting(true);
     try {
-      await supabase.rpc("submit_feedback", {
-        p_analysis_id: analysisId,
-        p_score: score,
-        p_text: text.trim() || null,
-        p_email: email.trim() || null,
-      });
+      if (analysisId) {
+        await supabase.rpc("submit_feedback", {
+          p_analysis_id: analysisId,
+          p_score: score,
+          p_text: text.trim() || null,
+          p_email: email.trim() || null,
+        });
+      } else {
+        await (supabase as any).from("general_feedback").insert([
+          {
+            score,
+            text: text.trim() || null,
+            email: email.trim() || null,
+            source: "footer",
+          },
+        ]);
+      }
+
       if (email.trim()) {
         const { getSessionId } = await import("@/lib/session");
         await supabase.rpc("capture_email", {
           p_email: email.trim(),
-          p_analysis_id: analysisId,
-          p_source: "feedback_modal",
+          p_analysis_id: analysisId || null,
+          p_source: analysisId ? "feedback_modal" : "footer_feedback",
           p_session_id: getSessionId(),
         });
       }
+
       logEvent("feedback_submitted", {
         score,
         has_text: text.trim().length > 0,
         has_email: email.trim().length > 0,
+        has_analysis_id: !!analysisId,
       });
       toast("Thanks. Your feedback helps.");
       close();
