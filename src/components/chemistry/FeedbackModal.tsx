@@ -41,7 +41,7 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
           p_email: email.trim() || null,
         });
       } else {
-        await supabase.from("general_feedback").insert([
+        await (supabase as any).from("general_feedback").insert([
           {
             score,
             text: text.trim() || null,

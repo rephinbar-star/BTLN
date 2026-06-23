@@ -226,6 +226,33 @@ export type Database = {
         }
         Relationships: []
       }
+      general_feedback: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          score: number | null
+          source: string | null
+          text: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          score?: number | null
+          source?: string | null
+          text?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          score?: number | null
+          source?: string | null
+          text?: string | null
+        }
+        Relationships: []
+      }
       messages_temp: {
         Row: {
           analysis_id: string
