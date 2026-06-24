@@ -332,6 +332,38 @@ export type Database = {
           },
         ]
       }
+      paywall_intents: {
+        Row: {
+          analysis_id: string | null
+          created_at: string
+          id: string
+          option: string
+          user_id: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          option: string
+          user_id?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          created_at?: string
+          id?: string
+          option?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "paywall_intents_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -414,6 +446,50 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "share_clicks_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      survey_responses: {
+        Row: {
+          accuracy_rating: number
+          analysis_id: string | null
+          created_at: string
+          email: string | null
+          feedback_text: string | null
+          id: string
+          question_variant: string
+          trigger_source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          accuracy_rating: number
+          analysis_id?: string | null
+          created_at?: string
+          email?: string | null
+          feedback_text?: string | null
+          id?: string
+          question_variant: string
+          trigger_source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          accuracy_rating?: number
+          analysis_id?: string | null
+          created_at?: string
+          email?: string | null
+          feedback_text?: string | null
+          id?: string
+          question_variant?: string
+          trigger_source?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "survey_responses_analysis_id_fkey"
             columns: ["analysis_id"]
             isOneToOne: false
             referencedRelation: "analyses"
@@ -611,6 +687,10 @@ export type Database = {
         Args: { p_error_message: string; p_id: string; p_session_id: string }
         Returns: boolean
       }
+      record_paywall_intent: {
+        Args: { p_analysis_id: string; p_option: string; p_session_id: string }
+        Returns: string
+      }
       record_share_click: {
         Args: {
           p_analysis_id: string
@@ -647,6 +727,18 @@ export type Database = {
             }
             Returns: undefined
           }
+      submit_survey: {
+        Args: {
+          p_accuracy_rating: number
+          p_analysis_id: string
+          p_email: string
+          p_feedback_text: string
+          p_question_variant: string
+          p_session_id: string
+          p_trigger_source: string
+        }
+        Returns: string
+      }
       user_has_paid_access: {
         Args: { p_analysis_id: string; p_user_id: string }
         Returns: boolean
