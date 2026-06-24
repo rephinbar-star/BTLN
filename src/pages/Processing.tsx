@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
+import { track, messageCountBucket } from "@/lib/analytics";
 import logoAsset from "@/assets/logo.png.asset.json";
 import readingGif from "@/assets/processing/reading.gif.asset.json";
 import patternsGif from "@/assets/processing/patterns.gif.asset.json";
@@ -144,11 +145,29 @@ const Processing = () => {
 
       if (data.status === "complete") {
         stopped.current = true;
+        // PostHog: only the UUID + coarse signals — never report content.
+        const lowConfidence = (() => {
+          try {
+            const r = (data as { result_json?: unknown }).result_json as { confidence?: string } | null | undefined;
+            const c = r?.confidence;
+            return typeof c === "string" && /low/i.test(c);
+          } catch {
+            return false;
+          }
+        })();
+        track("report_completed", {
+          analysis_id: analysisId!,
+          low_confidence: lowConfidence,
+          message_count_bucket: messageCountBucket(
+            (data as { message_count?: number | null }).message_count,
+          ),
+        });
         navigate(`/report/${analysisId}`, { replace: true });
         return;
       }
       if (data.status === "failed") {
         stopped.current = true;
+        track("analysis_failed", { reason_code: "engine_error" });
         const reason = data.error_message ?? "Analysis failed.";
         navigate(`/error?reason=${encodeURIComponent(reason)}`, { replace: true });
         return;
@@ -157,6 +176,7 @@ const Processing = () => {
       const elapsed = Date.now() - startedAt.current;
       if (elapsed > TIMEOUT_MS) {
         stopped.current = true;
+        track("analysis_failed", { reason_code: "timeout" });
         navigate(`/error?reason=${encodeURIComponent("timeout")}`, { replace: true });
         return;
       }

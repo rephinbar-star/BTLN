@@ -8,6 +8,7 @@ import { ArrowRight, Copy, Download, FileText, HelpCircle, Info, Share2 } from "
 import { jsPDF } from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { claimPendingAnalysis, getSessionId, logEvent } from "@/lib/session";
+import { track } from "@/lib/analytics";
 import { getStripeEnvironment } from "@/lib/stripe";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
@@ -644,18 +645,19 @@ const ReportContent = () => {
   };
 
   const handleCopyLink = async () => {
-    const url = `https://betweenthelines.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}?ref=share`;
     try {
       await navigator.clipboard.writeText(url);
       toast("Link copied", { duration: 2000 });
       void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "copy_link", p_session_id: getSessionId() });
+      track("share_clicked", { analysis_id: analysisId!, platform: "copy_link" });
     } catch {
       toast.error("Could not copy link.");
     }
   };
 
   const handleShare = async () => {
-    const url = `https://betweenthelines.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}?ref=share`;
     const text = result
       ? safeField(() => `Our BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")
       : "Check our BetweenTheLines analysis";
@@ -666,6 +668,7 @@ const ReportContent = () => {
       try {
         await (navigator as Navigator).share({ title: "BetweenTheLines™ report", text, url });
         void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "web_share", p_session_id: getSessionId() });
+        track("share_clicked", { analysis_id: analysisId!, platform: "web_share" });
         return;
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string };
@@ -682,7 +685,7 @@ const ReportContent = () => {
 
   const handleShareCoupleCard = async () => {
     const node = coupleCardRef.current;
-    const url = `https://betweenthelines.app/report/${analysisId}`;
+    const url = `https://betweenthelines.app/report/${analysisId}?ref=share`;
     const title = "BetweenTheLines™ — our couple type";
     const text = result
       ? safeField(() => `We're ${result.headline.tier_label} on BetweenTheLines™`, "headline.tier_label")
@@ -724,6 +727,7 @@ const ReportContent = () => {
           canShareFiles ? { title, text, url, files: [file!] } : { title, text, url },
         );
         void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: canShareFiles ? "web_share_card_image" : "web_share_card", p_session_id: getSessionId() });
+        track("share_clicked", { analysis_id: analysisId!, platform: canShareFiles ? "web_share_card_image" : "web_share_card" });
         return;
       } catch (err: unknown) {
         const e = err as { name?: string; message?: string };
@@ -735,7 +739,7 @@ const ReportContent = () => {
     setShareFallbackOpen(true);
   };
 
-  const shareUrl = `https://betweenthelines.app/report/${analysisId}`;
+  const shareUrl = `https://betweenthelines.app/report/${analysisId}?ref=share`;
   const shareText = result
     ? safeField(() => `Our BetweenTheLines read: ${result.headline.tier_label}`, "headline.tier_label")
     : "Check our BetweenTheLines analysis";
@@ -746,6 +750,7 @@ const ReportContent = () => {
       setCopied(true);
       toast("Link copied", { duration: 2000 });
       void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "copy_link", p_session_id: getSessionId() });
+      track("share_clicked", { analysis_id: analysisId!, platform: "copy_link" });
     } catch {
       // Last-resort: select text in the input so user can long-press copy.
       const input = document.getElementById("share-fallback-url") as HTMLInputElement | null;
@@ -758,6 +763,7 @@ const ReportContent = () => {
     const x = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(x, "_blank", "noopener,noreferrer");
     void supabase.rpc("record_share_click", { p_analysis_id: analysisId!, p_platform: "x", p_session_id: getSessionId() });
+    track("share_clicked", { analysis_id: analysisId!, platform: "x" });
   };
 
   if (loading || !result || !context) {

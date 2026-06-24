@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
+import { identifyUser, resetUser } from "@/lib/analytics";
 
 type AuthContextValue = {
   user: User | null;
@@ -26,6 +27,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(newSession);
       setLoading(false);
       if (event === "SIGNED_IN" && newSession?.user) {
+        // PII firewall: identify with UUID only — never email or name.
+        identifyUser(newSession.user.id);
         // Defer to avoid deadlock with auth callback
         setTimeout(() => {
           const sid = getSessionId();
@@ -35,11 +38,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         }, 0);
       }
+      if (event === "SIGNED_OUT") {
+        resetUser();
+      }
     });
 
     supabase.auth.getSession().then(({ data }) => {
       setSession(data.session);
       setLoading(false);
+      if (data.session?.user) identifyUser(data.session.user.id);
     });
 
     return () => sub.subscription.unsubscribe();

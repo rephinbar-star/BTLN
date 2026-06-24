@@ -5,8 +5,16 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
+import { track } from "@/lib/analytics";
+import { getSessionId } from "@/lib/session";
 
 type ProductKey = "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
+
+const PRODUCT_TO_OPTION: Record<ProductKey, "monthly" | "annual" | "one_time"> = {
+  BTLN_monthly: "monthly",
+  BTLN_annual: "annual",
+  BTLN_report_unlock: "one_time",
+};
 
 type Props = {
   locked: boolean;
@@ -30,6 +38,8 @@ export function PaywallBlur({ locked, children, isOwner, isAnonymousOwner = fals
         is_owner: isOwner,
         user_state,
       });
+      // PostHog: PII-free — only the analysis UUID.
+      track("paywall_viewed", { analysis_id: analysisId });
     }
   }, [locked, isOwner, isAnonymousOwner, analysisId]);
 
@@ -139,6 +149,14 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
   const launch = (priceId: ProductKey) => {
     setPending(priceId);
     logEvent("unlock_cta_clicked", { product_key: priceId, analysis_id: analysisId });
+    const option = PRODUCT_TO_OPTION[priceId];
+    track("intent_to_pay_click", { analysis_id: analysisId, option });
+    // Record sensitive (product) intent to Supabase for joining to reports.
+    void supabase.rpc("record_paywall_intent" as never, {
+      p_analysis_id: analysisId,
+      p_session_id: getSessionId(),
+      p_option: option,
+    } as never);
     try {
       openCheckout({
         priceId,

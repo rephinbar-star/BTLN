@@ -119,6 +119,13 @@ export default function Privacy() {
             <li><strong>Supabase</strong> — hosted database, authentication, and edge functions.</li>
             <li><strong>Stripe</strong> — payment processing.</li>
             <li><strong>OpenRouter / Lovable AI</strong> — model inference for the analysis itself.</li>
+            <li>
+              <strong>PostHog</strong> — privacy-first product analytics (US region).
+              We send screen visits and a small set of named usage events (e.g. report started,
+              report completed, paywall viewed). We never send your conversation, names, emails,
+              feedback text, or any report content to PostHog. Autocapture and session
+              recording are disabled. Identified users are referenced only by an opaque UUID.
+            </li>
           </ul>
         </section>
 
@@ -127,6 +134,12 @@ export default function Privacy() {
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             We use minimal cookies and local storage to manage your session and preferences. We do not
             use third-party advertising cookies or trackers. Analytics data is collected anonymously.
+          </p>
+          <p className="text-[15px] leading-relaxed text-muted-foreground">
+            <strong>EU/EEA/UK visitors</strong> see a consent banner on first visit and must opt in
+            before any analytics event is sent. You can change your choice at any time by clearing
+            site data for this domain. Visitors outside the EU can opt out by setting their browser
+            to send a "Do Not Track" signal or by contacting us.
           </p>
         </section>
 

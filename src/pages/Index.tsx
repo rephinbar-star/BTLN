@@ -11,14 +11,27 @@ import { WhatYouGet } from "@/components/chemistry/WhatYouGet";
 import { ReturningHero } from "@/components/chemistry/ReturningHero";
 import { useAuth } from "@/hooks/useAuth";
 import { logEvent } from "@/lib/session";
+import { track } from "@/lib/analytics";
 
 const SESSION_KEY = "chemistry_landing_viewed";
+const REF_KEY = "btln_ref_visit_fired";
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    // Referral attribution: PII-free, value comes from a fixed enum-ish tag.
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ref = params.get("ref");
+      if (ref && !sessionStorage.getItem(REF_KEY)) {
+        sessionStorage.setItem(REF_KEY, "1");
+        track("referred_visit", { ref });
+      }
+    } catch {
+      // ignore
+    }
     if (sessionStorage.getItem(SESSION_KEY)) return;
     sessionStorage.setItem(SESSION_KEY, "1");
     logEvent("landing_viewed");
