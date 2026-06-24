@@ -22,6 +22,7 @@ import Terms from "./pages/Terms";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { PaymentTestModeBanner } from "./components/PaymentTestModeBanner";
+import { ConsentBanner } from "./components/ConsentBanner";
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
@@ -72,6 +73,7 @@ const App = () => (
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
+        <ConsentBanner />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
