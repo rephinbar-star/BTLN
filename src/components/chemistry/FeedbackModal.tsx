@@ -122,6 +122,9 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
           step={1}
           value={score ?? 5}
           onChange={(e) => setScore(Number(e.target.value))}
+          onClick={(e) => {
+            if (score === null) setScore(Number(e.currentTarget.value));
+          }}
           className="mt-3 w-full accent-foreground"
         />
         <div className="mt-1 flex justify-between text-[11px] text-muted-foreground">
