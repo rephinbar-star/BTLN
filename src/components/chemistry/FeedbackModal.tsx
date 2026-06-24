@@ -1,20 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { logEvent } from "@/lib/session";
+import { logEvent, getSessionId } from "@/lib/session";
+import { track } from "@/lib/analytics";
 
 type Props = {
   analysisId?: string;
   open: boolean;
   onClose: () => void;
+  triggerSource?: "scroll" | "dwell" | "button" | "manual";
 };
 
-export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
+export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manual" }: Props) => {
   const [score, setScore] = useState<number | null>(null);
   const [text, setText] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    // PostHog: PII-free — analysis_id + trigger only.
+    track("survey_shown", { analysis_id: analysisId, trigger_source: triggerSource });
+  }, [open, analysisId, triggerSource]);
 
   if (!open) return null;
 
@@ -27,6 +35,7 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
 
   const handleSkip = () => {
     logEvent("feedback_shown", { skipped: true, has_analysis_id: !!analysisId });
+    track("survey_dismissed", { analysis_id: analysisId });
     close();
   };
 
@@ -34,31 +43,49 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
     if (score === null) return;
     setSubmitting(true);
     const questionVariant: "wrong" | "balanced" = score <= 3 ? "wrong" : "balanced";
+    const trimmedText = text.trim();
+    const trimmedEmail = email.trim();
     try {
+      // Sensitive fields (free text + email) — Supabase only, NEVER PostHog.
+      if (analysisId) {
+        await (supabase.rpc as never as (
+          name: string,
+          args: Record<string, unknown>,
+        ) => Promise<unknown>)("submit_survey", {
+          p_analysis_id: analysisId,
+          p_session_id: getSessionId(),
+          p_accuracy_rating: score,
+          p_question_variant: questionVariant,
+          p_feedback_text: trimmedText || null,
+          p_email: trimmedEmail || null,
+          p_trigger_source: triggerSource,
+        });
+      }
+
+      // Keep legacy writes for backwards-compat with existing dashboards.
       if (analysisId) {
         await supabase.rpc("submit_feedback", {
           p_analysis_id: analysisId,
           p_score: score,
-          p_text: text.trim() || null,
-          p_email: email.trim() || null,
+          p_text: trimmedText || null,
+          p_email: trimmedEmail || null,
           p_question_variant: questionVariant,
         });
       } else {
         await (supabase as any).from("general_feedback").insert([
           {
             score,
-            text: text.trim() || null,
-            email: email.trim() || null,
+            text: trimmedText || null,
+            email: trimmedEmail || null,
             source: "footer",
             question_variant: questionVariant,
           },
         ]);
       }
 
-      if (email.trim()) {
-        const { getSessionId } = await import("@/lib/session");
+      if (trimmedEmail) {
         await supabase.rpc("capture_email", {
-          p_email: email.trim(),
+          p_email: trimmedEmail,
           p_analysis_id: analysisId || null,
           p_source: analysisId ? "feedback_modal" : "footer_feedback",
           p_session_id: getSessionId(),
@@ -68,9 +95,18 @@ export const FeedbackModal = ({ analysisId, open, onClose }: Props) => {
       logEvent("feedback_submitted", {
         score,
         question_variant: questionVariant,
-        has_text: text.trim().length > 0,
-        has_email: email.trim().length > 0,
+        has_text: trimmedText.length > 0,
+        has_email: trimmedEmail.length > 0,
         has_analysis_id: !!analysisId,
+      });
+      // PostHog: rating + booleans only. No free text, no email.
+      track("survey_submitted", {
+        analysis_id: analysisId,
+        accuracy_rating: score,
+        question_variant: questionVariant,
+        has_text: trimmedText.length > 0,
+        email_captured: trimmedEmail.length > 0,
+        trigger_source: triggerSource,
       });
       toast("Thanks. Your feedback helps.");
       close();
