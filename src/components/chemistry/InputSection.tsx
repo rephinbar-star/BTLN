@@ -3,6 +3,7 @@ import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId, logEvent, setPendingClaimAnalysisId } from "@/lib/session";
+import { track } from "@/lib/analytics";
 import { compressImage, dataUrlByteSize } from "@/lib/image-compress";
 import {
   AlertDialog,
@@ -339,6 +340,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         message_estimate_chars:
           input_method === "screenshot" ? 0 : form.conversation.length,
       });
+      // PostHog: PII-free — only the coarse relationship type enum.
+      track("report_started", { relationship_type: form.relationshipType });
 
       // 1. Create analyses row first
       const { data: userData } = await supabase.auth.getUser();
@@ -412,6 +415,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               p_error_message:
                 "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images.",
             });
+            track("analysis_failed", { reason_code: "upload_failed" });
           }
         })
         .catch(async () => {
@@ -421,6 +425,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             p_error_message:
               "We couldn't reach the analyzer. Please check your connection and try again.",
           });
+          track("analysis_failed", { reason_code: "network_error" });
         });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unexpected error.";
