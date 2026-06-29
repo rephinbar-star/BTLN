@@ -165,26 +165,45 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     setPendingMode(null);
   };
 
-  const handleTxtFile = (file: File) => {
+  const handleTxtFile = async (file: File) => {
     setFileError(null);
     fireInputStarted();
-    if (!file.name.toLowerCase().endsWith(".txt") && file.type !== "text/plain") {
-      setFileError("Please upload a .txt file.");
+    const lowerName = file.name.toLowerCase();
+    const isZip =
+      lowerName.endsWith(".zip") ||
+      file.type === "application/zip" ||
+      file.type === "application/x-zip-compressed";
+    const isTxt = lowerName.endsWith(".txt") || file.type === "text/plain";
+    if (!isZip && !isTxt) {
+      setFileError("Please upload a .txt or .zip chat export.");
       return;
     }
     if (file.size > MAX_TXT_BYTES) {
       setFileError("File is too large (max 5 MB).");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = String(reader.result ?? "");
+    try {
+      let text: string;
+      if (isZip) {
+        const { default: JSZip } = await import("jszip");
+        const zip = await JSZip.loadAsync(file);
+        const txtEntry = Object.values(zip.files).find(
+          (entry) => !entry.dir && entry.name.toLowerCase().endsWith(".txt"),
+        );
+        if (!txtEntry) {
+          setFileError("No .txt chat file found inside the .zip.");
+          return;
+        }
+        text = await txtEntry.async("string");
+      } else {
+        text = await file.text();
+      }
       update("conversation", text);
       setLoadedFileName(file.name);
       setMode("paste");
-    };
-    reader.onerror = () => setFileError("Could not read file.");
-    reader.readAsText(file);
+    } catch {
+      setFileError("Could not read file.");
+    }
   };
 
   const handleImageFiles = (files: FileList | File[]) => {
@@ -523,7 +542,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               <input
                 ref={txtInputRef}
                 type="file"
-                accept=".txt,text/plain"
+                accept=".txt,text/plain,.zip,application/zip,application/x-zip-compressed"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -546,7 +565,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               >
                 <Upload className="h-6 w-6 text-muted-foreground" />
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">Drop a .txt file or click to browse</p>
+                  <p className="text-[14px] font-medium text-foreground">Drop a .txt or .zip file or click to browse</p>
                   <p className="mt-1 text-[12px] text-muted-foreground">
                     Exported chat from WhatsApp, iMessage, etc. Max 5 MB.
                   </p>
