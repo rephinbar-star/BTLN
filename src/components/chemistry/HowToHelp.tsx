@@ -144,7 +144,7 @@ const guides: {
     title: "Export a chat from WhatsApp",
     icon: Download,
     steps: [
-      "Open the chat with your partner.",
+      "Open the chat with your partner, friend or family member.",
       "Tap the ⋮ menu (Android) or the contact name (iPhone).",
       "Choose More → Export chat.",
       "Pick Without media — WhatsApp creates a .zip file containing the chat.",
