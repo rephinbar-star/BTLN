@@ -128,17 +128,30 @@ const TIMEOUT_MS = 240_000;
 const Processing = () => {
   const { analysisId } = useParams<{ analysisId: string }>();
   const navigate = useNavigate();
-  const quotesRef = useRef<string[]>(shuffle(RELATIONSHIP_FACTS));
+  const poolRef = useRef<string[]>(shuffle(RELATIONSHIP_FACTS));
   const [quoteIdx, setQuoteIdx] = useState(0);
   const [progress, setProgress] = useState(2);
   const [showSlow, setShowSlow] = useState(false);
   const startedAt = useRef<number>(Date.now());
   const stopped = useRef(false);
 
-  // Rotate quotes
+  // Rotate quotes. We cycle through the entire shuffled pool before reshuffling,
+  // and we guarantee the first quote of a new pool is never the same as the last
+  // quote just displayed.
   useEffect(() => {
     const t = setInterval(() => {
-      setQuoteIdx((i) => (i + 1) % quotesRef.current.length);
+      setQuoteIdx((i) => {
+        if (i + 1 < poolRef.current.length) {
+          return i + 1;
+        }
+        const lastQuote = poolRef.current[i];
+        let nextPool = shuffle(RELATIONSHIP_FACTS);
+        while (nextPool.length > 1 && nextPool[0] === lastQuote) {
+          nextPool = shuffle(RELATIONSHIP_FACTS);
+        }
+        poolRef.current = nextPool;
+        return 0;
+      });
     }, QUOTE_ROTATE_MS);
     return () => clearInterval(t);
   }, []);
