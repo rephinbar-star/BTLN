@@ -250,7 +250,7 @@ const Processing = () => {
     };
   }, [analysisId, navigate]);
 
-  const currentQuote = quotesRef.current[quoteIdx];
+  const currentQuote = poolRef.current[quoteIdx];
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
