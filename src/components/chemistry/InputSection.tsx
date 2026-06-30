@@ -229,7 +229,15 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       } else {
         text = await file.text();
       }
-      update("conversation", text);
+      const t = truncateConversation(text, MAX_MESSAGES);
+      update("conversation", t.text);
+      if (t.truncated) {
+        setTruncationNotice(
+          `This chat has about ${t.total} messages. To keep the analysis reliable, only the first ${t.kept} will be processed.`,
+        );
+      } else {
+        setTruncationNotice(null);
+      }
       setLoadedFileName(file.name);
       setMode("paste");
     } catch {
@@ -442,10 +450,24 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         context_data,
         input_method,
       };
+      // For pasted/loaded text, enforce the message cap right before
+      // sending so users who paste >100 messages still get a useful run
+      // (and a clear note about what we trimmed).
+      let conversationToSend = form.conversation;
+      if (input_method !== "screenshot") {
+        const t = truncateConversation(form.conversation, MAX_MESSAGES);
+        if (t.truncated) {
+          conversationToSend = t.text;
+          setTruncationNotice(
+            `Your conversation has about ${t.total} messages. Only the first ${t.kept} were analyzed.`,
+          );
+        }
+      }
+
       if (input_method === "screenshot") {
         payload.screenshot_base64_array = screenshots.map((s) => s.dataUrl);
       } else {
-        payload.raw_text = form.conversation;
+        payload.raw_text = conversationToSend;
       }
 
       // Navigate to the processing page right away so the user sees
