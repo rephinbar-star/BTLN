@@ -28,6 +28,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 
 const ADMIN_AUTH_KEY = "chemistry_admin_authed";
+const ADMIN_PWD_KEY = "chemistry_admin_pwd";
 
 /* ---------------- Password gate ---------------- */
 
@@ -48,6 +49,7 @@ const PasswordGate = ({ onSuccess }: { onSuccess: () => void }) => {
       if (invokeErr) throw invokeErr;
       if (data?.ok) {
         sessionStorage.setItem(ADMIN_AUTH_KEY, "true");
+        sessionStorage.setItem(ADMIN_PWD_KEY, pwd);
         onSuccess();
       } else {
         setError("Incorrect password");
