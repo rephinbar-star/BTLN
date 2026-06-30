@@ -587,6 +587,11 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                   Loaded from <span className="font-medium text-foreground">{loadedFileName}</span>
                 </p>
               )}
+              {truncationNotice && (
+                <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-[12px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {truncationNotice}
+                </p>
+              )}
             </>
           )}
 
@@ -661,7 +666,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                       ? `Maximum of ${MAX_SCREENSHOTS} images reached`
                       : "Drop screenshots or click to browse"}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">For best results have at least 30 messages. PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each.</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">For best results have at least 30 messages. PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each. Extras beyond {MAX_SCREENSHOTS} will be skipped.</p>
                 </div>
               </button>
 
