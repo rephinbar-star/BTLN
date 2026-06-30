@@ -762,6 +762,381 @@ const FeedbackItem = ({ item }: { item: AnalysisRow }) => {
   );
 };
 
+/* ---------------- Users section ---------------- */
+
+type AdminUser = {
+  id: string;
+  email: string | null;
+  created_at: string;
+  last_sign_in_at: string | null;
+};
+type AdminProfile = { user_id: string; display_name: string | null };
+type AdminAnalysis = {
+  id: string;
+  user_id: string;
+  status: string;
+  created_at: string;
+  is_paid: boolean | null;
+  context_data: any;
+  result_json: any;
+};
+type AdminSubscription = {
+  user_id: string;
+  status: string;
+  tier: string;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  stripe_subscription_id: string | null;
+  created_at: string;
+};
+type AdminUnlock = {
+  user_id: string;
+  analysis_id: string;
+  amount_cents: number;
+  stripe_payment_intent_id: string | null;
+  created_at: string;
+};
+
+type UsersPayload = {
+  users: AdminUser[];
+  profiles: AdminProfile[];
+  analyses: AdminAnalysis[];
+  subscriptions: AdminSubscription[];
+  unlocks: AdminUnlock[];
+};
+
+const formatDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString() : "—";
+
+const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
+
+const UsersSection = () => {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<UsersPayload | null>(null);
+  const [query, setQuery] = useState("");
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
+      const { data: res, error: invokeErr } = await supabase.functions.invoke(
+        "admin-list-users",
+        { body: { password } },
+      );
+      if (invokeErr) throw invokeErr;
+      if (!res?.ok) throw new Error(res?.error ?? "Failed to load users");
+      setData({
+        users: res.users ?? [],
+        profiles: res.profiles ?? [],
+        analyses: res.analyses ?? [],
+        subscriptions: res.subscriptions ?? [],
+        unlocks: res.unlocks ?? [],
+      });
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  const grouped = useMemo(() => {
+    if (!data) return [];
+    const profileByUser = new Map(data.profiles.map((p) => [p.user_id, p]));
+    const analysesByUser = new Map<string, AdminAnalysis[]>();
+    data.analyses.forEach((a) => {
+      const arr = analysesByUser.get(a.user_id) ?? [];
+      arr.push(a);
+      analysesByUser.set(a.user_id, arr);
+    });
+    const subsByUser = new Map<string, AdminSubscription[]>();
+    data.subscriptions.forEach((s) => {
+      const arr = subsByUser.get(s.user_id) ?? [];
+      arr.push(s);
+      subsByUser.set(s.user_id, arr);
+    });
+    const unlocksByUser = new Map<string, AdminUnlock[]>();
+    data.unlocks.forEach((u) => {
+      const arr = unlocksByUser.get(u.user_id) ?? [];
+      arr.push(u);
+      unlocksByUser.set(u.user_id, arr);
+    });
+
+    return data.users
+      .map((u) => {
+        const subs = subsByUser.get(u.id) ?? [];
+        const activeSub = subs.find((s) =>
+          ["active", "trialing", "past_due"].includes(s.status),
+        );
+        return {
+          user: u,
+          profile: profileByUser.get(u.id) ?? null,
+          analyses: analysesByUser.get(u.id) ?? [],
+          subscriptions: subs,
+          activeSub,
+          unlocks: unlocksByUser.get(u.id) ?? [],
+        };
+      })
+      .sort((a, b) => +new Date(b.user.created_at) - +new Date(a.user.created_at));
+  }, [data]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return grouped;
+    return grouped.filter(
+      (g) =>
+        g.user.email?.toLowerCase().includes(q) ||
+        g.profile?.display_name?.toLowerCase().includes(q) ||
+        g.user.id.toLowerCase().includes(q),
+    );
+  }, [grouped, query]);
+
+  return (
+    <SectionShell
+      title={`Users${data ? ` (${data.users.length})` : ""}`}
+      right={
+        <div className="flex items-center gap-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search email, name, id"
+            className="h-8 w-56"
+          />
+          <Button size="sm" onClick={() => void load()} disabled={loading}>
+            {loading ? "Loading…" : "Refresh"}
+          </Button>
+        </div>
+      }
+    >
+      {error && <ErrorNote msg={error} />}
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Email</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead>Last sign-in</TableHead>
+                <TableHead>Reports</TableHead>
+                <TableHead>Subscription</TableHead>
+                <TableHead>One-time unlocks</TableHead>
+                <TableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {loading && !data ? (
+                <TableRow>
+                  <TableCell colSpan={7}>
+                    <Skeleton className="h-6 w-full" />
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                    No users found.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filtered.map((g) => {
+                  const open = expandedId === g.user.id;
+                  return (
+                    <>
+                      <TableRow key={g.user.id}>
+                        <TableCell className="max-w-[240px] truncate">
+                          <div className="font-medium">{g.user.email ?? "—"}</div>
+                          {g.profile?.display_name && (
+                            <div className="text-xs text-muted-foreground">
+                              {g.profile.display_name}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {formatDate(g.user.created_at)}
+                        </TableCell>
+                        <TableCell className="text-xs">
+                          {formatDate(g.user.last_sign_in_at)}
+                        </TableCell>
+                        <TableCell>{g.analyses.length}</TableCell>
+                        <TableCell>
+                          {g.activeSub ? (
+                            <span className="inline-flex rounded-full bg-[hsl(var(--pastel-green-bg))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--pastel-green-fg-strong))]">
+                              {g.activeSub.tier} · {g.activeSub.status}
+                            </span>
+                          ) : g.subscriptions.length > 0 ? (
+                            <span className="text-xs text-muted-foreground">
+                              {g.subscriptions[0].status}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>{g.unlocks.length}</TableCell>
+                        <TableCell>
+                          <button
+                            onClick={() =>
+                              setExpandedId(open ? null : g.user.id)
+                            }
+                            className="text-sm underline underline-offset-4"
+                          >
+                            {open ? "Hide" : "Details"}
+                          </button>
+                        </TableCell>
+                      </TableRow>
+                      {open && (
+                        <TableRow key={`${g.user.id}-details`}>
+                          <TableCell colSpan={7} className="bg-muted/30">
+                            <div className="space-y-4 p-2">
+                              <div>
+                                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                                  Subscriptions
+                                </div>
+                                {g.subscriptions.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">
+                                    No subscriptions.
+                                  </p>
+                                ) : (
+                                  <ul className="space-y-1 text-sm">
+                                    {g.subscriptions.map((s) => (
+                                      <li
+                                        key={s.stripe_subscription_id ?? s.created_at}
+                                        className="flex flex-wrap gap-x-3"
+                                      >
+                                        <span className="font-medium">{s.tier}</span>
+                                        <span>{s.status}</span>
+                                        <span className="text-muted-foreground">
+                                          period end: {formatDate(s.current_period_end)}
+                                        </span>
+                                        {s.cancel_at_period_end && (
+                                          <span className="text-destructive">
+                                            cancels at period end
+                                          </span>
+                                        )}
+                                        {s.stripe_subscription_id && (
+                                          <span className="text-xs text-muted-foreground">
+                                            {s.stripe_subscription_id}
+                                          </span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                              <div>
+                                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                                  One-time unlocks ({g.unlocks.length})
+                                </div>
+                                {g.unlocks.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">None.</p>
+                                ) : (
+                                  <ul className="space-y-1 text-sm">
+                                    {g.unlocks.map((u) => (
+                                      <li
+                                        key={u.analysis_id}
+                                        className="flex flex-wrap gap-x-3"
+                                      >
+                                        <span>{formatDate(u.created_at)}</span>
+                                        <span>{formatMoney(u.amount_cents)}</span>
+                                        <a
+                                          href={`/report/${u.analysis_id}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          className="underline underline-offset-4"
+                                        >
+                                          view report
+                                        </a>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                              </div>
+                              <div>
+                                <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
+                                  Reports ({g.analyses.length})
+                                </div>
+                                {g.analyses.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground">None.</p>
+                                ) : (
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead>When</TableHead>
+                                        <TableHead>Names</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Score</TableHead>
+                                        <TableHead>Tier</TableHead>
+                                        <TableHead>Paid</TableHead>
+                                        <TableHead></TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {g.analyses.map((a) => {
+                                        const score = a.result_json?.headline?.score;
+                                        const tier = a.result_json?.headline?.tier_label;
+                                        const n1 = a.context_data?.name1 ?? "—";
+                                        const n2 = a.context_data?.name2 ?? "—";
+                                        return (
+                                          <TableRow key={a.id}>
+                                            <TableCell className="text-xs">
+                                              {formatDate(a.created_at)}
+                                            </TableCell>
+                                            <TableCell>
+                                              {n1} &amp; {n2}
+                                            </TableCell>
+                                            <TableCell>{a.status}</TableCell>
+                                            <TableCell>{score ?? "—"}</TableCell>
+                                            <TableCell>
+                                              {tier ? (
+                                                <span
+                                                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${tierColor(
+                                                    tier,
+                                                  )}`}
+                                                >
+                                                  {tier}
+                                                </span>
+                                              ) : (
+                                                "—"
+                                              )}
+                                            </TableCell>
+                                            <TableCell>{a.is_paid ? "yes" : "no"}</TableCell>
+                                            <TableCell>
+                                              <a
+                                                href={`/report/${a.id}`}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-sm underline underline-offset-4"
+                                              >
+                                                View
+                                              </a>
+                                            </TableCell>
+                                          </TableRow>
+                                        );
+                                      })}
+                                    </TableBody>
+                                  </Table>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
+                  );
+                })
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </SectionShell>
+  );
+};
+
 /* ---------------- Page ---------------- */
 
 const Admin = () => {
