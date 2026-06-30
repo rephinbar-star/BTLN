@@ -715,6 +715,9 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
           </Card>
         </SectionShell>
 
+        {/* 9. Users */}
+        <UsersSection />
+
         <div className="pt-4 text-center text-xs text-muted-foreground">
           <Link to="/" className="underline underline-offset-4">
             ← Back to site
