@@ -775,6 +775,7 @@ const Admin = () => {
     <Dashboard
       onSignOut={() => {
         sessionStorage.removeItem(ADMIN_AUTH_KEY);
+        sessionStorage.removeItem(ADMIN_PWD_KEY);
         setAuthed(false);
       }}
     />
