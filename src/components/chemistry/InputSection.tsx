@@ -150,6 +150,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const [imageError, setImageError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
+  const [truncationNotice, setTruncationNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [inputStartedFired, setInputStartedFired] = useState(false);
