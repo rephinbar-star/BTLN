@@ -796,6 +796,13 @@ type AdminUnlock = {
   stripe_payment_intent_id: string | null;
   created_at: string;
 };
+type AdminSurvey = {
+  user_id: string;
+  accuracy_rating: number;
+  question_variant: string | null;
+  feedback_text: string | null;
+  created_at: string;
+};
 
 type UsersPayload = {
   users: AdminUser[];
@@ -803,6 +810,7 @@ type UsersPayload = {
   analyses: AdminAnalysis[];
   subscriptions: AdminSubscription[];
   unlocks: AdminUnlock[];
+  surveys: AdminSurvey[];
 };
 
 const formatDate = (iso: string | null) =>
@@ -842,6 +850,7 @@ const UsersSection = () => {
         analyses: res.analyses ?? [],
         subscriptions: res.subscriptions ?? [],
         unlocks: res.unlocks ?? [],
+        surveys: res.surveys ?? [],
       });
     } catch (e) {
       setError((e as Error).message);
@@ -875,6 +884,13 @@ const UsersSection = () => {
       arr.push(u);
       unlocksByUser.set(u.user_id, arr);
     });
+    const surveysByUser = new Map<string, AdminSurvey[]>();
+    data.surveys.forEach((s) => {
+      if (!s.user_id) return;
+      const arr = surveysByUser.get(s.user_id) ?? [];
+      arr.push(s);
+      surveysByUser.set(s.user_id, arr);
+    });
 
     return data.users
       .map((u) => {
@@ -889,6 +905,7 @@ const UsersSection = () => {
           subscriptions: subs,
           activeSub,
           unlocks: unlocksByUser.get(u.id) ?? [],
+          surveys: surveysByUser.get(u.id) ?? [],
         };
       })
       .sort((a, b) => +new Date(b.user.created_at) - +new Date(a.user.created_at));
@@ -934,19 +951,20 @@ const UsersSection = () => {
                 <TableHead>Reports</TableHead>
                 <TableHead>Subscription</TableHead>
                 <TableHead>One-time unlocks</TableHead>
+                <TableHead>Feedback</TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading && !data ? (
                 <TableRow>
-                  <TableCell colSpan={7}>
+                  <TableCell colSpan={8}>
                     <Skeleton className="h-6 w-full" />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No users found.
                   </TableCell>
                 </TableRow>
@@ -986,6 +1004,21 @@ const UsersSection = () => {
                         </TableCell>
                         <TableCell>{g.unlocks.length}</TableCell>
                         <TableCell>
+                          {g.surveys.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : (
+                            <span
+                              className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${scoreColor(
+                                g.surveys[0].accuracy_rating,
+                              )}`}
+                              title={`${g.surveys.length} response${g.surveys.length === 1 ? "" : "s"} · latest ${formatDate(g.surveys[0].created_at)}`}
+                            >
+                              {g.surveys[0].accuracy_rating}/10
+                              {g.surveys.length > 1 ? ` (${g.surveys.length})` : ""}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           <button
                             onClick={() =>
                               setExpandedId(open ? null : g.user.id)
@@ -998,7 +1031,7 @@ const UsersSection = () => {
                       </TableRow>
                       {open && (
                         <TableRow>
-                          <TableCell colSpan={7} className="bg-muted/30">
+                          <TableCell colSpan={8} className="bg-muted/30">
                             <div className="space-y-4 p-2">
                               <div>
                                 <div className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
