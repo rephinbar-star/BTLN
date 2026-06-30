@@ -865,34 +865,34 @@ const UsersSection = () => {
 
   const grouped = useMemo(() => {
     if (!data) return [];
-    const profileByUser = new Map(data.profiles.map((p) => [p.user_id, p]));
+    const profileByUser = new Map((data.profiles ?? []).map((p) => [p.user_id, p]));
     const analysesByUser = new Map<string, AdminAnalysis[]>();
-    data.analyses.forEach((a) => {
+    (data.analyses ?? []).forEach((a) => {
       const arr = analysesByUser.get(a.user_id) ?? [];
       arr.push(a);
       analysesByUser.set(a.user_id, arr);
     });
     const subsByUser = new Map<string, AdminSubscription[]>();
-    data.subscriptions.forEach((s) => {
+    (data.subscriptions ?? []).forEach((s) => {
       const arr = subsByUser.get(s.user_id) ?? [];
       arr.push(s);
       subsByUser.set(s.user_id, arr);
     });
     const unlocksByUser = new Map<string, AdminUnlock[]>();
-    data.unlocks.forEach((u) => {
+    (data.unlocks ?? []).forEach((u) => {
       const arr = unlocksByUser.get(u.user_id) ?? [];
       arr.push(u);
       unlocksByUser.set(u.user_id, arr);
     });
     const surveysByUser = new Map<string, AdminSurvey[]>();
-    data.surveys.forEach((s) => {
+    (data.surveys ?? []).forEach((s) => {
       if (!s.user_id) return;
       const arr = surveysByUser.get(s.user_id) ?? [];
       arr.push(s);
       surveysByUser.set(s.user_id, arr);
     });
 
-    return data.users
+    return (data.users ?? [])
       .map((u) => {
         const subs = subsByUser.get(u.id) ?? [];
         const activeSub = subs.find((s) =>
