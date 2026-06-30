@@ -56,7 +56,10 @@ type Screenshot = {
 
 // Cap kept conservative so the JSON payload sent to the Edge Function
 // stays well under the per-request body limit on mobile networks.
-const MAX_SCREENSHOTS = 10;
+const MAX_SCREENSHOTS = 30;
+// Hard cap on number of messages we'll send to the parser. Above this the
+// downstream LLM call tends to time out or return invalid JSON.
+const MAX_MESSAGES = 100;
 // Pre-compression per-image hard cap. Post-compression images are typically
 // well under 200 KB, so 2 MB pre-compression is plenty of headroom while
 // still rejecting weird/huge inputs early.
@@ -65,7 +68,34 @@ const MAX_TXT_BYTES = 5 * 1024 * 1024;
 // Hard ceiling for the combined COMPRESSED payload we send to the Edge
 // Function. 4 MB of decoded image data ≈ ~5.4 MB of base64, comfortably
 // inside the Supabase Functions request body limit.
-const MAX_TOTAL_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_TOTAL_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+// Count and (if needed) truncate a pasted/exported conversation to at most
+// `max` messages. Uses dated-line heuristic (WhatsApp/iMessage exports) when
+// available, otherwise falls back to non-empty lines.
+const TS_RE = /^\[?\s*\d{1,2}[\/\-\.]\d{1,2}|^\d{1,2}:\d{2}/;
+const truncateConversation = (
+  text: string,
+  max: number,
+): { text: string; total: number; kept: number; truncated: boolean } => {
+  const lines = text.split(/\r?\n/);
+  const nonEmpty: number[] = [];
+  lines.forEach((l, i) => {
+    if (l.trim().length > 0) nonEmpty.push(i);
+  });
+  const dated = nonEmpty.filter((i) => TS_RE.test(lines[i]));
+  const useDated = dated.length >= 5;
+  const list = useDated ? dated : nonEmpty;
+  const total = list.length;
+  if (total <= max) return { text, total, kept: total, truncated: false };
+  const cutIdx = list[max];
+  return {
+    text: lines.slice(0, cutIdx).join("\n").trimEnd(),
+    total,
+    kept: max,
+    truncated: true,
+  };
+};
 
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
