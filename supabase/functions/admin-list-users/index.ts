@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
     }));
     const userIds = users.map((u) => u.id);
 
-    const [profilesRes, analysesRes, subsRes, unlocksRes] = await Promise.all([
+    const [profilesRes, analysesRes, subsRes, unlocksRes, surveysRes] = await Promise.all([
       admin.from("profiles").select("user_id, display_name").in("user_id", userIds),
       admin
         .from("analyses")
@@ -64,6 +64,11 @@ Deno.serve(async (req) => {
         .select("user_id, analysis_id, amount_cents, stripe_payment_intent_id, created_at")
         .in("user_id", userIds)
         .order("created_at", { ascending: false }),
+      admin
+        .from("survey_responses")
+        .select("user_id, accuracy_rating, question_variant, feedback_text, created_at")
+        .in("user_id", userIds)
+        .order("created_at", { ascending: false }),
     ]);
 
     return json({
@@ -73,6 +78,7 @@ Deno.serve(async (req) => {
       analyses: analysesRes.data ?? [],
       subscriptions: subsRes.data ?? [],
       unlocks: unlocksRes.data ?? [],
+      surveys: surveysRes.data ?? [],
     });
   } catch (err) {
     return json({ ok: false, error: (err as Error).message }, 500);
