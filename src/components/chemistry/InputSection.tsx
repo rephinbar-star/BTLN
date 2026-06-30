@@ -56,7 +56,10 @@ type Screenshot = {
 
 // Cap kept conservative so the JSON payload sent to the Edge Function
 // stays well under the per-request body limit on mobile networks.
-const MAX_SCREENSHOTS = 10;
+const MAX_SCREENSHOTS = 30;
+// Hard cap on number of messages we'll send to the parser. Above this the
+// downstream LLM call tends to time out or return invalid JSON.
+const MAX_MESSAGES = 100;
 // Pre-compression per-image hard cap. Post-compression images are typically
 // well under 200 KB, so 2 MB pre-compression is plenty of headroom while
 // still rejecting weird/huge inputs early.
@@ -65,7 +68,34 @@ const MAX_TXT_BYTES = 5 * 1024 * 1024;
 // Hard ceiling for the combined COMPRESSED payload we send to the Edge
 // Function. 4 MB of decoded image data ≈ ~5.4 MB of base64, comfortably
 // inside the Supabase Functions request body limit.
-const MAX_TOTAL_UPLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_TOTAL_UPLOAD_BYTES = 8 * 1024 * 1024;
+
+// Count and (if needed) truncate a pasted/exported conversation to at most
+// `max` messages. Uses dated-line heuristic (WhatsApp/iMessage exports) when
+// available, otherwise falls back to non-empty lines.
+const TS_RE = /^\[?\s*\d{1,2}[\/\-\.]\d{1,2}|^\d{1,2}:\d{2}/;
+const truncateConversation = (
+  text: string,
+  max: number,
+): { text: string; total: number; kept: number; truncated: boolean } => {
+  const lines = text.split(/\r?\n/);
+  const nonEmpty: number[] = [];
+  lines.forEach((l, i) => {
+    if (l.trim().length > 0) nonEmpty.push(i);
+  });
+  const dated = nonEmpty.filter((i) => TS_RE.test(lines[i]));
+  const useDated = dated.length >= 5;
+  const list = useDated ? dated : nonEmpty;
+  const total = list.length;
+  if (total <= max) return { text, total, kept: total, truncated: false };
+  const cutIdx = list[max];
+  return {
+    text: lines.slice(0, cutIdx).join("\n").trimEnd(),
+    total,
+    kept: max,
+    truncated: true,
+  };
+};
 
 const formatBytes = (bytes: number) => {
   if (bytes < 1024) return `${bytes} B`;
@@ -120,6 +150,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const [imageError, setImageError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
+  const [truncationNotice, setTruncationNotice] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [inputStartedFired, setInputStartedFired] = useState(false);
@@ -198,7 +229,15 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       } else {
         text = await file.text();
       }
-      update("conversation", text);
+      const t = truncateConversation(text, MAX_MESSAGES);
+      update("conversation", t.text);
+      if (t.truncated) {
+        setTruncationNotice(
+          `This chat has about ${t.total} messages. To keep the analysis reliable, only the first ${t.kept} will be processed.`,
+        );
+      } else {
+        setTruncationNotice(null);
+      }
       setLoadedFileName(file.name);
       setMode("paste");
     } catch {
@@ -411,10 +450,24 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         context_data,
         input_method,
       };
+      // For pasted/loaded text, enforce the message cap right before
+      // sending so users who paste >100 messages still get a useful run
+      // (and a clear note about what we trimmed).
+      let conversationToSend = form.conversation;
+      if (input_method !== "screenshot") {
+        const t = truncateConversation(form.conversation, MAX_MESSAGES);
+        if (t.truncated) {
+          conversationToSend = t.text;
+          setTruncationNotice(
+            `Your conversation has about ${t.total} messages. Only the first ${t.kept} were analyzed.`,
+          );
+        }
+      }
+
       if (input_method === "screenshot") {
         payload.screenshot_base64_array = screenshots.map((s) => s.dataUrl);
       } else {
-        payload.raw_text = form.conversation;
+        payload.raw_text = conversationToSend;
       }
 
       // Navigate to the processing page right away so the user sees
@@ -534,6 +587,11 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                   Loaded from <span className="font-medium text-foreground">{loadedFileName}</span>
                 </p>
               )}
+              {truncationNotice && (
+                <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-[12px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+                  {truncationNotice}
+                </p>
+              )}
             </>
           )}
 
@@ -608,7 +666,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                       ? `Maximum of ${MAX_SCREENSHOTS} images reached`
                       : "Drop screenshots or click to browse"}
                   </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">For best results have at least 30 messages. PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each.</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">For best results have at least 30 messages. PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each. Extras beyond {MAX_SCREENSHOTS} will be skipped.</p>
                 </div>
               </button>
 
