@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Bar,
@@ -946,8 +946,8 @@ const UsersSection = () => {
                 filtered.map((g) => {
                   const open = expandedId === g.user.id;
                   return (
-                    <>
-                      <TableRow key={g.user.id}>
+                    <Fragment key={g.user.id}>
+                      <TableRow>
                         <TableCell className="max-w-[240px] truncate">
                           <div className="font-medium">{g.user.email ?? "—"}</div>
                           {g.profile?.display_name && (
@@ -989,7 +989,7 @@ const UsersSection = () => {
                         </TableCell>
                       </TableRow>
                       {open && (
-                        <TableRow key={`${g.user.id}-details`}>
+                        <TableRow>
                           <TableCell colSpan={7} className="bg-muted/30">
                             <div className="space-y-4 p-2">
                               <div>
@@ -1125,7 +1125,7 @@ const UsersSection = () => {
                           </TableCell>
                         </TableRow>
                       )}
-                    </>
+                    </Fragment>
                   );
                 })
               )}
