@@ -485,7 +485,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               p_id: analysis_id,
               p_session_id: session_id,
               p_error_message:
-                "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images.",
+                input_method === "screenshot"
+                  ? "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images."
+                  : "We couldn't send your messages to our analyzer. Please try again with a shorter conversation sample.",
             });
             track("analysis_failed", { reason_code: "upload_failed" });
           }

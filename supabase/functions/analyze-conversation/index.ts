@@ -14,6 +14,8 @@ const json = (status: number, body: unknown) =>
 
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_OUTPUT_TOKENS = 8000;
+const MAX_SCREENSHOTS = 30;
+const MAX_MESSAGES = 100;
 
 type ContextData = {
   name1: string;
@@ -38,6 +40,19 @@ const stripFences = (s: string): string => {
     t = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
   }
   return t.trim();
+};
+
+const TS_RE = /^\[?\s*\d{1,2}[\/\-.]\d{1,2}|^\d{1,2}:\d{2}/;
+const truncateConversation = (text: string, max: number): string => {
+  const lines = text.split(/\r?\n/);
+  const nonEmpty: number[] = [];
+  lines.forEach((line, index) => {
+    if (line.trim().length > 0) nonEmpty.push(index);
+  });
+  const dated = nonEmpty.filter((index) => TS_RE.test(lines[index]));
+  const markers = dated.length >= 5 ? dated : nonEmpty;
+  if (markers.length <= max) return text;
+  return lines.slice(0, markers[max]).join("\n").trimEnd();
 };
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -267,6 +282,11 @@ Deno.serve(async (req) => {
     return json(400, { error: "screenshot_base64_array is required for screenshot" });
   }
 
+  const raw_text_for_analysis = raw_text
+    ? truncateConversation(raw_text, MAX_MESSAGES)
+    : raw_text;
+  const screenshots_for_analysis = screenshot_base64_array?.slice(0, MAX_SCREENSHOTS);
+
   // 1. Resolve analysis row: update existing if analysis_id provided, else create one.
   let analysis_id: string;
   if (provided_analysis_id) {
@@ -285,8 +305,13 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
-      const { data: claimsData } = await supabase.auth.getClaims(token);
-      jwt_user_id = (claimsData?.claims?.sub as string) ?? null;
+      // supabase-js v2.45 in the Edge runtime does not expose getClaims().
+      // Validate the caller token with getUser() instead; anonymous/anon-key
+      // callers can still re-run only when their browser session_id matches.
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+      if (!userErr) {
+        jwt_user_id = userData?.user?.id ?? null;
+      }
     }
     const ownsByUser =
       jwt_user_id !== null && existing.user_id === jwt_user_id;
@@ -386,7 +411,7 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
         type: "text",
         text: `Extract messages from these screenshots. User's name: ${name1}. Partner's name: ${name2}.`,
       },
-      ...screenshot_base64_array!.map((url) => ({
+      ...screenshots_for_analysis!.map((url) => ({
         type: "image_url",
         image_url: { url },
       })),
@@ -404,7 +429,7 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
       model: pv.model_string,
       messages: [
         { role: "system", content: parsingSystem },
-        { role: "user", content: raw_text! },
+        { role: "user", content: raw_text_for_analysis! },
       ],
       response_format: { type: "json_object" },
       provider: { order: ["Anthropic"], allow_fallbacks: true },
