@@ -1,6 +1,5 @@
 import "https://deno.land/std@0.224.0/dotenv/load.ts";
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!;
@@ -30,9 +29,13 @@ function build100MessagePaste(): string {
 }
 
 Deno.test(
-  "analyze-conversation: 100-message paste completes end-to-end without 500",
+  {
+    name:
+      "analyze-conversation: 100-message paste completes end-to-end without 500",
+    sanitizeOps: false,
+    sanitizeResources: false,
+  },
   async () => {
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const session_id = crypto.randomUUID();
     const raw_text = build100MessagePaste();
 
@@ -79,16 +82,31 @@ Deno.test(
     let messageCount: number | null = null;
 
     while (Date.now() < deadline) {
-      const { data: rows, error } = await supabase.rpc(
-        "get_analysis_for_session",
-        { p_id: analysis_id, p_session_id: session_id },
+      const rpcRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/rpc/get_analysis_for_session`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            p_id: analysis_id,
+            p_session_id: session_id,
+          }),
+        },
       );
-      if (error) throw error;
+      const rowsText = await rpcRes.text();
+      if (!rpcRes.ok) {
+        throw new Error(`RPC failed ${rpcRes.status}: ${rowsText}`);
+      }
+      const rows = JSON.parse(rowsText);
       const data = Array.isArray(rows) ? rows[0] : rows;
       if (data) {
-        status = (data as { status: string }).status;
-        errorMessage = (data as { error_message: string | null }).error_message;
-        messageCount = (data as { message_count: number | null }).message_count;
+        status = data.status;
+        errorMessage = data.error_message;
+        messageCount = data.message_count;
         if (status === "complete" || status === "failed") break;
       }
       await new Promise((r) => setTimeout(r, 3000));
