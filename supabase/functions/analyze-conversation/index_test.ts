@@ -79,16 +79,16 @@ Deno.test(
     let messageCount: number | null = null;
 
     while (Date.now() < deadline) {
-      const { data, error } = await supabase
-        .from("analyses")
-        .select("status, error_message, message_count")
-        .eq("id", analysis_id)
-        .maybeSingle();
+      const { data: rows, error } = await supabase.rpc(
+        "get_analysis_for_session",
+        { p_id: analysis_id, p_session_id: session_id },
+      );
       if (error) throw error;
+      const data = Array.isArray(rows) ? rows[0] : rows;
       if (data) {
-        status = data.status;
-        errorMessage = data.error_message;
-        messageCount = data.message_count;
+        status = (data as { status: string }).status;
+        errorMessage = (data as { error_message: string | null }).error_message;
+        messageCount = (data as { message_count: number | null }).message_count;
         if (status === "complete" || status === "failed") break;
       }
       await new Promise((r) => setTimeout(r, 3000));
