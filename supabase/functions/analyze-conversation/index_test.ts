@@ -1,0 +1,125 @@
+import "https://deno.land/std@0.224.0/dotenv/load.ts";
+import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+
+const SUPABASE_URL = Deno.env.get("VITE_SUPABASE_URL")!;
+const SUPABASE_ANON_KEY = Deno.env.get("VITE_SUPABASE_PUBLISHABLE_KEY")!;
+
+// Build a realistic 100-message paste alternating between two speakers.
+function build100MessagePaste(): string {
+  const lines: string[] = [];
+  const samples = [
+    "hey, how was your day?",
+    "pretty good, just tired from work",
+    "same here, want to grab dinner tonight?",
+    "yeah sounds great, where were you thinking?",
+    "that new place downtown maybe",
+    "perfect, 7pm?",
+    "works for me",
+    "cool, see you then ❤️",
+    "can't wait",
+    "me neither",
+  ];
+  for (let i = 0; i < 100; i++) {
+    const who = i % 2 === 0 ? "Alex" : "Sam";
+    const hh = String(9 + Math.floor(i / 10)).padStart(2, "0");
+    const mm = String((i * 3) % 60).padStart(2, "0");
+    lines.push(`[05/07/26, ${hh}:${mm}:00] ${who}: ${samples[i % samples.length]}`);
+  }
+  return lines.join("\n");
+}
+
+Deno.test(
+  {
+    name:
+      "analyze-conversation: 100-message paste completes end-to-end without 500",
+    sanitizeOps: false,
+    sanitizeResources: false,
+  },
+  async () => {
+    const session_id = crypto.randomUUID();
+    const raw_text = build100MessagePaste();
+
+    const res = await fetch(
+      `${SUPABASE_URL}/functions/v1/analyze-conversation`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "apikey": SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({
+          session_id,
+          input_method: "paste",
+          raw_text,
+          context_data: {
+            name1: "Alex",
+            name2: "Sam",
+            relationship_type: "romantic",
+            relationship_stage: "dating",
+            duration: "6 months",
+            goal: "integration test",
+            free_text: "",
+          },
+        }),
+      },
+    );
+
+    const bodyText = await res.text();
+    assert(
+      res.status !== 500,
+      `Edge function returned 500: ${bodyText}`,
+    );
+    assertEquals(res.status, 202, `Expected 202, got ${res.status}: ${bodyText}`);
+
+    const { analysis_id } = JSON.parse(bodyText);
+    assert(analysis_id, "Expected analysis_id in response");
+
+    // Poll analyses row until it reaches a terminal state (complete/failed) or times out.
+    const deadline = Date.now() + 120_000; // 2 minutes
+    let status = "pending";
+    let errorMessage: string | null = null;
+    let messageCount: number | null = null;
+
+    while (Date.now() < deadline) {
+      const rpcRes = await fetch(
+        `${SUPABASE_URL}/rest/v1/rpc/get_analysis_for_session`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON_KEY,
+            "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          },
+          body: JSON.stringify({
+            p_id: analysis_id,
+            p_session_id: session_id,
+          }),
+        },
+      );
+      const rowsText = await rpcRes.text();
+      if (!rpcRes.ok) {
+        throw new Error(`RPC failed ${rpcRes.status}: ${rowsText}`);
+      }
+      const rows = JSON.parse(rowsText);
+      const data = Array.isArray(rows) ? rows[0] : rows;
+      if (data) {
+        status = data.status;
+        errorMessage = data.error_message;
+        messageCount = data.message_count;
+        if (status === "complete" || status === "failed") break;
+      }
+      await new Promise((r) => setTimeout(r, 3000));
+    }
+
+    assertEquals(
+      status,
+      "complete",
+      `Analysis did not complete. status=${status} error=${errorMessage}`,
+    );
+    assert(
+      messageCount !== null && messageCount > 0,
+      `Expected message_count > 0, got ${messageCount}`,
+    );
+  },
+);
