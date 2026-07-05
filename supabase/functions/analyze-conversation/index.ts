@@ -285,8 +285,13 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (authHeader?.startsWith("Bearer ")) {
       const token = authHeader.replace("Bearer ", "");
-      const { data: claimsData } = await supabase.auth.getClaims(token);
-      jwt_user_id = (claimsData?.claims?.sub as string) ?? null;
+      // supabase-js v2.45 in the Edge runtime does not expose getClaims().
+      // Validate the caller token with getUser() instead; anonymous/anon-key
+      // callers can still re-run only when their browser session_id matches.
+      const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+      if (!userErr) {
+        jwt_user_id = userData?.user?.id ?? null;
+      }
     }
     const ownsByUser =
       jwt_user_id !== null && existing.user_id === jwt_user_id;
