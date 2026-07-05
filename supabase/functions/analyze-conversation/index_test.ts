@@ -33,7 +33,7 @@ Deno.test(
   "analyze-conversation: 100-message paste completes end-to-end without 500",
   async () => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const session_id = `it-${crypto.randomUUID()}`;
+    const session_id = crypto.randomUUID();
     const raw_text = build100MessagePaste();
 
     const res = await fetch(
