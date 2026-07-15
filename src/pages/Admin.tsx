@@ -1184,6 +1184,10 @@ const UsersSection = () => {
 /* ---------------- Page ---------------- */
 
 const Admin = () => {
+  return <AdminInner />;
+};
+
+const AdminInner = () => {
   const [authed, setAuthed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return sessionStorage.getItem(ADMIN_AUTH_KEY) === "true";
