@@ -821,6 +821,162 @@ const formatDate = (iso: string | null) =>
 
 const formatMoney = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
+/* ---------------- Webhook secret tester ---------------- */
+
+type TesterResult = {
+  ok: boolean;
+  matched?: boolean;
+  timestamp?: string;
+  age_seconds?: number;
+  timestamp_within_tolerance?: boolean;
+  results?: Array<{ secret_name: string; configured: boolean; matched: boolean }>;
+  error?: string;
+};
+
+const WebhookSecretTester = () => {
+  const [signature, setSignature] = useState("");
+  const [payload, setPayload] = useState("");
+  const [envMode, setEnvMode] = useState<"auto" | "sandbox" | "live">("auto");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<TesterResult | null>(null);
+
+  const run = async () => {
+    setLoading(true);
+    setResult(null);
+    try {
+      const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
+      const { data, error } = await supabase.functions.invoke("test-webhook-secret", {
+        body: {
+          adminPassword: password,
+          signature: signature.trim(),
+          payload,
+          env: envMode === "auto" ? undefined : envMode,
+        },
+      });
+      if (error) throw error;
+      setResult(data as TesterResult);
+    } catch (e) {
+      setResult({ ok: false, error: (e as Error).message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <SectionShell title="Webhook secret tester">
+      <Card>
+        <CardContent className="space-y-4 pt-6">
+          <p className="text-sm text-muted-foreground">
+            Paste a raw Stripe event payload and its <code>Stripe-Signature</code> header
+            to confirm the current webhook secret verifies it. Copy the raw values from
+            Stripe Dashboard → Webhooks → your endpoint → an event → “View request”.
+          </p>
+
+          <div className="space-y-2">
+            <Label htmlFor="wh-sig">Stripe-Signature header</Label>
+            <Input
+              id="wh-sig"
+              placeholder="t=1700000000,v1=abc123…,v0=…"
+              value={signature}
+              onChange={(e) => setSignature(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="wh-body">Raw request body</Label>
+            <Textarea
+              id="wh-body"
+              rows={10}
+              className="font-mono text-xs"
+              placeholder='{"id":"evt_…","object":"event",…}'
+              value={payload}
+              onChange={(e) => setPayload(e.target.value)}
+              disabled={loading}
+            />
+            <p className="text-xs text-muted-foreground">
+              Must be the exact bytes Stripe sent — no re-formatting or JSON pretty-printing.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Secret to test</Label>
+            <div className="flex flex-wrap gap-2">
+              {(["auto", "sandbox", "live"] as const).map((m) => (
+                <Button
+                  key={m}
+                  type="button"
+                  variant={envMode === m ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setEnvMode(m)}
+                  disabled={loading}
+                >
+                  {m === "auto"
+                    ? "Auto (try all)"
+                    : m === "sandbox"
+                      ? "Sandbox secret"
+                      : "Live secret"}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <Button
+            onClick={run}
+            disabled={loading || !signature.trim() || !payload}
+          >
+            {loading ? "Verifying…" : "Verify signature"}
+          </Button>
+
+          {result && (
+            <div
+              className={`rounded-lg border p-4 text-sm ${
+                result.matched
+                  ? "border-emerald-500/40 bg-emerald-500/5"
+                  : "border-destructive/40 bg-destructive/5"
+              }`}
+            >
+              {result.error ? (
+                <p className="font-medium text-destructive">{result.error}</p>
+              ) : (
+                <>
+                  <p className="font-medium">
+                    {result.matched
+                      ? "✅ Signature verified"
+                      : "❌ No configured secret verified this signature"}
+                  </p>
+                  {typeof result.age_seconds === "number" && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Timestamp age: {result.age_seconds}s{" "}
+                      {result.timestamp_within_tolerance
+                        ? "(within 5-minute tolerance)"
+                        : "(⚠ outside 5-minute tolerance — Stripe would reject as replay)"}
+                    </p>
+                  )}
+                  {result.results && result.results.length > 0 && (
+                    <ul className="mt-3 space-y-1 text-xs">
+                      {result.results.map((r) => (
+                        <li key={r.secret_name} className="font-mono">
+                          <span className="text-muted-foreground">{r.secret_name}: </span>
+                          {!r.configured
+                            ? "not configured"
+                            : r.matched
+                              ? "✅ matched"
+                              : "❌ did not match"}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </SectionShell>
+  );
+};
+
 const UsersSection = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
