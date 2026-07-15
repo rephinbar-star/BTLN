@@ -356,10 +356,26 @@ Deno.serve(async (req) => {
   // background task so we can early-return cleanly).
   const failAnalysis = async (msg: string): Promise<void> => {
     await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);
+    await cleanupScreenshots();
     await supabase
       .from("analyses")
       .update({ status: "failed", error_message: msg, completed_at: new Date().toISOString() })
       .eq("id", analysis_id);
+  };
+
+  // Best-effort deletion of uploaded screenshots. The app promises the
+  // conversation isn't stored, so we clean these up whether the run
+  // succeeded or failed.
+  const cleanupScreenshots = async (): Promise<void> => {
+    try {
+      if (screenshot_paths_for_analysis && screenshot_paths_for_analysis.length > 0) {
+        await supabase.storage
+          .from("analysis-uploads")
+          .remove(screenshot_paths_for_analysis);
+      }
+    } catch (_e) {
+      // ignore — not fatal
+    }
   };
 
   // 2. Run the heavy work (extraction + analysis) in the background so the
