@@ -717,6 +717,8 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
         </SectionShell>
 
         {/* 9. Users */}
+        <WebhookSecretTester />
+
         <UsersSection />
 
         <div className="pt-4 text-center text-xs text-muted-foreground">
