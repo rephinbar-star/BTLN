@@ -590,6 +590,7 @@ ${messagesBlock}`;
 
   // 5. Privacy: hard-delete temp messages
   await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);
+  await cleanupScreenshots();
 
   // 5b. Deterministic couple_type mapping
   const relationshipType = context_data.relationship_type ?? "romantic";
