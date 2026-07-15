@@ -118,7 +118,7 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
-const QUOTE_ROTATE_MS = 7000;
+const QUOTE_ROTATE_MS = 10000;
 const EXPECTED_DURATION_MS = 75_000; // ~middle of 30–90s window
 
 const POLL_INTERVAL_MS = 2000;
