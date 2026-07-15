@@ -410,12 +410,33 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
 
   let extractionBody: Record<string, unknown>;
   if (input_method === "screenshot") {
+    // Prefer Storage paths — mint short-lived signed URLs so OpenRouter
+    // can fetch the images without us ever putting the bytes in the JSON
+    // body. Falls back to inline base64 for older clients.
+    let imageUrls: string[] = [];
+    if (screenshot_paths_for_analysis && screenshot_paths_for_analysis.length > 0) {
+      const signed = await supabase.storage
+        .from("analysis-uploads")
+        .createSignedUrls(screenshot_paths_for_analysis, 60 * 60);
+      if (signed.error || !signed.data) {
+        return failAnalysis(
+          `Could not sign screenshot URLs: ${signed.error?.message ?? "unknown"}`,
+        );
+      }
+      const missing = signed.data.filter((r) => !r.signedUrl);
+      if (missing.length > 0) {
+        return failAnalysis("Some screenshots could not be signed. Please retry.");
+      }
+      imageUrls = signed.data.map((r) => r.signedUrl!);
+    } else if (screenshot_base64_for_analysis) {
+      imageUrls = screenshot_base64_for_analysis;
+    }
     const userContent: any[] = [
       {
         type: "text",
         text: `Extract messages from these screenshots. User's name: ${name1}. Partner's name: ${name2}.`,
       },
-      ...screenshots_for_analysis!.map((url) => ({
+      ...imageUrls.map((url) => ({
         type: "image_url",
         image_url: { url },
       })),
