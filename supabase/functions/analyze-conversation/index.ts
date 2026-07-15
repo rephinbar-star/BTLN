@@ -261,6 +261,8 @@ Deno.serve(async (req) => {
   const raw_text: string | undefined = payload?.raw_text;
   const screenshot_base64_array: string[] | undefined =
     payload?.screenshot_base64_array;
+  const screenshot_storage_paths: string[] | undefined =
+    payload?.screenshot_storage_paths;
   const provided_analysis_id: string | undefined = payload?.analysis_id;
 
   if (!session_id || !context_data || !input_method) {
@@ -277,15 +279,17 @@ Deno.serve(async (req) => {
   }
   if (
     input_method === "screenshot" &&
+    (!screenshot_storage_paths || screenshot_storage_paths.length === 0) &&
     (!screenshot_base64_array || screenshot_base64_array.length === 0)
   ) {
-    return json(400, { error: "screenshot_base64_array is required for screenshot" });
+    return json(400, { error: "screenshot_storage_paths or screenshot_base64_array is required for screenshot" });
   }
 
   const raw_text_for_analysis = raw_text
     ? truncateConversation(raw_text, MAX_MESSAGES)
     : raw_text;
-  const screenshots_for_analysis = screenshot_base64_array?.slice(0, MAX_SCREENSHOTS);
+  const screenshot_paths_for_analysis = screenshot_storage_paths?.slice(0, MAX_SCREENSHOTS);
+  const screenshot_base64_for_analysis = screenshot_base64_array?.slice(0, MAX_SCREENSHOTS);
 
   // 1. Resolve analysis row: update existing if analysis_id provided, else create one.
   let analysis_id: string;
@@ -352,10 +356,26 @@ Deno.serve(async (req) => {
   // background task so we can early-return cleanly).
   const failAnalysis = async (msg: string): Promise<void> => {
     await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);
+    await cleanupScreenshots();
     await supabase
       .from("analyses")
       .update({ status: "failed", error_message: msg, completed_at: new Date().toISOString() })
       .eq("id", analysis_id);
+  };
+
+  // Best-effort deletion of uploaded screenshots. The app promises the
+  // conversation isn't stored, so we clean these up whether the run
+  // succeeded or failed.
+  const cleanupScreenshots = async (): Promise<void> => {
+    try {
+      if (screenshot_paths_for_analysis && screenshot_paths_for_analysis.length > 0) {
+        await supabase.storage
+          .from("analysis-uploads")
+          .remove(screenshot_paths_for_analysis);
+      }
+    } catch (_e) {
+      // ignore — not fatal
+    }
   };
 
   // 2. Run the heavy work (extraction + analysis) in the background so the
@@ -406,12 +426,33 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
 
   let extractionBody: Record<string, unknown>;
   if (input_method === "screenshot") {
+    // Prefer Storage paths — mint short-lived signed URLs so OpenRouter
+    // can fetch the images without us ever putting the bytes in the JSON
+    // body. Falls back to inline base64 for older clients.
+    let imageUrls: string[] = [];
+    if (screenshot_paths_for_analysis && screenshot_paths_for_analysis.length > 0) {
+      const signed = await supabase.storage
+        .from("analysis-uploads")
+        .createSignedUrls(screenshot_paths_for_analysis, 60 * 60);
+      if (signed.error || !signed.data) {
+        return failAnalysis(
+          `Could not sign screenshot URLs: ${signed.error?.message ?? "unknown"}`,
+        );
+      }
+      const missing = signed.data.filter((r) => !r.signedUrl);
+      if (missing.length > 0) {
+        return failAnalysis("Some screenshots could not be signed. Please retry.");
+      }
+      imageUrls = signed.data.map((r) => r.signedUrl!);
+    } else if (screenshot_base64_for_analysis) {
+      imageUrls = screenshot_base64_for_analysis;
+    }
     const userContent: any[] = [
       {
         type: "text",
         text: `Extract messages from these screenshots. User's name: ${name1}. Partner's name: ${name2}.`,
       },
-      ...screenshots_for_analysis!.map((url) => ({
+      ...imageUrls.map((url) => ({
         type: "image_url",
         image_url: { url },
       })),
@@ -549,6 +590,7 @@ ${messagesBlock}`;
 
   // 5. Privacy: hard-delete temp messages
   await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);
+  await cleanupScreenshots();
 
   // 5b. Deterministic couple_type mapping
   const relationshipType = context_data.relationship_type ?? "romantic";
