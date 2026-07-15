@@ -261,6 +261,8 @@ Deno.serve(async (req) => {
   const raw_text: string | undefined = payload?.raw_text;
   const screenshot_base64_array: string[] | undefined =
     payload?.screenshot_base64_array;
+  const screenshot_storage_paths: string[] | undefined =
+    payload?.screenshot_storage_paths;
   const provided_analysis_id: string | undefined = payload?.analysis_id;
 
   if (!session_id || !context_data || !input_method) {
@@ -277,15 +279,17 @@ Deno.serve(async (req) => {
   }
   if (
     input_method === "screenshot" &&
+    (!screenshot_storage_paths || screenshot_storage_paths.length === 0) &&
     (!screenshot_base64_array || screenshot_base64_array.length === 0)
   ) {
-    return json(400, { error: "screenshot_base64_array is required for screenshot" });
+    return json(400, { error: "screenshot_storage_paths or screenshot_base64_array is required for screenshot" });
   }
 
   const raw_text_for_analysis = raw_text
     ? truncateConversation(raw_text, MAX_MESSAGES)
     : raw_text;
-  const screenshots_for_analysis = screenshot_base64_array?.slice(0, MAX_SCREENSHOTS);
+  const screenshot_paths_for_analysis = screenshot_storage_paths?.slice(0, MAX_SCREENSHOTS);
+  const screenshot_base64_for_analysis = screenshot_base64_array?.slice(0, MAX_SCREENSHOTS);
 
   // 1. Resolve analysis row: update existing if analysis_id provided, else create one.
   let analysis_id: string;
