@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.admin-list-users]
 verify_jwt = false
+
+[functions.test-webhook-secret]
+verify_jwt = false
