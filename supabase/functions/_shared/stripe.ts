@@ -22,11 +22,17 @@ export function createStripeClient(_env: StripeEnv): Stripe {
 
 export async function verifyWebhook(
   req: Request,
-  _env: StripeEnv,
+  env: StripeEnv,
 ): Promise<{ id: string; type: string; data: { object: any } }> {
   const signature = req.headers.get("stripe-signature");
   const body = await req.text();
-  const secret = getEnv("STRIPE_WEBHOOK_SECRET");
+  // Prefer env-specific secrets when configured, so sandbox and live
+  // endpoints (each with their own Stripe signing secret) can coexist.
+  // Falls back to STRIPE_WEBHOOK_SECRET for backwards compatibility.
+  const envSpecificKey = env === "live"
+    ? "STRIPE_WEBHOOK_SECRET_LIVE"
+    : "STRIPE_WEBHOOK_SECRET_SANDBOX";
+  const secret = Deno.env.get(envSpecificKey) ?? getEnv("STRIPE_WEBHOOK_SECRET");
 
   if (!signature || !body) throw new Error("Missing signature or body");
 
