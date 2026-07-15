@@ -465,7 +465,44 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       }
 
       if (input_method === "screenshot") {
-        payload.screenshot_base64_array = screenshots.map((s) => s.dataUrl);
+        // Upload each compressed screenshot to private Storage and pass
+        // storage paths to the Edge Function instead of embedding base64
+        // in the JSON body. Keeps the request small enough for flaky
+        // mobile connections even at 30 images.
+        try {
+          const uploads = await Promise.all(
+            screenshots.map(async (s, idx) => {
+              // s.dataUrl is a JPEG data URL from compressImage
+              const commaIdx = s.dataUrl.indexOf(",");
+              const b64 = s.dataUrl.slice(commaIdx + 1);
+              const bin = atob(b64);
+              const bytes = new Uint8Array(bin.length);
+              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+              const blob = new Blob([bytes], { type: "image/jpeg" });
+              const path = `${analysis_id}/${String(idx).padStart(3, "0")}.jpg`;
+              const { error: upErr } = await supabase.storage
+                .from("analysis-uploads")
+                .upload(path, blob, {
+                  contentType: "image/jpeg",
+                  upsert: true,
+                });
+              if (upErr) throw upErr;
+              return path;
+            }),
+          );
+          payload.screenshot_storage_paths = uploads;
+        } catch (upErr) {
+          const msg = upErr instanceof Error ? upErr.message : "Upload failed.";
+          await supabase.rpc("mark_analysis_failed", {
+            p_id: analysis_id,
+            p_session_id: session_id,
+            p_error_message: `We couldn't upload your screenshots: ${msg}`,
+          });
+          track("analysis_failed", { reason_code: "upload_failed" });
+          setSubmitError("We couldn't upload your screenshots. Please check your connection and try again.");
+          setSubmitting(false);
+          return;
+        }
       } else {
         payload.raw_text = conversationToSend;
       }
