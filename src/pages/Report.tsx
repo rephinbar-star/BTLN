@@ -1086,7 +1086,6 @@ const SafetyOverride = ({ note }: { note: string }) => (
     <h2 className="text-[26px] font-medium tracking-tight sm:text-[32px]">
       Your conversation included some signals worth pausing on.
     </h2>
-    {/* placeholder-anchor */}
     {note && <p className="mt-5 text-[16px] leading-relaxed text-muted-foreground">{note}</p>}
     <ul className="mt-8 space-y-2 text-left text-[14px]">
       <li>
