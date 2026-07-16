@@ -876,6 +876,21 @@ const ReportContent = () => {
               </ReportErrorBoundary>
             )}
 
+            {lowConfidence && (
+              <div
+                role="note"
+                className="mt-6 rounded-xl border border-pastel-amber-fg-strong/40 bg-pastel-amber-bg px-5 py-4 text-pastel-amber-fg-strong"
+              >
+                <p className="text-[13px] font-semibold uppercase tracking-wide">
+                  Preliminary read
+                </p>
+                <p className="mt-1 text-[14px] leading-relaxed">
+                  Based on only {result.meta.messages_analyzed} messages. This is a rough
+                  snapshot, not a full portrait.
+                </p>
+              </div>
+            )}
+
             {/* Action buttons */}
             <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
