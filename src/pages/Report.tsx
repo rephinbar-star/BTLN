@@ -1120,6 +1120,50 @@ const SafetyOverride = ({ note }: { note: string }) => (
   </section>
 );
 
+const LowConfidenceGate = ({
+  messageCount,
+  result,
+  context,
+}: {
+  messageCount: number | null | undefined;
+  result: AnalysisResult;
+  context: ContextData;
+}) => {
+  const count = typeof messageCount === "number" ? messageCount : 0;
+  useEffect(() => {
+    logEvent("low_confidence_gate_shown", { message_count: count });
+  }, [count]);
+  return (
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none select-none blur-md">
+        <DeepReport result={result} context={context} locked />
+      </div>
+      <div className="absolute inset-0 flex items-start justify-center pt-12">
+        <div className="mx-4 max-w-md rounded-2xl border border-border bg-card px-6 py-8 text-center shadow-xl">
+          <h2 className="text-[22px] font-medium tracking-tight">
+            Your full report needs a bit more to go on
+          </h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+            This read is based on only {count} messages — too thin for a confident
+            deep-dive. Add more of the conversation and re-run, and your full report
+            (attachment profiles, the Four Horsemen check, hidden dynamics, and
+            practice plan) unlocks.
+          </p>
+          <Link
+            to="/#input-section"
+            onClick={() =>
+              logEvent("low_confidence_gate_cta_clicked", { message_count: count })
+            }
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background transition-opacity hover:opacity-90"
+          >
+            Add more messages
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const DeepReport = ({
   result,
   context,
