@@ -205,8 +205,11 @@ const Processing = () => {
         // PostHog: only the UUID + coarse signals — never report content.
         const lowConfidence = (() => {
           try {
-            const r = (data as { result_json?: unknown }).result_json as { confidence?: string } | null | undefined;
-            const c = r?.confidence;
+            const r = (data as { result_json?: unknown }).result_json as
+              | { meta?: { analysis_confidence?: string } }
+              | null
+              | undefined;
+            const c = r?.meta?.analysis_confidence;
             return typeof c === "string" && /low/i.test(c);
           } catch {
             return false;

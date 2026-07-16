@@ -422,6 +422,9 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
   const hasUnlockedReport =
     isSharedView || hasFullAccess || (isOwner && row?.is_paid === true);
+  const lowConfidence =
+    typeof result?.meta?.analysis_confidence === "string" &&
+    result.meta.analysis_confidence.toLowerCase() === "low";
 
   // If the user arrived from the sign-in flow with intent=unlock, scroll
   // the paywall section into view once entitlement has resolved and the
@@ -873,6 +876,21 @@ const ReportContent = () => {
               </ReportErrorBoundary>
             )}
 
+            {lowConfidence && (
+              <div
+                role="note"
+                className="mt-6 rounded-xl border border-pastel-amber-fg-strong/40 bg-pastel-amber-bg px-5 py-4 text-pastel-amber-fg-strong"
+              >
+                <p className="text-[13px] font-semibold uppercase tracking-wide">
+                  Preliminary read
+                </p>
+                <p className="mt-1 text-[14px] leading-relaxed">
+                  Based on only {result.meta.messages_analyzed} messages. This is a rough
+                  snapshot, not a full portrait.
+                </p>
+              </div>
+            )}
+
             {/* Action buttons */}
             <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
@@ -943,6 +961,12 @@ const ReportContent = () => {
                     )}
                     <DeepReport result={result} context={context} locked={false} />
                   </>
+                ) : lowConfidence ? (
+                  <LowConfidenceGate
+                    messageCount={result.meta.messages_analyzed}
+                    result={result}
+                    context={context}
+                  />
                 ) : isOwner ? (
                   <PaywallBlur locked isOwner={isOwner} analysisId={analysisId}>
                     <DeepReport result={result} context={context} locked />
@@ -1094,6 +1118,50 @@ const SafetyOverride = ({ note }: { note: string }) => (
     </Link>
   </section>
 );
+
+const LowConfidenceGate = ({
+  messageCount,
+  result,
+  context,
+}: {
+  messageCount: number | null | undefined;
+  result: AnalysisResult;
+  context: ContextData;
+}) => {
+  const count = typeof messageCount === "number" ? messageCount : 0;
+  useEffect(() => {
+    logEvent("low_confidence_gate_shown", { message_count: count });
+  }, [count]);
+  return (
+    <div className="relative">
+      <div aria-hidden="true" className="pointer-events-none select-none blur-md">
+        <DeepReport result={result} context={context} locked />
+      </div>
+      <div className="absolute inset-0 flex items-start justify-center pt-12">
+        <div className="mx-4 max-w-md rounded-2xl border border-border bg-card px-6 py-8 text-center shadow-xl">
+          <h2 className="text-[22px] font-medium tracking-tight">
+            Your full report needs a bit more to go on
+          </h2>
+          <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+            This read is based on only {count} messages — too thin for a confident
+            deep-dive. Add more of the conversation and re-run, and your full report
+            (attachment profiles, the Four Horsemen check, hidden dynamics, and
+            practice plan) unlocks.
+          </p>
+          <Link
+            to="/#input-section"
+            onClick={() =>
+              logEvent("low_confidence_gate_cta_clicked", { message_count: count })
+            }
+            className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background transition-opacity hover:opacity-90"
+          >
+            Add more messages
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DeepReport = ({
   result,
