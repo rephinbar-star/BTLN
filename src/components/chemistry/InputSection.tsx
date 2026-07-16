@@ -927,6 +927,33 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <AlertDialog
+        open={lowConfidenceConfirm !== null}
+        onOpenChange={(open) => !open && setLowConfidenceConfirm(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>This might be too few messages</AlertDialogTitle>
+            <AlertDialogDescription>
+              We count about {lowConfidenceConfirm?.total ?? 0} messages. That&apos;s not enough for a
+              high-confidence read — we recommend adding more of the conversation first. Want to run
+              it anyway?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Add more messages</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setLowConfidenceConfirm(null);
+                void runAnalysis({ lowMessageCount: true });
+              }}
+            >
+              Analyze anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 };
