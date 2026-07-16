@@ -422,6 +422,9 @@ const ReportContent = () => {
   const safetyMode = result?.meta?.safety_concern === true;
   const hasUnlockedReport =
     isSharedView || hasFullAccess || (isOwner && row?.is_paid === true);
+  const lowConfidence =
+    typeof result?.meta?.analysis_confidence === "string" &&
+    result.meta.analysis_confidence.toLowerCase() === "low";
 
   // If the user arrived from the sign-in flow with intent=unlock, scroll
   // the paywall section into view once entitlement has resolved and the
@@ -943,6 +946,12 @@ const ReportContent = () => {
                     )}
                     <DeepReport result={result} context={context} locked={false} />
                   </>
+                ) : lowConfidence ? (
+                  <LowConfidenceGate
+                    messageCount={result.meta.messages_analyzed}
+                    result={result}
+                    context={context}
+                  />
                 ) : isOwner ? (
                   <PaywallBlur locked isOwner={isOwner} analysisId={analysisId}>
                     <DeepReport result={result} context={context} locked />
