@@ -60,6 +60,9 @@ const MAX_SCREENSHOTS = 30;
 // Hard cap on number of messages we'll send to the parser. Above this the
 // downstream LLM call tends to time out or return invalid JSON.
 const MAX_MESSAGES = 100;
+// Below this many messages we can only give a rough read; warn the user
+// before running an analysis they're likely to be disappointed by.
+const MIN_CONFIDENT_MESSAGES = 30;
 // Pre-compression per-image hard cap. Post-compression images are typically
 // well under 200 KB, so 2 MB pre-compression is plenty of headroom while
 // still rejecting weird/huge inputs early.
@@ -154,6 +157,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [inputStartedFired, setInputStartedFired] = useState(false);
+  const [lowConfidenceConfirm, setLowConfidenceConfirm] = useState<{ total: number } | null>(null);
   const txtInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -361,6 +365,22 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       return;
     }
 
+    // For text/file paths we know the message count client-side. If it's
+    // below the confident-read threshold, warn the user before submitting.
+    // Screenshots: count isn't known until server-side OCR, so we skip
+    // this gate here — the report page handles low-confidence output.
+    if (mode === "paste" || mode === "file") {
+      const { total } = truncateConversation(form.conversation, MAX_MESSAGES);
+      if (total < MIN_CONFIDENT_MESSAGES) {
+        setLowConfidenceConfirm({ total });
+        return;
+      }
+    }
+
+    await runAnalysis({ lowMessageCount: false });
+  };
+
+  const runAnalysis = async ({ lowMessageCount }: { lowMessageCount: boolean }) => {
     setSubmitting(true);
     try {
       const session_id = getSessionId();
@@ -397,6 +417,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         has_free_text: context_data.free_text.length > 0,
         message_estimate_chars:
           input_method === "screenshot" ? 0 : form.conversation.length,
+        low_message_count: lowMessageCount,
       });
       // PostHog: PII-free — only the coarse relationship type enum.
       track("report_started", { relationship_type: form.relationshipType });
