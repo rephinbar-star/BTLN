@@ -1163,7 +1163,7 @@ const LowConfidenceGate = ({
   );
 };
 
-const DeepReport = ({
+export const DeepReport = ({
   result,
   context,
   locked = false,
@@ -1795,7 +1795,7 @@ const firstSentence = (text: string): string => {
   return text + "…";
 };
 
-const FreeInsights = ({ result }: { result: AnalysisResult }) => {
+export const FreeInsights = ({ result }: { result: AnalysisResult }) => {
   const greenFlag = safeField(() => result.green_flags?.[0], "green_flags.0");
   const greenObj =
     typeof greenFlag === "object" && greenFlag

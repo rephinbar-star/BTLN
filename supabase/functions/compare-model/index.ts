@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { assignCoupleType } from "../_shared/assignCoupleType.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -132,8 +133,10 @@ ${conversation}`;
 
     let parsed: unknown = null;
     let jsonError: string | null = null;
+    let coupleTypeId: number | null = null;
     try {
       parsed = JSON.parse(stripFences(content));
+      coupleTypeId = assignCoupleType(parsed, ctx.relationship_type ?? "romantic");
     } catch (err) {
       jsonError = (err as Error).message;
     }
@@ -147,6 +150,7 @@ ${conversation}`;
       content,
       parsed,
       jsonError,
+      couple_type_id: coupleTypeId,
     });
   } catch (err) {
     return json({ ok: false, error: (err as Error).message }, 500);
