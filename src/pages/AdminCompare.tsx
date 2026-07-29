@@ -297,6 +297,14 @@ const AdminCompare = () => {
         </Card>
 
         {Object.keys(results).length > 0 && (
+          <div className="flex justify-end">
+            <Button type="button" variant="outline" onClick={() => setFullOpen(true)}>
+              View full reports side-by-side
+            </Button>
+          </div>
+        )}
+
+        {Object.keys(results).length > 0 && (
           <div className="grid gap-4 lg:grid-cols-3">
             {selected.map((model) => {
               const r = results[model];
@@ -385,6 +393,98 @@ const AdminCompare = () => {
           </div>
         )}
       </div>
+
+      {fullOpen && (
+        <div className="fixed inset-0 z-[100] bg-background">
+          <div className="flex items-center justify-between border-b border-border px-4 py-2">
+            <h2 className="text-sm font-semibold text-foreground">
+              Full reports side-by-side ({modelsWithResults.length})
+            </h2>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label="Close full report view"
+              onClick={() => setFullOpen(false)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex h-[calc(100vh-45px)] gap-4 overflow-x-auto p-4">
+            {modelsWithResults.map((model) => {
+              const r = results[model];
+              const parsed = r.parsed as AnalysisResult | undefined;
+              return (
+                <div
+                  key={model}
+                  className="h-full w-[400px] shrink-0 overflow-y-auto rounded-lg border border-border bg-card"
+                >
+                  <div className="sticky top-0 z-10 space-y-1 border-b border-border bg-card px-3 py-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="break-all font-mono text-xs font-semibold">{model}</span>
+                      {r.isBaseline && (
+                        <span className="rounded-full bg-pastel-green-bg px-2 py-0.5 text-[10px] font-medium text-pastel-green-fg-strong">
+                          baseline
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                      {parsed?.headline?.tier_label && (
+                        <span className="font-medium text-foreground">
+                          {parsed.headline.tier_label} ({parsed.headline.score})
+                        </span>
+                      )}
+                      {typeof r.ms === "number" && <span>{(r.ms / 1000).toFixed(1)}s</span>}
+                      {r.usage?.total_tokens != null && <span>{r.usage.total_tokens} tok</span>}
+                      {r.usage?.cost != null && <span>${Number(r.usage.cost).toFixed(4)}</span>}
+                      <span
+                        className={
+                          r.ok && !r.jsonError
+                            ? "rounded bg-pastel-green-bg px-1.5 text-pastel-green-fg-strong"
+                            : "rounded bg-pastel-amber-bg px-1.5 text-pastel-amber-fg-strong"
+                        }
+                      >
+                        {r.ok && !r.jsonError ? "JSON valid" : "JSON invalid"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-6 p-3">
+                    {r.state === "loading" && (
+                      <p className="text-sm text-muted-foreground">Running…</p>
+                    )}
+                    {r.state === "done" && !parsed && (
+                      <div className="space-y-2">
+                        {r.error && <p className="text-xs text-destructive">{r.error}</p>}
+                        {r.jsonError && (
+                          <p className="text-xs text-destructive">Parse error: {r.jsonError}</p>
+                        )}
+                        <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap break-all rounded bg-muted p-2 text-[10px]">
+                          {r.content ?? "No output"}
+                        </pre>
+                      </div>
+                    )}
+                    {parsed && (
+                      <>
+                        {r.couple_type_id != null && (
+                          <CoupleTypeCard
+                            coupleTypeId={r.couple_type_id}
+                            relationshipType={toCardRelationship(relationshipType)}
+                            size="full"
+                          />
+                        )}
+                        <ShareableCard result={parsed} context={reportContext} />
+                        <FreeInsights result={parsed} />
+                        <DeepReport result={parsed} context={reportContext} locked={false} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
