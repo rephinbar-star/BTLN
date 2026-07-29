@@ -7,6 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { AXIS_DISPLAY, scoreLabel, type ScoreAxis } from "@/lib/score-labels";
+import { X } from "lucide-react";
+import { CoupleTypeCard, type CoupleTypeCardRelationship } from "@/components/CoupleTypeCard";
+import { ShareableCard } from "@/components/chemistry/ShareableCard";
+import { DeepReport, FreeInsights } from "@/pages/Report";
+import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
 
 const ADMIN_AUTH_KEY = "chemistry_admin_authed";
 const ADMIN_PWD_KEY = "chemistry_admin_pwd";
@@ -40,7 +45,11 @@ type Result = {
   parsed?: any;
   jsonError?: string | null;
   error?: string;
+  couple_type_id?: number | null;
 };
+
+const toCardRelationship = (t: string): CoupleTypeCardRelationship =>
+  t === "romantic" || t === "friend" || t === "family" ? t : "friend";
 
 const AdminCompare = () => {
   const navigate = useNavigate();
@@ -59,6 +68,16 @@ const AdminCompare = () => {
   const [results, setResults] = useState<Record<string, Result>>({});
   const [running, setRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fullOpen, setFullOpen] = useState(false);
+
+  useEffect(() => {
+    if (!fullOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setFullOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [fullOpen]);
 
   useEffect(() => {
     if (sessionStorage.getItem(ADMIN_AUTH_KEY) !== "true") {
