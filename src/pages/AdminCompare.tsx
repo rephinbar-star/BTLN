@@ -111,6 +111,20 @@ const AdminCompare = () => {
     [name1, name2, relationshipType, relationshipStage, duration, goal, freeText],
   );
 
+  const reportContext = useMemo<ContextData>(
+    () => ({
+      name1,
+      name2,
+      relationship_stage: relationshipStage,
+      duration,
+      goal,
+      free_text: freeText,
+    }),
+    [name1, name2, relationshipStage, duration, goal, freeText],
+  );
+
+  const modelsWithResults = selected.filter((m) => results[m]);
+
   const run = async () => {
     const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
     if (!password) {
