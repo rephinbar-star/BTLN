@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.test-webhook-secret]
 verify_jwt = false
+
+[functions.compare-model]
+verify_jwt = false

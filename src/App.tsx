@@ -11,6 +11,7 @@ import Report from "./pages/Report.tsx";
 import ErrorPage from "./pages/ErrorPage.tsx";
 import Admin from "./pages/Admin.tsx";
 import AdminCards from "./pages/AdminCards.tsx";
+import AdminCompare from "./pages/AdminCompare.tsx";
 import Auth from "./pages/Auth.tsx";
 import Account from "./pages/Account.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/error" element={<ErrorPage />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/cards" element={<AdminCards />} />
+          <Route path="/admin/compare" element={<AdminCompare />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/auth/reset-password" element={<ResetPassword />} />

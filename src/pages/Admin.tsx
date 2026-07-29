@@ -378,6 +378,12 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
             >
               Card uploads
             </Link>
+            <Link
+              to="/admin/compare"
+              className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              Model comparison
+            </Link>
             <Button onClick={() => void load()} disabled={loading} size="sm">
               {loading ? "Refreshing…" : "Refresh"}
             </Button>
