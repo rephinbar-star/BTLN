@@ -44,12 +44,32 @@ type Result = {
   content?: string;
   parsed?: any;
   jsonError?: string | null;
+  parse_cleaned?: boolean;
   error?: string;
   couple_type_id?: number | null;
 };
 
 const toCardRelationship = (t: string): CoupleTypeCardRelationship =>
   t === "romantic" || t === "friend" || t === "family" ? t : "friend";
+
+const jsonBadge = (r: { ok?: boolean; jsonError?: string | null; parse_cleaned?: boolean }) => {
+  if (!r.ok || r.jsonError) {
+    return {
+      label: "JSON invalid",
+      className: "rounded bg-destructive/10 px-1.5 text-destructive",
+    };
+  }
+  if (r.parse_cleaned) {
+    return {
+      label: "JSON cleaned",
+      className: "rounded bg-pastel-amber-bg px-1.5 text-pastel-amber-fg-strong",
+    };
+  }
+  return {
+    label: "JSON valid",
+    className: "rounded bg-pastel-green-bg px-1.5 text-pastel-green-fg-strong",
+  };
+};
 
 const AdminCompare = () => {
   const navigate = useNavigate();
@@ -332,15 +352,7 @@ const AdminCompare = () => {
                             <span>{r.usage.total_tokens} tok</span>
                           )}
                           {r.usage?.cost != null && <span>${Number(r.usage.cost).toFixed(4)}</span>}
-                          <span
-                            className={
-                              r.ok && !r.jsonError
-                                ? "rounded bg-pastel-green-bg px-1.5 text-pastel-green-fg-strong"
-                                : "rounded bg-pastel-amber-bg px-1.5 text-pastel-amber-fg-strong"
-                            }
-                          >
-                            {r.ok && !r.jsonError ? "JSON valid" : "JSON invalid"}
-                          </span>
+                          <span className={jsonBadge(r).className}>{jsonBadge(r).label}</span>
                         </div>
 
                         {r.error && <p className="text-xs text-destructive">{r.error}</p>}
@@ -437,15 +449,7 @@ const AdminCompare = () => {
                       {typeof r.ms === "number" && <span>{(r.ms / 1000).toFixed(1)}s</span>}
                       {r.usage?.total_tokens != null && <span>{r.usage.total_tokens} tok</span>}
                       {r.usage?.cost != null && <span>${Number(r.usage.cost).toFixed(4)}</span>}
-                      <span
-                        className={
-                          r.ok && !r.jsonError
-                            ? "rounded bg-pastel-green-bg px-1.5 text-pastel-green-fg-strong"
-                            : "rounded bg-pastel-amber-bg px-1.5 text-pastel-amber-fg-strong"
-                        }
-                      >
-                        {r.ok && !r.jsonError ? "JSON valid" : "JSON invalid"}
-                      </span>
+                      <span className={jsonBadge(r).className}>{jsonBadge(r).label}</span>
                     </div>
                   </div>
 
