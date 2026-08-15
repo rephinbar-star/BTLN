@@ -44,6 +44,7 @@ export type EventMap = {
   survey_dismissed: { analysis_id?: string };
   paywall_viewed: { analysis_id: string };
   intent_to_pay_click: { analysis_id: string; option: PaywallOption };
+  pricing_cta_clicked: { option: PaywallOption; source?: string };
   second_analysis_started: Record<string, never>;
   relationship_created: { relationship_type: RelationshipType };
   referred_visit: { ref: string };
