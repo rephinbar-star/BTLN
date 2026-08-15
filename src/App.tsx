@@ -17,6 +17,7 @@ import Account from "./pages/Account.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import AuthCallback from "./pages/AuthCallback.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn";
+import Pricing from "./pages/Pricing";
 import Trust from "./pages/Trust";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
