@@ -17,6 +17,7 @@ import Account from "./pages/Account.tsx";
 import ResetPassword from "./pages/ResetPassword.tsx";
 import AuthCallback from "./pages/AuthCallback.tsx";
 import CheckoutReturn from "./pages/CheckoutReturn";
+import Pricing from "./pages/Pricing";
 import Trust from "./pages/Trust";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -54,6 +55,7 @@ const App = () => (
           <Route path="/processing/:analysisId" element={<Processing />} />
           <Route path="/report/:analysisId" element={<Report />} />
           <Route path="/checkout/return" element={<CheckoutReturn />} />
+          <Route path="/pricing" element={<Pricing />} />
           <Route path="/error" element={<ErrorPage />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/cards" element={<AdminCards />} />

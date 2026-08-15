@@ -44,6 +44,7 @@ export type EventMap = {
   survey_dismissed: { analysis_id?: string };
   paywall_viewed: { analysis_id: string };
   intent_to_pay_click: { analysis_id: string; option: PaywallOption };
+  pricing_cta_clicked: { option: PaywallOption; source?: string };
   second_analysis_started: Record<string, never>;
   relationship_created: { relationship_type: RelationshipType };
   referred_visit: { ref: string };
@@ -67,6 +68,7 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   survey_dismissed: ["analysis_id"],
   paywall_viewed: ["analysis_id"],
   intent_to_pay_click: ["analysis_id", "option"],
+  pricing_cta_clicked: ["option", "source"],
   second_analysis_started: [],
   relationship_created: ["relationship_type"],
   referred_visit: ["ref"],
