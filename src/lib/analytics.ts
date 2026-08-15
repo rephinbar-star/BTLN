@@ -68,6 +68,7 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   survey_dismissed: ["analysis_id"],
   paywall_viewed: ["analysis_id"],
   intent_to_pay_click: ["analysis_id", "option"],
+  pricing_cta_clicked: ["option", "source"],
   second_analysis_started: [],
   relationship_created: ["relationship_type"],
   referred_visit: ["ref"],
