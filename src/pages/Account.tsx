@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
-import { Loader2, Mail, Trash2, X } from "lucide-react";
+import { Loader2, Mail, RotateCw, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -501,6 +501,19 @@ const Account = () => {
                         className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-destructive flex-shrink-0"
                       >
                         <Trash2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        aria-label="Re-run this report with the latest analysis"
+                        title="Re-run with the latest analysis"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/?redo=${r.id}#input-section`);
+                        }}
+                        className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex-shrink-0"
+                      >
+                        <RotateCw className="h-4 w-4" />
                       </button>
                       <Link to={`/report/${r.id}`} className="min-w-0">
                         <div className="text-sm font-medium truncate">
