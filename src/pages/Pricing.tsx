@@ -84,7 +84,7 @@ export default function Pricing() {
   const launch = (priceId: ProductKey) => {
     setPending(priceId);
     logEvent("pricing_cta_clicked", { product_key: priceId });
-    track("intent_to_pay_click", { source: "pricing_page", option: PRODUCT_TO_OPTION[priceId] });
+    track("pricing_cta_clicked", { source: "pricing_page", option: PRODUCT_TO_OPTION[priceId] });
 
     const returnUrl = user
       ? `${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`
