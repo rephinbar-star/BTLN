@@ -1,6 +1,6 @@
-import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, ChevronDown, type LucideIcon } from "lucide-react";
-import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { ArrowRight, Info, Upload, FileText, Image as ImageIcon, X, ChevronDown, RotateCw, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId, logEvent, setPendingClaimAnalysisId } from "@/lib/session";
 import { track } from "@/lib/analytics";
@@ -161,6 +161,44 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const txtInputRef = useRef<HTMLInputElement>(null);
   const imgInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redoId = searchParams.get("redo");
+  const [redoInfo, setRedoInfo] = useState<{ name1: string; name2: string } | null>(null);
+
+  // "Re-run" from Past reports: pre-fill the context fields from the original
+  // analysis. The conversation itself is never stored, so it must be supplied
+  // again by the user.
+  useEffect(() => {
+    if (!redoId || hideIntro) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from("analyses")
+        .select("context_data")
+        .eq("id", redoId)
+        .maybeSingle();
+      const ctx = (data?.context_data ?? null) as Record<string, string> | null;
+      if (!ctx || cancelled) return;
+      setForm((prev) => ({
+        ...prev,
+        yourName: ctx.name1 ?? prev.yourName,
+        theirName: ctx.name2 ?? prev.theirName,
+        relationshipType:
+          ctx.relationship_type === "friend" || ctx.relationship_type === "family"
+            ? ctx.relationship_type
+            : "romantic",
+        stage: ctx.relationship_stage ?? "",
+        duration: ctx.duration ?? "",
+        goal: ctx.goal ?? "",
+        context: ctx.free_text ?? "",
+      }));
+      setRedoInfo({ name1: ctx.name1 ?? "", name2: ctx.name2 ?? "" });
+      document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [redoId, hideIntro]);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -589,6 +627,20 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         onSubmit={handleSubmit}
         className="mx-auto mt-10 max-w-[720px] rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8"
       >
+        {redoInfo && (
+          <div className="mb-5 flex items-start gap-2 rounded-xl bg-pastel-blue-bg px-4 py-3 text-[13px] text-pastel-blue-fg">
+            <RotateCw className="mt-0.5 h-4 w-4 flex-shrink-0" />
+            <p>
+              Re-running the analysis for{" "}
+              <span className="font-medium">
+                {redoInfo.name1} and {redoInfo.name2}
+              </span>
+              . Details are pre-filled — add the conversation again (we never store it) and
+              we'll run it through the latest analysis.
+            </p>
+          </div>
+        )}
+
         {/* How many messages Q&A */}
         <QACard
           icon={Info}
