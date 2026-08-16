@@ -71,6 +71,13 @@ const Account = () => {
   const [displayName, setDisplayName] = useState("");
   const [nameBusy, setNameBusy] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
+  const [isAdmin] = useState<boolean>(() => {
+    try {
+      return sessionStorage.getItem("chemistry_admin_authed") === "true";
+    } catch {
+      return false;
+    }
+  });
   const [deletingReport, setDeletingReport] = useState(false);
   const [membership, setMembership] = useState<MembershipStatus>({ kind: "none" });
   const [lastSync, setLastSync] = useState<string | null>(null);
