@@ -509,19 +509,21 @@ const Account = () => {
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>
-                      <button
-                        type="button"
-                        aria-label="Re-run this report with the latest analysis"
-                        title="Re-run with the latest analysis"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          navigate(`/?redo=${r.id}#input-section`);
-                        }}
-                        className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex-shrink-0"
-                      >
-                        <RotateCw className="h-4 w-4" />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          aria-label="Re-run this report with the latest analysis"
+                          title="Re-run with the latest analysis (admin)"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            navigate(`/?redo=${r.id}#input-section`);
+                          }}
+                          className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex-shrink-0"
+                        >
+                          <RotateCw className="h-4 w-4" />
+                        </button>
+                      )}
                       <Link to={`/report/${r.id}`} className="min-w-0">
                         <div className="text-sm font-medium truncate">
                           Chat between {name1} and {name2} on {dateStr}
