@@ -169,7 +169,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   // analysis. The conversation itself is never stored, so it must be supplied
   // again by the user.
   useEffect(() => {
-    if (!redoId || hideIntro) return;
+    if (!redoId) return;
     let cancelled = false;
     void (async () => {
       const { data } = await supabase
@@ -198,7 +198,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     return () => {
       cancelled = true;
     };
-  }, [redoId, hideIntro]);
+  }, [redoId]);
 
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
