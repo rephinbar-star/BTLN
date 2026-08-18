@@ -232,29 +232,14 @@ Deno.serve(async (req) => {
     .update({ prompt_version_id: pv.id, status: "extracting" })
     .eq("id", analysis_id);
 
-  // 3. Build extraction request
+  // 3. Extract messages (shared parser)
   const { name1, name2 } = context_data;
 
-  const parsingSystem = `You are a parser. Convert the conversation text into a structured JSON array of messages. The user's name is ${name1}; their partner's name is ${name2}. Each message has: sender_role ("user" if ${name1} sent it, "partner" if ${name2} sent it), content (verbatim text), timestamp_estimate (extract if present, else null), sequence_order (integer starting at 1).
-
-Handle WhatsApp export format ([DD/MM/YY, HH:MM:SS] Name: text), iMessage paste format, and unstructured text. If sender attribution is ambiguous, infer from context (alternation, message style).
-
-Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
-
-  const visionSystem = `You are a vision parser for messaging app screenshots. Extract the conversation into structured JSON. Each message: sender_role ("user" or "partner"), content (verbatim including emojis), timestamp_estimate (extract if visible), sequence_order.
-
-Determining sender: in iMessage, WhatsApp, and most apps, messages aligned to the right side are typically the user's; messages aligned to the left are the partner's. Use this convention. If multiple screenshots, maintain sequential ordering across them based on visual order.
-
-The user's name is ${name1}. The partner's name is ${name2}.
-
-Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
-
-  let extractionBody: Record<string, unknown>;
+  let imageUrls: string[] = [];
   if (input_method === "screenshot") {
     // Prefer Storage paths — mint short-lived signed URLs so OpenRouter
     // can fetch the images without us ever putting the bytes in the JSON
     // body. Falls back to inline base64 for older clients.
-    let imageUrls: string[] = [];
     if (screenshot_paths_for_analysis && screenshot_paths_for_analysis.length > 0) {
       const signed = await supabase.storage
         .from("analysis-uploads")
@@ -272,42 +257,20 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
     } else if (screenshot_base64_for_analysis) {
       imageUrls = screenshot_base64_for_analysis;
     }
-    const userContent: any[] = [
-      {
-        type: "text",
-        text: `Extract messages from these screenshots. User's name: ${name1}. Partner's name: ${name2}.`,
-      },
-      ...imageUrls.map((url) => ({
-        type: "image_url",
-        image_url: { url },
-      })),
-    ];
-    extractionBody = {
-      model: pv.vision_model_string,
-      messages: [
-        { role: "system", content: visionSystem },
-        { role: "user", content: userContent },
-      ],
-      response_format: { type: "json_object" },
-    };
-  } else {
-    extractionBody = {
-      model: pv.model_string,
-      messages: [
-        { role: "system", content: parsingSystem },
-        { role: "user", content: raw_text_for_analysis! },
-      ],
-      response_format: { type: "json_object" },
-      provider: { order: ["Anthropic"], allow_fallbacks: true },
-    };
   }
 
-  const extracted = await extractWithRetry(
-    extractionBody,
-    OPENROUTER_API_KEY,
-    OPENROUTER_HTTP_REFERER,
-    OPENROUTER_X_TITLE,
-  );
+  const extracted = await extractMessages({
+    input_method,
+    name1,
+    name2,
+    raw_text: raw_text_for_analysis,
+    imageUrls,
+    model_string: pv.model_string,
+    vision_model_string: pv.vision_model_string,
+    apiKey: OPENROUTER_API_KEY,
+    referer: OPENROUTER_HTTP_REFERER,
+    title: OPENROUTER_X_TITLE,
+  });
   if ("error" in extracted) {
     return failAnalysis(extracted.error);
   }
