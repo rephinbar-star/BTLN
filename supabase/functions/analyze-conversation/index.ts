@@ -3,8 +3,8 @@ import { assignCoupleType } from "../_shared/assignCoupleType.ts";
 import {
   callOpenRouter,
   extractMessages,
-  stripFences,
 } from "../_shared/extractMessages.ts";
+import { extractJsonObject } from "../_shared/extractJson.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -348,7 +348,13 @@ ${messagesBlock}`;
     }
     const raw = r.data?.choices?.[0]?.message?.content ?? "";
     try {
-      resultJson = JSON.parse(stripFences(String(raw)));
+      const { value, cleaned } = extractJsonObject(String(raw));
+      resultJson = value;
+      if (cleaned) {
+        console.warn(
+          `[analyze-conversation] analysis JSON needed cleaning for ${analysis_id}`,
+        );
+      }
       break;
     } catch (_e) {
       if (attempt === 0) continue;
