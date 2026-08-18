@@ -1,5 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
+import {
+  callOpenRouter,
+  extractMessages,
+  stripFences,
+} from "../_shared/extractMessages.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,7 +18,6 @@ const json = (status: number, body: unknown) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const MAX_OUTPUT_TOKENS = 8000;
 const MAX_SCREENSHOTS = 30;
 const MAX_MESSAGES = 100;
@@ -28,21 +32,6 @@ type ContextData = {
   free_text?: string;
 };
 
-type ExtractedMsg = {
-  sender_role: "user" | "partner";
-  content: string;
-  timestamp_estimate: string | null;
-  sequence_order: number;
-};
-
-const stripFences = (s: string): string => {
-  let t = s.trim();
-  if (t.startsWith("```")) {
-    t = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
-  }
-  return t.trim();
-};
-
 const TS_RE = /^\[?\s*\d{1,2}[\/\-.]\d{1,2}|^\d{1,2}:\d{2}/;
 const truncateConversation = (text: string, max: number): string => {
   const lines = text.split(/\r?\n/);
@@ -55,77 +44,6 @@ const truncateConversation = (text: string, max: number): string => {
   if (markers.length <= max) return text;
   return lines.slice(0, markers[max]).join("\n").trimEnd();
 };
-
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
-
-async function callOpenRouter(
-  body: Record<string, unknown>,
-  apiKey: string,
-  referer: string,
-  title: string,
-): Promise<{ ok: boolean; status: number; data?: any; errorText?: string }> {
-  let last: Response | null = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": referer,
-        "X-Title": title,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    last = res;
-    if (res.ok) {
-      const data = await res.json();
-      return { ok: true, status: res.status, data };
-    }
-    if (res.status >= 500 && attempt === 0) {
-      await sleep(2000);
-      continue;
-    }
-    const text = await res.text();
-    return { ok: false, status: res.status, errorText: text };
-  }
-  const text = last ? await last.text() : "Unknown error";
-  return { ok: false, status: last?.status ?? 500, errorText: text };
-}
-
-async function extractWithRetry(
-  body: Record<string, unknown>,
-  apiKey: string,
-  referer: string,
-  title: string,
-): Promise<{ messages: ExtractedMsg[] } | { error: string }> {
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const r = await callOpenRouter(body, apiKey, referer, title);
-    if (!r.ok) return { error: `Extraction failed: ${r.status} ${r.errorText}` };
-    const raw = r.data?.choices?.[0]?.message?.content ?? "";
-    try {
-      const parsed = JSON.parse(stripFences(String(raw)));
-      if (Array.isArray(parsed?.messages)) {
-        return { messages: parsed.messages as ExtractedMsg[] };
-      }
-      throw new Error("missing messages array");
-    } catch (_e) {
-      if (attempt === 0) {
-        // append a corrective system note
-        const messages = [...(body.messages as any[])];
-        messages.push({
-          role: "system",
-          content:
-            "Your previous response was not valid JSON. Please respond with only the JSON object.",
-        });
-        body = { ...body, messages };
-        continue;
-      }
-      return { error: "Could not parse extracted messages JSON." };
-    }
-  }
-  return { error: "Extraction failed after retry." };
-}
 
 // EdgeRuntime is provided by the Supabase Edge runtime but isn't in the
 // Deno type defs we have here.
@@ -304,6 +222,7 @@ Deno.serve(async (req) => {
     .from("prompt_versions")
     .select("id, prompt_text, model_string, vision_model_string")
     .eq("active", true)
+    .eq("kind", "full")
     .maybeSingle();
   if (pvErr || !pv) {
     return failAnalysis("No active prompt version configured.");
@@ -314,29 +233,14 @@ Deno.serve(async (req) => {
     .update({ prompt_version_id: pv.id, status: "extracting" })
     .eq("id", analysis_id);
 
-  // 3. Build extraction request
+  // 3. Extract messages (shared parser)
   const { name1, name2 } = context_data;
 
-  const parsingSystem = `You are a parser. Convert the conversation text into a structured JSON array of messages. The user's name is ${name1}; their partner's name is ${name2}. Each message has: sender_role ("user" if ${name1} sent it, "partner" if ${name2} sent it), content (verbatim text), timestamp_estimate (extract if present, else null), sequence_order (integer starting at 1).
-
-Handle WhatsApp export format ([DD/MM/YY, HH:MM:SS] Name: text), iMessage paste format, and unstructured text. If sender attribution is ambiguous, infer from context (alternation, message style).
-
-Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
-
-  const visionSystem = `You are a vision parser for messaging app screenshots. Extract the conversation into structured JSON. Each message: sender_role ("user" or "partner"), content (verbatim including emojis), timestamp_estimate (extract if visible), sequence_order.
-
-Determining sender: in iMessage, WhatsApp, and most apps, messages aligned to the right side are typically the user's; messages aligned to the left are the partner's. Use this convention. If multiple screenshots, maintain sequential ordering across them based on visual order.
-
-The user's name is ${name1}. The partner's name is ${name2}.
-
-Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
-
-  let extractionBody: Record<string, unknown>;
+  let imageUrls: string[] = [];
   if (input_method === "screenshot") {
     // Prefer Storage paths — mint short-lived signed URLs so OpenRouter
     // can fetch the images without us ever putting the bytes in the JSON
     // body. Falls back to inline base64 for older clients.
-    let imageUrls: string[] = [];
     if (screenshot_paths_for_analysis && screenshot_paths_for_analysis.length > 0) {
       const signed = await supabase.storage
         .from("analysis-uploads")
@@ -354,42 +258,20 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
     } else if (screenshot_base64_for_analysis) {
       imageUrls = screenshot_base64_for_analysis;
     }
-    const userContent: any[] = [
-      {
-        type: "text",
-        text: `Extract messages from these screenshots. User's name: ${name1}. Partner's name: ${name2}.`,
-      },
-      ...imageUrls.map((url) => ({
-        type: "image_url",
-        image_url: { url },
-      })),
-    ];
-    extractionBody = {
-      model: pv.vision_model_string,
-      messages: [
-        { role: "system", content: visionSystem },
-        { role: "user", content: userContent },
-      ],
-      response_format: { type: "json_object" },
-    };
-  } else {
-    extractionBody = {
-      model: pv.model_string,
-      messages: [
-        { role: "system", content: parsingSystem },
-        { role: "user", content: raw_text_for_analysis! },
-      ],
-      response_format: { type: "json_object" },
-      provider: { order: ["Anthropic"], allow_fallbacks: true },
-    };
   }
 
-  const extracted = await extractWithRetry(
-    extractionBody,
-    OPENROUTER_API_KEY,
-    OPENROUTER_HTTP_REFERER,
-    OPENROUTER_X_TITLE,
-  );
+  const extracted = await extractMessages({
+    input_method,
+    name1,
+    name2,
+    raw_text: raw_text_for_analysis,
+    imageUrls,
+    model_string: pv.model_string,
+    vision_model_string: pv.vision_model_string,
+    apiKey: OPENROUTER_API_KEY,
+    referer: OPENROUTER_HTTP_REFERER,
+    title: OPENROUTER_X_TITLE,
+  });
   if ("error" in extracted) {
     return failAnalysis(extracted.error);
   }
