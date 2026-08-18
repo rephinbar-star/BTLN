@@ -48,6 +48,9 @@ export type EventMap = {
   second_analysis_started: Record<string, never>;
   relationship_created: { relationship_type: RelationshipType };
   referred_visit: { ref: string };
+  decode_started: { input_method: "screenshot" | "paste" };
+  decode_completed: { has_flag: boolean; confidence: string };
+  decode_reply_copied: { tone: string };
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
@@ -72,6 +75,9 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   second_analysis_started: [],
   relationship_created: ["relationship_type"],
   referred_visit: ["ref"],
+  decode_started: ["input_method"],
+  decode_completed: ["has_flag", "confidence"],
+  decode_reply_copied: ["tone"],
 } as never;
 
 // Reject obvious PII shapes as a defense-in-depth check on top of the
