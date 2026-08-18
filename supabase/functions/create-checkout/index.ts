@@ -79,21 +79,20 @@ Deno.serve(async (req) => {
         { auth: { persistSession: false } },
       );
       const token = authHeader.replace("Bearer ", "");
-      const { data: userData, error: userErr } = await supabaseAuth.auth.getUser(token);
+      // The browser client always sends a Bearer header — it is the publishable
+      // anon key when signed out. That token has no `sub`, so treat it as an
+      // anonymous checkout rather than an error.
+      const { data: userData } = await supabaseAuth.auth.getUser(token);
       const jwtUserId = userData?.user?.id ?? null;
-      if (userErr || !jwtUserId) {
-        return new Response(JSON.stringify({ error: "Invalid auth token" }), {
-          status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+      if (jwtUserId) {
+        if (bodyUserId && bodyUserId !== jwtUserId) {
+          return new Response(JSON.stringify({ error: "userId does not match authenticated user" }), {
+            status: 403,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+        userId = jwtUserId;
       }
-      if (bodyUserId && bodyUserId !== jwtUserId) {
-        return new Response(JSON.stringify({ error: "userId does not match authenticated user" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      userId = jwtUserId;
     }
 
     if (!priceId || typeof priceId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(priceId)) {
