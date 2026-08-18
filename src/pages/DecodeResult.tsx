@@ -263,25 +263,71 @@ const DecodeResult = () => {
                 <h2 className="text-[13px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   How you could reply
                 </h2>
-                <div className="mt-3 space-y-3">
-                  {replies.map((o, i) => (
-                    <ReplyCard key={`${o.tone ?? "reply"}-${i}`} option={o} />
-                  ))}
+                <div className="relative mt-3">
+                  <div
+                    className={`space-y-3 ${locked ? "pointer-events-none select-none blur-[7px]" : ""}`}
+                    aria-hidden={locked}
+                  >
+                    {replies.map((o, i) => (
+                      <ReplyCard key={`${o.tone ?? "reply"}-${i}`} option={o} />
+                    ))}
+                  </div>
+
+                  {locked && (
+                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                      <div className="w-full max-w-md rounded-2xl border border-border bg-card/95 p-6 text-center shadow-xl backdrop-blur">
+                        <Lock className="mx-auto h-5 w-5 text-muted-foreground" />
+                        <h3 className="mt-3 text-[18px] font-semibold tracking-tight">
+                          Your free decode is used up
+                        </h3>
+                        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+                          Keep the reply options coming — unlimited Quick Decodes, whenever a text
+                          leaves you guessing.
+                        </p>
+                        <p className="mt-4 text-[15px] font-medium">$6.99 / month · cancel anytime</p>
+                        <button
+                          type="button"
+                          onClick={startDecodeCheckout}
+                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background transition-opacity hover:opacity-90"
+                        >
+                          <Sparkles className="h-4 w-4" /> Unlock unlimited decodes
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </section>
             )}
 
+            {isOpen && (
+              <div className="fixed inset-0 z-50 overflow-y-auto bg-background/95 p-4 backdrop-blur">
+                <div className="mx-auto mt-6 max-w-2xl">
+                  <button
+                    type="button"
+                    onClick={closeCheckout}
+                    className="mb-4 text-[14px] text-muted-foreground hover:text-foreground"
+                  >
+                    ← Back to your decode
+                  </button>
+                  {checkoutElement}
+                </div>
+              </div>
+            )}
+
             <div className="mt-12 rounded-xl border border-border bg-muted/30 p-5">
-              <p className="text-[15px] font-medium">Want the full read on you two?</p>
+              <p className="text-[15px] font-medium">
+                Want the full read — attachment styles, the patterns, your couple type?
+              </p>
               <p className="mt-1 text-[14px] text-muted-foreground">
                 Upload a longer conversation and get the deep report — patterns, attachment styles, and
                 what keeps repeating. We need at least 20 or 30 text exchanges for the deep report.
               </p>
               <Link
                 to="/#input-section"
+                onClick={() => track("deep_report_upsell_click", {} as never)}
                 className="mt-4 inline-flex items-center gap-2 text-[14px] font-medium underline-offset-4 hover:underline"
               >
-                Run the full analysis <ArrowRight className="h-4 w-4" />
+                Get the deep report <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
