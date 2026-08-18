@@ -1,6 +1,9 @@
 // Shared message-extraction parser used by both the full report pipeline
 // (analyze-conversation) and the Quick Decode lane (decode-conversation).
 
+import { extractJsonObject } from "./extractJson.ts";
+export { extractJsonObject, stripFences } from "./extractJson.ts";
+
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export type ExtractedMsg = {
@@ -10,13 +13,7 @@ export type ExtractedMsg = {
   sequence_order: number;
 };
 
-export const stripFences = (s: string): string => {
-  let t = s.trim();
-  if (t.startsWith("```")) {
-    t = t.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "");
-  }
-  return t.trim();
-};
+
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -65,7 +62,7 @@ async function extractWithRetry(
     if (!r.ok) return { error: `Extraction failed: ${r.status} ${r.errorText}` };
     const raw = r.data?.choices?.[0]?.message?.content ?? "";
     try {
-      const parsed = JSON.parse(stripFences(String(raw)));
+      const parsed = extractJsonObject(String(raw)).value;
       if (Array.isArray(parsed?.messages)) {
         return { messages: parsed.messages as ExtractedMsg[] };
       }
@@ -153,31 +150,4 @@ Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
   }
 
   return await extractWithRetry(extractionBody, p.apiKey, p.referer, p.title);
-}
-
-/** Robust JSON object extraction: first balanced top-level object. */
-export function extractJsonObject(raw: string): { value: any; cleaned: boolean } {
-  const s = stripFences(raw).trim();
-  try {
-    return { value: JSON.parse(s), cleaned: false };
-  } catch {
-    /* fall through */
-  }
-  const start = s.indexOf("{");
-  if (start === -1) throw new Error("No JSON object found in output");
-  let depth = 0, inStr = false, esc = false;
-  for (let i = start; i < s.length; i++) {
-    const c = s[i];
-    if (inStr) {
-      if (esc) esc = false;
-      else if (c === "\\") esc = true;
-      else if (c === '"') inStr = false;
-    } else if (c === '"') inStr = true;
-    else if (c === "{") depth++;
-    else if (c === "}") {
-      depth--;
-      if (depth === 0) return { value: JSON.parse(s.slice(start, i + 1)), cleaned: true };
-    }
-  }
-  throw new Error("Unbalanced JSON object in output");
 }
