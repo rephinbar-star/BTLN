@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { AlertTriangle, ArrowRight, Check, Copy, Heart, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Check, Copy, Heart, Loader2, Lock, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { useAuth } from "@/hooks/useAuth";
+import { useDecodeAccess, FREE_DECODES } from "@/hooks/useDecodeAccess";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
+
+const DECODE_PLAN_PRICE_ID = "BTLN_decode_monthly";
 
 const POLL_MS = 2000;
 const TIMEOUT_MS = 120_000;
@@ -83,6 +88,11 @@ const DecodeResult = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const stopped = useRef(false);
   const startedAt = useRef(Date.now());
+  const { user } = useAuth();
+  const { entitled, completedCount, isLoading: accessLoading, refresh: refreshAccess } =
+    useDecodeAccess();
+  const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
+  const paywallTracked = useRef(false);
 
   useEffect(() => {
     if (!decodeId) return;
