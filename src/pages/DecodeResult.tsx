@@ -243,7 +243,7 @@ const DecodeResult = () => {
               <p className="text-[15px] font-medium">Want the full read on you two?</p>
               <p className="mt-1 text-[14px] text-muted-foreground">
                 Upload a longer conversation and get the deep report — patterns, attachment styles, and
-                what keeps repeating.
+                what keeps repeating. We need at least 20 or 30 text exchanges for the deep report.
               </p>
               <Link
                 to="/#input-section"
