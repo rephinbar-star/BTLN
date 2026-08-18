@@ -1,5 +1,5 @@
 import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -79,9 +79,9 @@ Deno.serve(async (req) => {
         { auth: { persistSession: false } },
       );
       const token = authHeader.replace("Bearer ", "");
-      const { data: claimsData, error: claimsErr } = await supabaseAuth.auth.getClaims(token);
-      const jwtUserId = (claimsData?.claims?.sub as string) ?? null;
-      if (claimsErr || !jwtUserId) {
+      const { data: userData, error: userErr } = await supabaseAuth.auth.getUser(token);
+      const jwtUserId = userData?.user?.id ?? null;
+      if (userErr || !jwtUserId) {
         return new Response(JSON.stringify({ error: "Invalid auth token" }), {
           status: 401,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
