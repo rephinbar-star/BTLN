@@ -51,6 +51,9 @@ export type EventMap = {
   decode_started: { input_method: "screenshot" | "paste" };
   decode_completed: { has_flag: boolean; confidence: string };
   decode_reply_copied: { tone: string };
+  decode_paywall_viewed: Record<string, never>;
+  decode_intent_to_pay_click: { plan: string };
+  deep_report_upsell_click: Record<string, never>;
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
@@ -78,6 +81,9 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   decode_started: ["input_method"],
   decode_completed: ["has_flag", "confidence"],
   decode_reply_copied: ["tone"],
+  decode_paywall_viewed: [],
+  decode_intent_to_pay_click: ["plan"],
+  deep_report_upsell_click: [],
 } as never;
 
 // Reject obvious PII shapes as a defense-in-depth check on top of the
