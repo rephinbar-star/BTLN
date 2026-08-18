@@ -122,6 +122,7 @@ const DecodeResult = () => {
           has_flag: json.flag?.type != null,
           confidence: json.confidence ?? "unknown",
         });
+        refreshAccess();
       } else if (row.status === "failed") {
         stopped.current = true;
         setErrorMsg(row.error_message ?? "That decode didn't work out.");
@@ -138,12 +139,33 @@ const DecodeResult = () => {
       stopped.current = true;
       clearInterval(t);
     };
-  }, [decodeId]);
+  }, [decodeId, refreshAccess]);
 
   const flagType = result?.flag?.type ?? null;
   const isSafety = flagType === "safety";
   const isManipulation = !!flagType && MANIPULATION_TYPES.includes(String(flagType));
   const replies = isSafety ? [] : (result?.reply_options ?? []);
+
+  // First-free metering: any active subscription = unlimited decodes.
+  const locked =
+    status === "complete" && !accessLoading && !entitled && completedCount > FREE_DECODES;
+
+  useEffect(() => {
+    if (locked && !paywallTracked.current) {
+      paywallTracked.current = true;
+      track("decode_paywall_viewed", {} as never);
+    }
+  }, [locked]);
+
+  const startDecodeCheckout = () => {
+    track("decode_intent_to_pay_click", { plan: "decode_monthly" });
+    openCheckout({
+      priceId: DECODE_PLAN_PRICE_ID,
+      customerEmail: user?.email,
+      userId: user?.id,
+      returnUrl: `${window.location.origin}/decode/${decodeId}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
