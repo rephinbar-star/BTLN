@@ -7,6 +7,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Processing from "./pages/Processing.tsx";
+import DecodeResult from "./pages/DecodeResult.tsx";
 import Report from "./pages/Report.tsx";
 import ErrorPage from "./pages/ErrorPage.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -53,6 +54,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/processing/:analysisId" element={<Processing />} />
+          <Route path="/decode/:decodeId" element={<DecodeResult />} />
           <Route path="/report/:analysisId" element={<Report />} />
           <Route path="/checkout/return" element={<CheckoutReturn />} />
           <Route path="/pricing" element={<Pricing />} />
