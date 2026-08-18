@@ -397,6 +397,17 @@ const DecodeResult = () => {
                 Decode another text →
               </Link>
             </div>
+
+            {user && (
+              <div className="mt-3 text-center">
+                <Link
+                  to="/account"
+                  className="text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  Manage subscription
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </main>
