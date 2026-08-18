@@ -5,6 +5,7 @@ import { FinalCta } from "@/components/chemistry/FinalCta";
 import { Footer } from "@/components/chemistry/Footer";
 import { Header } from "@/components/chemistry/Header";
 import { Hero } from "@/components/chemistry/Hero";
+import { DecodeHero } from "@/components/chemistry/DecodeHero";
 import { HowItWorks } from "@/components/chemistry/HowItWorks";
 import { InputSection } from "@/components/chemistry/InputSection";
 import { WhatYouGet } from "@/components/chemistry/WhatYouGet";
@@ -84,6 +85,7 @@ const Index = () => {
       </Helmet>
       <Header />
       <main>
+        <DecodeHero />
         <Hero />
         <InputSection />
         <HowItWorks />

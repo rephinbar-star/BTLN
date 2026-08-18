@@ -13,9 +13,9 @@ export const Hero = () => {
       <div className="grid gap-12 lg:grid-cols-[1.05fr_1fr] lg:items-center lg:gap-16">
         <div className="order-1">
           <p className="text-sm text-muted-foreground">AI relationship analysis</p>
-          <h1 className="mt-4 text-[32px] font-medium leading-[1.05] tracking-tight sm:text-[40px] lg:text-[52px]">
+          <h2 className="mt-4 text-[32px] font-medium leading-[1.05] tracking-tight sm:text-[40px] lg:text-[52px]">
             See what your texts actually say about your relationship.
-          </h1>
+          </h2>
           <p className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-muted-foreground sm:text-[20px]">
             Drop in a few screenshots or paste your texts. Get a detailed report on your communication style,
             attachment patterns, and the dynamics hiding in plain sight.
