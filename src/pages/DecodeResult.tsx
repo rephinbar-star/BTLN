@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { AlertTriangle, ArrowRight, Check, Copy, Heart, Loader2, Lock, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +83,8 @@ const MANIPULATION_TYPES = [
 
 const DecodeResult = () => {
   const { decodeId } = useParams<{ decodeId: string }>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState<string>("pending");
   const [result, setResult] = useState<DecodeResultJson | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -93,6 +95,8 @@ const DecodeResult = () => {
     useDecodeAccess();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const paywallTracked = useRef(false);
+  const resumeTried = useRef(false);
+  const pollingUnlock = useRef(false);
 
   useEffect(() => {
     if (!decodeId) return;
