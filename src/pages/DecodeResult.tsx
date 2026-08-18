@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { AlertTriangle, ArrowRight, Check, Copy, Heart, Loader2, Lock, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -83,6 +83,8 @@ const MANIPULATION_TYPES = [
 
 const DecodeResult = () => {
   const { decodeId } = useParams<{ decodeId: string }>();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [status, setStatus] = useState<string>("pending");
   const [result, setResult] = useState<DecodeResultJson | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -93,6 +95,8 @@ const DecodeResult = () => {
     useDecodeAccess();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const paywallTracked = useRef(false);
+  const resumeTried = useRef(false);
+  const pollingUnlock = useRef(false);
 
   useEffect(() => {
     if (!decodeId) return;
@@ -157,15 +161,72 @@ const DecodeResult = () => {
     }
   }, [locked]);
 
-  const startDecodeCheckout = () => {
+  const startDecodeCheckout = useCallback(() => {
     track("decode_intent_to_pay_click", { plan: "decode_monthly" });
+    if (!user?.id) {
+      navigate(
+        "/auth?return_to=" +
+          encodeURIComponent(`/decode/${decodeId}?intent=decode_upgrade`),
+      );
+      return;
+    }
     openCheckout({
       priceId: DECODE_PLAN_PRICE_ID,
-      customerEmail: user?.email,
-      userId: user?.id,
+      customerEmail: user.email,
+      userId: user.id,
       returnUrl: `${window.location.origin}/decode/${decodeId}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     });
-  };
+  }, [user?.id, user?.email, decodeId, navigate, openCheckout]);
+
+  // Resume checkout after the user signs in mid-flow.
+  useEffect(() => {
+    if (resumeTried.current) return;
+    if (searchParams.get("intent") !== "decode_upgrade") return;
+    if (accessLoading || !user?.id || entitled) return;
+    resumeTried.current = true;
+    // Claim this decode for the freshly authenticated account (best effort).
+    void supabase.rpc("claim_anonymous_analyses", {
+      p_session_id: getSessionId(),
+      p_user_id: user.id,
+    });
+    startDecodeCheckout();
+  }, [searchParams, user?.id, entitled, accessLoading, startDecodeCheckout]);
+
+  // After returning from checkout, poll until the subscription lands (webhook lag).
+  useEffect(() => {
+    if (searchParams.get("checkout") !== "success") return;
+    if (pollingUnlock.current) return;
+    pollingUnlock.current = true;
+    let attempts = 0;
+    const clear = () => {
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("session_id");
+      next.delete("intent");
+      setSearchParams(next, { replace: true });
+    };
+    const t = window.setInterval(() => {
+      attempts += 1;
+      refreshAccess();
+      if (attempts >= 7) {
+        window.clearInterval(t);
+        clear();
+      }
+    }, 1500);
+    refreshAccess();
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (entitled && searchParams.get("checkout") === "success") {
+      const next = new URLSearchParams(searchParams);
+      next.delete("checkout");
+      next.delete("session_id");
+      next.delete("intent");
+      setSearchParams(next, { replace: true });
+    }
+  }, [entitled, searchParams, setSearchParams]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -336,6 +397,17 @@ const DecodeResult = () => {
                 Decode another text →
               </Link>
             </div>
+
+            {user && (
+              <div className="mt-3 text-center">
+                <Link
+                  to="/account"
+                  className="text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                >
+                  Manage subscription
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </main>
