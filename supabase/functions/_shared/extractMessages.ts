@@ -1,8 +1,8 @@
 // Shared message-extraction parser used by both the full report pipeline
 // (analyze-conversation) and the Quick Decode lane (decode-conversation).
 
-import { extractJsonObject, stripFences } from "./extractJson.ts";
-export { extractJsonObject, stripFences };
+import { extractJsonObject } from "./extractJson.ts";
+export { extractJsonObject, stripFences } from "./extractJson.ts";
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
