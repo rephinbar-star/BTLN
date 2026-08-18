@@ -167,6 +167,42 @@ export type Database = {
         }
         Relationships: []
       }
+      decodes: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          relationship_id: string | null
+          result_json: Json | null
+          session_id: string
+          source: string | null
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          relationship_id?: string | null
+          result_json?: Json | null
+          session_id: string
+          source?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          relationship_id?: string | null
+          result_json?: Json | null
+          session_id?: string
+          source?: string | null
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       email_captures: {
         Row: {
           analysis_id: string | null
@@ -396,6 +432,7 @@ export type Database = {
           active: boolean
           created_at: string
           id: string
+          kind: string
           model_string: string
           notes: string | null
           prompt_text: string
@@ -406,6 +443,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          kind?: string
           model_string?: string
           notes?: string | null
           prompt_text: string
@@ -416,6 +454,7 @@ export type Database = {
           active?: boolean
           created_at?: string
           id?: string
+          kind?: string
           model_string?: string
           notes?: string | null
           prompt_text?: string
@@ -652,6 +691,19 @@ export type Database = {
           relationship_type: string
           result_json: Json
           session_id: string
+          status: string
+          user_id: string
+        }[]
+      }
+      get_decode_for_session: {
+        Args: { p_id: string; p_session_id: string }
+        Returns: {
+          error_message: string
+          id: string
+          relationship_id: string
+          result_json: Json
+          session_id: string
+          source: string
           status: string
           user_id: string
         }[]
