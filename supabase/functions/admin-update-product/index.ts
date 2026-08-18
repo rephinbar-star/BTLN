@@ -1,5 +1,5 @@
 import { createStripeClient } from "../_shared/stripe.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 async function requireAdmin(req: Request): Promise<Response | null> {
   const authHeader = req.headers.get("Authorization");
@@ -15,8 +15,8 @@ async function requireAdmin(req: Request): Promise<Response | null> {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     { auth: { persistSession: false } },
   );
-  const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-  const userId = (claimsData?.claims?.sub as string) ?? null;
+  const { data: userData, error: claimsErr } = await supabase.auth.getUser(token);
+  const userId = userData?.user?.id ?? null;
   if (claimsErr || !userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), {
       status: 401,
