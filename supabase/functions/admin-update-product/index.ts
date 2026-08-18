@@ -72,7 +72,57 @@ Deno.serve(async (req) => {
   }
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
   try {
-    const { lookupKey, name, description, environment } = await req.json();
+    const body = await req.json();
+    const { action, lookupKey, name, description, environment } = body;
+
+    // Ensure a price with the given lookup key exists in the mode of the
+    // configured STRIPE_SECRET_KEY (sk_live_* => live mode). Idempotent.
+    if (action === "ensure_price") {
+      const {
+        unitAmount,
+        currency = "usd",
+        interval,
+        productName,
+        productDescription,
+      } = body;
+      if (!lookupKey || typeof unitAmount !== "number" || unitAmount <= 0) {
+        return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400 });
+      }
+      const stripe = createStripeClient("live");
+      const existing = await stripe.prices.list({ lookup_keys: [lookupKey], limit: 1 });
+      if (existing.data.length) {
+        const p = existing.data[0];
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            created: false,
+            price: { id: p.id, livemode: p.livemode, lookup_key: p.lookup_key, unit_amount: p.unit_amount },
+          }),
+          { headers: { "Content-Type": "application/json" } },
+        );
+      }
+      const product = await stripe.products.create({
+        name: productName ?? lookupKey,
+        ...(productDescription ? { description: productDescription } : {}),
+      });
+      const price = await stripe.prices.create({
+        product: product.id,
+        currency,
+        unit_amount: unitAmount,
+        lookup_key: lookupKey,
+        transfer_lookup_key: true,
+        ...(interval ? { recurring: { interval } } : {}),
+      });
+      return new Response(
+        JSON.stringify({
+          ok: true,
+          created: true,
+          price: { id: price.id, livemode: price.livemode, lookup_key: price.lookup_key, unit_amount: price.unit_amount },
+        }),
+        { headers: { "Content-Type": "application/json" } },
+      );
+    }
+
     if (!lookupKey || (environment !== "sandbox" && environment !== "live")) {
       return new Response(JSON.stringify({ error: "Invalid input" }), { status: 400 });
     }
