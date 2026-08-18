@@ -222,6 +222,7 @@ Deno.serve(async (req) => {
     .from("prompt_versions")
     .select("id, prompt_text, model_string, vision_model_string")
     .eq("active", true)
+    .eq("kind", "full")
     .maybeSingle();
   if (pvErr || !pv) {
     return failAnalysis("No active prompt version configured.");
