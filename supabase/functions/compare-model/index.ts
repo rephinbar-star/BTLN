@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
-import { extractJsonObject, stripFences } from "../_shared/extractJson.ts";
+import { extractJsonObject } from "../_shared/extractJson.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
