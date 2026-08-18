@@ -1,0 +1,1 @@
+UPDATE public.prompt_versions SET active = false WHERE id = '62ffbcdb-7288-45db-b548-1d3eaf532b1e';
