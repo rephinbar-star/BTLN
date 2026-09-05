@@ -12,7 +12,8 @@ function getSupabase() {
 function resolveTier(lookupKey?: string | null): string {
   if (lookupKey === "BTLN_annual" || lookupKey === "duo_annual") return "annual";
   if (lookupKey === "BTLN_monthly" || lookupKey === "duo_monthly") return "monthly";
-  return lookupKey ?? "unknown";
+  if (lookupKey === "BTLN_decode_monthly" || lookupKey === "decode_monthly") return "decode_monthly";
+  return "unknown";
 }
 
 function isAccessGrantingStatus(status?: string | null): boolean {
