@@ -1,0 +1,2 @@
+ALTER TABLE public.user_subscriptions DROP CONSTRAINT user_subscriptions_tier_check;
+ALTER TABLE public.user_subscriptions ADD CONSTRAINT user_subscriptions_tier_check CHECK (tier = ANY (ARRAY['monthly','annual','lifetime','decode_monthly','unknown']));
