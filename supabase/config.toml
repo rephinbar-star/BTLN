@@ -25,3 +25,10 @@ verify_jwt = false
 verify_jwt = false
 [functions.decode-conversation]
 verify_jwt = false
+
+[functions.analyze-group]
+verify_jwt = false
+
+[functions.group-share]
+verify_jwt = false
+

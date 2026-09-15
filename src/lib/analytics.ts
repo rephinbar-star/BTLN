@@ -71,6 +71,22 @@ export type EventMap = {
     format: "square" | "story";
   };
   report_pair_type_link_click: { id: number; relationship: RelationshipType };
+  group_read_started: { category: string };
+  group_participants_confirmed: { category: string; participant_count: number };
+  group_read_completed: {
+    group_read_id: string;
+    participant_count: number;
+    safety_mode: boolean;
+  };
+  group_read_failed: { reason_code: string };
+  group_share_created: {
+    group_read_id: string;
+    include_names: boolean;
+    include_quotes: boolean;
+  };
+  group_share_visited: Record<string, never>;
+  group_role_card_engaged: { format: "square" | "story" | "view" };
+  group_share_conversion: Record<string, never>;
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
@@ -110,6 +126,14 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   pair_type_share_click: ["id", "relationship", "method"],
   pair_type_image_download: ["id", "relationship", "format"],
   report_pair_type_link_click: ["id", "relationship"],
+  group_read_started: ["category"],
+  group_participants_confirmed: ["category", "participant_count"],
+  group_read_completed: ["group_read_id", "participant_count", "safety_mode"],
+  group_read_failed: ["reason_code"],
+  group_share_created: ["group_read_id", "include_names", "include_quotes"],
+  group_share_visited: [],
+  group_role_card_engaged: ["format"],
+  group_share_conversion: [],
 } as never;
 
 // Reject obvious PII shapes as a defense-in-depth check on top of the

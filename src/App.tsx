@@ -8,6 +8,9 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import Processing from "./pages/Processing.tsx";
 import DecodeResult from "./pages/DecodeResult.tsx";
+import GroupRead from "./pages/GroupRead.tsx";
+import GroupResult from "./pages/GroupResult.tsx";
+import GroupShareView from "./pages/GroupShareView.tsx";
 import Report from "./pages/Report.tsx";
 import ErrorPage from "./pages/ErrorPage.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -59,6 +62,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/processing/:analysisId" element={<Processing />} />
           <Route path="/decode/:decodeId" element={<DecodeResult />} />
+          <Route path="/group" element={<GroupRead />} />
+          <Route path="/group/:groupId" element={<GroupResult />} />
+          <Route path="/g/:token" element={<GroupShareView />} />
           <Route path="/report/:analysisId" element={<Report />} />
           <Route path="/checkout/return" element={<CheckoutReturn />} />
           <Route path="/pricing" element={<Pricing />} />
