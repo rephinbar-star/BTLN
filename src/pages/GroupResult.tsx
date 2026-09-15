@@ -175,6 +175,25 @@ const GroupResult = () => {
 
   // ---- states -------------------------------------------------------------
 
+  if (!row && notFound) {
+    return (
+      <Shell>
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h1 className="text-[20px] font-medium">We can't find that group read</h1>
+          <p className="mt-2 text-[15px] text-muted-foreground">
+            Group reads are private to the device that made them, so this one isn't yours to open.
+          </p>
+          <Link
+            to="/group"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background"
+          >
+            Read your own group chat
+          </Link>
+        </div>
+      </Shell>
+    );
+  }
+
   if (!row) {
     return (
       <Shell>
