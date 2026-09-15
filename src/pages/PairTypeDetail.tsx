@@ -89,11 +89,12 @@ const PairTypeDetail = () => {
       navigate("/types", { replace: true });
       return;
     }
-    // Unknown category segment → send to the canonical category URL.
-    if (!RELATIONSHIP_BY_SEGMENT[category]) {
+    // Unknown category segment, or a retired slug alias → canonical URL.
+    if (!RELATIONSHIP_BY_SEGMENT[category] || SLUG_BY_ID[id] !== slug) {
       navigate(pairTypePath(id, relationship), { replace: true });
       return;
     }
+
 
     let cancelled = false;
     setLoading(true);
