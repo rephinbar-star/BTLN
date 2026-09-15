@@ -42,7 +42,7 @@ export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
     const f = fieldsFor(row, relationship);
     const { width, height } = SHARE_SIZES[format];
     const story = format === "story";
-    const art = story ? 940 : 840;
+    const art = story ? 1120 : 900;
     const muted = hexToRgba(row.text_color, 0.72);
 
     return (
@@ -108,7 +108,6 @@ export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
         )}
 
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-          <div style={{ fontSize: story ? 46 : 38, fontWeight: 600, lineHeight: 1.1 }}>{f.name}</div>
           <div
             style={{
               display: "flex",
