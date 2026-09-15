@@ -213,7 +213,7 @@ const GroupResult = () => {
     );
   }
 
-  if (row.status === "failed" || timedOut) {
+  if (row.status === "failed" || (timedOut && row.status !== "complete")) {
     return (
       <Shell>
         <div className="rounded-2xl border border-border bg-card p-6">
