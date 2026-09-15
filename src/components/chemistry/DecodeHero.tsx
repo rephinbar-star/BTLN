@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { DecodeInput } from "./DecodeInput";
 
 const scrollToInput = () => {
@@ -27,7 +28,11 @@ export const DecodeHero = () => (
           <li aria-hidden>·</li>
           <li>Roast Us <span className="opacity-70">(soon)</span></li>
           <li aria-hidden>·</li>
-          <li>Group Read <span className="opacity-70">(soon)</span></li>
+          <li>
+            <Link to="/group" className="underline-offset-4 hover:text-foreground hover:underline">
+              Group Read
+            </Link>
+          </li>
         </ul>
         <button
           onClick={scrollToInput}
