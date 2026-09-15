@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
+import { SLUG_BY_ID, displayName } from "../src/lib/pairTypeSlugs";
 
 /**
  * Build-time prerender for the 39 public pair-type pages.
@@ -14,22 +15,6 @@ import type { Plugin } from "vite";
  * Data is read from the public `couple_types` table with the publishable key.
  * If the fetch fails the build still succeeds — the SPA fallback keeps working.
  */
-
-const SLUG_BY_ID: Record<number, string> = {
-  1: "power-couple",
-  2: "steady-anchors",
-  3: "quiet-loyalists",
-  4: "deep-feelers",
-  5: "independent-duo",
-  6: "magnet-and-moon",
-  7: "support-system",
-  8: "builders",
-  9: "duet",
-  10: "brave-duo",
-  11: "solo-climbers",
-  12: "quiet-companions",
-  13: "fire-pair",
-};
 
 const CATEGORIES = [
   { segment: "romantic", key: "romantic", label: "Romantic" },
@@ -46,7 +31,6 @@ const escapeHtml = (s: string) =>
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 
-const displayName = (s: string) => s.replace(/^The\s+/i, "").trim();
 
 type Row = Record<string, string | number | null>;
 

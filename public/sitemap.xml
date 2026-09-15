@@ -81,7 +81,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://betweenthelines.app/types/romantic/quiet-companions</loc>
+    <loc>https://betweenthelines.app/types/romantic/low-hum</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -146,7 +146,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://betweenthelines.app/types/friends/quiet-companions</loc>
+    <loc>https://betweenthelines.app/types/friends/low-hum</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
@@ -211,7 +211,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://betweenthelines.app/types/family/quiet-companions</loc>
+    <loc>https://betweenthelines.app/types/family/low-hum</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
   </url>
