@@ -1,9 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import * as htmlToImage from "html-to-image";
+import { Check, Download, Loader2, Share2 } from "lucide-react";
 import { Footer } from "@/components/chemistry/Footer";
 import { Header } from "@/components/chemistry/Header";
 import { DecorativeElement } from "@/components/chemistry/DecorativeElement";
+import {
+  PairTypeShareCard,
+  SHARE_SIZES,
+  type ShareFormat,
+} from "@/components/pairtype/PairTypeShareCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -41,6 +48,11 @@ const PairTypeDetail = () => {
   const [row, setRow] = useState<PairTypeRow | null>(null);
   const [others, setOthers] = useState<PairTypeRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [imgFailed, setImgFailed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [busyFormat, setBusyFormat] = useState<ShareFormat | null>(null);
+  const shareRef = useRef<HTMLDivElement>(null);
+  const [renderFormat, setRenderFormat] = useState<ShareFormat | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -49,6 +61,7 @@ const PairTypeDetail = () => {
     }
     let cancelled = false;
     setLoading(true);
+    setImgFailed(false);
     Promise.all([fetchPairType(id), fetchPairTypes()])
       .then(([one, all]) => {
         if (cancelled) return;
@@ -71,8 +84,12 @@ const PairTypeDetail = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  useEffect(() => setImgFailed(false), [relationship]);
+
   const f = row ? fieldsFor(row, relationship) : null;
   const canonical = `https://betweenthelines.app/types/${slug}`;
+  // Public page URL only — never a report id or anything personal.
+  const shareUrl = `${canonical}${relationship === "romantic" ? "" : `?as=${relationship}`}`;
 
   const jsonLd = useMemo(
     () =>
@@ -93,6 +110,61 @@ const PairTypeDetail = () => {
     [row, f, canonical],
   );
 
+  const handleShare = useCallback(async () => {
+    if (!row || !f) return;
+    const nav = navigator as Navigator;
+    const text = `${f.name} — ${f.tagline}`;
+    if (typeof nav.share === "function") {
+      try {
+        await nav.share({ title: `${f.name} — BetweenTheLines™`, text, url: shareUrl });
+        track("pair_type_share_click", { id: row.id, relationship, method: "web_share" });
+        return;
+      } catch {
+        // fall through to copy
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1800);
+      track("pair_type_share_click", { id: row.id, relationship, method: "copy_link" });
+    } catch {
+      // clipboard unavailable — nothing else we can do silently
+    }
+  }, [row, f, relationship, shareUrl]);
+
+  const handleDownload = useCallback(
+    async (format: ShareFormat) => {
+      if (!row || !f || busyFormat) return;
+      setBusyFormat(format);
+      setRenderFormat(format);
+      try {
+        // Let the offscreen card mount and its artwork load.
+        await new Promise((r) => window.setTimeout(r, 350));
+        const node = shareRef.current;
+        if (!node) return;
+        const { width, height } = SHARE_SIZES[format];
+        const dataUrl = await htmlToImage.toPng(node, {
+          width,
+          height,
+          pixelRatio: 1,
+          cacheBust: true,
+        });
+        const link = document.createElement("a");
+        link.href = dataUrl;
+        link.download = `betweenthelines-${slug}-${relationship}-${format === "story" ? "9x16" : "1x1"}.png`;
+        link.click();
+        track("pair_type_image_download", { id: row.id, relationship, format });
+      } catch {
+        // Silent: download simply doesn't start if capture fails.
+      } finally {
+        setBusyFormat(null);
+        setRenderFormat(null);
+      }
+    },
+    [row, f, busyFormat, relationship, slug],
+  );
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
@@ -101,7 +173,7 @@ const PairTypeDetail = () => {
           name="description"
           content={
             f
-              ? `${f.tagline} What ${f.name} looks like in everyday messages, its superpower, and where it gets stuck.`
+              ? `${f.tagline} What ${f.name} looks like in everyday messages, its superpower, where it gets stuck, and what helps.`
               : "Explore the BetweenTheLines pair types."
           }
         />
@@ -109,6 +181,10 @@ const PairTypeDetail = () => {
         <meta property="og:title" content={f ? `${f.name} — BetweenTheLines™` : "BetweenTheLines™"} />
         <meta property="og:description" content={f?.tagline ?? ""} />
         <meta property="og:url" content={canonical} />
+        <meta property="og:type" content="article" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={f ? `${f.name} — BetweenTheLines™` : "BetweenTheLines™"} />
+        <meta name="twitter:description" content={f?.tagline ?? ""} />
         {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
       </Helmet>
       <Header />
@@ -141,16 +217,24 @@ const PairTypeDetail = () => {
                   <span aria-hidden>⚡</span>
                   <span>{f.superpower}</span>
                 </div>
-                {f.image && (
-                  <div className="mx-auto mt-8 aspect-square w-full max-w-[360px] overflow-hidden rounded-[16px]">
+                <div className="mx-auto mt-8 aspect-square w-full max-w-[360px] overflow-hidden rounded-[16px]">
+                  {f.image && !imgFailed ? (
                     <img
                       src={f.image}
                       alt={`${f.name} illustration`}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full object-contain"
                       loading="eager"
+                      onError={() => setImgFailed(true)}
                     />
-                  </div>
-                )}
+                  ) : (
+                    <div
+                      className="flex h-full w-full items-center justify-center px-6 text-center text-[18px] font-medium"
+                      style={{ backgroundColor: hexToRgba(row.text_color, 0.08) }}
+                    >
+                      {f.name}
+                    </div>
+                  )}
+                </div>
                 <p className="mx-auto mt-8 max-w-[480px] text-[18px] italic leading-snug sm:text-[20px]">
                   {f.tagline}
                 </p>
@@ -167,13 +251,14 @@ const PairTypeDetail = () => {
                 {RELATIONSHIPS.map((rel) => (
                   <button
                     key={rel}
+                    type="button"
                     onClick={() => {
                       setParams(rel === "romantic" ? {} : { as: rel }, { replace: true });
                       track("pair_type_relationship_switch", { id: row.id, relationship: rel });
                     }}
                     aria-pressed={rel === relationship}
                     className={cn(
-                      "rounded-full border px-3.5 py-1.5 text-[13px] transition-colors",
+                      "rounded-full border px-3.5 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                       rel === relationship
                         ? "border-foreground/20 bg-muted font-medium text-foreground"
                         : "border-border text-muted-foreground hover:text-foreground",
@@ -183,6 +268,75 @@ const PairTypeDetail = () => {
                   </button>
                 ))}
               </div>
+
+              {/* Share this pair type — public page only, nothing personal */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={handleShare}>
+                  {copied ? (
+                    <>
+                      <Check className="h-4 w-4" /> Link copied
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="h-4 w-4" /> Share this type
+                    </>
+                  )}
+                </Button>
+                {(["square", "story"] as ShareFormat[]).map((fmt) => (
+                  <Button
+                    key={fmt}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={busyFormat !== null}
+                    onClick={() => handleDownload(fmt)}
+                  >
+                    {busyFormat === fmt ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Download className="h-4 w-4" />
+                    )}
+                    {SHARE_SIZES[fmt].label} image
+                  </Button>
+                ))}
+              </div>
+
+              <div className="mt-12 grid gap-4 sm:grid-cols-2">
+                {f.friction && (
+                  <section className="rounded-2xl border border-border bg-card p-6">
+                    <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      Where it gets stuck
+                    </h2>
+                    <p className="mt-3 text-[15px] leading-relaxed">{f.friction}</p>
+                  </section>
+                )}
+                {f.advice && (
+                  <section className="rounded-2xl border border-border bg-card p-6">
+                    <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                      What helps
+                    </h2>
+                    <p className="mt-3 text-[15px] leading-relaxed">{f.advice}</p>
+                  </section>
+                )}
+              </div>
+
+              {f.examples.length > 0 && (
+                <section className="mt-4 rounded-2xl border border-border bg-card p-6">
+                  <h2 className="text-[13px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    You&apos;ll recognise this if…
+                  </h2>
+                  <ul className="mt-3 space-y-2">
+                    {f.examples.map((ex) => (
+                      <li key={ex} className="flex gap-2 text-[15px] leading-relaxed">
+                        <span aria-hidden className="text-muted-foreground">
+                          •
+                        </span>
+                        <span>{ex}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
 
               <div className="mt-12 rounded-2xl border border-border bg-card p-8 text-center shadow-[var(--shadow-card)]">
                 <h2 className="text-[22px] font-medium tracking-tight sm:text-[26px]">
@@ -198,7 +352,7 @@ const PairTypeDetail = () => {
                   className="mt-6"
                   onClick={() => track("pair_type_cta_click", { id: row.id, relationship })}
                 >
-                  <Link to="/">Read my chat</Link>
+                  <Link to="/#input-section">Read my chat</Link>
                 </Button>
               </div>
 
@@ -212,7 +366,7 @@ const PairTypeDetail = () => {
                         <Link
                           key={o.id}
                           to={`/types/${SLUG_BY_ID[o.id]}${relationship === "romantic" ? "" : `?as=${relationship}`}`}
-                          className="rounded-2xl border border-border p-5 transition-transform hover:-translate-y-0.5"
+                          className="rounded-2xl border border-border p-5 transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           style={{ backgroundColor: o.background_color, color: o.text_color }}
                         >
                           <div className="text-[16px] font-medium">{of_.name}</div>
@@ -226,6 +380,21 @@ const PairTypeDetail = () => {
             </div>
           )}
         </section>
+
+        {/* Offscreen render target for downloadable share images */}
+        {row && renderFormat && (
+          <div
+            aria-hidden
+            style={{ position: "fixed", left: -20000, top: 0, pointerEvents: "none" }}
+          >
+            <PairTypeShareCard
+              ref={shareRef}
+              row={row}
+              relationship={relationship}
+              format={renderFormat}
+            />
+          </div>
+        )}
       </main>
       <Footer />
     </div>
