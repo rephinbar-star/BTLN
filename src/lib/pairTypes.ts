@@ -45,36 +45,9 @@ export type PairTypeExtras = Partial<Record<RelationshipType, PairTypeExtrasEntr
 const COLUMNS =
   "id, romantic_name, friend_name, family_name, romantic_tagline, friend_tagline, family_tagline, romantic_superpower, friend_superpower, family_superpower, romantic_description, friend_description, family_description, background_color, text_color, decorative_element, image_url_romantic, image_url_friend, image_url_family, extras";
 
-/** Stable, SEO-friendly slugs per pair type id (1..13). */
-export const SLUG_BY_ID: Record<number, string> = {
-  1: "power-couple",
-  2: "steady-anchors",
-  3: "quiet-loyalists",
-  4: "deep-feelers",
-  5: "independent-duo",
-  6: "magnet-and-moon",
-  7: "support-system",
-  8: "builders",
-  9: "duet",
-  10: "brave-duo",
-  11: "solo-climbers",
-  12: "low-hum",
-  13: "fire-pair",
-};
+/** Slugs, aliases and display-name rules live in one canonical registry. */
+export { SLUG_BY_ID, SLUG_ALIASES, ID_BY_SLUG, displayName } from "@/lib/pairTypeSlugs";
 
-/** Retired slugs kept alive so old links never 404. */
-export const SLUG_ALIASES: Record<string, number> = {
-  "slow-burners": 3,
-  "parallel-players": 5,
-  "quiet-companions": 12,
-  "sparring-partners": 13,
-};
-
-
-export const ID_BY_SLUG: Record<string, number> = {
-  ...Object.fromEntries(Object.entries(SLUG_BY_ID).map(([id, slug]) => [slug, Number(id)])),
-  ...SLUG_ALIASES,
-};
 
 /** URL segment per relationship: /types/{segment}/{slug}. */
 export const SEGMENT_BY_RELATIONSHIP: Record<RelationshipType, string> = {
