@@ -87,6 +87,9 @@ export type EventMap = {
   group_share_visited: Record<string, never>;
   group_role_card_engaged: { format: "square" | "story" | "view" };
   group_share_conversion: Record<string, never>;
+  group_perspective_selected: Record<string, never>;
+  group_perspective_saved: Record<string, never>;
+  group_paywall_viewed: Record<string, never>;
   roast_started: { source_type: string };
   roast_completed: { source_type: string; tone: string };
   roast_failed: { reason_code: string };
@@ -142,6 +145,9 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   group_share_visited: [],
   group_role_card_engaged: ["format"],
   group_share_conversion: [],
+  group_perspective_selected: [],
+  group_perspective_saved: [],
+  group_paywall_viewed: [],
   roast_started: ["source_type"],
   roast_completed: ["source_type", "tone"],
   roast_failed: ["reason_code"],

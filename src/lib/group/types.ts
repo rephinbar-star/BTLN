@@ -83,6 +83,8 @@ export type GroupShareSnapshot = {
     share_pct: number | null;
   }[];
   strengths: string[];
+  /** Group-level next steps (v2 snapshots). No names, quotes or chat text. */
+  suggestions?: string[];
   created_at: string;
 };
 
