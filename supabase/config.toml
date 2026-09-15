@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.roast-share]
 verify_jwt = false
+
+[functions.analysis-share]
+verify_jwt = false
