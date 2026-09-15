@@ -44,6 +44,10 @@ type Row = {
 const GroupResult = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const [row, setRow] = useState<Row | null>(null);
+  const rowRef = useRef<Row | null>(null);
+  useEffect(() => {
+    rowRef.current = row;
+  }, [row]);
   const [timedOut, setTimedOut] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [includeNames, setIncludeNames] = useState(false);
@@ -84,6 +88,11 @@ const GroupResult = () => {
   useEffect(() => {
     void load();
     const t = window.setInterval(() => {
+      const status = rowRef.current?.status;
+      if (status === "complete" || status === "failed") {
+        window.clearInterval(t);
+        return;
+      }
       if (Date.now() - startedAt.current > TIMEOUT_MS) {
         setTimedOut(true);
         window.clearInterval(t);
@@ -204,7 +213,7 @@ const GroupResult = () => {
     );
   }
 
-  if (row.status === "failed" || timedOut) {
+  if (row.status === "failed" || (timedOut && row.status !== "complete")) {
     return (
       <Shell>
         <div className="rounded-2xl border border-border bg-card p-6">
