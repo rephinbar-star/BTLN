@@ -174,6 +174,44 @@ Deno.serve(async (req) => {
       .update({ status: "pending", error_message: null })
       .eq("id", rowId);
   } else {
+    // Entitlement is checked server-side BEFORE any costly generation, and only
+    // for brand-new reads — retries of an existing row are never re-charged.
+    //
+    // Rule (prospective): any active subscription => unlimited group reads.
+    // Otherwise every owner (signed-in or guest session) gets FREE_GROUP_READS
+    // free reads counted from RULE_CUTOFF, so already-generated reads keep
+    // working and nobody loses access they already had.
+    let entitled = false;
+    if (userId) {
+      const { data: subs } = await supabase
+        .from("user_subscriptions")
+        .select("status, current_period_end")
+        .eq("user_id", userId);
+      entitled = (subs ?? []).some(
+        (s: { status: string; current_period_end: string | null }) =>
+          ["active", "trialing", "past_due"].includes(s.status) &&
+          (!s.current_period_end || Date.parse(s.current_period_end) > Date.now()),
+      );
+    }
+
+    if (!entitled) {
+      const usedQuery = supabase
+        .from("group_reads")
+        .select("id", { count: "exact", head: true })
+        .gte("created_at", RULE_CUTOFF)
+        .neq("status", "failed");
+      const { count: used } = userId
+        ? await usedQuery.eq("user_id", userId)
+        : await usedQuery.eq("session_id", session_id);
+      if ((used ?? 0) >= FREE_GROUP_READS) {
+        return json(402, {
+          code: "subscription_required",
+          error:
+            "Your free group read has been used. A BetweenTheLines plan unlocks unlimited group reads.",
+        });
+      }
+    }
+
     const { data: created, error: createErr } = await supabase
       .from("group_reads")
       .insert({
@@ -191,6 +229,7 @@ Deno.serve(async (req) => {
     }
     rowId = created.id as string;
   }
+
 
   const fail = async (msg: string) => {
     // Never include message text in the stored error.
