@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { displayName } from "@/lib/pairTypes";
+
 
 export type CoupleTypeCardRelationship = "romantic" | "friend" | "family";
 
@@ -45,7 +47,8 @@ const fetchType = (id: string): Promise<CoupleTypeRow | null> => {
 };
 
 const nameFor = (row: CoupleTypeRow, rel: CoupleTypeCardRelationship) =>
-  rel === "friend" ? row.friend_name : rel === "family" ? row.family_name : row.romantic_name;
+  displayName(rel === "friend" ? row.friend_name : rel === "family" ? row.family_name : row.romantic_name);
+
 
 const urlFor = (row: CoupleTypeRow, rel: CoupleTypeCardRelationship) =>
   rel === "friend"

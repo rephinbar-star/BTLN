@@ -1,0 +1,1 @@
+UPDATE public.couple_types SET friend_name = 'The Fire Pair', family_name = 'The Fire Pair' WHERE id = 13;

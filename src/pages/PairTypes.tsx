@@ -10,12 +10,14 @@ import {
   fetchPairTypes,
   fieldsFor,
   isRelationship,
+  pairTypePath,
+  pairTypeUrl,
   RELATIONSHIPS,
   RELATIONSHIP_LABELS,
-  SLUG_BY_ID,
   type PairTypeRow,
   type RelationshipType,
 } from "@/lib/pairTypes";
+
 
 const PairTypes = () => {
   const [params, setParams] = useSearchParams();
@@ -55,7 +57,7 @@ const PairTypes = () => {
         "@type": "ListItem",
         position: i + 1,
         name: fieldsFor(row, relationship).name,
-        url: `https://betweenthelines.app/types/${SLUG_BY_ID[row.id]}`,
+        url: pairTypeUrl(row.id, relationship),
       })),
     }),
     [rows, relationship],
@@ -131,7 +133,8 @@ const PairTypes = () => {
                   return (
                     <Link
                       key={row.id}
-                      to={`/types/${SLUG_BY_ID[row.id]}${relationship === "romantic" ? "" : `?as=${relationship}`}`}
+                      to={pairTypePath(row.id, relationship)}
+
                       onClick={() => track("pair_type_card_click", { id: row.id, relationship })}
                       className="group overflow-hidden rounded-2xl border border-border shadow-[var(--shadow-card)] transition-transform hover:-translate-y-0.5"
                       style={{ backgroundColor: row.background_color, color: row.text_color }}
