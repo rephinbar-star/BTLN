@@ -89,13 +89,14 @@ describe("computeGroupStats", () => {
     expect(s.participants.find((p) => p.id === "p2")!.median_response_minutes).not.toBeNull();
   });
 
-  it("ignores messages from unknown participants", () => {
+  it("ignores messages from unknown participants in per-person stats", () => {
     const s = computeGroupStats(people(3), [
       msg("p1", "a", 1),
       msg("p9", "ghost", 2),
       msg("p2", "b", 3),
     ]);
-    expect(s.message_count).toBe(2);
+    expect(s.participants.map((p) => p.id)).toEqual(["p1", "p2", "p3"]);
+    expect(s.participants.reduce((n, p) => n + p.messages, 0)).toBe(2);
   });
 });
 
