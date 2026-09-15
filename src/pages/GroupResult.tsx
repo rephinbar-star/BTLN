@@ -25,10 +25,10 @@ import {
   type GroupResultJson,
   type GroupStatsJson,
 } from "@/lib/group/types";
+import { GROUP_POLL_MS, pollAction, showsFailureScreen } from "@/lib/group/poll";
 import { GroupOverallCard, GroupRoleShareCard } from "@/components/group/GroupShareCard";
 
-const POLL_MS = 2500;
-const TIMEOUT_MS = 180_000;
+const POLL_MS = GROUP_POLL_MS;
 
 type Row = {
   id: string;
@@ -214,7 +214,7 @@ const GroupResult = () => {
     );
   }
 
-  if (row.status === "failed" || (timedOut && row.status !== "complete")) {
+  if (showsFailureScreen(row.status, timedOut)) {
     return (
       <Shell>
         <div className="rounded-2xl border border-border bg-card p-6">
