@@ -60,6 +60,17 @@ export type EventMap = {
   pair_type_page_viewed: { id: number; relationship: RelationshipType };
   pair_type_relationship_switch: { id: number; relationship: RelationshipType };
   pair_type_cta_click: { id: number; relationship: RelationshipType };
+  pair_type_share_click: {
+    id: number;
+    relationship: RelationshipType;
+    method: "copy_link" | "web_share";
+  };
+  pair_type_image_download: {
+    id: number;
+    relationship: RelationshipType;
+    format: "square" | "story";
+  };
+  report_pair_type_link_click: { id: number; relationship: RelationshipType };
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
@@ -96,6 +107,9 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   pair_type_page_viewed: ["id", "relationship"],
   pair_type_relationship_switch: ["id", "relationship"],
   pair_type_cta_click: ["id", "relationship"],
+  pair_type_share_click: ["id", "relationship", "method"],
+  pair_type_image_download: ["id", "relationship", "format"],
+  report_pair_type_link_click: ["id", "relationship"],
 } as never;
 
 // Reject obvious PII shapes as a defense-in-depth check on top of the
