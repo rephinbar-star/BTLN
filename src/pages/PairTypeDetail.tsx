@@ -22,6 +22,7 @@ import {
   fieldsFor,
   ID_BY_SLUG,
   isRelationship,
+  SLUG_BY_ID,
   pairTypePath,
   pairTypeUrl,
   RELATIONSHIP_BY_SEGMENT,
