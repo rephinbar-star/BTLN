@@ -32,3 +32,9 @@ verify_jwt = false
 [functions.group-share]
 verify_jwt = false
 
+
+[functions.roast-us]
+verify_jwt = false
+
+[functions.roast-share]
+verify_jwt = false

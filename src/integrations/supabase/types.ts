@@ -561,6 +561,101 @@ export type Database = {
         }
         Relationships: []
       }
+      roast_share_links: {
+        Row: {
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string | null
+          roast_id: string
+          snapshot_json: Json
+          token_hash: string
+          updated_at: string
+          visit_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          roast_id: string
+          snapshot_json: Json
+          token_hash: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          roast_id?: string
+          snapshot_json?: Json
+          token_hash?: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roast_share_links_roast_id_fkey"
+            columns: ["roast_id"]
+            isOneToOne: false
+            referencedRelation: "roasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      roasts: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          result_json: Json | null
+          safety_blocked: boolean
+          session_id: string
+          source_id: string
+          source_type: string
+          status: string
+          tone: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          result_json?: Json | null
+          safety_blocked?: boolean
+          session_id: string
+          source_id: string
+          source_type: string
+          status?: string
+          tone?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          result_json?: Json | null
+          safety_blocked?: boolean
+          session_id?: string
+          source_id?: string
+          source_type?: string
+          status?: string
+          tone?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       share_clicks: {
         Row: {
           analysis_id: string | null
@@ -837,6 +932,47 @@ export type Database = {
           visit_count: number
         }[]
       }
+      get_roast_for_session: {
+        Args: { p_id: string; p_session_id: string }
+        Returns: {
+          created_at: string
+          error_message: string
+          id: string
+          result_json: Json
+          safety_blocked: boolean
+          session_id: string
+          source_id: string
+          source_type: string
+          status: string
+          tone: string
+          user_id: string
+        }[]
+      }
+      get_roast_for_source: {
+        Args: {
+          p_session_id: string
+          p_source_id: string
+          p_source_type: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          safety_blocked: boolean
+          status: string
+          tone: string
+        }[]
+      }
+      get_roast_share_for_owner: {
+        Args: { p_roast_id: string; p_session_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string
+          visit_count: number
+        }[]
+      }
       get_shared_analysis: {
         Args: { p_id: string }
         Returns: {
@@ -881,6 +1017,7 @@ export type Database = {
         Returns: undefined
       }
       resolve_group_share: { Args: { p_token_hash: string }; Returns: Json }
+      resolve_roast_share: { Args: { p_token_hash: string }; Returns: Json }
       set_couple_type_image_url: {
         Args: {
           p_image_url: string

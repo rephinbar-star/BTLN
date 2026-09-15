@@ -11,6 +11,9 @@ import DecodeResult from "./pages/DecodeResult.tsx";
 import GroupRead from "./pages/GroupRead.tsx";
 import GroupResult from "./pages/GroupResult.tsx";
 import GroupShareView from "./pages/GroupShareView.tsx";
+import RoastStart from "./pages/RoastStart.tsx";
+import RoastResult from "./pages/RoastResult.tsx";
+import RoastShareView from "./pages/RoastShareView.tsx";
 import Report from "./pages/Report.tsx";
 import ErrorPage from "./pages/ErrorPage.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -65,6 +68,9 @@ const App = () => (
           <Route path="/group" element={<GroupRead />} />
           <Route path="/group/:groupId" element={<GroupResult />} />
           <Route path="/g/:token" element={<GroupShareView />} />
+          <Route path="/roast" element={<RoastStart />} />
+          <Route path="/roast/:roastId" element={<RoastResult />} />
+          <Route path="/r/:token" element={<RoastShareView />} />
           <Route path="/report/:analysisId" element={<Report />} />
           <Route path="/checkout/return" element={<CheckoutReturn />} />
           <Route path="/pricing" element={<Pricing />} />
