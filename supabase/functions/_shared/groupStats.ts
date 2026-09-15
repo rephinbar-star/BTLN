@@ -205,7 +205,7 @@ export function computeGroupStats(
 
 /** Crude safety screen: overrides the playful tone when triggered. */
 const SAFETY_RE =
-  /\b(kill (?:you|myself|him|her|them)|i want to die|suicide|self[- ]harm|rape|beat (?:you|her|him) up|i'?ll hurt you|threaten(?:ed|ing)? (?:to )?(?:hurt|kill)|abuse|restraining order|hit me|punched me)\b/i;
+  /\b(kill (?:you|myself|him|her|them)|i want to die|want to be dead|end (?:it all|my life)|suicide|self[- ]harm|hurting myself|hurt myself|harm myself|cutting myself|rape|beat (?:you|her|him) up|i'?ll hurt you|threaten(?:ed|ing)? (?:to )?(?:hurt|kill)|abuse|restraining order|hit me|punched me)\b/i;
 
 export function detectSafetyConcern(messages: GroupMessage[]): boolean {
   return messages.some((m) => SAFETY_RE.test(m.content));
