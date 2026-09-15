@@ -60,6 +60,8 @@ const App = () => (
           <Route path="/report/:analysisId" element={<Report />} />
           <Route path="/checkout/return" element={<CheckoutReturn />} />
           <Route path="/pricing" element={<Pricing />} />
+          <Route path="/types" element={<PairTypes />} />
+          <Route path="/types/:slug" element={<PairTypeDetail />} />
           <Route path="/error" element={<ErrorPage />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/cards" element={<AdminCards />} />
