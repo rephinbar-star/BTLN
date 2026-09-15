@@ -153,7 +153,9 @@ const PairTypeDetail = () => {
         const link = document.createElement("a");
         link.href = dataUrl;
         link.download = `betweenthelines-${slug}-${relationship}-${format === "story" ? "9x16" : "1x1"}.png`;
+        document.body.appendChild(link);
         link.click();
+        link.remove();
         track("pair_type_image_download", { id: row.id, relationship, format });
       } catch {
         // Silent: download simply doesn't start if capture fails.
