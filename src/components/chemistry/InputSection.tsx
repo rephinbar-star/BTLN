@@ -16,6 +16,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { HowToHelp } from "./HowToHelp";
+import { readChatFile, UnsupportedFileError } from "@/lib/ingest/file";
+import type { TranscriptCandidate } from "@/lib/ingest/archive";
+import { takeDeepReadHandoff } from "@/lib/ingest/handoff";
 
 type FormState = {
   conversation: string;
@@ -154,6 +157,10 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [loadedFileName, setLoadedFileName] = useState<string | null>(null);
   const [truncationNotice, setTruncationNotice] = useState<string | null>(null);
+  const [fileNotices, setFileNotices] = useState<string[]>([]);
+  const [zipCandidates, setZipCandidates] = useState<TranscriptCandidate[] | null>(null);
+  /** Held in memory only, cleared as soon as a transcript is chosen. */
+  const pendingArchive = useRef<File | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [inputStartedFired, setInputStartedFired] = useState(false);
@@ -200,6 +207,23 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     };
   }, [redoId]);
 
+  // A two-person chat imported on the Group Read page continues here. The
+  // transcript is handed over in memory only and cleared as it is read.
+  useEffect(() => {
+    const handed = takeDeepReadHandoff();
+    if (!handed) return;
+    const t = truncateConversation(handed, MAX_MESSAGES);
+    setForm((prev) => ({ ...prev, conversation: t.text }));
+    setMode("paste");
+    setLoadedFileName("your import");
+    if (t.truncated) {
+      setTruncationNotice(
+        `Your import has about ${t.total} messages. To keep the analysis reliable, only the first ${t.kept} will be processed.`,
+      );
+    }
+    document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
   const update = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setFieldErrors((prev) => ({ ...prev, [key]: undefined }));
@@ -238,40 +262,22 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     setPendingMode(null);
   };
 
-  const handleTxtFile = async (file: File) => {
+  const handleTxtFile = async (file: File, entryName?: string) => {
     setFileError(null);
+    setFileNotices([]);
     fireInputStarted();
-    const lowerName = file.name.toLowerCase();
-    const isZip =
-      lowerName.endsWith(".zip") ||
-      file.type === "application/zip" ||
-      file.type === "application/x-zip-compressed";
-    const isTxt = lowerName.endsWith(".txt") || file.type === "text/plain";
-    if (!isZip && !isTxt) {
-      setFileError("Please upload a .txt or .zip chat export.");
-      return;
-    }
-    if (file.size > MAX_TXT_BYTES) {
-      setFileError("File is too large (max 5 MB).");
-      return;
-    }
     try {
-      let text: string;
-      if (isZip) {
-        const { default: JSZip } = await import("jszip");
-        const zip = await JSZip.loadAsync(file);
-        const txtEntry = Object.values(zip.files).find(
-          (entry) => !entry.dir && entry.name.toLowerCase().endsWith(".txt"),
-        );
-        if (!txtEntry) {
-          setFileError("No .txt chat file found inside the .zip.");
-          return;
-        }
-        text = await txtEntry.async("string");
-      } else {
-        text = await file.text();
+      const result = await readChatFile(file, entryName);
+      if (result.kind === "choose") {
+        pendingArchive.current = file;
+        setZipCandidates(result.candidates);
+        setFileNotices(result.warnings);
+        return;
       }
-      const t = truncateConversation(text, MAX_MESSAGES);
+      pendingArchive.current = null;
+      setZipCandidates(null);
+      setFileNotices(result.warnings);
+      const t = truncateConversation(result.text, MAX_MESSAGES);
       update("conversation", t.text);
       if (t.truncated) {
         setTruncationNotice(
@@ -280,10 +286,16 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       } else {
         setTruncationNotice(null);
       }
-      setLoadedFileName(file.name);
+      setLoadedFileName(result.sourceName);
       setMode("paste");
-    } catch {
-      setFileError("Could not read file.");
+    } catch (e) {
+      pendingArchive.current = null;
+      setZipCandidates(null);
+      setFileError(
+        e instanceof UnsupportedFileError
+          ? e.message
+          : "Could not read that file. Try a .txt, .csv or WhatsApp .zip export.",
+      );
     }
   };
 
@@ -704,6 +716,13 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                   {truncationNotice}
                 </p>
               )}
+              {fileNotices.length > 0 && (
+                <ul className="mt-2 space-y-1 text-[12px] text-muted-foreground">
+                  {fileNotices.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              )}
             </>
           )}
 
@@ -712,7 +731,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               <input
                 ref={txtInputRef}
                 type="file"
-                accept=".txt,text/plain,.zip,application/zip,application/x-zip-compressed"
+                accept=".txt,.csv,text/plain,text/csv,.zip,application/zip,application/x-zip-compressed"
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -735,12 +754,38 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               >
                 <Upload className="h-6 w-6 text-muted-foreground" />
                 <div>
-                  <p className="text-[14px] font-medium text-foreground">Drop a .txt or .zip file or click to browse</p>
+                  <p className="text-[14px] font-medium text-foreground">
+                    Drop a .txt, .csv or .zip export, or click to browse
+                  </p>
                   <p className="mt-1 text-[12px] text-muted-foreground">
-                    Exported chat from WhatsApp, iMessage, etc. Max 5 MB.
+                    WhatsApp exports from iPhone or Android, or an iMessage transcript with date,
+                    sender and message columns. Photos inside a .zip are ignored.
                   </p>
                 </div>
               </button>
+              {zipCandidates && (
+                <div className="mt-3 rounded-xl border border-border p-3">
+                  <p className="text-[13px] font-medium">That archive has more than one chat</p>
+                  <p className="mt-1 text-[12px] text-muted-foreground">
+                    Pick one — we won't join different chats together.
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {zipCandidates.map((c) => (
+                      <button
+                        key={c.name}
+                        type="button"
+                        onClick={() => {
+                          const f = pendingArchive.current;
+                          if (f) void handleTxtFile(f, c.name);
+                        }}
+                        className="rounded-full border border-border px-3 py-1.5 text-[12px] hover:bg-muted/50"
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               {fileError && <p className="mt-2 text-[12px] text-destructive">{fileError}</p>}
             </div>
           )}

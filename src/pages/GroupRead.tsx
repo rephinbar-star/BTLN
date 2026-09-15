@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, Loader2, Upload, Users, X } from "lucide-react";
@@ -17,11 +17,26 @@ import {
 import { GROUP_CATEGORY_LABEL, type GroupCategory } from "@/lib/group/types";
 import { useGroupAccess } from "@/hooks/useGroupAccess";
 import { Link } from "react-router-dom";
+import { LIMITS } from "@/lib/ingest/limits";
+import { readChatFile, UnsupportedFileError } from "@/lib/ingest/file";
+import type { TranscriptCandidate } from "@/lib/ingest/archive";
+import {
+  applyExclusions,
+  buildUploadPayload,
+  dayOf,
+  selectRange,
+} from "@/lib/ingest/aggregate";
+import { setDeepReadHandoff } from "@/lib/ingest/handoff";
 
-const MIN_PARTICIPANTS = 3;
-const MAX_PARTICIPANTS = 15;
-const MIN_MESSAGES = 10;
-const MAX_INPUT_CHARS = 400_000;
+const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
+const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
+const MIN_MESSAGES = LIMITS.GROUP_MIN_MESSAGES;
+
+const FORMAT_LABEL: Record<ParseResult["format"], string> = {
+  whatsapp: "WhatsApp export",
+  imessage: "iMessage export",
+  attributed_text: "Pasted chat",
+};
 
 const SAMPLE = `Maya: ok who is actually coming saturday
 Dev: me
@@ -37,6 +52,8 @@ Priya: sam we'll miss you`;
 const GroupRead = () => {
   const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
+  /** Kept only in memory, never persisted. */
+  const pendingZip = useRef<File | null>(null);
 
   const [step, setStep] = useState<"input" | "confirm">("input");
   const [text, setText] = useState("");
@@ -46,41 +63,74 @@ const GroupRead = () => {
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notices, setNotices] = useState<string[]>([]);
+  const [candidates, setCandidates] = useState<TranscriptCandidate[] | null>(null);
+  const [dayFirst, setDayFirst] = useState<boolean | undefined>(undefined);
+  const [fromDay, setFromDay] = useState<string>("");
+  const [toDay, setToDay] = useState<string>("");
+  const [keepUnknownTime, setKeepUnknownTime] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [locked, setLocked] = useState(false);
   const access = useGroupAccess();
+
+  // Raw text never outlives this page.
+  useEffect(() => () => {
+    pendingZip.current = null;
+  }, []);
 
   const included = useMemo(
     () => (parsed ? parsed.participants.filter((p) => !excluded.has(p.id)) : []),
     [parsed, excluded],
   );
 
-  const includedMessageCount = useMemo(() => {
-    if (!parsed) return 0;
-    const ids = new Set(included.map((p) => p.id));
-    return parsed.messages.filter((m) => m.participant_id && ids.has(m.participant_id)).length;
-  }, [parsed, included]);
+  /** The exact set of messages that will be sent, after every user choice. */
+  const selection = useMemo(() => {
+    if (!parsed) return [];
+    const withExclusions = applyExclusions(
+      parsed.messages,
+      parsed.participants.map((p) => ({ ...p, excluded: excluded.has(p.id) })),
+    );
+    const ranged = selectRange(withExclusions, {
+      from: fromDay || null,
+      to: toDay || null,
+      keepUnknownTime,
+    });
+    return ranged.filter((m) => m.participant_id !== null);
+  }, [parsed, excluded, fromDay, toDay, keepUnknownTime]);
+
+  const payload = useMemo(
+    () => (parsed ? buildUploadPayload(selection, included, parsed) : null),
+    [parsed, selection, included],
+  );
+
+  const includedMessageCount = payload?.coverage.supplied_messages ?? 0;
 
   const unattributed = useMemo(
-    () => (parsed ? parsed.messages.filter((m) => m.participant_id === null) : []),
+    () =>
+      parsed
+        ? parsed.messages.filter((m) => m.participant_id === null && m.kind !== "system")
+        : [],
     [parsed],
   );
 
-  const doParse = (raw: string) => {
+  const doParse = (raw: string, opts?: { dayFirst?: boolean }) => {
     setError(null);
     if (raw.trim().length === 0) {
       setError("Paste a group chat first.");
       return;
     }
-    if (raw.length > MAX_INPUT_CHARS) {
-      setError("That chat is very large. Paste a shorter stretch (a few weeks works well).");
+    if (raw.length > LIMITS.MAX_TEXT_CHARS) {
+      setError("That chat is larger than we can read. Export a shorter date range.");
       return;
     }
     try {
-      const result = parseGroupChat(raw);
+      const result = parseGroupChat(raw, { dayFirst: opts?.dayFirst ?? dayFirst });
       setParsed(result);
+      setDayFirst(result.day_first);
       setExcluded(new Set(result.participants.filter((p) => p.looks_like_system).map((p) => p.id)));
       setSelfId(null);
+      setFromDay("");
+      setToDay("");
       setStep("confirm");
       logEvent("group_read_input_parsed", { participants: result.participants.length });
       track("group_read_started", { category });
@@ -94,62 +144,74 @@ const GroupRead = () => {
     }
   };
 
-  const onFile = async (file: File) => {
+  const onFile = async (file: File, entryName?: string) => {
     setError(null);
-    const name = file.name.toLowerCase();
+    setNotices([]);
     try {
-      if (name.endsWith(".txt")) {
-        doParse(await file.text());
+      const result = await readChatFile(file, entryName);
+      if (result.kind === "choose") {
+        pendingZip.current = file;
+        setCandidates(result.candidates);
+        setNotices(result.warnings);
         return;
       }
-      if (name.endsWith(".zip")) {
-        const { default: JSZip } = await import("jszip");
-        const zip = await JSZip.loadAsync(file);
-        const entry = Object.values(zip.files).find(
-          (f) => !f.dir && f.name.toLowerCase().endsWith(".txt"),
-        );
-        if (!entry) {
-          setError("No chat text file found inside that .zip.");
-          return;
-        }
-        doParse(await entry.async("string"));
-        return;
-      }
+      setCandidates(null);
+      pendingZip.current = null;
+      setNotices(result.warnings);
+      doParse(result.text);
+    } catch (e) {
+      setCandidates(null);
+      pendingZip.current = null;
       setError(
-        "Right now Group Read takes pasted text, a .txt chat export, or a .zip containing one. Images and other exports aren't supported yet.",
+        e instanceof UnsupportedFileError
+          ? e.message
+          : "We couldn't open that file. Try a .txt, .csv or WhatsApp .zip export.",
       );
-    } catch {
-      setError("We couldn't open that file.");
     }
   };
 
-  const submit = async () => {
+  const continueAsDeepRead = () => {
     if (!parsed) return;
-    if (included.length < MIN_PARTICIPANTS || included.length > MAX_PARTICIPANTS) {
-      setError(`Group Read needs between ${MIN_PARTICIPANTS} and ${MAX_PARTICIPANTS} people.`);
+    const nameOf = new Map(parsed.participants.map((p) => [p.id, p.display_name]));
+    const lines = selection.map((m) => `${nameOf.get(m.participant_id!) ?? "?"}: ${m.content}`);
+    setDeepReadHandoff(lines.join("\n"));
+    setText("");
+    setParsed(null);
+    navigate("/?from=import");
+  };
+
+  const submit = async () => {
+    if (!parsed || !payload) return;
+    if (included.length === 2) {
+      setError("This is a two-person chat — use Deep Read for it.");
       return;
     }
-    if (includedMessageCount < MIN_MESSAGES) {
-      setError(`We need at least ${MIN_MESSAGES} messages from the people you kept.`);
+    if (included.length < MIN_PARTICIPANTS || included.length > MAX_PARTICIPANTS) {
+      setError(
+        `Group Read needs between ${MIN_PARTICIPANTS} and ${MAX_PARTICIPANTS} people. Exclude people you don't want read — we never drop anyone silently.`,
+      );
+      return;
+    }
+    if (payload.coverage.analyzed_messages < MIN_MESSAGES) {
+      setError(`We need at least ${MIN_MESSAGES} messages from the people and dates you kept.`);
       return;
     }
     setSubmitting(true);
     setError(null);
     setLocked(false);
 
-    const ids = new Set(included.map((p) => p.id));
     const body = {
       session_id: getSessionId(),
       category,
       participants: included.map((p) => ({ id: p.id, display_name: p.display_name })),
-      messages: parsed.messages
-        .filter((m) => m.participant_id && ids.has(m.participant_id))
-        .map((m) => ({
-          participant_id: m.participant_id,
-          content: m.content,
-          ts: m.ts,
-          order: m.order,
-        })),
+      coverage: payload.coverage,
+      source_format: parsed.format,
+      messages: payload.messages.map((m) => ({
+        participant_id: m.participant_id,
+        content: m.content,
+        ts: m.ts,
+        order: m.order,
+      })),
     };
 
     track("group_participants_confirmed", {
@@ -160,8 +222,7 @@ const GroupRead = () => {
     const { data, error: fnErr } = await supabase.functions.invoke("analyze-group", { body });
     if (fnErr || !data?.group_read_id) {
       setSubmitting(false);
-      const message =
-        (fnErr as { context?: { body?: string } })?.context?.body ?? "";
+      const message = (fnErr as { context?: { body?: string } })?.context?.body ?? "";
       let readable = "We couldn't start your group read. Please try again.";
       try {
         const parsedErr = JSON.parse(message) as { error?: string; code?: string };
@@ -180,8 +241,11 @@ const GroupRead = () => {
     // Raw text never leaves this page again.
     setText("");
     setParsed(null);
+    pendingZip.current = null;
     navigate(`/group/${data.group_read_id}`);
   };
+
+  const coverage = payload?.coverage;
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -209,7 +273,7 @@ const GroupRead = () => {
             <input
               ref={fileRef}
               type="file"
-              accept=".txt,text/plain,.zip,application/zip,application/x-zip-compressed"
+              accept=".txt,.csv,text/plain,text/csv,.zip,application/zip,application/x-zip-compressed"
               className="hidden"
               onChange={(e) => {
                 const f = e.target.files?.[0];
@@ -231,7 +295,7 @@ const GroupRead = () => {
                 onClick={() => fileRef.current?.click()}
                 className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-[14px] font-medium hover:bg-muted/50"
               >
-                <Upload className="h-4 w-4" /> Upload .txt or .zip export
+                <Upload className="h-4 w-4" /> Upload an export
               </button>
               <button
                 type="button"
@@ -241,6 +305,45 @@ const GroupRead = () => {
                 Use an example
               </button>
             </div>
+            <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
+              Works with WhatsApp exports from iPhone and Android (.txt, or the .zip — photos inside
+              are ignored, never opened), and iMessage transcripts saved as .txt or .csv with
+              date, sender and message columns. We can't read Apple's chat.db file or app backups.
+            </p>
+
+            {notices.length > 0 && (
+              <ul className="mt-3 space-y-1 text-[13px] text-muted-foreground">
+                {notices.map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            )}
+
+            {candidates && (
+              <div className="mt-4 rounded-xl border border-border p-4">
+                <p className="text-[14px] font-medium">
+                  That archive has more than one chat in it
+                </p>
+                <p className="mt-1 text-[13px] text-muted-foreground">
+                  Pick the one you want — we won't join different chats together.
+                </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {candidates.map((c) => (
+                    <button
+                      key={c.name}
+                      type="button"
+                      onClick={() => {
+                        const f = pendingZip.current;
+                        if (f) void onFile(f, c.name);
+                      }}
+                      className="rounded-full border border-border px-3 py-1.5 text-[13px] hover:bg-muted/50"
+                    >
+                      {c.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {error && (
               <p className="mt-4 flex items-start gap-2 text-[14px] text-destructive">
@@ -258,16 +361,150 @@ const GroupRead = () => {
           </section>
         )}
 
-        {step === "confirm" && parsed && (
+        {step === "confirm" && parsed && coverage && (
           <section className="mt-8 space-y-6">
+            <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+              <h2 className="text-[18px] font-medium">Here's what we read</h2>
+              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[14px] sm:grid-cols-3">
+                <div>
+                  <dt className="text-muted-foreground">Source</dt>
+                  <dd>{FORMAT_LABEL[parsed.format]}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Messages found</dt>
+                  <dd className="tabular-nums">{parsed.messages.length.toLocaleString()}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">People found</dt>
+                  <dd className="tabular-nums">{parsed.participants.length}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Dates covered</dt>
+                  <dd>
+                    {parsed.date_range.start
+                      ? `${dayOf(parsed.date_range.start)} → ${dayOf(parsed.date_range.end)}`
+                      : "No dates in this export"}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">No sender</dt>
+                  <dd className="tabular-nums">{parsed.unattributed_count}</dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Attachments / system</dt>
+                  <dd className="tabular-nums">
+                    {parsed.attachment_count} / {parsed.system_count}
+                  </dd>
+                </div>
+              </dl>
+
+              {parsed.warnings.length > 0 && (
+                <ul className="mt-3 space-y-1 text-[13px] text-muted-foreground">
+                  {parsed.warnings.map((w) => (
+                    <li key={w}>{w}</li>
+                  ))}
+                </ul>
+              )}
+
+              {parsed.ambiguous_dates && (
+                <div className="mt-4 rounded-xl border border-border p-4">
+                  <p className="text-[14px] font-medium">Is 03/04 the 3rd of April, or March 4th?</p>
+                  <p className="mt-1 text-[13px] text-muted-foreground">
+                    This export doesn't say. Pick the one that matches your phone.
+                  </p>
+                  <div className="mt-3 flex gap-2">
+                    {[
+                      { label: "Day first (3 April)", value: true },
+                      { label: "Month first (March 4)", value: false },
+                    ].map((o) => (
+                      <button
+                        key={String(o.value)}
+                        type="button"
+                        aria-pressed={dayFirst === o.value}
+                        onClick={() => {
+                          setDayFirst(o.value);
+                          doParse(text || "", { dayFirst: o.value });
+                        }}
+                        disabled={!text}
+                        className={`rounded-full border px-3 py-1.5 text-[13px] ${
+                          dayFirst === o.value
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border text-muted-foreground hover:text-foreground"
+                        } disabled:opacity-40`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {parsed.messages_with_time > 0 && (
+                <p className="mt-3 text-[13px] text-muted-foreground">
+                  Times come from the export with no timezone attached, so we read them exactly as
+                  written.
+                </p>
+              )}
+            </div>
+
+            {parsed.date_range.start && (
+              <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+                <h2 className="text-[18px] font-medium">Which stretch should we read?</h2>
+                <div className="mt-3 flex flex-wrap items-center gap-3 text-[14px]">
+                  <label className="flex items-center gap-2">
+                    From
+                    <input
+                      type="date"
+                      value={fromDay}
+                      onChange={(e) => setFromDay(e.target.value)}
+                      className="rounded-lg border border-border bg-background px-3 py-2"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2">
+                    To
+                    <input
+                      type="date"
+                      value={toDay}
+                      onChange={(e) => setToDay(e.target.value)}
+                      className="rounded-lg border border-border bg-background px-3 py-2"
+                    />
+                  </label>
+                  {(fromDay || toDay) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFromDay("");
+                        setToDay("");
+                      }}
+                      className="text-[13px] text-muted-foreground underline-offset-4 hover:underline"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
+                {coverage.without_time > 0 && (
+                  <label className="mt-3 flex items-start gap-2 text-[13px] text-muted-foreground">
+                    <input
+                      type="checkbox"
+                      checked={keepUnknownTime}
+                      onChange={(e) => setKeepUnknownTime(e.target.checked)}
+                      className="mt-0.5"
+                    />
+                    Keep the {coverage.without_time} messages with no time on them (they stay in
+                    order; unticking leaves them out entirely).
+                  </label>
+                )}
+              </div>
+            )}
+
             <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
               <h2 className="flex items-center gap-2 text-[18px] font-medium">
                 <Users className="h-4 w-4" /> We found {parsed.participants.length} people
               </h2>
               <p className="mt-1 text-[14px] text-muted-foreground">
                 Merge duplicates, drop bots and system entries, and tell us which one is you
-                (optional). {includedMessageCount} messages from {included.length} people will be
-                read.
+                (optional). {includedMessageCount.toLocaleString()} messages from {included.length}{" "}
+                people are selected.
               </p>
 
               <ul className="mt-4 divide-y divide-border">
@@ -307,9 +544,7 @@ const GroupRead = () => {
                       </button>
                       <button
                         type="button"
-                        onClick={() =>
-                          setMergeSource(mergeSource === p.id ? null : p.id)
-                        }
+                        onClick={() => setMergeSource(mergeSource === p.id ? null : p.id)}
                         aria-pressed={mergeSource === p.id}
                         className={`rounded-full border px-3 py-1 text-[13px] ${
                           mergeSource === p.id
@@ -360,7 +595,31 @@ const GroupRead = () => {
                   real people.
                 </p>
               )}
+
+              {included.length > MAX_PARTICIPANTS && (
+                <p className="mt-3 text-[13px] text-destructive">
+                  {included.length} people are selected. Group Read reads up to {MAX_PARTICIPANTS} —
+                  exclude the ones you don't need, so you decide who's left out.
+                </p>
+              )}
             </div>
+
+            {included.length === 2 && (
+              <div className="rounded-2xl border border-border bg-muted/40 p-5">
+                <p className="text-[15px] font-medium">This is a two-person chat</p>
+                <p className="mt-2 text-[14px] text-muted-foreground">
+                  Deep Read is built for two people and will tell you far more. Your import carries
+                  over — nothing is re-uploaded or saved on the way.
+                </p>
+                <button
+                  type="button"
+                  onClick={continueAsDeepRead}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background"
+                >
+                  Continue as a Deep Read <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            )}
 
             {unattributed.length > 0 && (
               <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
@@ -424,11 +683,19 @@ const GroupRead = () => {
               )}
             </div>
 
+            {coverage.sampled && (
+              <p className="text-[13px] text-muted-foreground">
+                You've selected {coverage.supplied_messages.toLocaleString()} messages. Counts and
+                balance are worked out across{" "}
+                {coverage.analyzed_messages.toLocaleString()} of them, and the write-up quotes from
+                the most recent {LIMITS.MAX_MODEL_SAMPLE_MESSAGES.toLocaleString()} — your report
+                says the same.
+              </p>
+            )}
+
             {(locked || (!access.isLoading && access.needsSubscription)) && (
               <div className="rounded-2xl border border-border bg-muted/40 p-5">
-                <p className="text-[15px] font-medium">
-                  You've used your free group read
-                </p>
+                <p className="text-[15px] font-medium">You've used your free group read</p>
                 <p className="mt-2 text-[14px] text-muted-foreground">
                   Group Read is included with a BetweenTheLines plan, alongside full Deep Read
                   reports. Your finished reads stay available either way.
@@ -450,7 +717,6 @@ const GroupRead = () => {
             )}
 
             {error && (
-
               <p className="flex items-start gap-2 text-[14px] text-destructive">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
               </p>
@@ -478,8 +744,8 @@ const GroupRead = () => {
               </button>
             </div>
             <p className="text-center text-[12px] text-muted-foreground">
-              {included.length} people · {includedMessageCount} messages · messages deleted after
-              we read them
+              {included.length} people · {includedMessageCount.toLocaleString()} messages · messages
+              deleted after we read them
             </p>
           </section>
         )}
