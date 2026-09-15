@@ -71,6 +71,22 @@ export type EventMap = {
     format: "square" | "story";
   };
   report_pair_type_link_click: { id: number; relationship: RelationshipType };
+  group_read_started: { category: string };
+  group_participants_confirmed: { category: string; participant_count: number };
+  group_read_completed: {
+    group_read_id: string;
+    participant_count: number;
+    safety_mode: boolean;
+  };
+  group_read_failed: { reason_code: string };
+  group_share_created: {
+    group_read_id: string;
+    include_names: boolean;
+    include_quotes: boolean;
+  };
+  group_share_visited: Record<string, never>;
+  group_role_card_engaged: { format: "square" | "story" | "view" };
+  group_share_conversion: Record<string, never>;
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
