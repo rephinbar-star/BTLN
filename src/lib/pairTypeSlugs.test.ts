@@ -9,19 +9,25 @@ describe("pair type slug registry", () => {
   });
 
   it("uses the approved canonical slugs", () => {
+    expect(SLUG_BY_ID[1]).toBe("solid-bond");
     expect(SLUG_BY_ID[3]).toBe("quiet-loyalists");
     expect(SLUG_BY_ID[5]).toBe("independent-duo");
+    expect(SLUG_BY_ID[6]).toBe("push-pull-pair");
     expect(SLUG_BY_ID[8]).toBe("builders");
     expect(SLUG_BY_ID[12]).toBe("low-hum");
     expect(SLUG_BY_ID[13]).toBe("fire-pair");
   });
 
   it("keeps retired slugs resolvable to their type", () => {
+    expect(ID_BY_SLUG["power-couple"]).toBe(1);
+    expect(ID_BY_SLUG["power-duo"]).toBe(1);
     expect(ID_BY_SLUG["slow-burners"]).toBe(3);
     expect(ID_BY_SLUG["parallel-players"]).toBe(5);
+    expect(ID_BY_SLUG["magnet-and-moon"]).toBe(6);
     expect(ID_BY_SLUG["quiet-companions"]).toBe(12);
     expect(ID_BY_SLUG["sparring-partners"]).toBe(13);
   });
+
 
   it("never lets an alias shadow a live slug", () => {
     const live = new Set(Object.values(SLUG_BY_ID));
