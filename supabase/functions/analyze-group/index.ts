@@ -263,9 +263,14 @@ Deno.serve(async (req) => {
       return fail("The group read came back in an unreadable shape. Please retry.");
     }
 
+    // Safety wins over entertainment: our own detector OR the model flagging
+    // anything (boolean or a stated reason) forces the serious register.
+    const modelReason = typeof result.safety_mode_reason === "string"
+      ? result.safety_mode_reason.trim()
+      : "";
     const finalResult = {
       ...result,
-      safety_mode: safety,
+      safety_mode: safety || result.safety_mode === true || modelReason.length > 0,
       coverage: {
         messages_analyzed: messages.length,
         messages_supplied: originalCount,

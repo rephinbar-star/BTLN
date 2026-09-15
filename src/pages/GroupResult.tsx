@@ -52,6 +52,8 @@ const GroupResult = () => {
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const emptyLoads = useRef(0);
   const startedAt = useRef(Date.now());
   const completedTracked = useRef(false);
 
@@ -70,7 +72,13 @@ const GroupResult = () => {
       p_session_id: getSessionId(),
     });
     const r = (Array.isArray(data) ? data[0] : data) as Row | undefined;
-    if (r) setRow(r);
+    if (r) {
+      setRow(r);
+      setNotFound(false);
+    } else {
+      emptyLoads.current += 1;
+      if (emptyLoads.current >= 3) setNotFound(true);
+    }
   }, [groupId]);
 
   useEffect(() => {
@@ -166,6 +174,25 @@ const GroupResult = () => {
   };
 
   // ---- states -------------------------------------------------------------
+
+  if (!row && notFound) {
+    return (
+      <Shell>
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h1 className="text-[20px] font-medium">We can't find that group read</h1>
+          <p className="mt-2 text-[15px] text-muted-foreground">
+            Group reads are private to the device that made them, so this one isn't yours to open.
+          </p>
+          <Link
+            to="/group"
+            className="mt-5 inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background"
+          >
+            Read your own group chat
+          </Link>
+        </div>
+      </Shell>
+    );
+  }
 
   if (!row) {
     return (

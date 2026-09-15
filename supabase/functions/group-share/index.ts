@@ -109,13 +109,33 @@ Deno.serve(async (req) => {
     return includeNames ? participants[idx].display_name : pseudonym(idx);
   };
 
+  // When names are not released, real names must not survive anywhere in the
+  // snapshot — including inside model-written prose.
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const nameSubs = includeNames
+    ? []
+    : participants
+        .map((p, i) => ({ name: (p.display_name ?? "").trim(), alias: pseudonym(i) }))
+        .filter((s) => s.name.length >= 2)
+        .sort((a, b) => b.name.length - a.name.length);
+
+  const scrub = (text: string): string => {
+    let out = text;
+    for (const { name, alias } of nameSubs) {
+      out = out.replace(new RegExp(`\\b${escapeRe(name)}\\b('s)?`, "gi"), (_m, poss) =>
+        poss ? `${alias}'s` : alias,
+      );
+    }
+    return out;
+  };
+
   const roleCards = ((result.role_cards as RoleCard[]) ?? []).slice(0, 15).map((c) => ({
     label: labelFor(c.participant_id),
-    role: typeof c.role === "string" ? c.role.slice(0, 40) : "Group member",
-    headline: typeof c.headline === "string" ? c.headline.slice(0, 160) : "",
-    why: typeof c.why === "string" ? c.why.slice(0, 280) : "",
+    role: typeof c.role === "string" ? scrub(c.role.slice(0, 40)) : "Group member",
+    headline: typeof c.headline === "string" ? scrub(c.headline.slice(0, 160)) : "",
+    why: typeof c.why === "string" ? scrub(c.why.slice(0, 280)) : "",
     ...(includeQuotes && typeof c.evidence === "string"
-      ? { evidence: c.evidence.slice(0, 200) }
+      ? { evidence: scrub(c.evidence.slice(0, 200)) }
       : {}),
     share_pct:
       stats.participants?.find((p) => p.id === c.participant_id)?.share_pct ?? null,
@@ -124,16 +144,17 @@ Deno.serve(async (req) => {
   const snapshot = {
     v: 1,
     category: group.category,
-    title: typeof result.group_title === "string" ? result.group_title.slice(0, 80) : "Group Read",
+    title:
+      typeof result.group_title === "string" ? scrub(result.group_title.slice(0, 80)) : "Group Read",
     subtitle:
-      typeof result.group_summary === "string" ? result.group_summary.slice(0, 280) : "",
+      typeof result.group_summary === "string" ? scrub(result.group_summary.slice(0, 280)) : "",
     participant_count: participants.length,
     message_count: stats.message_count ?? null,
     include_names: includeNames,
     include_quotes: includeQuotes,
     role_cards: roleCards,
     strengths: Array.isArray(result.group_strengths)
-      ? (result.group_strengths as unknown[]).slice(0, 3).map((s) => String(s).slice(0, 160))
+      ? (result.group_strengths as unknown[]).slice(0, 3).map((s) => scrub(String(s).slice(0, 160)))
       : [],
     created_at: new Date().toISOString(),
   };
