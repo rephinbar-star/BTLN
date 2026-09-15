@@ -26,7 +26,11 @@ export const DecodeHero = () => (
             </button>
           </li>
           <li aria-hidden>·</li>
-          <li>Roast Us <span className="opacity-70">(soon)</span></li>
+          <li>
+            <Link to="/roast" className="underline-offset-4 hover:text-foreground hover:underline">
+              Roast Us
+            </Link>
+          </li>
           <li aria-hidden>·</li>
           <li>
             <Link to="/group" className="underline-offset-4 hover:text-foreground hover:underline">

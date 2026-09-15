@@ -432,6 +432,22 @@ const GroupResult = () => {
           </ul>
         </section>
 
+        {!result.safety_mode && (
+          <section className="mt-6 rounded-2xl border border-border bg-card p-5">
+            <h2 className="text-[18px] font-medium">Want the funny version?</h2>
+            <p className="mt-1 text-[14px] text-muted-foreground">
+              Roast Us turns this read into a warm, silly one — with one useful thing at the end. It
+              uses this report, not your chat.
+            </p>
+            <Link
+              to={`/roast?source=group_read&id=${row.id}`}
+              className="mt-4 inline-flex items-center gap-2 rounded-full border border-border px-5 py-3 text-[15px] font-medium hover:bg-muted/50"
+            >
+              Roast us
+            </Link>
+          </section>
+        )}
+
         {/* Sharing */}
         <section className="mt-10 rounded-2xl border border-border bg-card p-5 sm:p-6">
           <h2 className="text-[20px] font-medium">Share it</h2>

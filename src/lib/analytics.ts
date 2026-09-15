@@ -87,6 +87,14 @@ export type EventMap = {
   group_share_visited: Record<string, never>;
   group_role_card_engaged: { format: "square" | "story" | "view" };
   group_share_conversion: Record<string, never>;
+  roast_started: { source_type: string };
+  roast_completed: { source_type: string; tone: string };
+  roast_failed: { reason_code: string };
+  roast_safety_blocked: { source_type: string };
+  roast_card_saved: Record<string, never>;
+  roast_share_created: { include_names: boolean; include_quotes: boolean };
+  roast_share_visited: Record<string, never>;
+  roast_share_conversion: Record<string, never>;
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
@@ -134,6 +142,14 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   group_share_visited: [],
   group_role_card_engaged: ["format"],
   group_share_conversion: [],
+  roast_started: ["source_type"],
+  roast_completed: ["source_type", "tone"],
+  roast_failed: ["reason_code"],
+  roast_safety_blocked: ["source_type"],
+  roast_card_saved: [],
+  roast_share_created: ["include_names", "include_quotes"],
+  roast_share_visited: [],
+  roast_share_conversion: [],
 } as never;
 
 // Reject obvious PII shapes as a defense-in-depth check on top of the

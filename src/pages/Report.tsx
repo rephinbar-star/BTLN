@@ -913,6 +913,26 @@ const ReportContent = () => {
               </div>
             )}
 
+            {/* Roast Us — owners of an unlocked, non-serious report only */}
+            {!isSharedView && isOwner && hasUnlockedReport && !safetyMode && (
+              <div
+                data-pdf-exclude="true"
+                className="mt-8 rounded-2xl border border-border bg-card p-5 text-left"
+              >
+                <h3 className="text-[18px] font-medium">Want the funny version?</h3>
+                <p className="mt-1 text-[14px] text-muted-foreground">
+                  Roast Us turns this report into a warm, silly one — with one useful thing at the
+                  end. It uses this report, not your chat.
+                </p>
+                <Link
+                  to={`/roast?source=analysis&id=${analysisId}`}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-[14px] font-medium hover:bg-muted"
+                >
+                  Roast us
+                </Link>
+              </div>
+            )}
+
             {/* Action buttons */}
             <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">
               <button
