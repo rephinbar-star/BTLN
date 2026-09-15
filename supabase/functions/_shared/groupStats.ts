@@ -43,6 +43,9 @@ export type GroupStats = {
   unattributed_messages: number;
   has_timestamps: boolean;
   timestamp_coverage_pct: number;
+  /** Earliest / latest reliable timestamp in the counted history, if any. */
+  date_start: string | null;
+  date_end: string | null;
   span_hours: number | null;
   session_count: number | null;
   participants: ParticipantStats[];
@@ -186,6 +189,11 @@ export function computeGroupStats(
   }
   if (unattributed > 0) unavailable.push("full_attribution_coverage");
 
+  const stampedSorted = messages
+    .map((m) => m.ts)
+    .filter((t): t is string => typeof t === "string" && t.length > 0)
+    .sort();
+
   return {
     message_count: messages.length,
     participant_count: participants.length,
@@ -193,6 +201,8 @@ export function computeGroupStats(
     unattributed_messages: unattributed,
     has_timestamps: hasTimestamps,
     timestamp_coverage_pct: timestampCoverage,
+    date_start: stampedSorted[0] ?? null,
+    date_end: stampedSorted[stampedSorted.length - 1] ?? null,
     span_hours: spanHours,
     session_count: sessionCount,
     participants: perParticipant,
