@@ -31,44 +31,33 @@ const RoastStart = () => {
   const preId = params.get("id");
 
   const loadSources = useCallback(async () => {
-    const [{ data: analyses }, { data: groups }] = await Promise.all([
-      supabase
-        .from("analyses")
-        .select("id, created_at, is_paid, status, context_data")
-        .eq("status", "complete")
-        .order("created_at", { ascending: false })
-        .limit(20),
-      supabase
-        .from("group_reads")
-        .select("id, created_at, status, category, participant_count")
-        .eq("status", "complete")
-        .order("created_at", { ascending: false })
-        .limit(20),
-    ]);
+    // Ownership is decided server-side: signed-in account, or this device's
+    // own guest reads. Nothing here reveals anyone else's reports.
+    const { data } = await supabase.rpc("list_roastable_sources", {
+      p_session_id: getSessionId(),
+    });
 
-    const list: Source[] = [];
-    for (const a of analyses ?? []) {
-      const ctx = (a.context_data ?? {}) as Record<string, unknown>;
-      const names = [ctx.name1, ctx.name2].filter(Boolean).join(" & ") || "Deep Read";
-      list.push({
-        type: "analysis",
-        id: a.id,
-        label: names,
-        sub: `Deep Read · ${new Date(a.created_at).toLocaleDateString()}`,
-        eligible: a.is_paid === true,
-        reason: a.is_paid ? undefined : "Unlock the full report first",
-      });
-    }
-    for (const g of groups ?? []) {
-      list.push({
-        type: "group_read",
-        id: g.id,
-        label: `${g.participant_count} people`,
-        sub: `Group Read · ${new Date(g.created_at).toLocaleDateString()}`,
-        eligible: true,
-      });
-    }
-    setSources(list);
+    const rows = (data ?? []) as {
+      source_type: "analysis" | "group_read";
+      source_id: string;
+      label: string;
+      category: string;
+      is_unlocked: boolean;
+      created_at: string;
+    }[];
+
+    setSources(
+      rows.map((r) => ({
+        type: r.source_type,
+        id: r.source_id,
+        label: r.label,
+        sub: `${r.source_type === "group_read" ? "Group Read" : "Deep Read"} · ${new Date(
+          r.created_at,
+        ).toLocaleDateString()}`,
+        eligible: r.is_unlocked === true,
+        reason: r.is_unlocked ? undefined : "Unlock the full report first",
+      })),
+    );
     setLoading(false);
   }, []);
 
