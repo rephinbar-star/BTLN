@@ -98,6 +98,91 @@ export type Database = {
           },
         ]
       }
+      analysis_recipient_perspectives: {
+        Row: {
+          created_at: string
+          id: string
+          participant_index: number
+          participant_label: string | null
+          share_link_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          participant_index: number
+          participant_label?: string | null
+          share_link_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          participant_index?: number
+          participant_label?: string | null
+          share_link_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_recipient_perspectives_share_link_id_fkey"
+            columns: ["share_link_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_share_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_share_links: {
+        Row: {
+          analysis_id: string
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string | null
+          snapshot_json: Json
+          token_hash: string
+          updated_at: string
+          visit_count: number
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json: Json
+          token_hash: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json?: Json
+          token_hash?: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_share_links_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_types: {
         Row: {
           background_color: string
@@ -972,6 +1057,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_analysis_share_for_owner: {
+        Args: { p_analysis_id: string; p_session_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string
+          visit_count: number
+        }[]
+      }
       get_decode_for_session: {
         Args: { p_id: string; p_session_id: string }
         Returns: {
@@ -1111,8 +1207,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_analysis_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_group_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_roast_share: { Args: { p_token_hash: string }; Returns: Json }
+      save_analysis_recipient_perspective: {
+        Args: {
+          p_participant_index: number
+          p_participant_label: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
       save_recipient_perspective: {
         Args: {
           p_participant_index: number
