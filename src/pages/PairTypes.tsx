@@ -69,7 +69,7 @@ const PairTypes = () => {
         <title>The 13 Pair Types — BetweenTheLines™</title>
         <meta
           name="description"
-          content="Explore the 13 BetweenTheLines pair types — from The Power Couple to The Fire Pair — and see how each one shows up in romantic, friend, and family chats."
+          content="Explore the 13 BetweenTheLines pair types — from Solid Bond to Fire Pair — and see how each one shows up in romantic, friend, and family chats."
         />
         <link rel="canonical" href="https://betweenthelines.app/types" />
         <meta property="og:title" content="The 13 Pair Types — BetweenTheLines™" />
