@@ -35,6 +35,10 @@ export type GroupResultJson = {
   coverage?: {
     messages_analyzed?: number;
     messages_supplied?: number;
+    messages_read_by_ai?: number;
+    sampled?: boolean;
+    date_start?: string | null;
+    date_end?: string | null;
     truncated?: boolean;
     unattributed_messages?: number;
     timestamp_coverage_pct?: number;
