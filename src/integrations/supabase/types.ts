@@ -298,6 +298,101 @@ export type Database = {
         }
         Relationships: []
       }
+      group_reads: {
+        Row: {
+          category: string
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          id: string
+          message_count: number
+          participant_count: number
+          result_json: Json | null
+          session_id: string
+          stats_json: Json | null
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          category?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_count?: number
+          participant_count?: number
+          result_json?: Json | null
+          session_id: string
+          stats_json?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          category?: string
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_count?: number
+          participant_count?: number
+          result_json?: Json | null
+          session_id?: string
+          stats_json?: Json | null
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      group_share_links: {
+        Row: {
+          created_at: string
+          group_read_id: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string | null
+          snapshot_json: Json
+          token_hash: string
+          updated_at: string
+          visit_count: number
+        }
+        Insert: {
+          created_at?: string
+          group_read_id: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json?: Json
+          token_hash: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Update: {
+          created_at?: string
+          group_read_id?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json?: Json
+          token_hash?: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_share_links_group_read_id_fkey"
+            columns: ["group_read_id"]
+            isOneToOne: false
+            referencedRelation: "group_reads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages_temp: {
         Row: {
           analysis_id: string
@@ -715,6 +810,33 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_group_read_for_session: {
+        Args: { p_id: string; p_session_id: string }
+        Returns: {
+          category: string
+          created_at: string
+          error_message: string
+          id: string
+          message_count: number
+          participant_count: number
+          result_json: Json
+          session_id: string
+          stats_json: Json
+          status: string
+          user_id: string
+        }[]
+      }
+      get_group_share_for_owner: {
+        Args: { p_group_read_id: string; p_session_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string
+          visit_count: number
+        }[]
+      }
       get_shared_analysis: {
         Args: { p_id: string }
         Returns: {
@@ -758,6 +880,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_group_share: { Args: { p_token_hash: string }; Returns: Json }
       set_couple_type_image_url: {
         Args: {
           p_image_url: string
