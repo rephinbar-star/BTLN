@@ -154,7 +154,7 @@ Deno.serve(async (req) => {
     include_quotes: includeQuotes,
     role_cards: roleCards,
     strengths: Array.isArray(result.group_strengths)
-      ? (result.group_strengths as unknown[]).slice(0, 3).map((s) => String(s).slice(0, 160))
+      ? (result.group_strengths as unknown[]).slice(0, 3).map((s) => scrub(String(s).slice(0, 160)))
       : [],
     created_at: new Date().toISOString(),
   };
