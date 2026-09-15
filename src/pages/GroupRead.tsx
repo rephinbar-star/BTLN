@@ -15,6 +15,8 @@ import {
   type ParseResult,
 } from "@/lib/group/parse";
 import { GROUP_CATEGORY_LABEL, type GroupCategory } from "@/lib/group/types";
+import { useGroupAccess } from "@/hooks/useGroupAccess";
+import { Link } from "react-router-dom";
 
 const MIN_PARTICIPANTS = 3;
 const MAX_PARTICIPANTS = 15;
@@ -45,6 +47,8 @@ const GroupRead = () => {
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [locked, setLocked] = useState(false);
+  const access = useGroupAccess();
 
   const included = useMemo(
     () => (parsed ? parsed.participants.filter((p) => !excluded.has(p.id)) : []),
@@ -131,6 +135,7 @@ const GroupRead = () => {
     }
     setSubmitting(true);
     setError(null);
+    setLocked(false);
 
     const ids = new Set(included.map((p) => p.id));
     const body = {
@@ -159,8 +164,12 @@ const GroupRead = () => {
         (fnErr as { context?: { body?: string } })?.context?.body ?? "";
       let readable = "We couldn't start your group read. Please try again.";
       try {
-        const parsedErr = JSON.parse(message) as { error?: string };
+        const parsedErr = JSON.parse(message) as { error?: string; code?: string };
         if (parsedErr?.error) readable = parsedErr.error;
+        if (parsedErr?.code === "subscription_required") {
+          setLocked(true);
+          track("group_paywall_viewed", {});
+        }
       } catch {
         /* keep default */
       }
