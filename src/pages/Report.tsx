@@ -12,6 +12,7 @@ import { track } from "@/lib/analytics";
 import { getStripeEnvironment } from "@/lib/stripe";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
+import { AnalysisSharePanel } from "@/components/AnalysisSharePanel";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { InviteFriendsButton } from "@/components/chemistry/InviteFriendsButton";
 import { CoupleTypeCard } from "@/components/CoupleTypeCard";
