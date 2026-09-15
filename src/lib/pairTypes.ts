@@ -49,7 +49,7 @@ const COLUMNS =
 export const SLUG_BY_ID: Record<number, string> = {
   1: "power-couple",
   2: "steady-anchors",
-  3: "slow-burners",
+  3: "quiet-loyalists",
   4: "deep-feelers",
   5: "independent-duo",
   6: "magnet-and-moon",
@@ -62,9 +62,15 @@ export const SLUG_BY_ID: Record<number, string> = {
   13: "fire-pair",
 };
 
-export const ID_BY_SLUG: Record<string, number> = Object.fromEntries(
-  Object.entries(SLUG_BY_ID).map(([id, slug]) => [slug, Number(id)]),
-);
+/** Retired slugs kept alive so old links never 404. */
+export const SLUG_ALIASES: Record<string, number> = {
+  "slow-burners": 3,
+};
+
+export const ID_BY_SLUG: Record<string, number> = {
+  ...Object.fromEntries(Object.entries(SLUG_BY_ID).map(([id, slug]) => [slug, Number(id)])),
+  ...SLUG_ALIASES,
+};
 
 /** URL segment per relationship: /types/{segment}/{slug}. */
 export const SEGMENT_BY_RELATIONSHIP: Record<RelationshipType, string> = {
