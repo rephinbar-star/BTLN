@@ -35,7 +35,7 @@ const RATE_LIMIT_PER_HOUR = 5;
 // Entitlement: free-preview allowance per owner, counted from the cutoff so
 // reads generated before the rule shipped stay granted.
 const FREE_GROUP_READS = 1;
-const RULE_CUTOFF = "2026-09-15T00:00:00.000Z";
+const RULE_CUTOFF = "2026-09-15T22:00:00.000Z";
 const CATEGORIES = ["friends", "family", "work"];
 
 
