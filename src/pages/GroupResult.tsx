@@ -88,18 +88,19 @@ const GroupResult = () => {
   useEffect(() => {
     void load();
     const t = window.setInterval(() => {
-      const status = rowRef.current?.status;
-      if (status === "complete" || status === "failed") {
+      const action = pollAction(rowRef.current?.status, Date.now() - startedAt.current);
+      if (action === "stop") {
         window.clearInterval(t);
         return;
       }
-      if (Date.now() - startedAt.current > TIMEOUT_MS) {
+      if (action === "timeout") {
         setTimedOut(true);
         window.clearInterval(t);
         return;
       }
       void load();
     }, POLL_MS);
+
     return () => window.clearInterval(t);
   }, [load]);
 
