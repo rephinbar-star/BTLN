@@ -144,9 +144,10 @@ Deno.serve(async (req) => {
   const snapshot = {
     v: 1,
     category: group.category,
-    title: typeof result.group_title === "string" ? result.group_title.slice(0, 80) : "Group Read",
+    title:
+      typeof result.group_title === "string" ? scrub(result.group_title.slice(0, 80)) : "Group Read",
     subtitle:
-      typeof result.group_summary === "string" ? result.group_summary.slice(0, 280) : "",
+      typeof result.group_summary === "string" ? scrub(result.group_summary.slice(0, 280)) : "",
     participant_count: participants.length,
     message_count: stats.message_count ?? null,
     include_names: includeNames,
