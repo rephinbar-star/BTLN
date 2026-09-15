@@ -561,6 +561,44 @@ export type Database = {
         }
         Relationships: []
       }
+      recipient_perspectives: {
+        Row: {
+          created_at: string
+          id: string
+          participant_index: number
+          participant_label: string | null
+          share_link_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          participant_index: number
+          participant_label?: string | null
+          share_link_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          participant_index?: number
+          participant_label?: string | null
+          share_link_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recipient_perspectives_share_link_id_fkey"
+            columns: ["share_link_id"]
+            isOneToOne: false
+            referencedRelation: "group_share_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roast_share_links: {
         Row: {
           created_at: string
@@ -876,6 +914,10 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
+      count_group_reads_since_cutoff: {
+        Args: { p_session_id: string; p_user_id: string }
+        Returns: number
+      }
       get_analysis_for_session: {
         Args: { p_id: string; p_session_id: string }
         Returns: {
@@ -1029,6 +1071,14 @@ export type Database = {
       }
       resolve_group_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_roast_share: { Args: { p_token_hash: string }; Returns: Json }
+      save_recipient_perspective: {
+        Args: {
+          p_participant_index: number
+          p_participant_label: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
       set_couple_type_image_url: {
         Args: {
           p_image_url: string
@@ -1068,6 +1118,10 @@ export type Database = {
           p_trigger_source: string
         }
         Returns: string
+      }
+      user_has_active_subscription: {
+        Args: { p_user_id: string }
+        Returns: boolean
       }
       user_has_paid_access: {
         Args: { p_analysis_id: string; p_user_id: string }

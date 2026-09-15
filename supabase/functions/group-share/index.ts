@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
   }));
 
   const snapshot = {
-    v: 1,
+    v: 2,
     category: group.category,
     title:
       typeof result.group_title === "string" ? scrub(result.group_title.slice(0, 80)) : "Group Read",
@@ -155,6 +155,11 @@ Deno.serve(async (req) => {
     role_cards: roleCards,
     strengths: Array.isArray(result.group_strengths)
       ? (result.group_strengths as unknown[]).slice(0, 3).map((s) => scrub(String(s).slice(0, 160)))
+      : [],
+    // Group-level next steps. No names, no quotes, no chat text — this is the
+    // only material the recipient "your perspective" view may use.
+    suggestions: Array.isArray(result.suggestions)
+      ? (result.suggestions as unknown[]).slice(0, 2).map((s) => scrub(String(s).slice(0, 200)))
       : [],
     created_at: new Date().toISOString(),
   };

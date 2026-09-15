@@ -135,6 +135,11 @@ Deno.serve(async (req) => {
       : head.session_id === sessionId;
     if (!owns) return json(403, { error: "That group read isn't yours." });
     if (head.status !== "complete") return json(400, { error: "That group read isn't finished yet." });
+    // No entitlement bypass here: a group_read row can only exist because
+    // analyze-group already enforced the subscription / free-allowance rule
+    // before generating it, and this branch only ever reads a source the
+    // caller already owns. Roasting never unlocks gated dyadic content —
+    // that path above still requires is_paid / user_has_paid_access.
 
     const { data: full } = await supabase
       .from("group_reads")
