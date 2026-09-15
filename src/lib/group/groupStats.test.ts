@@ -115,3 +115,12 @@ describe("detectSafetyConcern", () => {
     ).toBeFalsy();
   });
 });
+
+describe("detectSafetyConcern (self-harm phrasings)", () => {
+  it("flags indirect self-harm wording", () => {
+    expect(detectSafetyConcern([msg("p1", "I've been thinking about hurting myself lately", 1)])).toBe(
+      true,
+    );
+    expect(detectSafetyConcern([msg("p1", "sometimes I just want to be dead", 1)])).toBe(true);
+  });
+});
