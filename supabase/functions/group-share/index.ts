@@ -109,13 +109,33 @@ Deno.serve(async (req) => {
     return includeNames ? participants[idx].display_name : pseudonym(idx);
   };
 
+  // When names are not released, real names must not survive anywhere in the
+  // snapshot — including inside model-written prose.
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const nameSubs = includeNames
+    ? []
+    : participants
+        .map((p, i) => ({ name: (p.display_name ?? "").trim(), alias: pseudonym(i) }))
+        .filter((s) => s.name.length >= 2)
+        .sort((a, b) => b.name.length - a.name.length);
+
+  const scrub = (text: string): string => {
+    let out = text;
+    for (const { name, alias } of nameSubs) {
+      out = out.replace(new RegExp(`\\b${escapeRe(name)}\\b('s)?`, "gi"), (_m, poss) =>
+        poss ? `${alias}'s` : alias,
+      );
+    }
+    return out;
+  };
+
   const roleCards = ((result.role_cards as RoleCard[]) ?? []).slice(0, 15).map((c) => ({
     label: labelFor(c.participant_id),
-    role: typeof c.role === "string" ? c.role.slice(0, 40) : "Group member",
-    headline: typeof c.headline === "string" ? c.headline.slice(0, 160) : "",
-    why: typeof c.why === "string" ? c.why.slice(0, 280) : "",
+    role: typeof c.role === "string" ? scrub(c.role.slice(0, 40)) : "Group member",
+    headline: typeof c.headline === "string" ? scrub(c.headline.slice(0, 160)) : "",
+    why: typeof c.why === "string" ? scrub(c.why.slice(0, 280)) : "",
     ...(includeQuotes && typeof c.evidence === "string"
-      ? { evidence: c.evidence.slice(0, 200) }
+      ? { evidence: scrub(c.evidence.slice(0, 200)) }
       : {}),
     share_pct:
       stats.participants?.find((p) => p.id === c.participant_id)?.share_pct ?? null,
