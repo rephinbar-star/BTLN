@@ -54,6 +54,12 @@ export type EventMap = {
   decode_paywall_viewed: Record<string, never>;
   decode_intent_to_pay_click: { plan: string };
   deep_report_upsell_click: Record<string, never>;
+  pair_types_viewed: { relationship: RelationshipType };
+  pair_types_filter: { relationship: RelationshipType };
+  pair_type_card_click: { id: number; relationship: RelationshipType };
+  pair_type_page_viewed: { id: number; relationship: RelationshipType };
+  pair_type_relationship_switch: { id: number; relationship: RelationshipType };
+  pair_type_cta_click: { id: number; relationship: RelationshipType };
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
@@ -84,6 +90,12 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   decode_paywall_viewed: [],
   decode_intent_to_pay_click: ["plan"],
   deep_report_upsell_click: [],
+  pair_types_viewed: ["relationship"],
+  pair_types_filter: ["relationship"],
+  pair_type_card_click: ["id", "relationship"],
+  pair_type_page_viewed: ["id", "relationship"],
+  pair_type_relationship_switch: ["id", "relationship"],
+  pair_type_cta_click: ["id", "relationship"],
 } as never;
 
 // Reject obvious PII shapes as a defense-in-depth check on top of the
