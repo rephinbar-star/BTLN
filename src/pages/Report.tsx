@@ -15,7 +15,7 @@ import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { InviteFriendsButton } from "@/components/chemistry/InviteFriendsButton";
 import { CoupleTypeCard } from "@/components/CoupleTypeCard";
-import { SLUG_BY_ID } from "@/lib/pairTypes";
+import { pairTypePath, SLUG_BY_ID } from "@/lib/pairTypes";
 import { Header } from "@/components/chemistry/Header";
 import type { RelationshipType } from "@/lib/coupleTypes";
 import { PaywallBlur } from "@/components/PaywallBlur";
@@ -868,12 +868,11 @@ const ReportContent = () => {
                 {SLUG_BY_ID[row.couple_type_id] && (
                   <div data-pdf-exclude="true" className="mb-8 text-center">
                     <Link
-                      to={`/types/${SLUG_BY_ID[row.couple_type_id]}${
-                        (row.relationship_type as RelationshipType) === "romantic" ||
-                        !row.relationship_type
-                          ? ""
-                          : `?as=${row.relationship_type}`
-                      }`}
+                      to={pairTypePath(
+                        row.couple_type_id,
+                        ((row.relationship_type as RelationshipType) || "romantic"),
+                      )}
+
                       onClick={() =>
                         track("report_pair_type_link_click", {
                           id: row.couple_type_id as number,

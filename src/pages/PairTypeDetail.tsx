@@ -22,12 +22,16 @@ import {
   fieldsFor,
   ID_BY_SLUG,
   isRelationship,
+  pairTypePath,
+  pairTypeUrl,
+  RELATIONSHIP_BY_SEGMENT,
   RELATIONSHIPS,
   RELATIONSHIP_LABELS,
-  SLUG_BY_ID,
+
   type PairTypeRow,
   type RelationshipType,
 } from "@/lib/pairTypes";
+
 
 /** Fetch a remote image and inline it as a data URL (avoids canvas CORS taint). */
 const toDataUrl = async (url: string): Promise<string | null> => {
@@ -56,12 +60,16 @@ const hexToRgba = (hex: string, alpha: number) => {
 };
 
 const PairTypeDetail = () => {
-  const { slug = "" } = useParams();
+  const { slug = "", category = "" } = useParams();
   const navigate = useNavigate();
-  const [params, setParams] = useSearchParams();
+  const [params] = useSearchParams();
   const relParam = params.get("as");
-  const relationship: RelationshipType = isRelationship(relParam) ? relParam : "romantic";
+  // Category comes from the URL path, so a fresh browser hitting a Family
+  // link renders Family straight away — no stored state involved.
+  const relationship: RelationshipType =
+    RELATIONSHIP_BY_SEGMENT[category] ?? (isRelationship(relParam) ? relParam : "romantic");
   const id = ID_BY_SLUG[slug];
+
 
   const [row, setRow] = useState<PairTypeRow | null>(null);
   const [others, setOthers] = useState<PairTypeRow[]>([]);
@@ -81,6 +89,12 @@ const PairTypeDetail = () => {
       navigate("/types", { replace: true });
       return;
     }
+    // Unknown category segment → send to the canonical category URL.
+    if (!RELATIONSHIP_BY_SEGMENT[category]) {
+      navigate(pairTypePath(id, relationship), { replace: true });
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setImgFailed(false);
@@ -99,19 +113,20 @@ const PairTypeDetail = () => {
     return () => {
       cancelled = true;
     };
-  }, [id, navigate]);
+  }, [id, navigate, category, relationship]);
 
   useEffect(() => {
     if (id) track("pair_type_page_viewed", { id, relationship });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, relationship]);
 
   useEffect(() => setImgFailed(false), [relationship]);
 
   const f = row ? fieldsFor(row, relationship) : null;
-  const canonical = `https://betweenthelines.app/types/${slug}`;
+  const canonical = id ? pairTypeUrl(id, relationship) : "https://betweenthelines.app/types";
   // Public page URL only — never a report id or anything personal.
-  const shareUrl = `${canonical}${relationship === "romantic" ? "" : `?as=${relationship}`}`;
+  const shareUrl = canonical;
+
 
   const jsonLd = useMemo(
     () =>
@@ -197,25 +212,42 @@ const PairTypeDetail = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
-        <title>{f ? `${f.name} — BetweenTheLines™ pair type` : "Pair type — BetweenTheLines™"}</title>
+        <title>
+          {f
+            ? `${f.name} — ${RELATIONSHIP_LABELS[relationship]} pair type | BetweenTheLines™`
+            : "Pair type — BetweenTheLines™"}
+        </title>
         <meta
           name="description"
           content={
             f
-              ? `${f.tagline} What ${f.name} looks like in everyday messages, its superpower, where it gets stuck, and what helps.`
+              ? `${f.tagline} What ${f.name} looks like in ${RELATIONSHIP_LABELS[relationship].toLowerCase()} messages — its superpower, where it gets stuck, and what helps.`
               : "Explore the BetweenTheLines pair types."
           }
         />
         <link rel="canonical" href={canonical} />
-        <meta property="og:title" content={f ? `${f.name} — BetweenTheLines™` : "BetweenTheLines™"} />
+        <meta
+          property="og:title"
+          content={
+            f ? `${f.name} — ${RELATIONSHIP_LABELS[relationship]} | BetweenTheLines™` : "BetweenTheLines™"
+          }
+        />
         <meta property="og:description" content={f?.tagline ?? ""} />
         <meta property="og:url" content={canonical} />
         <meta property="og:type" content="article" />
+        {f?.image && <meta property="og:image" content={f.image} />}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content={f ? `${f.name} — BetweenTheLines™` : "BetweenTheLines™"} />
+        <meta
+          name="twitter:title"
+          content={
+            f ? `${f.name} — ${RELATIONSHIP_LABELS[relationship]} | BetweenTheLines™` : "BetweenTheLines™"
+          }
+        />
         <meta name="twitter:description" content={f?.tagline ?? ""} />
+        {f?.image && <meta name="twitter:image" content={f.image} />}
         {jsonLd && <script type="application/ld+json">{JSON.stringify(jsonLd)}</script>}
       </Helmet>
+
       <Header />
       <main>
         <nav className="mx-auto max-w-4xl px-5 pt-6 text-[14px] text-muted-foreground sm:px-8">
@@ -278,14 +310,13 @@ const PairTypeDetail = () => {
               <div className="mt-8 flex flex-wrap items-center justify-center gap-2">
                 <span className="text-[13px] text-muted-foreground">Read this type as:</span>
                 {RELATIONSHIPS.map((rel) => (
-                  <button
+                  <Link
                     key={rel}
-                    type="button"
-                    onClick={() => {
-                      setParams(rel === "romantic" ? {} : { as: rel }, { replace: true });
-                      track("pair_type_relationship_switch", { id: row.id, relationship: rel });
-                    }}
-                    aria-pressed={rel === relationship}
+                    to={pairTypePath(row.id, rel)}
+                    onClick={() =>
+                      track("pair_type_relationship_switch", { id: row.id, relationship: rel })
+                    }
+                    aria-current={rel === relationship ? "page" : undefined}
                     className={cn(
                       "rounded-full border px-3.5 py-1.5 text-[13px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                       rel === relationship
@@ -294,8 +325,9 @@ const PairTypeDetail = () => {
                     )}
                   >
                     {RELATIONSHIP_LABELS[rel]}
-                  </button>
+                  </Link>
                 ))}
+
               </div>
 
               {/* Share this pair type — public page only, nothing personal */}
@@ -394,7 +426,7 @@ const PairTypeDetail = () => {
                       return (
                         <Link
                           key={o.id}
-                          to={`/types/${SLUG_BY_ID[o.id]}${relationship === "romantic" ? "" : `?as=${relationship}`}`}
+                          to={pairTypePath(o.id, relationship)}
                           className="rounded-2xl border border-border p-5 transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           style={{ backgroundColor: o.background_color, color: o.text_color }}
                         >

@@ -21,6 +21,8 @@ import CheckoutReturn from "./pages/CheckoutReturn";
 import Pricing from "./pages/Pricing";
 import PairTypes from "./pages/PairTypes";
 import PairTypeDetail from "./pages/PairTypeDetail";
+import PairTypeLegacyRedirect from "./pages/PairTypeLegacyRedirect";
+
 import Trust from "./pages/Trust";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
@@ -61,7 +63,9 @@ const App = () => (
           <Route path="/checkout/return" element={<CheckoutReturn />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/types" element={<PairTypes />} />
-          <Route path="/types/:slug" element={<PairTypeDetail />} />
+          <Route path="/types/:category/:slug" element={<PairTypeDetail />} />
+          <Route path="/types/:slug" element={<PairTypeLegacyRedirect />} />
+
           <Route path="/error" element={<ErrorPage />} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/admin/cards" element={<AdminCards />} />

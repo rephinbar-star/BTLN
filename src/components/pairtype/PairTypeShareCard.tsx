@@ -1,5 +1,5 @@
 import { forwardRef } from "react";
-import { fieldsFor, type PairTypeRow, type RelationshipType } from "@/lib/pairTypes";
+import { fieldsFor, RELATIONSHIP_LABELS, type PairTypeRow, type RelationshipType } from "@/lib/pairTypes";
 
 export type ShareFormat = "square" | "story";
 
@@ -28,15 +28,22 @@ type Props = {
 
 /**
  * Offscreen render target for downloadable share images.
- * Artwork uses object-contain and text has generous padding so nothing
- * important is cropped at either aspect ratio.
+ *
+ * The illustration already carries the pair-type name, tagline and body copy,
+ * so the surrounding frame stays deliberately light: a category label above,
+ * identity + CTA below. Artwork is object-contain at the largest size the
+ * safe margins allow — never cropped or stretched.
+ *
+ * Story safe margins: nothing but background in the top 240px / bottom 340px,
+ * where Instagram and TikTok overlay their own UI.
  */
 export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
   ({ row, relationship, format, imageDataUrl, logoDataUrl }, ref) => {
     const f = fieldsFor(row, relationship);
     const { width, height } = SHARE_SIZES[format];
     const story = format === "story";
-    const art = story ? 820 : 520;
+    const art = story ? 940 : 840;
+    const muted = hexToRgba(row.text_color, 0.72);
 
     return (
       <div
@@ -49,41 +56,26 @@ export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          justifyContent: "center",
-          gap: story ? 44 : 28,
-          padding: story ? "120px 90px" : "70px 80px",
+          justifyContent: story ? "center" : "space-between",
+          padding: story ? "240px 60px 340px" : "44px 60px 48px",
           boxSizing: "border-box",
           fontFamily: "inherit",
           textAlign: "center",
+          overflow: "hidden",
         }}
       >
         <div
           style={{
-            fontSize: story ? 28 : 24,
-            letterSpacing: 4,
+            fontSize: story ? 30 : 26,
+            letterSpacing: 5,
             textTransform: "uppercase",
-            opacity: 0.7,
+            color: muted,
           }}
         >
-          Pair type
+          {RELATIONSHIP_LABELS[relationship]} pair type
         </div>
 
-        <div style={{ fontSize: story ? 82 : 66, fontWeight: 600, lineHeight: 1.05 }}>
-          {f.name}
-        </div>
-
-        <div
-          style={{
-            fontSize: story ? 32 : 26,
-            padding: story ? "14px 30px" : "10px 24px",
-            borderRadius: 999,
-            backgroundColor: hexToRgba(row.text_color, 0.1),
-          }}
-        >
-          ⚡ {f.superpower}
-        </div>
-
-        {imageDataUrl && (
+        {imageDataUrl ? (
           <img
             src={imageDataUrl}
             alt=""
@@ -92,27 +84,43 @@ export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
               width: art,
               height: art,
               objectFit: "contain",
-              borderRadius: 32,
+              borderRadius: 28,
+              margin: story ? "56px 0" : "0",
             }}
           />
+        ) : (
+          <div
+            style={{
+              width: art,
+              height: art,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: 28,
+              fontSize: 64,
+              fontWeight: 600,
+              backgroundColor: hexToRgba(row.text_color, 0.08),
+              margin: story ? "56px 0" : "0",
+            }}
+          >
+            {f.name}
+          </div>
         )}
 
-        <div style={{ fontSize: story ? 42 : 34, fontStyle: "italic", lineHeight: 1.25 }}>
-          {f.tagline}
-        </div>
-
-        <div
-          style={{
-            marginTop: "auto",
-            display: "flex",
-            alignItems: "center",
-            gap: 14,
-            opacity: 0.8,
-            fontSize: story ? 28 : 24,
-          }}
-        >
-          {logoDataUrl && <img src={logoDataUrl} alt="" style={{ height: story ? 34 : 28 }} />}
-          <span>betweenthelines.app</span>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
+          <div style={{ fontSize: story ? 46 : 38, fontWeight: 600, lineHeight: 1.1 }}>{f.name}</div>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 14,
+              fontSize: story ? 30 : 26,
+              color: muted,
+            }}
+          >
+            {logoDataUrl && <img src={logoDataUrl} alt="" style={{ height: story ? 32 : 28 }} />}
+            <span>What&apos;s your pair type? betweenthelines.app</span>
+          </div>
         </div>
       </div>
     );

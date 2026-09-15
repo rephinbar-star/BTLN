@@ -66,6 +66,34 @@ export const ID_BY_SLUG: Record<string, number> = Object.fromEntries(
   Object.entries(SLUG_BY_ID).map(([id, slug]) => [slug, Number(id)]),
 );
 
+/** URL segment per relationship: /types/{segment}/{slug}. */
+export const SEGMENT_BY_RELATIONSHIP: Record<RelationshipType, string> = {
+  romantic: "romantic",
+  friend: "friends",
+  family: "family",
+};
+
+export const RELATIONSHIP_BY_SEGMENT: Record<string, RelationshipType> = {
+  romantic: "romantic",
+  friends: "friend",
+  friend: "friend",
+  family: "family",
+};
+
+/** Canonical path for a pair type in a category. */
+export const pairTypePath = (id: number, rel: RelationshipType) =>
+  `/types/${SEGMENT_BY_RELATIONSHIP[rel]}/${SLUG_BY_ID[id]}`;
+
+export const pairTypeUrl = (id: number, rel: RelationshipType) =>
+  `https://betweenthelines.app${pairTypePath(id, rel)}`;
+
+/**
+ * Display titles drop the leading "The" (brand decision) — the stored
+ * names keep it so nothing downstream of the database changes.
+ */
+export const displayName = (name: string) => name.replace(/^The\s+/i, "").trim();
+
+
 export const fetchPairTypes = async (): Promise<PairTypeRow[]> => {
   const { data, error } = await supabase
     .from("couple_types")
@@ -86,7 +114,10 @@ export const fetchPairType = async (id: number): Promise<PairTypeRow | null> => 
 };
 
 export const fieldsFor = (row: PairTypeRow, rel: RelationshipType) => ({
-  name: rel === "friend" ? row.friend_name : rel === "family" ? row.family_name : row.romantic_name,
+  name: displayName(
+    rel === "friend" ? row.friend_name : rel === "family" ? row.family_name : row.romantic_name,
+  ),
+
   tagline:
     rel === "friend" ? row.friend_tagline : rel === "family" ? row.family_tagline : row.romantic_tagline,
   superpower:
