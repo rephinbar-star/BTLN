@@ -44,6 +44,10 @@ type Row = {
 const GroupResult = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const [row, setRow] = useState<Row | null>(null);
+  const rowRef = useRef<Row | null>(null);
+  useEffect(() => {
+    rowRef.current = row;
+  }, [row]);
   const [timedOut, setTimedOut] = useState(false);
   const [shareToken, setShareToken] = useState<string | null>(null);
   const [includeNames, setIncludeNames] = useState(false);
