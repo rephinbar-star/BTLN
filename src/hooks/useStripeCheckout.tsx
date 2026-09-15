@@ -7,9 +7,12 @@ interface CheckoutOptions {
   customerEmail?: string;
   userId?: string;
   analysisId?: string;
+  groupReadId?: string;
+  reportKind?: "analysis" | "group_read";
   customerCountry?: string;
   returnUrl?: string;
 }
+
 
 export function useStripeCheckout() {
   const [isOpen, setIsOpen] = useState(false);

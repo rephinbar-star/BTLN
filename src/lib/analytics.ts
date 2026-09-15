@@ -90,6 +90,11 @@ export type EventMap = {
   group_perspective_selected: Record<string, never>;
   group_perspective_saved: Record<string, never>;
   group_paywall_viewed: Record<string, never>;
+  analysis_share_created: { include_names: boolean; include_quotes: boolean };
+  analysis_share_visited: Record<string, never>;
+  analysis_share_conversion: Record<string, never>;
+  analysis_perspective_selected: Record<string, never>;
+  analysis_perspective_saved: Record<string, never>;
   roast_started: { source_type: string };
   roast_completed: { source_type: string; tone: string };
   roast_failed: { reason_code: string };
@@ -148,6 +153,11 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   group_perspective_selected: [],
   group_perspective_saved: [],
   group_paywall_viewed: [],
+  analysis_share_created: ["include_names", "include_quotes"],
+  analysis_share_visited: [],
+  analysis_share_conversion: [],
+  analysis_perspective_selected: [],
+  analysis_perspective_saved: [],
   roast_started: ["source_type"],
   roast_completed: ["source_type", "tone"],
   roast_failed: ["reason_code"],

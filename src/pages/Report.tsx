@@ -12,6 +12,7 @@ import { track } from "@/lib/analytics";
 import { getStripeEnvironment } from "@/lib/stripe";
 import type { AnalysisResult, AttachmentDimension, ContextData } from "@/lib/analysis-types";
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
+import { AnalysisSharePanel } from "@/components/AnalysisSharePanel";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { InviteFriendsButton } from "@/components/chemistry/InviteFriendsButton";
 import { CoupleTypeCard } from "@/components/CoupleTypeCard";
@@ -932,6 +933,13 @@ const ReportContent = () => {
                 </Link>
               </div>
             )}
+
+            {/* Recipient share link — owners of an unlocked, non-serious report only */}
+            {!isSharedView && isOwner && hasUnlockedReport && !safetyMode && analysisId && (
+              <AnalysisSharePanel analysisId={analysisId} />
+            )}
+
+
 
             {/* Action buttons */}
             <div data-pdf-exclude="true" className="mt-6 flex flex-col items-stretch gap-2 sm:flex-row sm:justify-center sm:gap-3">

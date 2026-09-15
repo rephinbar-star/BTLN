@@ -80,13 +80,92 @@ async function recordAudit(entry: AuditEntry) {
   }
 }
 
+async function unlockGroupReadForUser(groupReadId: string, userId: string) {
+  const { error } = await getSupabase()
+    .from("group_reads")
+    .update({ access_source: "one_time" })
+    .eq("id", groupReadId)
+    .eq("user_id", userId);
+  if (error) console.error("group_reads unlock error:", error.message);
+}
+
 async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: string) {
   const userId = session.metadata?.userId;
   const analysisId = session.metadata?.analysisId;
+  const groupReadId = session.metadata?.groupReadId;
+  const reportKind = session.metadata?.reportKind;
   const mode = session.mode; // 'payment' | 'subscription'
 
   // One-time unlock — only applies to payment mode.
   if (mode === "payment") {
+    // Never grant on an unpaid session (cancelled / failed / still pending).
+    const paymentStatus = session.payment_status;
+    if (paymentStatus !== "paid" && paymentStatus !== "no_payment_required") {
+      await recordAudit({
+        environment: env,
+        event_id: eventId,
+        event_type: "checkout.session.completed",
+        checkout_session_id: session.id,
+        status: "skipped",
+        error_message: `Not paid (payment_status=${paymentStatus})`,
+        payload_summary: { mode, amount_total: session.amount_total },
+      });
+      return;
+    }
+
+    const amount = session.amount_total ?? 0;
+    const paymentIntent =
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id ?? null;
+
+    // Single Group Read purchase.
+    if (reportKind === "group_read" || (groupReadId && !analysisId)) {
+      if (!userId || !groupReadId) {
+        await recordAudit({
+          environment: env,
+          event_id: eventId,
+          event_type: "checkout.session.completed",
+          checkout_session_id: session.id,
+          status: "skipped",
+          error_message: "Missing userId or groupReadId metadata",
+          payload_summary: { mode, amount_total: amount },
+        });
+        return;
+      }
+      // Idempotent: the unique (user_id, group_read_id) key means a redelivered
+      // event updates the same row instead of granting twice.
+      const { error: gErr } = await getSupabase().from("group_read_unlocks").upsert(
+        {
+          user_id: userId,
+          group_read_id: groupReadId,
+          amount_cents: amount,
+          stripe_payment_intent_id: paymentIntent,
+        },
+        { onConflict: "user_id,group_read_id" },
+      );
+      if (gErr) console.log("group_read_unlocks upsert error:", gErr.message);
+      else await unlockGroupReadForUser(groupReadId, userId);
+      await recordAudit({
+        environment: env,
+        event_id: eventId,
+        event_type: "checkout.session.completed",
+        checkout_session_id: session.id,
+        stripe_customer_id: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
+        user_id: userId,
+        amount_cents: amount,
+        status: gErr ? "error" : "processed",
+        error_message: gErr?.message ?? null,
+        changes: {
+          group_read_unlocks: gErr ? "failed" : "upserted",
+          group_read_id: groupReadId,
+          access_source: gErr ? null : "one_time",
+        },
+        payload_summary: { mode, report_kind: "group_read", payment_intent: paymentIntent, amount_total: amount },
+      });
+      return;
+    }
+
     if (!userId || !analysisId) {
       console.log("checkout.session.completed (payment) missing metadata", { session_id: session.id });
       await recordAudit({
@@ -100,11 +179,6 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
       });
       return;
     }
-    const amount = session.amount_total ?? 0;
-    const paymentIntent =
-      typeof session.payment_intent === "string"
-        ? session.payment_intent
-        : session.payment_intent?.id ?? null;
     const { error: insertError } = await getSupabase().from("one_time_unlocks").upsert(
       {
         user_id: userId,
@@ -135,6 +209,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
     });
     return;
   }
+
 
   // Subscription rows are written by customer.subscription.* events, but
   // checkout completion can arrive first. Unlock this report immediately.
@@ -254,7 +329,9 @@ Deno.serve(async (req) => {
     const event = await verifyWebhook(req, rawEnv);
     await logWebhookEvent("stripe_webhook_received", { type: event.type, env: rawEnv });
     switch (event.type) {
+      case "checkout.session.async_payment_succeeded":
       case "checkout.session.completed":
+
         await handleCheckoutCompleted(event.data.object, rawEnv, event.id);
         break;
       case "customer.subscription.created":

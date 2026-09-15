@@ -27,10 +27,15 @@ import {
   selectRange,
 } from "@/lib/ingest/aggregate";
 import { setDeepReadHandoff } from "@/lib/ingest/handoff";
+import { useAuth } from "@/hooks/useAuth";
+import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
 const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
 const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
 const MIN_MESSAGES = LIMITS.GROUP_MIN_MESSAGES;
+/** Id of a paid-for group read placeholder. Never holds chat text. */
+const UNLOCK_TARGET_KEY = "btln_group_unlock_target";
+
 
 const FORMAT_LABEL: Record<ParseResult["format"], string> = {
   whatsapp: "WhatsApp export",
@@ -71,12 +76,20 @@ const GroupRead = () => {
   const [keepUnknownTime, setKeepUnknownTime] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [locked, setLocked] = useState(false);
+  /** Owned, server-created placeholder this checkout pays for. Id only. */
+  const [unlockTarget, setUnlockTarget] = useState<string | null>(
+    () => sessionStorage.getItem(UNLOCK_TARGET_KEY),
+  );
   const access = useGroupAccess();
+  const { user } = useAuth();
+  const { openCheckout, checkoutElement, isOpen: checkoutOpen, closeCheckout } =
+    useStripeCheckout();
 
   // Raw text never outlives this page.
   useEffect(() => () => {
     pendingZip.current = null;
   }, []);
+
 
   const included = useMemo(
     () => (parsed ? parsed.participants.filter((p) => !excluded.has(p.id)) : []),
@@ -203,6 +216,9 @@ const GroupRead = () => {
     const body = {
       session_id: getSessionId(),
       category,
+      // When a single report has been paid for, run it against that exact
+      // owned target so the payment is honoured and never double-charged.
+      ...(unlockTarget ? { group_read_id: unlockTarget } : {}),
       participants: included.map((p) => ({ id: p.id, display_name: p.display_name })),
       coverage: payload.coverage,
       source_format: parsed.format,
@@ -225,10 +241,22 @@ const GroupRead = () => {
       const message = (fnErr as { context?: { body?: string } })?.context?.body ?? "";
       let readable = "We couldn't start your group read. Please try again.";
       try {
-        const parsedErr = JSON.parse(message) as { error?: string; code?: string };
+        const parsedErr = JSON.parse(message) as {
+          error?: string;
+          code?: string;
+          group_read_id?: string;
+        };
         if (parsedErr?.error) readable = parsedErr.error;
-        if (parsedErr?.code === "subscription_required") {
+        if (
+          parsedErr?.code === "subscription_required" ||
+          parsedErr?.code === "payment_required" ||
+          parsedErr?.code === "payment_pending"
+        ) {
           setLocked(true);
+          if (parsedErr.group_read_id) {
+            setUnlockTarget(parsedErr.group_read_id);
+            sessionStorage.setItem(UNLOCK_TARGET_KEY, parsedErr.group_read_id);
+          }
           track("group_paywall_viewed", {});
         }
       } catch {
@@ -242,7 +270,12 @@ const GroupRead = () => {
     setText("");
     setParsed(null);
     pendingZip.current = null;
+    if (unlockTarget) {
+      sessionStorage.removeItem(UNLOCK_TARGET_KEY);
+      setUnlockTarget(null);
+    }
     navigate(`/group/${data.group_read_id}`);
+
   };
 
   const coverage = payload?.coverage;
@@ -697,24 +730,74 @@ const GroupRead = () => {
               <div className="rounded-2xl border border-border bg-muted/40 p-5">
                 <p className="text-[15px] font-medium">You've used your free group read</p>
                 <p className="mt-2 text-[14px] text-muted-foreground">
-                  Group Read is included with a BetweenTheLines plan, alongside full Deep Read
-                  reports. Your finished reads stay available either way.
+                  Unlimited group reads come with a monthly or annual BetweenTheLines plan,
+                  alongside full Deep Read reports. Or unlock just this one report. Your
+                  finished reads stay available either way.
                 </p>
-                <Link
-                  to="/pricing"
-                  onClick={() => track("group_paywall_viewed", {})}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background"
-                >
-                  See plans <ArrowRight className="h-4 w-4" />
-                </Link>
+                {checkoutOpen ? (
+                  <div className="mt-4">
+                    {checkoutElement}
+                    <button
+                      type="button"
+                      onClick={closeCheckout}
+                      className="mt-3 w-full text-center text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    {user && unlockTarget && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openCheckout({
+                            priceId: "BTLN_report_unlock",
+                            reportKind: "group_read",
+                            groupReadId: unlockTarget,
+                            customerEmail: user.email ?? undefined,
+                            userId: user.id,
+                            returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}&group_read_id=${unlockTarget}`,
+                          })
+                        }
+                        className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background"
+                      >
+                        Unlock this group report — $4.99
+                      </button>
+                    )}
+                    {!user && (
+                      <Link
+                        to={`/auth?return_to=${encodeURIComponent("/group")}`}
+                        className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background"
+                      >
+                        Sign in to unlock this one <ArrowRight className="h-4 w-4" />
+                      </Link>
+                    )}
+                    <Link
+                      to="/pricing"
+                      onClick={() => track("group_paywall_viewed", {})}
+                      className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-[14px] font-medium hover:bg-muted/50"
+                    >
+                      See plans <ArrowRight className="h-4 w-4" />
+                    </Link>
+                  </div>
+                )}
+                {user && unlockTarget && (
+                  <p className="mt-3 text-[13px] text-muted-foreground">
+                    After paying you'll come back here and add the chat again — we never keep a
+                    copy of your conversation.
+                  </p>
+                )}
               </div>
             )}
 
             {!access.isLoading && !access.entitled && !access.needsSubscription && (
               <p className="text-[13px] text-muted-foreground">
-                Your first group read is free. After that, Group Read is part of a plan.
+                Your first group read is free. After that it's $4.99 for a single report, or a
+                plan for unlimited.
               </p>
             )}
+
 
             {error && (
               <p className="flex items-start gap-2 text-[14px] text-destructive">

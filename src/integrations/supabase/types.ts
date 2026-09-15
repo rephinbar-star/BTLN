@@ -98,6 +98,91 @@ export type Database = {
           },
         ]
       }
+      analysis_recipient_perspectives: {
+        Row: {
+          created_at: string
+          id: string
+          participant_index: number
+          participant_label: string | null
+          share_link_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          participant_index: number
+          participant_label?: string | null
+          share_link_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          participant_index?: number
+          participant_label?: string | null
+          share_link_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_recipient_perspectives_share_link_id_fkey"
+            columns: ["share_link_id"]
+            isOneToOne: false
+            referencedRelation: "analysis_share_links"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      analysis_share_links: {
+        Row: {
+          analysis_id: string
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string | null
+          snapshot_json: Json
+          token_hash: string
+          updated_at: string
+          visit_count: number
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json: Json
+          token_hash: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json?: Json
+          token_hash?: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analysis_share_links_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       couple_types: {
         Row: {
           background_color: string
@@ -298,8 +383,44 @@ export type Database = {
         }
         Relationships: []
       }
+      group_read_unlocks: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          group_read_id: string
+          id: string
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          group_read_id: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          group_read_id?: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_read_unlocks_group_read_id_fkey"
+            columns: ["group_read_id"]
+            isOneToOne: false
+            referencedRelation: "group_reads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_reads: {
         Row: {
+          access_source: string
           category: string
           completed_at: string | null
           created_at: string
@@ -315,6 +436,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_source?: string
           category?: string
           completed_at?: string | null
           created_at?: string
@@ -330,6 +452,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_source?: string
           category?: string
           completed_at?: string | null
           created_at?: string
@@ -934,6 +1057,17 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_analysis_share_for_owner: {
+        Args: { p_analysis_id: string; p_session_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string
+          visit_count: number
+        }[]
+      }
       get_decode_for_session: {
         Args: { p_id: string; p_session_id: string }
         Returns: {
@@ -1031,6 +1165,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_group_read_unlock: {
+        Args: { p_group_read_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1069,8 +1207,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      resolve_analysis_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_group_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_roast_share: { Args: { p_token_hash: string }; Returns: Json }
+      save_analysis_recipient_perspective: {
+        Args: {
+          p_participant_index: number
+          p_participant_label: string
+          p_token_hash: string
+        }
+        Returns: string
+      }
       save_recipient_perspective: {
         Args: {
           p_participant_index: number
@@ -1123,6 +1270,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
+      user_has_full_plan: { Args: { p_user_id: string }; Returns: boolean }
       user_has_paid_access: {
         Args: { p_analysis_id: string; p_user_id: string }
         Returns: boolean

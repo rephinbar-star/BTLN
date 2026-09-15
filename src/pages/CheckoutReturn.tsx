@@ -9,10 +9,11 @@ export default function CheckoutReturn() {
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get("session_id");
   const analysisId = searchParams.get("analysis_id");
+  const groupReadId = searchParams.get("group_read_id");
   const [status, setStatus] = useState<"loading" | "ready">(sessionId ? "loading" : "ready");
 
   useEffect(() => {
-    if (!sessionId || !analysisId) {
+    if (!sessionId || (!analysisId && !groupReadId)) {
       setStatus("ready");
       return;
     }
@@ -20,13 +21,22 @@ export default function CheckoutReturn() {
     let attempts = 0;
     const tick = async () => {
       attempts += 1;
-      const { data: rows } = await supabase.rpc("get_analysis_for_session", {
-        p_id: analysisId,
-        p_session_id: getSessionId(),
-      });
-      const data = Array.isArray(rows) ? rows[0] : rows;
+      let granted = false;
+      if (groupReadId) {
+        const { data } = await supabase.rpc("has_group_read_unlock", {
+          p_group_read_id: groupReadId,
+        });
+        granted = data === true;
+      } else if (analysisId) {
+        const { data: rows } = await supabase.rpc("get_analysis_for_session", {
+          p_id: analysisId,
+          p_session_id: getSessionId(),
+        });
+        const data = Array.isArray(rows) ? rows[0] : rows;
+        granted = data?.is_paid === true;
+      }
       if (cancelled) return;
-      if (data?.is_paid || attempts >= 6) {
+      if (granted || attempts >= 8) {
         setStatus("ready");
       } else {
         setTimeout(tick, 1000);
@@ -36,7 +46,8 @@ export default function CheckoutReturn() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, analysisId]);
+  }, [sessionId, analysisId, groupReadId]);
+
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
@@ -61,14 +72,17 @@ export default function CheckoutReturn() {
             Payment complete
           </h1>
           <p className="mt-3 max-w-md text-[15px] text-muted-foreground">
-            Your full report is unlocked. Thanks for supporting BetweenTheLines™.
+            {groupReadId
+              ? "Your single group report is unlocked. Add the chat again on the Group Read page and we'll run it — we never keep a copy of your conversation."
+              : "Your full report is unlocked. Thanks for supporting BetweenTheLines™."}
           </p>
           <Link
-            to={analysisId ? `/report/${analysisId}` : "/"}
+            to={groupReadId ? "/group" : analysisId ? `/report/${analysisId}` : "/"}
             className="mt-8 inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
           >
-            View your report
+            {groupReadId ? "Back to Group Read" : "View your report"}
           </Link>
+
         </>
       )}
     </div>

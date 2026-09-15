@@ -14,6 +14,7 @@ import GroupShareView from "./pages/GroupShareView.tsx";
 import RoastStart from "./pages/RoastStart.tsx";
 import RoastResult from "./pages/RoastResult.tsx";
 import RoastShareView from "./pages/RoastShareView.tsx";
+import AnalysisShareView from "./pages/AnalysisShareView.tsx";
 import Report from "./pages/Report.tsx";
 import ErrorPage from "./pages/ErrorPage.tsx";
 import Admin from "./pages/Admin.tsx";
@@ -71,6 +72,7 @@ const App = () => (
           <Route path="/roast" element={<RoastStart />} />
           <Route path="/roast/:roastId" element={<RoastResult />} />
           <Route path="/r/:token" element={<RoastShareView />} />
+          <Route path="/d/:token" element={<AnalysisShareView />} />
           <Route path="/report/:analysisId" element={<Report />} />
           <Route path="/checkout/return" element={<CheckoutReturn />} />
           <Route path="/pricing" element={<Pricing />} />
