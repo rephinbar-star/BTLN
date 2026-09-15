@@ -58,14 +58,18 @@ export const SLUG_BY_ID: Record<number, string> = {
   9: "duet",
   10: "brave-duo",
   11: "solo-climbers",
-  12: "quiet-companions",
+  12: "low-hum",
   13: "fire-pair",
 };
 
 /** Retired slugs kept alive so old links never 404. */
 export const SLUG_ALIASES: Record<string, number> = {
   "slow-burners": 3,
+  "parallel-players": 5,
+  "quiet-companions": 12,
+  "sparring-partners": 13,
 };
+
 
 export const ID_BY_SLUG: Record<string, number> = {
   ...Object.fromEntries(Object.entries(SLUG_BY_ID).map(([id, slug]) => [slug, Number(id)])),
