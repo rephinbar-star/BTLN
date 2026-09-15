@@ -46,7 +46,8 @@ const COLUMNS =
   "id, romantic_name, friend_name, family_name, romantic_tagline, friend_tagline, family_tagline, romantic_superpower, friend_superpower, family_superpower, romantic_description, friend_description, family_description, background_color, text_color, decorative_element, image_url_romantic, image_url_friend, image_url_family, extras";
 
 /** Slugs, aliases and display-name rules live in one canonical registry. */
-export { SLUG_BY_ID, SLUG_ALIASES, ID_BY_SLUG, displayName } from "@/lib/pairTypeSlugs";
+export { SLUG_BY_ID, SLUG_ALIASES, ID_BY_SLUG, displayName };
+
 
 
 /** URL segment per relationship: /types/{segment}/{slug}. */
