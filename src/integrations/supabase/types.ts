@@ -996,6 +996,17 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_roastable_sources: {
+        Args: { p_session_id: string }
+        Returns: {
+          category: string
+          created_at: string
+          is_unlocked: boolean
+          label: string
+          source_id: string
+          source_type: string
+        }[]
+      }
       log_event: {
         Args: { p_event_name: string; p_metadata: Json; p_session_id: string }
         Returns: undefined
