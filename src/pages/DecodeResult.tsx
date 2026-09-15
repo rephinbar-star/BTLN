@@ -113,7 +113,7 @@ const DecodeResult = () => {
         if (Date.now() - startedAt.current > TIMEOUT_MS) {
           stopped.current = true;
           setStatus("failed");
-          setErrorMsg("We couldn't find this decode.");
+          setErrorMsg("We couldn't find this take.");
         }
         return;
       }
@@ -129,7 +129,7 @@ const DecodeResult = () => {
         refreshAccess();
       } else if (row.status === "failed") {
         stopped.current = true;
-        setErrorMsg(row.error_message ?? "That decode didn't work out.");
+        setErrorMsg(row.error_message ?? "That one didn't work out.");
       } else if (Date.now() - startedAt.current > TIMEOUT_MS) {
         stopped.current = true;
         setStatus("failed");
@@ -231,8 +231,8 @@ const DecodeResult = () => {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
-        <title>Quick Decode — BetweenTheLines™</title>
-        <meta name="description" content="What that text actually means, decoded in seconds." />
+        <title>Quick Take — BetweenTheLines™</title>
+        <meta name="description" content="What that text actually means — our quick take, in seconds." />
         <meta name="robots" content="noindex" />
       </Helmet>
       <Header />
@@ -262,9 +262,12 @@ const DecodeResult = () => {
 
         {status === "complete" && result && (
           <div className="animate-fade-in">
-            <h1 className="text-[28px] font-semibold leading-[1.15] tracking-tight sm:text-[36px]">
-              {result.verdict}
+            <h1 className="text-[13px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Here&apos;s our take
             </h1>
+            <p className="mt-3 text-[28px] font-semibold leading-[1.15] tracking-tight sm:text-[36px]">
+              {result.verdict}
+            </p>
             {result.read && (
               <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">{result.read}</p>
             )}
@@ -339,10 +342,10 @@ const DecodeResult = () => {
                       <div className="w-full max-w-md rounded-2xl border border-border bg-card/95 p-6 text-center shadow-xl backdrop-blur">
                         <Lock className="mx-auto h-5 w-5 text-muted-foreground" />
                         <h3 className="mt-3 text-[18px] font-semibold tracking-tight">
-                          Your free decode is used up
+                          Your free Quick Take is used up
                         </h3>
                         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                          Keep the reply options coming — unlimited Quick Decodes, whenever a text
+                          Keep the reply options coming — unlimited Quick Takes, whenever a text
                           leaves you guessing.
                         </p>
                         <p className="mt-4 text-[15px] font-medium">$6.99 / month · cancel anytime</p>
@@ -351,7 +354,7 @@ const DecodeResult = () => {
                           onClick={startDecodeCheckout}
                           className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background transition-opacity hover:opacity-90"
                         >
-                          <Sparkles className="h-4 w-4" /> Unlock unlimited decodes
+                          <Sparkles className="h-4 w-4" /> Unlock unlimited Quick Takes
                         </button>
                       </div>
                     </div>
@@ -368,7 +371,7 @@ const DecodeResult = () => {
                     onClick={closeCheckout}
                     className="mb-4 text-[14px] text-muted-foreground hover:text-foreground"
                   >
-                    ← Back to your decode
+                    ← Back to your take
                   </button>
                   {checkoutElement}
                 </div>
@@ -377,7 +380,7 @@ const DecodeResult = () => {
 
             <div className="mt-12 rounded-xl border border-border bg-muted/30 p-5">
               <p className="text-[15px] font-medium">
-                Want the full read — attachment styles, the patterns, your couple type?
+                Want the Deep Read — attachment styles, the patterns, your pair type?
               </p>
               <p className="mt-1 text-[14px] text-muted-foreground">
                 Upload a longer conversation and get the deep report — patterns, attachment styles, and
@@ -388,13 +391,13 @@ const DecodeResult = () => {
                 onClick={() => track("deep_report_upsell_click", {} as never)}
                 className="mt-4 inline-flex items-center gap-2 text-[14px] font-medium underline-offset-4 hover:underline"
               >
-                Get the deep report <ArrowRight className="h-4 w-4" />
+                Get the Deep Read <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
 
             <div className="mt-8 text-center">
               <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
-                Decode another text →
+                Get a take on another text →
               </Link>
             </div>
 

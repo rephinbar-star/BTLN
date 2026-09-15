@@ -91,7 +91,7 @@ export const DecodeInput = () => {
     });
     if (insErr) {
       setSubmitting(false);
-      setError("Something went wrong starting your decode. Please try again.");
+      setError("Something went wrong starting your take. Please try again.");
       return;
     }
 
@@ -226,10 +226,10 @@ export const DecodeInput = () => {
         className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
       >
         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Decode this <ArrowRight className="h-4 w-4" />
+        Get my take <ArrowRight className="h-4 w-4" />
       </button>
       <p className="mt-3 text-center text-[12px] text-muted-foreground">
-        Free. No account. Messages deleted after decoding.
+        Free. No account. Messages deleted after we read them.
       </p>
     </div>
   );
