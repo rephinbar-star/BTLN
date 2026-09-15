@@ -424,7 +424,33 @@ const GroupRead = () => {
               )}
             </div>
 
+            {(locked || (!access.isLoading && access.needsSubscription)) && (
+              <div className="rounded-2xl border border-border bg-muted/40 p-5">
+                <p className="text-[15px] font-medium">
+                  You've used your free group read
+                </p>
+                <p className="mt-2 text-[14px] text-muted-foreground">
+                  Group Read is included with a BetweenTheLines plan, alongside full Deep Read
+                  reports. Your finished reads stay available either way.
+                </p>
+                <Link
+                  to="/pricing"
+                  onClick={() => track("group_paywall_viewed", {})}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background"
+                >
+                  See plans <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            )}
+
+            {!access.isLoading && !access.entitled && !access.needsSubscription && (
+              <p className="text-[13px] text-muted-foreground">
+                Your first group read is free. After that, Group Read is part of a plan.
+              </p>
+            )}
+
             {error && (
+
               <p className="flex items-start gap-2 text-[14px] text-destructive">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
               </p>
