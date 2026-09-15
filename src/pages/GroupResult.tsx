@@ -421,8 +421,22 @@ const GroupResult = () => {
             <li>
               {coverage?.messages_analyzed ?? row.message_count} messages from{" "}
               {row.participant_count} people
-              {coverage?.truncated ? " (most recent stretch only)" : ""}
+              {coverage?.messages_supplied &&
+              coverage.messages_supplied > (coverage.messages_analyzed ?? 0)
+                ? ` (of ${coverage.messages_supplied} you gave us — most recent stretch)`
+                : ""}
             </li>
+            {coverage?.date_start && coverage?.date_end && (
+              <li>
+                Covering {coverage.date_start.slice(0, 10)} to {coverage.date_end.slice(0, 10)}
+              </li>
+            )}
+            {coverage?.sampled && (
+              <li>
+                Counts and balance use all {coverage.messages_analyzed} messages; the written read
+                quotes only the most recent {coverage.messages_read_by_ai}
+              </li>
+            )}
             <li>Confidence: {result.confidence ?? "medium"}</li>
             {(coverage?.unattributed_messages ?? 0) > 0 && (
               <li>{coverage!.unattributed_messages} lines had no clear sender and were left out</li>
