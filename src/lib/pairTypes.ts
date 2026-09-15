@@ -31,10 +31,19 @@ export type PairTypeRow = {
   image_url_romantic: string | null;
   image_url_friend: string | null;
   image_url_family: string | null;
+  extras: PairTypeExtras | null;
 };
 
+export type PairTypeExtrasEntry = {
+  friction?: string;
+  advice?: string;
+  examples?: string[];
+};
+
+export type PairTypeExtras = Partial<Record<RelationshipType, PairTypeExtrasEntry>>;
+
 const COLUMNS =
-  "id, romantic_name, friend_name, family_name, romantic_tagline, friend_tagline, family_tagline, romantic_superpower, friend_superpower, family_superpower, romantic_description, friend_description, family_description, background_color, text_color, decorative_element, image_url_romantic, image_url_friend, image_url_family";
+  "id, romantic_name, friend_name, family_name, romantic_tagline, friend_tagline, family_tagline, romantic_superpower, friend_superpower, family_superpower, romantic_description, friend_description, family_description, background_color, text_color, decorative_element, image_url_romantic, image_url_friend, image_url_family, extras";
 
 /** Stable, SEO-friendly slugs per pair type id (1..13). */
 export const SLUG_BY_ID: Record<number, string> = {
@@ -63,7 +72,7 @@ export const fetchPairTypes = async (): Promise<PairTypeRow[]> => {
     .select(COLUMNS)
     .order("id", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as PairTypeRow[];
+  return (data ?? []) as unknown as PairTypeRow[];
 };
 
 export const fetchPairType = async (id: number): Promise<PairTypeRow | null> => {
@@ -73,7 +82,7 @@ export const fetchPairType = async (id: number): Promise<PairTypeRow | null> => 
     .eq("id", id)
     .maybeSingle();
   if (error) throw error;
-  return (data as PairTypeRow | null) ?? null;
+  return (data as unknown as PairTypeRow | null) ?? null;
 };
 
 export const fieldsFor = (row: PairTypeRow, rel: RelationshipType) => ({
@@ -98,6 +107,9 @@ export const fieldsFor = (row: PairTypeRow, rel: RelationshipType) => ({
       : rel === "family"
         ? row.image_url_family
         : row.image_url_romantic,
+  friction: row.extras?.[rel]?.friction ?? "",
+  advice: row.extras?.[rel]?.advice ?? "",
+  examples: row.extras?.[rel]?.examples ?? [],
 });
 
 export const isRelationship = (v: string | null): v is RelationshipType =>

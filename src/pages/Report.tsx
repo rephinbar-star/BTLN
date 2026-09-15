@@ -15,6 +15,7 @@ import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { FeedbackModal } from "@/components/chemistry/FeedbackModal";
 import { InviteFriendsButton } from "@/components/chemistry/InviteFriendsButton";
 import { CoupleTypeCard } from "@/components/CoupleTypeCard";
+import { SLUG_BY_ID } from "@/lib/pairTypes";
 import { Header } from "@/components/chemistry/Header";
 import type { RelationshipType } from "@/lib/coupleTypes";
 import { PaywallBlur } from "@/components/PaywallBlur";
@@ -855,7 +856,7 @@ const ReportContent = () => {
                     size="full"
                   />
                 </div>
-                <div data-pdf-exclude="true" className="mb-8 flex justify-center">
+                <div data-pdf-exclude="true" className="mb-3 flex justify-center">
                   <button
                     type="button"
                     onClick={handleShareCoupleCard}
@@ -864,6 +865,28 @@ const ReportContent = () => {
                     <Share2 className="h-4 w-4" /> Share…
                   </button>
                 </div>
+                {SLUG_BY_ID[row.couple_type_id] && (
+                  <div data-pdf-exclude="true" className="mb-8 text-center">
+                    <Link
+                      to={`/types/${SLUG_BY_ID[row.couple_type_id]}${
+                        (row.relationship_type as RelationshipType) === "romantic" ||
+                        !row.relationship_type
+                          ? ""
+                          : `?as=${row.relationship_type}`
+                      }`}
+                      onClick={() =>
+                        track("report_pair_type_link_click", {
+                          id: row.couple_type_id as number,
+                          relationship:
+                            ((row.relationship_type as RelationshipType) || "romantic"),
+                        })
+                      }
+                      className="text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                    >
+                      What this pair type means →
+                    </Link>
+                  </div>
+                )}
                 <ShareableCard result={result} context={context} />
               </div>
               </ReportErrorBoundary>

@@ -103,6 +103,7 @@ export type Database = {
           background_color: string
           created_at: string
           decorative_element: string
+          extras: Json
           family_description: string
           family_name: string
           family_superpower: string
@@ -125,6 +126,7 @@ export type Database = {
           background_color: string
           created_at?: string
           decorative_element: string
+          extras?: Json
           family_description: string
           family_name: string
           family_superpower: string
@@ -147,6 +149,7 @@ export type Database = {
           background_color?: string
           created_at?: string
           decorative_element?: string
+          extras?: Json
           family_description?: string
           family_name?: string
           family_superpower?: string
