@@ -157,8 +157,8 @@ const PairTypeDetail = () => {
         link.click();
         link.remove();
         track("pair_type_image_download", { id: row.id, relationship, format });
-      } catch {
-        // Silent: download simply doesn't start if capture fails.
+      } catch (e) {
+        console.warn("pair type image export failed", e);
       } finally {
         setBusyFormat(null);
         setRenderFormat(null);
