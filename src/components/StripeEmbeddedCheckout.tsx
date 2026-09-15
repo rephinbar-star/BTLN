@@ -9,6 +9,8 @@ interface Props {
   customerEmail?: string;
   userId?: string;
   analysisId?: string;
+  groupReadId?: string;
+  reportKind?: "analysis" | "group_read";
   customerCountry?: string;
   returnUrl?: string;
 }
@@ -19,6 +21,8 @@ export function StripeEmbeddedCheckout({
   customerEmail,
   userId,
   analysisId,
+  groupReadId,
+  reportKind,
   customerCountry,
   returnUrl,
 }: Props) {
@@ -43,6 +47,8 @@ export function StripeEmbeddedCheckout({
         customerEmail,
         userId,
         analysisId,
+        groupReadId,
+        reportKind,
         customerCountry,
         returnUrl,
         environment: getStripeEnvironment(),
@@ -53,6 +59,7 @@ export function StripeEmbeddedCheckout({
     }
     return data.clientSecret;
   };
+
 
   if (configError || !stripePromise) {
     return (

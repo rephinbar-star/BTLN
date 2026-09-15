@@ -64,7 +64,8 @@ Deno.serve(async (req) => {
   }
   try {
     const body = await req.json();
-    const { priceId, quantity, customerEmail, userId: bodyUserId, analysisId, customerCountry, returnUrl, environment } = body ?? {};
+    const { priceId, quantity, customerEmail, userId: bodyUserId, analysisId, groupReadId, reportKind, customerCountry, returnUrl, environment } = body ?? {};
+
 
     // Derive userId from the verified JWT — never trust a body-supplied userId,
     // since it ends up in Stripe metadata and grants subscription/unlock access
@@ -104,6 +105,44 @@ Deno.serve(async (req) => {
     if (environment !== "sandbox" && environment !== "live") {
       return new Response(JSON.stringify({ error: "Invalid environment" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    // Explicit, validated report kind + owned target. A one-time purchase may
+    // only ever target something the signed-in caller actually owns; the kind
+    // is never inferred from the client's word alone.
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    let kind: "analysis" | "group_read" | null = null;
+    if (reportKind !== undefined && reportKind !== null) {
+      if (reportKind !== "analysis" && reportKind !== "group_read") {
+        return new Response(JSON.stringify({ error: "Invalid reportKind" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      kind = reportKind;
+    } else if (groupReadId) {
+      kind = "group_read";
+    } else if (analysisId) {
+      kind = "analysis";
+    }
+
+    if (kind === "group_read") {
+      if (!groupReadId || typeof groupReadId !== "string" || !UUID_RE.test(groupReadId)) {
+        return new Response(JSON.stringify({ error: "Invalid groupReadId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "Sign in to buy a single group report" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        { auth: { persistSession: false } },
+      );
+      const { data: target } = await admin
+        .from("group_reads")
+        .select("id, user_id")
+        .eq("id", groupReadId)
+        .maybeSingle();
+      if (!target || target.user_id !== userId) {
+        return new Response(JSON.stringify({ error: "Not your group read" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const env: StripeEnv = environment;
     const stripe = createStripeClient(env);
     const prices = await stripe.prices.list({ lookup_keys: [priceId] });
@@ -112,6 +151,9 @@ Deno.serve(async (req) => {
     }
     const stripePrice = prices.data[0];
     const isRecurring = stripePrice.type === "recurring";
+    if (kind === "group_read" && isRecurring) {
+      return new Response(JSON.stringify({ error: "A group report purchase must be a one-time price" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
     const useManagedPayments = false; // disabled until Stripe head office address is set
     const customerId = await resolveOrCreateCustomer(stripe, { email: customerEmail, userId });
 
@@ -123,13 +165,16 @@ Deno.serve(async (req) => {
       ...(customerId && { customer: customerId }),
       metadata: {
         ...(userId && { userId }),
-        ...(analysisId && { analysisId }),
+        ...(kind === "analysis" && analysisId && { analysisId }),
+        ...(kind === "group_read" && { groupReadId }),
+        ...(kind && { reportKind: kind }),
         ...(customerCountry && { customer_country: customerCountry }),
         managed_payments: useManagedPayments ? "true" : "false",
       },
       ...(isRecurring && userId && { subscription_data: { metadata: { userId, ...(analysisId && { analysisId }) } } }),
       ...(useManagedPayments ? { managed_payments: { enabled: true } } : {}),
     });
+
 
     return new Response(JSON.stringify({ clientSecret: session.client_secret }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {

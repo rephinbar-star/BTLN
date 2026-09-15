@@ -40,13 +40,16 @@ export function useGroupAccess(enabled = true): GroupAccess {
         p_user_id: user?.id ?? null,
       });
 
+      // Only full-report plans (monthly / annual) grant unlimited group reads.
+      // The Quick Take-only plan does not.
       let hasSub = false;
       if (user) {
-        const { data } = await supabase.rpc("user_has_active_subscription", {
+        const { data } = await supabase.rpc("user_has_full_plan", {
           p_user_id: user.id,
         });
         hasSub = data === true;
       }
+
 
       const { data: count } = await countPromise;
       if (cancelled) return;

@@ -183,13 +183,30 @@ Deno.serve(async (req) => {
     });
   }
 
+  // Full-report plans only. The Quick Take-only plan (decode_monthly) does not
+  // grant group reads.
+  const FULL_PLAN_TIERS = ["monthly", "annual"];
+  const hasFullPlan = async (uid: string): Promise<boolean> => {
+    const { data: subs } = await supabase
+      .from("user_subscriptions")
+      .select("status, tier, current_period_end")
+      .eq("user_id", uid);
+    return (subs ?? []).some(
+      (s: { status: string; tier: string; current_period_end: string | null }) =>
+        FULL_PLAN_TIERS.includes(s.tier) &&
+        ["active", "trialing", "past_due"].includes(s.status) &&
+        (!s.current_period_end || Date.parse(s.current_period_end) > Date.now()),
+    );
+  };
+
   // Reuse an existing row when the client retries, so we never double-generate.
   const existingId = String((payload as { group_read_id?: string }).group_read_id ?? "");
   let rowId: string;
+  let accessSource = "free";
   if (UUID_RE.test(existingId)) {
     const { data: existing } = await supabase
       .from("group_reads")
-      .select("id, session_id, user_id, status, created_at")
+      .select("id, session_id, user_id, status, created_at, access_source")
       .eq("id", existingId)
       .maybeSingle();
     if (!existing) return json(404, { error: "That group read no longer exists." });
@@ -197,6 +214,30 @@ Deno.serve(async (req) => {
     if (!owns) return json(403, { error: "Not your group read." });
     if (existing.status === "complete") {
       return json(200, { group_read_id: existing.id, status: "complete" });
+    }
+    // A placeholder created for checkout only becomes runnable once the
+    // webhook records a real payment — a retry can never bypass the paywall.
+    if (existing.access_source === "awaiting_payment") {
+      const { data: unlock } = await supabase
+        .from("group_read_unlocks")
+        .select("id")
+        .eq("group_read_id", existing.id)
+        .eq("user_id", userId ?? "00000000-0000-0000-0000-000000000000")
+        .maybeSingle();
+      if (!unlock) {
+        return json(402, {
+          code: "payment_pending",
+          group_read_id: existing.id,
+          error: "We haven't seen the payment for this group read yet.",
+        });
+      }
+      await supabase
+        .from("group_reads")
+        .update({ access_source: "one_time" })
+        .eq("id", existing.id);
+      accessSource = "one_time";
+    } else {
+      accessSource = String(existing.access_source ?? "free");
     }
     const age = Date.now() - Date.parse(existing.created_at as string);
     if (existing.status === "analyzing" && age < 180_000) {
@@ -211,37 +252,65 @@ Deno.serve(async (req) => {
     // Entitlement is checked server-side BEFORE any costly generation, and only
     // for brand-new reads — retries of an existing row are never re-charged.
     //
-    // Rule (prospective): any active subscription => unlimited group reads.
-    // Otherwise every owner (signed-in or guest session) gets FREE_GROUP_READS
-    // free reads counted from RULE_CUTOFF, so already-generated reads keep
-    // working and nobody loses access they already had.
+    // Rule (prospective): an active full-report plan (monthly/annual) =>
+    // unlimited group reads. Otherwise every owner (signed-in or guest session)
+    // gets FREE_GROUP_READS free reads counted from RULE_CUTOFF, and beyond
+    // that may buy a single group report.
     let entitled = false;
-    if (userId) {
-      const { data: subs } = await supabase
-        .from("user_subscriptions")
-        .select("status, current_period_end")
-        .eq("user_id", userId);
-      entitled = (subs ?? []).some(
-        (s: { status: string; current_period_end: string | null }) =>
-          ["active", "trialing", "past_due"].includes(s.status) &&
-          (!s.current_period_end || Date.parse(s.current_period_end) > Date.now()),
-      );
-    }
+    if (userId) entitled = await hasFullPlan(userId);
+    accessSource = entitled ? "subscription" : "free";
 
     if (!entitled) {
       const usedQuery = supabase
         .from("group_reads")
         .select("id", { count: "exact", head: true })
         .gte("created_at", RULE_CUTOFF)
-        .neq("status", "failed");
+        .neq("status", "failed")
+        .eq("access_source", "free");
       const { count: used } = userId
         ? await usedQuery.eq("user_id", userId)
         : await usedQuery.eq("session_id", session_id);
       if ((used ?? 0) >= FREE_GROUP_READS) {
+        if (!userId) {
+          return json(402, {
+            code: "subscription_required",
+            error:
+              "Your free group read has been used. Sign in to buy this one report, or start a plan for unlimited group reads.",
+          });
+        }
+        // Create (or reuse) a payment placeholder: an owned, validated target
+        // the checkout can point at. It cannot be analysed until paid.
+        const { data: pending } = await supabase
+          .from("group_reads")
+          .select("id")
+          .eq("user_id", userId)
+          .eq("access_source", "awaiting_payment")
+          .eq("status", "pending")
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        let targetId = pending?.id as string | undefined;
+        if (!targetId) {
+          const { data: placeholder } = await supabase
+            .from("group_reads")
+            .insert({
+              session_id,
+              user_id: userId,
+              category,
+              participant_count: participants.length,
+              message_count: 0,
+              status: "pending",
+              access_source: "awaiting_payment",
+            })
+            .select("id")
+            .single();
+          targetId = placeholder?.id as string | undefined;
+        }
         return json(402, {
-          code: "subscription_required",
+          code: "payment_required",
+          group_read_id: targetId ?? null,
           error:
-            "Your free group read has been used. A BetweenTheLines plan unlocks unlimited group reads.",
+            "Your free group read has been used. Unlock this one report, or start a plan for unlimited group reads.",
         });
       }
     }
@@ -255,6 +324,7 @@ Deno.serve(async (req) => {
         participant_count: participants.length,
         message_count: messages.length,
         status: "pending",
+        access_source: accessSource,
       })
       .select("id")
       .single();
@@ -263,6 +333,7 @@ Deno.serve(async (req) => {
     }
     rowId = created.id as string;
   }
+
 
 
   const fail = async (msg: string) => {

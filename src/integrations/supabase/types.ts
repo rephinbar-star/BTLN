@@ -298,8 +298,44 @@ export type Database = {
         }
         Relationships: []
       }
+      group_read_unlocks: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          group_read_id: string
+          id: string
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          group_read_id: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          group_read_id?: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_read_unlocks_group_read_id_fkey"
+            columns: ["group_read_id"]
+            isOneToOne: false
+            referencedRelation: "group_reads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_reads: {
         Row: {
+          access_source: string
           category: string
           completed_at: string | null
           created_at: string
@@ -315,6 +351,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          access_source?: string
           category?: string
           completed_at?: string | null
           created_at?: string
@@ -330,6 +367,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          access_source?: string
           category?: string
           completed_at?: string | null
           created_at?: string
@@ -1031,6 +1069,10 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_group_read_unlock: {
+        Args: { p_group_read_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1123,6 +1165,7 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: boolean
       }
+      user_has_full_plan: { Args: { p_user_id: string }; Returns: boolean }
       user_has_paid_access: {
         Args: { p_analysis_id: string; p_user_id: string }
         Returns: boolean
