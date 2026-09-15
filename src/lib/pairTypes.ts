@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { RelationshipType } from "@/lib/coupleTypes";
+import { SLUG_BY_ID, SLUG_ALIASES, ID_BY_SLUG, displayName } from "@/lib/pairTypeSlugs";
 
 export type { RelationshipType };
 
@@ -71,11 +72,6 @@ export const pairTypePath = (id: number, rel: RelationshipType) =>
 export const pairTypeUrl = (id: number, rel: RelationshipType) =>
   `https://betweenthelines.app${pairTypePath(id, rel)}`;
 
-/**
- * Display titles drop the leading "The" (brand decision) — the stored
- * names keep it so nothing downstream of the database changes.
- */
-export const displayName = (name: string) => name.replace(/^The\s+/i, "").trim();
 
 
 export const fetchPairTypes = async (): Promise<PairTypeRow[]> => {
