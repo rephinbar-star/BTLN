@@ -52,6 +52,8 @@ const GroupResult = () => {
   const [shareError, setShareError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [exporting, setExporting] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
+  const emptyLoads = useRef(0);
   const startedAt = useRef(Date.now());
   const completedTracked = useRef(false);
 
