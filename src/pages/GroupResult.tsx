@@ -84,6 +84,11 @@ const GroupResult = () => {
   useEffect(() => {
     void load();
     const t = window.setInterval(() => {
+      const status = rowRef.current?.status;
+      if (status === "complete" || status === "failed") {
+        window.clearInterval(t);
+        return;
+      }
       if (Date.now() - startedAt.current > TIMEOUT_MS) {
         setTimedOut(true);
         window.clearInterval(t);
