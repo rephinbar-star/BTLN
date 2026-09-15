@@ -32,7 +32,12 @@ const MAX_MESSAGES = 1200;
 const MAX_CHARS = 90_000;
 const MAX_MESSAGE_CHARS = 2_000;
 const RATE_LIMIT_PER_HOUR = 5;
+// Entitlement: free-preview allowance per owner, counted from the cutoff so
+// reads generated before the rule shipped stay granted.
+const FREE_GROUP_READS = 1;
+const RULE_CUTOFF = "2026-09-15T00:00:00.000Z";
 const CATEGORIES = ["friends", "family", "work"];
+
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
