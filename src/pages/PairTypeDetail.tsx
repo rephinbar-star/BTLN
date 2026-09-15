@@ -22,6 +22,7 @@ import {
   fieldsFor,
   ID_BY_SLUG,
   isRelationship,
+  SLUG_BY_ID,
   pairTypePath,
   pairTypeUrl,
   RELATIONSHIP_BY_SEGMENT,
@@ -89,11 +90,12 @@ const PairTypeDetail = () => {
       navigate("/types", { replace: true });
       return;
     }
-    // Unknown category segment → send to the canonical category URL.
-    if (!RELATIONSHIP_BY_SEGMENT[category]) {
+    // Unknown category segment, or a retired slug alias → canonical URL.
+    if (!RELATIONSHIP_BY_SEGMENT[category] || SLUG_BY_ID[id] !== slug) {
       navigate(pairTypePath(id, relationship), { replace: true });
       return;
     }
+
 
     let cancelled = false;
     setLoading(true);
@@ -278,24 +280,25 @@ const PairTypeDetail = () => {
                   <span aria-hidden>⚡</span>
                   <span>{f.superpower}</span>
                 </div>
-                <div className="mx-auto mt-8 aspect-square w-full max-w-[360px] overflow-hidden rounded-[16px]">
+                <div className="mx-auto mt-8 w-full max-w-[420px] overflow-visible rounded-[16px]">
                   {f.image && !imgFailed ? (
                     <img
                       src={f.image}
                       alt={`${f.name} illustration`}
-                      className="h-full w-full object-contain"
+                      className="block h-auto w-full rounded-[16px]"
                       loading="eager"
                       onError={() => setImgFailed(true)}
                     />
                   ) : (
                     <div
-                      className="flex h-full w-full items-center justify-center px-6 text-center text-[18px] font-medium"
+                      className="flex aspect-[3/4] w-full items-center justify-center rounded-[16px] px-6 text-center text-[18px] font-medium"
                       style={{ backgroundColor: hexToRgba(row.text_color, 0.08) }}
                     >
                       {f.name}
                     </div>
                   )}
                 </div>
+
                 <p className="mx-auto mt-8 max-w-[480px] text-[18px] italic leading-snug sm:text-[20px]">
                   {f.tagline}
                 </p>

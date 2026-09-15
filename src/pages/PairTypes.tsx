@@ -144,9 +144,10 @@ const PairTypes = () => {
                           src={f.image}
                           alt={`${f.name} illustration`}
                           loading="lazy"
-                          className="aspect-square w-full object-cover"
+                          className="block h-auto w-full"
                         />
                       )}
+
                       <div className="p-5">
                         <h2 className="text-[20px] font-medium tracking-tight">{f.name}</h2>
                         <p className="mt-1.5 text-[14px] italic leading-snug opacity-80">

@@ -18,7 +18,7 @@ import type { Plugin } from "vite";
 const SLUG_BY_ID: Record<number, string> = {
   1: "power-couple",
   2: "steady-anchors",
-  3: "slow-burners",
+  3: "quiet-loyalists",
   4: "deep-feelers",
   5: "independent-duo",
   6: "magnet-and-moon",
