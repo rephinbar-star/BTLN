@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import * as htmlToImage from "html-to-image";
 import { Check, Download, Loader2, Share2 } from "lucide-react";
+import logoAsset from "@/assets/logo.png.asset.json";
 import { Footer } from "@/components/chemistry/Footer";
 import { Header } from "@/components/chemistry/Header";
 import { DecorativeElement } from "@/components/chemistry/DecorativeElement";
@@ -27,6 +28,23 @@ import {
   type PairTypeRow,
   type RelationshipType,
 } from "@/lib/pairTypes";
+
+/** Fetch a remote image and inline it as a data URL (avoids canvas CORS taint). */
+const toDataUrl = async (url: string): Promise<string | null> => {
+  try {
+    const res = await fetch(url, { mode: "cors", cache: "no-cache" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return null;
+  }
+};
 
 const hexToRgba = (hex: string, alpha: number) => {
   const v = hex.replace("#", "");
@@ -53,6 +71,10 @@ const PairTypeDetail = () => {
   const [busyFormat, setBusyFormat] = useState<ShareFormat | null>(null);
   const shareRef = useRef<HTMLDivElement>(null);
   const [renderFormat, setRenderFormat] = useState<ShareFormat | null>(null);
+  const [shareArt, setShareArt] = useState<{ image: string | null; logo: string | null }>({
+    image: null,
+    logo: null,
+  });
 
   useEffect(() => {
     if (!id) {
@@ -137,10 +159,15 @@ const PairTypeDetail = () => {
     async (format: ShareFormat) => {
       if (!row || !f || busyFormat) return;
       setBusyFormat(format);
-      setRenderFormat(format);
       try {
-        // Let the offscreen card mount and its artwork load.
-        await new Promise((r) => window.setTimeout(r, 350));
+        const [image, logo] = await Promise.all([
+          f.image ? toDataUrl(f.image) : Promise.resolve(null),
+          toDataUrl(logoAsset.url),
+        ]);
+        setShareArt({ image, logo });
+        setRenderFormat(format);
+        // Let the offscreen card mount and decode its inlined artwork.
+        await new Promise((r) => window.setTimeout(r, 300));
         const node = shareRef.current;
         if (!node) return;
         const { width, height } = SHARE_SIZES[format];
@@ -394,6 +421,8 @@ const PairTypeDetail = () => {
               row={row}
               relationship={relationship}
               format={renderFormat}
+              imageDataUrl={shareArt.image}
+              logoDataUrl={shareArt.logo}
             />
           </div>
         )}

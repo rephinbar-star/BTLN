@@ -1,5 +1,4 @@
 import { forwardRef } from "react";
-import logoAsset from "@/assets/logo.png.asset.json";
 import { fieldsFor, type PairTypeRow, type RelationshipType } from "@/lib/pairTypes";
 
 export type ShareFormat = "square" | "story";
@@ -22,6 +21,9 @@ type Props = {
   row: PairTypeRow;
   relationship: RelationshipType;
   format: ShareFormat;
+  /** Artwork pre-inlined as a data URL so canvas export never hits CORS. */
+  imageDataUrl?: string | null;
+  logoDataUrl?: string | null;
 };
 
 /**
@@ -30,7 +32,7 @@ type Props = {
  * important is cropped at either aspect ratio.
  */
 export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
-  ({ row, relationship, format }, ref) => {
+  ({ row, relationship, format, imageDataUrl, logoDataUrl }, ref) => {
     const f = fieldsFor(row, relationship);
     const { width, height } = SHARE_SIZES[format];
     const story = format === "story";
@@ -81,9 +83,9 @@ export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
           ⚡ {f.superpower}
         </div>
 
-        {f.image && (
+        {imageDataUrl && (
           <img
-            src={f.image}
+            src={imageDataUrl}
             alt=""
             crossOrigin="anonymous"
             style={{
@@ -109,7 +111,7 @@ export const PairTypeShareCard = forwardRef<HTMLDivElement, Props>(
             fontSize: story ? 28 : 24,
           }}
         >
-          <img src={logoAsset.url} alt="" style={{ height: story ? 34 : 28 }} />
+          {logoDataUrl && <img src={logoDataUrl} alt="" style={{ height: story ? 34 : 28 }} />}
           <span>betweenthelines.app</span>
         </div>
       </div>
