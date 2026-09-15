@@ -70,7 +70,13 @@ const GroupResult = () => {
       p_session_id: getSessionId(),
     });
     const r = (Array.isArray(data) ? data[0] : data) as Row | undefined;
-    if (r) setRow(r);
+    if (r) {
+      setRow(r);
+      setNotFound(false);
+    } else {
+      emptyLoads.current += 1;
+      if (emptyLoads.current >= 3) setNotFound(true);
+    }
   }, [groupId]);
 
   useEffect(() => {
