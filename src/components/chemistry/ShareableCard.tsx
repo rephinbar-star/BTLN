@@ -89,7 +89,7 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
             <img src={logoAsset.url} alt="BetweenTheLines™" className="h-5 w-auto" />
           </div>
           <span className="text-[11px] text-muted-foreground">
-            {result.meta.messages_analyzed} messages analyzed
+            {result.coverage?.messages_analyzed ?? result.meta.messages_analyzed} messages analyzed
           </span>
         </div>
 

@@ -908,11 +908,32 @@ const ReportContent = () => {
                   Preliminary read
                 </p>
                 <p className="mt-1 text-[14px] leading-relaxed">
-                  Based on only {result.meta.messages_analyzed} messages. This is a rough
+                  Based on only {result.coverage?.messages_analyzed ?? result.meta.messages_analyzed} messages. This is a rough
                   snapshot, not a full portrait.
                 </p>
               </div>
             )}
+
+            {/* Long histories are read in ordered passes — say so plainly. */}
+            {result.coverage && result.coverage.chunk_count > 0 && (
+              <div
+                role="note"
+                className="mt-6 rounded-xl border border-border bg-muted/40 px-5 py-4 text-muted-foreground"
+              >
+                <p className="text-[13px] font-semibold uppercase tracking-wide">
+                  What was read
+                </p>
+                <p className="mt-1 text-[14px] leading-relaxed">
+                  All {result.coverage.messages_analyzed.toLocaleString()} messages you
+                  supplied were read in {result.coverage.chunk_count} passes, oldest to
+                  newest. The most recent{" "}
+                  {result.coverage.messages_quoted_verbatim.toLocaleString()} are quoted
+                  word for word.
+                </p>
+              </div>
+            )}
+
+
 
             {/* Roast Us — owners of an unlocked, non-serious report only */}
             {!isSharedView && isOwner && hasUnlockedReport && !safetyMode && (
@@ -1013,7 +1034,7 @@ const ReportContent = () => {
                   </>
                 ) : lowConfidence ? (
                   <LowConfidenceGate
-                    messageCount={result.meta.messages_analyzed}
+                    messageCount={result.coverage?.messages_analyzed ?? result.meta.messages_analyzed}
                     result={result}
                     context={context}
                   />

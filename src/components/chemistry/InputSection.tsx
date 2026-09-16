@@ -60,9 +60,9 @@ type Screenshot = {
 // Cap kept conservative so the JSON payload sent to the Edge Function
 // stays well under the per-request body limit on mobile networks.
 const MAX_SCREENSHOTS = 30;
-// Hard cap on number of messages we'll send to the parser. Above this the
-// downstream LLM call tends to time out or return invalid JSON.
-const MAX_MESSAGES = 100;
+// Hard cap on messages we'll send. Long histories are read server-side in
+// ordered slices, so this is a real ceiling rather than a sampling limit.
+const MAX_MESSAGES = 12_000;
 // Below this many messages we can only give a rough read; warn the user
 // before running an analysis they're likely to be disappointed by.
 const MIN_CONFIDENT_MESSAGES = 30;
@@ -218,7 +218,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     setLoadedFileName("your import");
     if (t.truncated) {
       setTruncationNotice(
-        `Your import has about ${t.total} messages. To keep the analysis reliable, only the first ${t.kept} will be processed.`,
+        `Your import has about ${t.total} messages. We can read ${t.kept} in one go, so only the first ${t.kept} will be used.`,
       );
     }
     document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
@@ -281,7 +281,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       update("conversation", t.text);
       if (t.truncated) {
         setTruncationNotice(
-          `This chat has about ${t.total} messages. To keep the analysis reliable, only the first ${t.kept} will be processed.`,
+          `This chat has about ${t.total} messages. We can read ${t.kept} in one go, so only the first ${t.kept} will be used.`,
         );
       } else {
         setTruncationNotice(null);

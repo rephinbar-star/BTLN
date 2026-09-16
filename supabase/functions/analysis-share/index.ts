@@ -46,6 +46,29 @@ const flagText = (f: unknown): string => {
   return "";
 };
 
+
+/**
+ * The report format changed: older reports carry `conversation_prompts`, the
+ * current one carries `communication_suggestions` / `remedial_guidance`.
+ * Both are supported so old and new shared links behave the same.
+ */
+function pickSuggestions(result: Record<string, unknown>): string[] {
+  if (Array.isArray(result.conversation_prompts)) {
+    return (result.conversation_prompts as unknown[]).slice(0, 2).map((s) => String(s));
+  }
+  const cs = result.communication_suggestions as Record<string, unknown> | undefined;
+  const out: string[] = [];
+  for (const key of ["person1", "person2"]) {
+    const list = cs?.[key];
+    if (Array.isArray(list) && list.length > 0) out.push(String(list[0]));
+  }
+  if (out.length === 0) {
+    const steps = (result.remedial_guidance as Record<string, unknown> | undefined)?.specific_steps;
+    if (Array.isArray(steps)) return steps.slice(0, 2).map((s) => String(s));
+  }
+  return out.slice(0, 2);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
@@ -177,11 +200,7 @@ Deno.serve(async (req) => {
           .map((f) => scrub(flagText(f).slice(0, 160)))
           .filter(Boolean)
       : [],
-    suggestions: Array.isArray(result.conversation_prompts)
-      ? (result.conversation_prompts as unknown[])
-          .slice(0, 2)
-          .map((s) => scrub(String(s).slice(0, 200)))
-      : [],
+    suggestions: pickSuggestions(result).map((s) => scrub(s.slice(0, 200))),
     created_at: new Date().toISOString(),
   };
 
