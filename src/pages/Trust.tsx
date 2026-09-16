@@ -17,7 +17,7 @@ export default function Trust() {
       <header className="border-b border-border px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoUrl} alt="BetweenTheLines" className="h-12 w-auto object-contain" />
+            <img src={logoUrl} alt="BetweenTheLines" className="h-[103.7px] w-auto object-contain sm:h-[138.2px]" />
           </Link>
           <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
             ← Back
