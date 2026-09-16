@@ -924,11 +924,12 @@ const ReportContent = () => {
                   What was read
                 </p>
                 <p className="mt-1 text-[14px] leading-relaxed">
-                  All {result.coverage.messages_analyzed.toLocaleString()} messages you
-                  supplied were read in {result.coverage.chunk_count} passes, oldest to
+                  All {result.coverage.messages_analyzed.toLocaleString()} selected messages
+                  were processed in {result.coverage.chunk_count} ordered passes, oldest to
                   newest. The most recent{" "}
-                  {result.coverage.messages_quoted_verbatim.toLocaleString()} are quoted
-                  word for word.
+                  {result.coverage.messages_quoted_verbatim.toLocaleString()} messages were
+                  also supplied directly to the final report step. Any quote shown in the
+                  report is drawn from available conversation evidence.
                 </p>
               </div>
             )}

@@ -97,6 +97,9 @@ Deno.serve(async (req) => {
   const includeQuotes = body.include_quotes === true;
 
   const result = group.result_json as Record<string, unknown>;
+  if (result.safety_mode === true) {
+    return json(400, { error: "This read cannot be shared because it contains sensitive safety content." });
+  }
   const stats = (group.stats_json ?? {}) as {
     participants?: Array<{ id: string; share_pct: number; messages: number }>;
     message_count?: number;

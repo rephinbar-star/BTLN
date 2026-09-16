@@ -144,8 +144,8 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
         },
         { onConflict: "user_id,group_read_id" },
       );
-      if (gErr) console.log("group_read_unlocks upsert error:", gErr.message);
-      else await unlockGroupReadForUser(groupReadId, userId);
+      if (gErr) throw new Error(`group_read_unlocks upsert failed: ${gErr.message}`);
+      await unlockGroupReadForUser(groupReadId, userId);
       await recordAudit({
         environment: env,
         event_id: eventId,
@@ -154,12 +154,12 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
         stripe_customer_id: typeof session.customer === "string" ? session.customer : session.customer?.id ?? null,
         user_id: userId,
         amount_cents: amount,
-        status: gErr ? "error" : "processed",
-        error_message: gErr?.message ?? null,
+        status: "processed",
+        error_message: null,
         changes: {
-          group_read_unlocks: gErr ? "failed" : "upserted",
+          group_read_unlocks: "upserted",
           group_read_id: groupReadId,
-          access_source: gErr ? null : "one_time",
+          access_source: "one_time",
         },
         payload_summary: { mode, report_kind: "group_read", payment_intent: paymentIntent, amount_total: amount },
       });
@@ -188,7 +188,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
       },
       { onConflict: "user_id,analysis_id" },
     );
-    if (insertError) console.log("one_time_unlocks insert error:", insertError.message);
+    if (insertError) throw new Error(`one_time_unlocks upsert failed: ${insertError.message}`);
     await unlockAnalysisForUser(analysisId, userId);
     await recordAudit({
       environment: env,
@@ -199,11 +199,11 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
       user_id: userId,
       analysis_id: analysisId,
       amount_cents: amount,
-      status: insertError ? "error" : "processed",
-      error_message: insertError?.message ?? null,
+      status: "processed",
+      error_message: null,
       changes: {
-        one_time_unlocks: insertError ? "failed" : "upserted",
-        analyses_is_paid: insertError ? false : true,
+        one_time_unlocks: "upserted",
+        analyses_is_paid: true,
       },
       payload_summary: { mode, payment_intent: paymentIntent, amount_total: amount },
     });
@@ -327,6 +327,15 @@ Deno.serve(async (req) => {
   }
   try {
     const event = await verifyWebhook(req, rawEnv);
+    const { data: prior } = await getSupabase()
+      .from("webhook_events")
+      .select("id")
+      .eq("event_id", event.id)
+      .eq("status", "processed")
+      .maybeSingle();
+    if (prior) {
+      return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+    }
     await logWebhookEvent("stripe_webhook_received", { type: event.type, env: rawEnv });
     switch (event.type) {
       case "checkout.session.async_payment_succeeded":
@@ -371,6 +380,6 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (e) {
     console.error("Webhook error:", e);
-    return new Response("Webhook error", { status: 400 });
+    return new Response("Webhook error", { status: 500 });
   }
 });
