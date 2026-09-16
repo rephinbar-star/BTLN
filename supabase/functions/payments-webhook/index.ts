@@ -59,7 +59,7 @@ type AuditEntry = {
 
 async function recordAudit(entry: AuditEntry) {
   try {
-    await getSupabase().from("webhook_events").insert({
+    const row = {
       provider: "stripe",
       environment: entry.environment,
       event_id: entry.event_id ?? null,
@@ -74,7 +74,12 @@ async function recordAudit(entry: AuditEntry) {
       changes: entry.changes ?? {},
       error_message: entry.error_message ?? null,
       payload_summary: entry.payload_summary ?? {},
-    });
+    };
+    if (entry.event_id) {
+      await getSupabase().from("webhook_events").upsert(row, { onConflict: "event_id" });
+    } else {
+      await getSupabase().from("webhook_events").insert(row);
+    }
   } catch (e) {
     console.error("webhook_events insert failed:", (e as Error).message);
   }
@@ -327,15 +332,19 @@ Deno.serve(async (req) => {
     console.error("Webhook invalid env:", rawEnv);
     return new Response(JSON.stringify({ received: true, ignored: "invalid env" }), { status: 200, headers: { "Content-Type": "application/json" } });
   }
+  let eventId: string | null = null;
+  let eventType = "unknown";
   try {
     const event = await verifyWebhook(req, rawEnv);
-    const { data: prior } = await getSupabase()
-      .from("webhook_events")
-      .select("id")
-      .eq("event_id", event.id)
-      .eq("status", "processed")
-      .maybeSingle();
-    if (prior) {
+    eventId = event.id;
+    eventType = event.type;
+    const { data: claimed, error: claimError } = await getSupabase().rpc("claim_webhook_event", {
+      p_event_id: event.id,
+      p_event_type: event.type,
+      p_environment: rawEnv,
+    });
+    if (claimError) throw new Error(`Could not claim webhook event: ${claimError.message}`);
+    if (!claimed) {
       return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
     await logWebhookEvent("stripe_webhook_received", { type: event.type, env: rawEnv });
@@ -382,6 +391,15 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (e) {
     console.error("Webhook error:", e);
+    if (eventId) {
+      await recordAudit({
+        environment: rawEnv,
+        event_id: eventId,
+        event_type: eventType,
+        status: "error",
+        error_message: e instanceof Error ? e.message : "Webhook processing failed",
+      });
+    }
     return new Response("Webhook error", { status: 500 });
   }
 });

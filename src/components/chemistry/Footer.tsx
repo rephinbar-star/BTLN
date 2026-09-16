@@ -1,6 +1,7 @@
 import { useState } from "react";
 import logoAsset from "@/assets/logo.png.asset.json";
 import { FeedbackModal } from "./FeedbackModal";
+import { Button } from "@/components/ui/button";
 
 export const Footer = () => {
   const [showFeedback, setShowFeedback] = useState(false);
@@ -17,13 +18,14 @@ export const Footer = () => {
           <a href="/trust" className="hover:text-foreground">Trust</a>
           <a href="/privacy" className="hover:text-foreground">Privacy</a>
           <a href="/terms" className="hover:text-foreground">Terms</a>
-          <button
+          <Button
             type="button"
+            variant="link"
             onClick={() => setShowFeedback(true)}
-            className="hover:text-foreground"
+            className="h-auto p-0 font-normal text-muted-foreground hover:text-foreground"
           >
             Feedback
-          </button>
+          </Button>
           <a href="/guides/whatsapp" className="hover:text-foreground">Guides</a>
         </nav>
       </div>

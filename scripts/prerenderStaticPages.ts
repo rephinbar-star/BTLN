@@ -9,23 +9,18 @@ const PAGES = [
   { path: "/guides/group-chat-communication", title: "Understand Group Chat Communication | BetweenTheLines™", description: "Learn what a group-chat read can support, from participation balance to unanswered questions and repair attempts." },
   {
     path: "/about",
-    title: "About BetweenTheLines™ — AI Relationship Analysis",
-    description: "Learn how BetweenTheLines™ uses AI to analyze your messages and uncover your relationship dynamics.",
+    title: "About BetweenTheLines™ | Private Chat Analysis",
+    description: "How BetweenTheLines turns selected conversations into structured, private communication reports without claiming certainty about people.",
   },
   {
     path: "/guides/whatsapp",
-    title: "How to Export WhatsApp Chats — BetweenTheLines™",
-    description: "Learn how to export your WhatsApp chat history for AI relationship analysis.",
+    title: "Import a WhatsApp Chat | BetweenTheLines™",
+    description: "Export a WhatsApp chat without media, preview participants and dates, then route two-person chats to Deep Read or groups to Group Read.",
   },
   {
     path: "/guides/imessage",
-    title: "How to Export iMessage Chats — BetweenTheLines™",
-    description: "Learn how to export your iMessage chat history for AI relationship analysis.",
-  },
-  {
-    path: "/guides/instagram",
-    title: "How to Export Instagram Messages — BetweenTheLines™",
-    description: "Learn how to export your Instagram messages for AI relationship analysis.",
+    title: "Import iMessage TXT or CSV | BetweenTheLines™",
+    description: "Use a supported plain-text or CSV iMessage export; binary chat.db files, executables, PDFs, and encrypted archives are rejected.",
   },
   {
     path: "/trust",
