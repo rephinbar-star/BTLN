@@ -125,3 +125,18 @@ silent about it; no revenue, user-count or clinical claims; no comparison to unv
   asserting absence. Strengths section retained. No change required.
 - Both pages describe BTLN only with features that exist today (guided import, fixed report
   structure, computed counts, Group Read 3–15, revocable pseudonymous sharing, current prices).
+
+## Frameworks claim — verification (2026-09-16)
+The comparison pages state that framework sections are part of the standard BTLN report. Verified in
+code, not marketing copy:
+- `src/lib/analysis-types.ts` — `attachment_profiles` (secure / anxious / avoidant / disorganized) and
+  `four_horsemen` (criticism, contempt, defensiveness, stonewalling) are required fields of the Deep
+  Read result type.
+- `supabase/functions/analyze-conversation/index.ts` — both keys are required sections of the
+  generated report.
+- `supabase/functions/_shared/assignCoupleType.ts` — Four Horsemen presence feeds pair-type assignment.
+Wording constraints kept on the public pages: described as interpretations of communication patterns;
+explicitly not a clinical assessment, diagnosis or validated psychological test; no claim of clinical
+validation, endorsement, or a psychology licence; established theories are not called "modern" as a
+superiority claim. Competitor rows say what the reviewed sources document, never that a competitor
+lacks psychology.

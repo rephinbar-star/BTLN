@@ -52,6 +52,13 @@ export default function BrandonCompare() {
             </thead>
             <tbody className="text-muted-foreground">
               <tr className="border-b border-border">
+                <th scope="row" className="py-3 pr-4 font-normal text-foreground">
+                  Frameworks included in the standard report
+                </th>
+                <td className="py-3 pr-4">Not described on the pages we reviewed; the documented output is Brandon&rsquo;s verdict and per-person opinions.</td>
+                <td className="py-3">Attachment-style signals and the Gottman Four Horsemen check are part of every Deep Read &mdash; interpretations of communication patterns, not a clinical assessment.</td>
+              </tr>
+              <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Main job</th>
                 <td className="py-3 pr-4">A character&rsquo;s verdict on the chat and on everyone in it.</td>
                 <td className="py-3">A structured read of the pattern, with the evidence it used.</td>
