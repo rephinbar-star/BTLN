@@ -1068,7 +1068,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      approved_testimonials: {
+        Row: {
+          attribution: string | null
+          id: string | null
+          quote: string | null
+        }
+        Insert: {
+          attribution?: string | null
+          id?: string | null
+          quote?: string | null
+        }
+        Update: {
+          attribution?: string | null
+          id?: string | null
+          quote?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       capture_email: {
