@@ -107,7 +107,10 @@ export default function Privacy() {
           <h2 className="text-[20px] font-medium">5. Your Rights</h2>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             You can delete individual reports from your Account page at any time. You may also request
-            deletion of your account and associated data by contacting us. Depending on your jurisdiction,
+            deletion of your account and associated data by emailing{" "}
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
+            </a>. Depending on your jurisdiction,
             you may have additional rights regarding your personal data.
           </p>
         </section>

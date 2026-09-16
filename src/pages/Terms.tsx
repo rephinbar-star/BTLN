@@ -113,7 +113,10 @@ export default function Terms() {
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             Some features of BetweenTheLines require payment. Payments are processed securely through Stripe.
             Pricing is displayed before purchase. Refunds are handled on a case-by-case basis. If you
-            believe you are entitled to a refund, please contact us.
+            believe you are entitled to a refund, please email us at{" "}
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
+            </a>.
           </p>
         </section>
 
