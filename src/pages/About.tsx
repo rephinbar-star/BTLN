@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PublicPage } from "@/components/marketing/PublicPage";
-import { OPERATOR, hasOperatorIdentity } from "@/config/operator";
+
 
 export default function About() {
   return <PublicPage title="About BetweenTheLines™ | Private Chat Analysis" description="How BetweenTheLines turns selected conversations into structured, private communication reports without claiming certainty about people." path="/about">
@@ -11,15 +11,6 @@ export default function About() {
       <p>BetweenTheLines helps people reflect on selected romantic, friendship, family, and group conversations. It organizes message patterns, factual counts when the data supports them, selected evidence, and practical next steps into a consistent report.</p>
       <section><h2 className="text-xl font-medium text-foreground">Why use a structured read?</h2><p className="mt-3">A general-purpose chat prompt changes with every question. BetweenTheLines adds guided imports, participant mapping, deterministic counts, the same report structure across reads, access controls, and revocable sharing. Those product differences do not make any interpretation a fact.</p></section>
       <section><h2 className="text-xl font-medium text-foreground">What it does not do</h2><p className="mt-3">It does not diagnose people, prove hidden motives, replace therapy, or know what happened outside the supplied messages. Sparse or ambiguous evidence should produce cautious language and unavailable metrics—not invented certainty.</p></section>
-      <section>
-        <h2 className="text-xl font-medium text-foreground">Who operates it?</h2>
-        {hasOperatorIdentity() ? <div className="mt-3 space-y-2">
-          {OPERATOR.legalName ? <p>BetweenTheLines is operated by {OPERATOR.legalName}.</p> : null}
-          {OPERATOR.postalAddress ? <p>{OPERATOR.postalAddress}</p> : null}
-          {OPERATOR.contactEmail ? <p>Contact: <a className="underline" href={`mailto:${OPERATOR.contactEmail}`}>{OPERATOR.contactEmail}</a></p> : null}
-          {(!OPERATOR.legalName || !OPERATOR.contactEmail) ? <p>The registered legal operator name, registered address, and support contact details have not yet been provided for publication, so this page does not list them.</p> : null}
-        </div> : <p className="mt-3">BetweenTheLines is currently presented under the product name. An operator name, company identity, and portrait have not been publicly verified, so this page does not invent them.</p>}
-      </section>
       <section>
         <h2 className="text-xl font-medium text-foreground">Rephael — Founder &amp; Certified Life Coach</h2>
         <p className="mt-3">Rephael is a Certified Life Coach with deep background in psychology and the founder of BetweenTheLines. He created the app to help people make sense of their conversations, recognize recurring communication patterns, and find practical ways forward—in romantic relationships, friendships, and family life.</p>
