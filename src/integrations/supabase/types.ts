@@ -1329,6 +1329,7 @@ export type Database = {
           p_email: string
           p_question_variant?: string
           p_score: number
+          p_session_id?: string
           p_text: string
         }
         Returns: undefined
