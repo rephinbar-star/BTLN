@@ -72,12 +72,14 @@ const AdminCards = () => {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isAdmin, checking: checkingAdmin } = useAdminRole();
 
   useEffect(() => {
-    if (sessionStorage.getItem(ADMIN_AUTH_KEY) !== "true") {
+    if (checkingAdmin) return;
+    if (!isAdmin) {
       navigate(`/admin?return_to=${encodeURIComponent("/admin/cards")}`, { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, isAdmin, checkingAdmin]);
 
   const loadRows = useCallback(async () => {
     setLoading(true);
