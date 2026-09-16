@@ -58,7 +58,13 @@ export default function RizzCompare() {
               <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Main job</th>
                 <td className="py-3 pr-4">Suggest what to send next.</td>
-                <td className="py-3">Explain the pattern across a conversation.</td>
+                <td className="py-3">
+                  <ul className="list-disc pl-5 space-y-1">
+                    <li>Suggest what to send next</li>
+                    <li>Explain the pattern across conversation,</li>
+                    <li>Reveal relationship and behavioral patterns over time.</li>
+                  </ul>
+                </td>
               </tr>
               <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">What you supply</th>
