@@ -9,6 +9,7 @@ const PAGES = [
   { path: "/guides/group-chat-communication", title: "Understand Group Chat Communication | BetweenTheLines™", description: "Learn what a group-chat read can support, from participation balance to unanswered questions and repair attempts." },
   { path: "/compare/chatgpt-vs-betweenthelines", title: "BetweenTheLines vs ChatGPT for Reading a Chat | BetweenTheLines\u2122", description: "An evidence-based comparison of using ChatGPT directly versus BetweenTheLines for analysing a WhatsApp or iMessage conversation, with sources and dates." },
   { path: "/compare/rizz-vs-betweenthelines", title: "RIZZ vs BetweenTheLines: Replies or a Read? | BetweenTheLines\u2122", description: "RIZZ suggests what to send next; BetweenTheLines explains the pattern across a conversation. A sourced comparison of the two workflows." },
+  { path: "/wrapped", title: "Relationship Wrapped: Your Chat Year in Numbers | BetweenTheLines\u2122", description: "Import a WhatsApp or iMessage export and get a counted recap of a month, quarter or year: messages, who starts conversations, reply gaps, busiest days and most-used emojis." },
   { path: "/compare/whatbrandonthinks-vs-betweenthelines", title: "What Brandon Thinks vs BetweenTheLines | BetweenTheLines\u2122", description: "A sourced comparison of What Brandon Thinks and BetweenTheLines: a persona-voiced verdict on a chat export versus a structured, evidence-marked read." },
 
   {
