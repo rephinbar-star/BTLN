@@ -25,13 +25,8 @@ export default function RizzCompare() {
         and stonewalling, tied to the messages they came from. These are interpretations of
         communication patterns, not a clinical assessment, diagnosis or validated psychological test.
       </p>
-      <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">
-        RIZZ, published by TREND IT LLC, is a mobile app for the next message: you upload a
-        screenshot of a conversation, optionally a match&rsquo;s bio, and it suggests replies in a
-        tone you choose. The sources we reviewed &mdash; its App Store and Google Play listings
-        &mdash; document that reply-assistance workflow. They do not document a framework-based
-        relationship report, which is not the same as saying the app never draws on psychology.
-      </p>
+
+
 
       <section className="mt-10">
         <h2 className="text-xl font-medium">Side by side</h2>
