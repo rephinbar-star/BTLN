@@ -7,3 +7,4 @@
 - [x] Stage 5: Add consented feedback moderation and 2–3 acquisition pages
 - [x] Validate desktop/mobile/keyboard, authorization, metadata, tests, typecheck, and build
 - [x] Produce reconciliation matrix and owner handoff list; keep unpublished
+- [ ] Rewrite ChatGPT/RIZZ comparison pages: neutral non-promotional competitor descriptions; bold key difference = frameworks built into the standard report (verified frameworks only, no clinical claims); table row "Frameworks included in the standard report"
