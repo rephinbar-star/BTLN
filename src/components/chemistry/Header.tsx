@@ -46,7 +46,7 @@ export const Header = () => {
     <header className="sticky top-0 z-40 w-full overflow-hidden bg-background/90 backdrop-blur border-b border-border/70">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-1 sm:px-8">
         <Link to="/" className="flex items-center">
-          <img src={logoUrl} alt="BetweenTheLines™" className="h-[86.4px] w-auto object-contain sm:h-[115.2px]" />
+          <img src={logoUrl} alt="BetweenTheLines™" className="h-[103.7px] w-auto object-contain sm:h-[138.2px]" />
         </Link>
         <div className="flex items-center gap-4">
           <nav className="hidden items-center gap-5 md:flex" aria-label="Main navigation">
