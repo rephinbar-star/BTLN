@@ -61,11 +61,6 @@ export default function ChatGPTCompare() {
                 </td>
               </tr>
               <tr className="border-b border-border">
-                <th scope="row" className="py-3 pr-4 font-normal text-foreground">Scope of the tool</th>
-                <td className="py-3 pr-4">General purpose: writing, research, code, images, voice, and conversation analysis.</td>
-                <td className="py-3">One job: reading conversations between people.</td>
-              </tr>
-              <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Getting the chat in</th>
                 <td className="py-3 pr-4">Paste text or upload a file; you decide what to send.</td>
                 <td className="py-3">Guided import for WhatsApp and iMessage exports (TXT, CSV, ZIP), with participant preview, alias merging and exclusions before anything is analysed.</td>
