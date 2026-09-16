@@ -1323,26 +1323,16 @@ export type Database = {
         }
         Returns: undefined
       }
-      submit_feedback:
-        | {
-            Args: {
-              p_analysis_id: string
-              p_email: string
-              p_score: number
-              p_text: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_analysis_id: string
-              p_email: string
-              p_question_variant?: string
-              p_score: number
-              p_text: string
-            }
-            Returns: undefined
-          }
+      submit_feedback: {
+        Args: {
+          p_analysis_id: string
+          p_email: string
+          p_question_variant?: string
+          p_score: number
+          p_text: string
+        }
+        Returns: undefined
+      }
       submit_survey: {
         Args: {
           p_accuracy_rating: number

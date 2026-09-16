@@ -74,9 +74,24 @@ async function recordAudit(entry: AuditEntry) {
       error_message: entry.error_message ?? null,
       payload_summary: entry.payload_summary ?? {},
   };
-  const result = entry.event_id
-    ? await getSupabase().from("webhook_events").upsert(row, { onConflict: "event_id" })
-    : await getSupabase().from("webhook_events").insert(row);
+  // claim_webhook_event() already inserted the row for this event_id, and the
+  // uniqueness guarantee is a PARTIAL index (WHERE event_id IS NOT NULL), which
+  // PostgREST cannot target with ON CONFLICT. Update in place instead, and fall
+  // back to an insert if no claim row exists.
+  let result;
+  if (entry.event_id) {
+    const { data, error } = await getSupabase()
+      .from("webhook_events")
+      .update(row)
+      .eq("event_id", entry.event_id)
+      .select("id");
+    result = { error };
+    if (!error && (!data || data.length === 0)) {
+      result = await getSupabase().from("webhook_events").insert(row);
+    }
+  } else {
+    result = await getSupabase().from("webhook_events").insert(row);
+  }
   if (result.error) {
     throw new Error(`webhook audit write failed: ${result.error.message}`);
   }
