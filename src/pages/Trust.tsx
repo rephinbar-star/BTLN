@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import logoUrl from "@/assets/logo.png";
+import { OPERATOR } from "@/config/operator";
 
 export default function Trust() {
   return (
@@ -116,16 +117,22 @@ export default function Trust() {
           <h2 className="text-[20px] font-medium">Deleting your data</h2>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             Signed-in users can delete individual reports from their Account
-            page. For full account deletion, contact us using the link below.
+            page. For full account deletion, email us at{" "}
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
+            </a>.
           </p>
         </section>
 
         <section className="mt-10 space-y-3">
           <h2 className="text-[20px] font-medium">Reporting a security issue</h2>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
-            If you believe you've found a vulnerability, please email us and we
-            will respond as quickly as we can. Please don't publicly disclose
-            the issue before we've had a chance to investigate.
+            If you believe you've found a vulnerability, please email us at{" "}
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
+            </a>{" "}
+            and we will respond as quickly as we can. Please don't publicly
+            disclose the issue before we've had a chance to investigate.
           </p>
         </section>
 

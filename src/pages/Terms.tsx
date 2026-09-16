@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import logoUrl from "@/assets/logo.png";
+import { OPERATOR } from "@/config/operator";
 
 export default function Terms() {
   return (
@@ -185,8 +186,11 @@ export default function Terms() {
         <section className="mt-10 space-y-3">
           <h2 className="text-[20px] font-medium">13. Contact</h2>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
-            If you have questions about these Terms of Service, please contact us through the Feedback
-            option in the footer.
+            If you have questions about these Terms of Service, please email us at{" "}
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
+            </a>{" "}
+            or use the Feedback option in the footer.
           </p>
         </section>
 

@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { OPERATOR } from "@/config/operator";
 
 type ProductKey = "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
 
@@ -226,8 +227,8 @@ export default function Pricing() {
         <div className="mt-12 text-center">
           <p className="text-[13px] text-muted-foreground">
             Secure checkout via Stripe. Prices in USD. Questions?{" "}
-            <a href="mailto:support@betweenthelines.app" className="underline hover:text-foreground">
-              support@betweenthelines.app
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
             </a>
           </p>
         </div>
