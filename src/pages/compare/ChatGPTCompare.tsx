@@ -94,13 +94,6 @@ export default function ChatGPTCompare() {
         </div>
       </section>
 
-      <p className="mt-8 text-[16px] leading-relaxed text-muted-foreground">
-        If you already have a prompt you trust and you like steering the analysis yourself, ChatGPT
-        will do the job. If you want the framework sections, the computed counts and the redacted
-        sharing without assembling them each time, that is what this product is. Neither tool
-        diagnoses anyone or proves what a person was thinking.
-      </p>
-
       <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
         Sources: openai.com/chatgpt/pricing and openai.com/index/introducing-chatgpt-go, retrieved
         16&nbsp;September&nbsp;2026. Prices change; check the vendor page for the current figure.
