@@ -27,8 +27,10 @@ export interface OperatorIdentity {
 
 export const OPERATOR: OperatorIdentity = {
   legalName: null,
-  founderName: null,
-  founderRole: null,
+  // Owner-approved founder bio (exact wording, first name only; no photo,
+  // surname, LinkedIn, location or other identifying details).
+  founderName: "Rephael",
+  founderRole: "Founder & Certified Life Coach",
   postalAddress: null,
   contactEmail: null,
   profileUrls: [],
