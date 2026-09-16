@@ -89,9 +89,9 @@ export default function BrandonCompare() {
                 <td className="py-3">Revocable share links with pseudonyms by default; names and quotes only if you turn them on.</td>
               </tr>
               <tr className="border-b border-border">
-                <th scope="row" className="py-3 pr-4 font-normal text-foreground">Retention</th>
-                <td className="py-3 pr-4">Privacy policy: uploads auto-deleted within seven days of the most recent report, 48 hours if abandoned; reports kept until you delete them.</td>
-                <td className="py-3">Raw pasted conversations are not persisted for Quick Take; imported files are processed and not stored as raw transcripts; you can delete reports and your account.</td>
+                <th scope="row" className="py-3 pr-4 font-normal text-foreground">Privacy and Safety</th>
+                <td className="py-3 pr-4">Privacy policy: uploads auto-deleted within seven days of the most recent report, 48 hours if abandoned; reports kept until you delete them. Until deletion, your text messages are exposed to hacking.</td>
+                <td className="py-3">Raw pasted conversations are not persisted for Quick Take; imported files are processed and not stored as raw transcripts; you can delete reports and your account. Since messages are deleted instantly, there&rsquo;s no risk anyone will ever get their eyes on your text exchanges.</td>
               </tr>
               <tr>
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Price</th>
