@@ -5,5 +5,5 @@
 - [x] Stage 3: Correct navigation, pricing, metadata, structured data, and sitemap
 - [x] Stage 4: Add factual About, privacy/trust updates, and synthetic sample journey
 - [x] Stage 5: Add consented feedback moderation and 2–3 acquisition pages
-- [ ] Validate desktop/mobile/keyboard, authorization, metadata, tests, typecheck, and build
-- [ ] Produce reconciliation matrix and owner handoff list; keep unpublished
+- [x] Validate desktop/mobile/keyboard, authorization, metadata, tests, typecheck, and build
+- [x] Produce reconciliation matrix and owner handoff list; keep unpublished
