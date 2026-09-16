@@ -88,10 +88,6 @@ export default function RizzCompare() {
         </div>
       </section>
 
-      <p className="mt-8 text-[16px] leading-relaxed text-muted-foreground">
-        The two can sit side by side: help with the next message, and a step back across months of
-        messages. Neither tool knows what anybody was actually thinking.
-      </p>
 
       <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
         Sources: the RIZZ US App Store listing (apps.apple.com/us/app/rizz/id1663430725) and Google
