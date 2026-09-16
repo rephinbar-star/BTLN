@@ -64,6 +64,93 @@ const PasswordGate = ({ onSuccess }: { onSuccess: () => void }) => {
     }
   };
 
+
+const TestimonialsSection = ({ 
+  testimonials, 
+  onRefresh 
+}: { 
+  testimonials: TestimonialRow[], 
+  onRefresh: () => void 
+}) => {
+  const moderate = async (id: string, action: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-moderate-testimonial', {
+        body: { 
+          password: sessionStorage.getItem(ADMIN_PWD_KEY),
+          testimonialId: id,
+          action
+        }
+      });
+      if (error || !data?.ok) throw error || new Error(data?.error);
+      onRefresh();
+    } catch (err) {
+      alert("Failed to moderate: " + (err as Error).message);
+    }
+  };
+
+  return (
+    <SectionShell title="Testimonials Moderation">
+      <Card>
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Quote</TableHead>
+                <TableHead>Attribution</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {testimonials.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
+                    No testimonials found.
+                  </TableCell>
+                </TableRow>
+              )}
+              {testimonials.map((t) => (
+                <TableRow key={t.id}>
+                  <TableCell className="text-xs">{new Date(t.created_at).toLocaleDateString()}</TableCell>
+                  <TableCell className="max-w-xs truncate font-medium">{t.quote}</TableCell>
+                  <TableCell>{t.attribution}</TableCell>
+                  <TableCell>
+                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
+                      t.moderation_status === 'approved' ? 'bg-green-100 text-green-700' :
+                      t.moderation_status === 'rejected' ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {t.moderation_status}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-2">
+                      {t.moderation_status !== 'approved' && (
+                        <Button size="sm" variant="outline" className="h-8 text-green-600 border-green-200 hover:bg-green-50" onClick={() => moderate(t.id, 'approved')}>
+                          Approve
+                        </Button>
+                      )}
+                      {t.moderation_status !== 'rejected' && (
+                        <Button size="sm" variant="outline" className="h-8 text-red-600 border-red-200 hover:bg-red-50" onClick={() => moderate(t.id, 'rejected')}>
+                          Reject
+                        </Button>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </SectionShell>
+
+        <TestimonialsSection testimonials={data.testimonials} onRefresh={load} />
+  );
+};
+
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-5">
       <form
@@ -113,6 +200,14 @@ type AnalysisRow = {
 type EventRow = {
   session_id: string;
   event_name: string;
+  created_at: string;
+};
+
+type TestimonialRow = {
+  id: string;
+  quote: string;
+  attribution: string;
+  moderation_status: 'pending' | 'approved' | 'rejected';
   created_at: string;
 };
 
@@ -202,6 +297,7 @@ type DashboardData = {
   events: EventRow[];
   analyses30: AnalysisRow[];
   shares: ShareRow[];
+  testimonials: TestimonialRow[];
 };
 
 const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
@@ -210,7 +306,7 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
   const [data, setData] = useState<DashboardData>({
     events: [],
     analyses30: [],
-    shares: [],
+    shares: [], testimonials: [],
   });
   const [errors, setErrors] = useState<{
     events?: string;
@@ -244,7 +340,10 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
       .gte("created_at", since30)
       .limit(5000);
 
-    const [evRes, anRes, shRes] = await Promise.all([eventsP, analysesP, sharesP]);
+    const testimonialsP = supabase.functions.invoke('admin-list-testimonials', { 
+      body: { password: sessionStorage.getItem(ADMIN_PWD_KEY) } 
+    });
+    const [evRes, anRes, shRes, testRes] = await Promise.all([eventsP, analysesP, sharesP, testimonialsP]);
 
     const next: DashboardData = { events: [], analyses30: [], shares: [] };
     const errs: typeof errors = {};
@@ -255,8 +354,12 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
     if (anRes.error) errs.analyses = anRes.error.message;
     else next.analyses30 = (anRes.data ?? []) as AnalysisRow[];
 
+    
     if (shRes.error) errs.shares = shRes.error.message;
     else next.shares = (shRes.data ?? []) as ShareRow[];
+
+    if (testRes.data?.ok) next.testimonials = testRes.data.data;
+
 
     setData(next);
     setErrors(errs);

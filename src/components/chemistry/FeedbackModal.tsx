@@ -1,3 +1,5 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
@@ -17,6 +19,8 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
   const [text, setText] = useState("");
   const [email, setEmail] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [attribution, setAttribution] = useState("Anonymous");
 
   useEffect(() => {
     if (!open) return;
@@ -108,6 +112,17 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
         email_captured: trimmedEmail.length > 0,
         trigger_source: triggerSource,
       });
+      
+      if (analysisId && consent) {
+        await supabase.rpc("submit_testimonial_candidate", {
+          p_analysis_id: analysisId,
+          p_session_id: getSessionId(),
+          p_quote: trimmedText || "Great analysis!",
+          p_attribution: attribution.trim() || "Anonymous",
+          p_publication_consent: true,
+        });
+      }
+
       toast("Thanks. Your feedback helps.");
       close();
     } catch (err) {
@@ -195,6 +210,45 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
             placeholder="you@email.com"
             className="mt-1.5 w-full rounded-xl border border-border bg-background px-4 py-3 text-[14px] focus:border-foreground focus:outline-none"
           />
+        </div>
+
+        
+        <div className="mt-6 space-y-4 rounded-xl border border-border bg-muted/30 p-4">
+          <div className="flex items-start space-x-3">
+            <Checkbox
+              id="testimonial-consent"
+              checked={consent}
+              onCheckedChange={(checked) => setConsent(!!checked)}
+              className="mt-0.5"
+            />
+            <div className="grid gap-1.5 leading-none">
+              <Label
+                htmlFor="testimonial-consent"
+                className="text-[13px] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Make my feedback public (anonymous)
+              </Label>
+              <p className="text-[12px] text-muted-foreground">
+                Help others by sharing your results anonymously.
+              </p>
+            </div>
+          </div>
+
+          {consent && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+              <Label htmlFor="attribution" className="text-[12px] font-medium text-muted-foreground">
+                Attribution (optional)
+              </Label>
+              <input
+                id="attribution"
+                type="text"
+                value={attribution}
+                onChange={(e) => setAttribution(e.target.value)}
+                placeholder="e.g. Anonymous, Sarah (28), or J."
+                className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] focus:border-foreground focus:outline-none"
+              />
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
