@@ -191,7 +191,7 @@ export default function Terms() {
         </section>
 
         <p className="mt-12 text-[13px] text-muted-foreground">
-          Last updated: June 2026. This page describes current terms and may be updated as the product evolves.
+          Last updated: September 16, 2026. This page describes current terms and may be updated as the product evolves.
         </p>
       </main>
     </div>

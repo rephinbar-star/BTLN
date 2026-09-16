@@ -139,10 +139,12 @@ const Account = () => {
       setUnlockCount(unlockList.length);
       if (sub) {
         const tier = (sub.tier || "").toLowerCase();
-        if (tier.includes("annual") || tier.includes("year")) {
+        if (tier === "annual") {
           setMembership({ kind: "annual", sub: sub as SubscriptionRow });
-        } else {
+        } else if (tier === "monthly") {
           setMembership({ kind: "monthly", sub: sub as SubscriptionRow });
+        } else {
+          setMembership({ kind: "none" });
         }
         setLastSync(sub.updated_at ?? null);
       } else if (unlockList.length > 0) {

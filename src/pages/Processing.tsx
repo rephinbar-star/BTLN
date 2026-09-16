@@ -259,7 +259,7 @@ const Processing = () => {
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
       <Helmet>
         <title>Analyzing your conversation — BetweenTheLines™</title>
-        <meta name="description" content="Reading between the lines of your messages. Your relationship analysis is being prepared and will be ready in 30–90 seconds." />
+        <meta name="description" content="Reading between the lines of your messages. Your relationship analysis is being prepared. Longer histories may take several minutes." />
         <link rel="canonical" href="https://betweenthelines.app/processing" />
         <meta property="og:title" content="Analyzing your conversation — BetweenTheLines™" />
         <meta property="og:description" content="Your relationship analysis is being prepared." />
@@ -302,7 +302,7 @@ const Processing = () => {
       </p>
 
       <p className="mt-10 max-w-md text-[12px] leading-relaxed text-muted-foreground">
-        This usually takes 30–90 seconds. Don't refresh. Your messages will be deleted as soon as the analysis is done.
+        Short chats often finish quickly; long histories may take several minutes. Keep this page open. Raw messages are not stored as a reusable transcript.
       </p>
 
       {showSlow && (

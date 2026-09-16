@@ -103,6 +103,9 @@ export type EventMap = {
   roast_share_created: { include_names: boolean; include_quotes: boolean };
   roast_share_visited: Record<string, never>;
   roast_share_conversion: Record<string, never>;
+  sample_viewed: { category: string };
+  sample_cta_clicked: { category: string; destination: string };
+  guide_cta_clicked: { guide: string; destination: string };
 };
 
 // Allowed property keys per event. Anything not listed is silently dropped.
@@ -166,6 +169,9 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   roast_share_created: ["include_names", "include_quotes"],
   roast_share_visited: [],
   roast_share_conversion: [],
+  sample_viewed: ["category"],
+  sample_cta_clicked: ["category", "destination"],
+  guide_cta_clicked: ["guide", "destination"],
 } as never;
 
 // Reject obvious PII shapes as a defense-in-depth check on top of the

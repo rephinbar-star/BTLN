@@ -146,6 +146,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
       );
       if (gErr) throw new Error(`group_read_unlocks upsert failed: ${gErr.message}`);
       await unlockGroupReadForUser(groupReadId, userId);
+      await logWebhookEvent("purchase_completed", { product: "group_read", amount_cents: amount, environment: env });
       await recordAudit({
         environment: env,
         event_id: eventId,
@@ -190,6 +191,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
     );
     if (insertError) throw new Error(`one_time_unlocks upsert failed: ${insertError.message}`);
     await unlockAnalysisForUser(analysisId, userId);
+    await logWebhookEvent("purchase_completed", { product: "deep_read", amount_cents: amount, environment: env });
     await recordAudit({
       environment: env,
       event_id: eventId,
