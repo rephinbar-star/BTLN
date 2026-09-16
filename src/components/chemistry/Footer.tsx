@@ -1,6 +1,7 @@
 import { useState } from "react";
 import logoUrl from "@/assets/logo.png";
 import { FeedbackModal } from "./FeedbackModal";
+import { OPERATOR } from "@/config/operator";
 import { Button } from "@/components/ui/button";
 
 export const Footer = () => {
