@@ -9,6 +9,7 @@ import { DecodeHero } from "@/components/chemistry/DecodeHero";
 import { HowItWorks } from "@/components/chemistry/HowItWorks";
 import { InputSection } from "@/components/chemistry/InputSection";
 import { WhatYouGet } from "@/components/chemistry/WhatYouGet";
+import { SampleSection } from "@/components/chemistry/SampleSection";
 import { ReturningHero } from "@/components/chemistry/ReturningHero";
 import { useAuth } from "@/hooks/useAuth";
 import { logEvent } from "@/lib/session";
@@ -90,6 +91,7 @@ const Index = () => {
         <InputSection />
         <HowItWorks />
         <WhatYouGet />
+        <SampleSection />
         <FinalCta />
       </main>
       <Footer />
