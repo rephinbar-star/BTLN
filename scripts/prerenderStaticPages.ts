@@ -3,6 +3,10 @@ import path from "node:path";
 import type { Plugin } from "vite";
 
 const PAGES = [
+  { path: "/pricing", title: "Pricing | BetweenTheLines™", description: "Compare a $4.99 single report with $9.99 monthly and $49.99 annual full-report access for Deep Reads and Group Reads." },
+  { path: "/sample", title: "Conversation Analysis Sample | BetweenTheLines™", description: "Explore a clearly labeled fictional BetweenTheLines report for romantic, friend, or family conversations." },
+  { path: "/guides/mixed-signal-texts", title: "How to Read Mixed-Signal Texts | BetweenTheLines™", description: "A careful guide to reading mixed-signal texts without inventing intent, plus a path to Quick Take." },
+  { path: "/guides/group-chat-communication", title: "Understand Group Chat Communication | BetweenTheLines™", description: "Learn what a group-chat read can support, from participation balance to unanswered questions and repair attempts." },
   {
     path: "/about",
     title: "About BetweenTheLines™ — AI Relationship Analysis",

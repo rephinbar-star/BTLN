@@ -133,6 +133,13 @@ export default function Pricing() {
             { "@type": "Offer", name: "Annual full-report plan", price: "49.99", priceCurrency: "USD" }
           ]
         })}</script>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org", "@type": "FAQPage", mainEntity: [
+            { "@type": "Question", name: "Can I buy a single report before starting it?", acceptedAnswer: { "@type": "Answer", text: "A one-time purchase is securely attached to a specific report, so you start the read before opening checkout." } },
+            { "@type": "Question", name: "Which plans include Deep Read and Group Read?", acceptedAnswer: { "@type": "Answer", text: "The full-report monthly and annual plans include Deep Reads and Group Reads. A Quick Take-only plan does not unlock them." } },
+            { "@type": "Question", name: "What happens after I cancel?", acceptedAnswer: { "@type": "Answer", text: "Full-report access remains available through the paid period shown in your account, then ends unless the plan renews." } }
+          ]
+        })}</script>
         <title>Pricing — BetweenTheLines™</title>
         <meta name="description" content="Unlock deeper relationship insights with BetweenTheLines. Choose a monthly, annual, or single-report plan." />
         <link rel="canonical" href="https://betweenthelines.app/pricing" />
@@ -214,6 +221,15 @@ export default function Pricing() {
           ))}
         </div>
 
+
+        <section className="mx-auto mt-16 max-w-3xl border-t border-border pt-10">
+          <h2 className="text-[24px] font-medium">Pricing questions</h2>
+          <div className="mt-6 divide-y divide-border">
+            <div className="py-5"><h3 className="font-medium">Can I buy a single report before starting it?</h3><p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">A one-time purchase is securely attached to a specific report, so start the read first. If payment is needed, checkout appears for that exact report.</p></div>
+            <div className="py-5"><h3 className="font-medium">Which plans include Deep Read and Group Read?</h3><p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">The full-report monthly and annual plans include Deep Reads and Group Reads. A Quick Take-only plan does not unlock them.</p></div>
+            <div className="py-5"><h3 className="font-medium">What happens after I cancel?</h3><p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Full-report access remains available through the paid period shown in your account, then ends unless the plan renews.</p></div>
+          </div>
+        </section>
         <div className="mt-12 text-center">
           <p className="text-[13px] text-muted-foreground">
             Secure checkout via Stripe. Prices in USD. Questions?{" "}
