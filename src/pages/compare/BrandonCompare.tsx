@@ -26,8 +26,9 @@ export default function BrandonCompare() {
       <section className="mt-10">
         <p className="text-[17px] leading-relaxed">
           <strong>
-            What Brandon Thinks is an entertainment novelty. BetweenTheLines is a relationship
-            decision support tool that&rsquo;s based on modern psychology concepts and frameworks.
+            What Brandon Thinks is an entertainment novelty app. BetweenTheLines is a
+            relationship decision support tool that&rsquo;s based on modern psychology concepts
+            and frameworks.
           </strong>
         </p>
       </section>
