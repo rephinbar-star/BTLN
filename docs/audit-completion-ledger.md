@@ -53,14 +53,20 @@ Dimension totals recorded by the audit: Positioning 18/25, Conversion clarity
   approved entry exists. No quote, name, photo or placeholder was created.
   **Needed from owner:** genuine customer quotes plus each person's written
   permission, then approval in the admin queue. No outreach was performed.
-- **D3.3 (was 0/6)** — Operator identity. `/about` states plainly that operator
-  identity is not publicly verified rather than implying one.
-  `src/config/operator.ts` holds null fields for legal name, founder name and
-  role, postal address, support email and approved profile URLs; filling them in
-  publishes the About block and the Organization data automatically.
-  **Needed from owner:** the exact legal entity name, a named person and role
-  they consent to publish, a registered address, a monitored support email, and
-  any profile URLs they approve. Nothing was inferred from domain records.
+- **D3.3 (was 0/6)** — Operator identity. The founder bio is now published on
+  `/about` with the owner's exact approved wording, first name only and no
+  photo, surname, LinkedIn link, location or other identifying details:
+  "Rephael — Founder & Certified Life Coach".
+  `src/config/operator.ts` carries the approved founder name and role
+  (`founderName`, `founderRole`); the Organization JSON-LD in `index.html`
+  names the same approved founder. The legal name, postal address, support
+  email and profile URLs remain null, and `/about` states plainly that they
+  have not been provided for publication.
+  **Still needed from owner:** the exact legal entity name, a registered
+  address, a monitored support email, and any profile URLs they approve. The
+  approved founder bio does not supply legal operator identity or contact
+  details, and no licensing, degrees, certifying institutions or clinical
+  claims were added. Nothing was inferred from domain records.
 - **D3.1 (was 0/4)** — Usage proof. No counter, badge or "trusted by" figure was
   added. Synthetic test users and test reports exist in the database and are
   deliberately excluded from any counter. **Needed from owner:** a decision on
@@ -129,8 +135,9 @@ Full detail lives in `docs/audit-reconciliation.md`.
 
 ## Exact inputs still required from the owner
 
-1. Legal entity name, named person + role, registered address, monitored support
-   email, approved profile URLs (for `src/config/operator.ts`).
+1. Legal entity name, registered address, monitored support email, approved
+   profile URLs (for `src/config/operator.ts`). The founder name and role are
+   supplied and approved; no further founder details are requested.
 2. Genuine customer quotes with written permission to publish, and approval of
    each in the admin queue.
 3. A decision on whether real usage figures may be published, and which metric.
