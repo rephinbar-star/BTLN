@@ -22,7 +22,18 @@ export type ReportFlag =
       description?: string;
     };
 
+export type AnalysisCoverage = {
+  messages_supplied: number;
+  messages_analyzed: number;
+  messages_read_by_ai: number;
+  messages_quoted_verbatim: number;
+  chunk_count: number;
+  failed_chunks: number;
+  full_history_read: boolean;
+};
+
 export type AnalysisResult = {
+  coverage?: AnalysisCoverage;
   meta: {
     messages_analyzed: number;
     analysis_confidence: "low" | "medium" | "high" | string;

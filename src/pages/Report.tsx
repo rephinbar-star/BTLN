@@ -908,7 +908,7 @@ const ReportContent = () => {
                   Preliminary read
                 </p>
                 <p className="mt-1 text-[14px] leading-relaxed">
-                  Based on only {result.meta.messages_analyzed} messages. This is a rough
+                  Based on only {result.coverage?.messages_analyzed ?? result.meta.messages_analyzed} messages. This is a rough
                   snapshot, not a full portrait.
                 </p>
               </div>
@@ -1013,7 +1013,7 @@ const ReportContent = () => {
                   </>
                 ) : lowConfidence ? (
                   <LowConfidenceGate
-                    messageCount={result.meta.messages_analyzed}
+                    messageCount={result.coverage?.messages_analyzed ?? result.meta.messages_analyzed}
                     result={result}
                     context={context}
                   />
