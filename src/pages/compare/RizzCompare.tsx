@@ -71,11 +71,6 @@ export default function RizzCompare() {
                 <td className="py-3">Pasted text or screenshots for a Quick Take; WhatsApp/iMessage TXT, CSV or ZIP exports for a Deep Read or Group Read.</td>
               </tr>
               <tr className="border-b border-border">
-                <th scope="row" className="py-3 pr-4 font-normal text-foreground">Scope</th>
-                <td className="py-3 pr-4">Dating first, with friend, family and professional tones available.</td>
-                <td className="py-3">Two-person romantic, friend and family reads, plus group chats of 3&ndash;15 people.</td>
-              </tr>
-              <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Where it runs</th>
                 <td className="py-3 pr-4">iOS and Android apps.</td>
                 <td className="py-3">Browser, no install.</td>
