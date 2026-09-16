@@ -76,3 +76,52 @@ as fictional placeholders, so nothing there can be used as evidence.
 Required to lift the deferral: the vendor's own confirmation (or unambiguous
 cross-linking) of which domain is canonical, and a retrievable pricing page on
 that canonical domain.
+
+---
+
+## What Brandon Thinks — primary evidence, retrieved 2026-09-16
+
+Scope: **https://www.whatbrandonthinks.com only.** The similarly named `.net` domain is treated as
+unrelated; no evidence links the two operators, so nothing from it is used.
+
+Source pages fetched 2026-09-16:
+- `/` (home) — HTTP 200
+- `/faq` — HTTP 200
+- `/privacy` — HTTP 200 (policy dated "Updated August 24, 2026")
+- `/pricing` — HTTP 404 (no published price page)
+
+Verified facts used on the public comparison page:
+- Operator: L4Forge SAS — What Brandon Thinks, 222 rue de Brétigny, 01210 Ornex, France; SIREN
+  999 235 385; support@whatbrandonthinks.com. (privacy page)
+- Product: upload a WhatsApp or iMessage chat, receive an AI report written as the opinions of a
+  character named Brandon; group reports include an opinion on every member. (home, FAQ)
+- Imports: WhatsApp exports from iPhone or Android; iMessage via their own Mac app requiring Apple
+  Silicon (M1+). FAQ states other messaging apps are "not supported yet". (FAQ)
+- Free preview of the start of the first report, no card needed; thereafter pay per report. (FAQ)
+- Report languages: English, French or Spanish; chat may be in any language. (FAQ)
+- Follow-up questions produce further reports. (FAQ)
+- Retention: uploads auto-deleted within seven days of the most recent report; abandoned uploads
+  within 48 hours; reports kept until deleted; invoices ~10 years. (privacy)
+- Stated: conversations/reports not used to train AI models, not sold. (privacy)
+
+Observed but **not published** by us:
+- Home-page counters ("108K total reports written", "6.9K this week", "1.2K today") — vendor-stated,
+  unverifiable; we do not repeat competitor usage figures.
+- Home-page testimonials — unverifiable; not repeated.
+- No price figure is published on the reviewed pages, so the comparison omits their price rather
+  than estimating one. Absence of a price page is not presented as absence of a price.
+- Marketing/analytics pixels present (Google Ads, Meta, TikTok) — not relevant to the comparison.
+
+Claims deliberately avoided: no assertion that they lack a capability merely because a page is
+silent about it; no revenue, user-count or clinical claims; no comparison to unverified features.
+
+## Review of existing comparison pages (2026-09-16)
+- **ChatGPT page:** re-read against openai.com pricing (Free / Go $8 / Plus $20 / Pro $200, dated
+  January 2026 in the footnote). No "ChatGPT cannot" claims; strengths section retained. Counting row
+  describes ChatGPT output as model-generated and needing verification — a property of LLM output,
+  not a capability denial. No change required.
+- **RIZZ page:** store-listing figures are dated and hedged ("change over time and vary by store and
+  region"); the sharing row says "not documented on the store listing we reviewed" rather than
+  asserting absence. Strengths section retained. No change required.
+- Both pages describe BTLN only with features that exist today (guided import, fixed report
+  structure, computed counts, Group Read 3–15, revocable pseudonymous sharing, current prices).
