@@ -22,9 +22,9 @@ export const LIMITS = {
   /** Most messages the browser parser will keep. */
   MAX_PARSED_MESSAGES: 60_000,
   /** Most messages sent to the Group Read backend in one job. */
-  MAX_GROUP_UPLOAD_MESSAGES: 6_000,
+  MAX_GROUP_UPLOAD_MESSAGES: 12_000,
   /** Character budget for the payload sent to the Group Read backend. */
-  MAX_GROUP_UPLOAD_CHARS: 900_000,
+  MAX_GROUP_UPLOAD_CHARS: 1_800_000,
   /** Messages the model actually reads (the rest feed deterministic stats). */
   MAX_MODEL_SAMPLE_MESSAGES: 1_200,
   /** Character budget for the model transcript sample. */
