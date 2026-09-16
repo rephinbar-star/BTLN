@@ -14,28 +14,29 @@ export default function RizzCompare() {
       <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">
         RIZZ and BetweenTheLines solve different problems
       </h1>
-      <p className="mt-5 text-[17px] leading-relaxed text-muted-foreground">
-        RIZZ, published by TREND IT LLC, is a mobile AI dating assistant: you upload a screenshot of
-        a conversation (and optionally a match&rsquo;s bio) and it suggests replies in a tone you
-        pick. BetweenTheLines does not write your next message for you &mdash; it looks across a
-        longer conversation and describes the pattern, with the evidence it used. If what you want
-        is a better opener, RIZZ is the more direct tool.
-      </p>
 
-      <section className="mt-10">
-        <h2 className="text-xl font-medium">What RIZZ does well</h2>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-[16px] leading-relaxed text-muted-foreground">
-          <li>Fast, in-the-moment reply suggestions from a screenshot.</li>
-          <li>Tone options, including a formal mode for networking messages.</li>
-          <li>Native iPhone, iPad and Android apps; free to install with in-app purchases.</li>
-          <li>A large, well-rated audience: 4.8 stars from roughly 39,000 US App Store ratings, and 5M+ Google Play downloads.</li>
-        </ul>
-      </section>
+      <p className="mt-5 text-[17px] font-semibold leading-relaxed text-foreground">
+        Key difference: BetweenTheLines builds psychological frameworks into its standard
+        relationship report &mdash; without you having to write a specialist prompt.
+      </p>
+      <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">
+        Every Deep Read returns the same framework-based sections: attachment-style signals for each
+        person and a Gottman &ldquo;Four Horsemen&rdquo; check for criticism, contempt, defensiveness
+        and stonewalling, tied to the messages they came from. These are interpretations of
+        communication patterns, not a clinical assessment, diagnosis or validated psychological test.
+      </p>
+      <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">
+        RIZZ, published by TREND IT LLC, is a mobile app for the next message: you upload a
+        screenshot of a conversation, optionally a match&rsquo;s bio, and it suggests replies in a
+        tone you choose. The sources we reviewed &mdash; its App Store and Google Play listings
+        &mdash; document that reply-assistance workflow. They do not document a framework-based
+        relationship report, which is not the same as saying the app never draws on psychology.
+      </p>
 
       <section className="mt-10">
         <h2 className="text-xl font-medium">Side by side</h2>
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[540px] border-collapse text-left text-[15px]">
+          <table className="w-full min-w-[560px] border-collapse text-left text-[15px]">
             <caption className="sr-only">Workflow comparison</caption>
             <thead>
               <tr className="border-b border-border">
@@ -46,6 +47,19 @@ export default function RizzCompare() {
             </thead>
             <tbody className="text-muted-foreground">
               <tr className="border-b border-border">
+                <th scope="row" className="py-3 pr-4 font-normal text-foreground">
+                  Frameworks included in the standard report
+                </th>
+                <td className="py-3 pr-4">
+                  No framework-based relationship report is described in the listings we reviewed; the
+                  documented output is suggested replies.
+                </td>
+                <td className="py-3">
+                  Attachment-style signals and the Gottman Four Horsemen check are part of every Deep
+                  Read.
+                </td>
+              </tr>
+              <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Main job</th>
                 <td className="py-3 pr-4">Suggest what to send next.</td>
                 <td className="py-3">Explain the pattern across a conversation.</td>
@@ -53,11 +67,11 @@ export default function RizzCompare() {
               <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">What you supply</th>
                 <td className="py-3 pr-4">Screenshots of a chat and, optionally, a match&rsquo;s bio.</td>
-                <td className="py-3">Pasted text or screenshots for a Quick Take; full WhatsApp/iMessage TXT, CSV or ZIP exports for a Deep Read or Group Read.</td>
+                <td className="py-3">Pasted text or screenshots for a Quick Take; WhatsApp/iMessage TXT, CSV or ZIP exports for a Deep Read or Group Read.</td>
               </tr>
               <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Scope</th>
-                <td className="py-3 pr-4">Dating first, with friends, family and professional tones available.</td>
+                <td className="py-3 pr-4">Dating first, with friend, family and professional tones available.</td>
                 <td className="py-3">Two-person romantic, friend and family reads, plus group chats of 3&ndash;15 people.</td>
               </tr>
               <tr className="border-b border-border">
@@ -67,7 +81,7 @@ export default function RizzCompare() {
               </tr>
               <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Sharing</th>
-                <td className="py-3 pr-4">Not documented on the store listing we reviewed.</td>
+                <td className="py-3 pr-4">Not documented in the listings we reviewed.</td>
                 <td className="py-3">Revocable share links, pseudonyms by default, names and quotes only if you turn them on.</td>
               </tr>
               <tr>
@@ -84,14 +98,15 @@ export default function RizzCompare() {
       </section>
 
       <p className="mt-8 text-[16px] leading-relaxed text-muted-foreground">
-        Plenty of people will want both: something to help with the next message, and something that
-        steps back across months of messages. Neither tool knows what anybody was actually thinking.
+        The two can sit side by side: help with the next message, and a step back across months of
+        messages. Neither tool knows what anybody was actually thinking.
       </p>
 
       <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
         Sources: the RIZZ US App Store listing (apps.apple.com/us/app/rizz/id1663430725) and Google
-        Play listing (com.rizzlabs.rizz), retrieved 16&nbsp;September&nbsp;2026. Ratings, download
-        counts and in-app purchase prices change over time and vary by store and region.
+        Play listing (com.rizzlabs.rizz), retrieved 16&nbsp;September&nbsp;2026. Store prices and
+        listing details change and vary by region. Statements about RIZZ describe only what those
+        listings document.
       </p>
 
       <div className="mt-8 flex flex-wrap gap-3">
