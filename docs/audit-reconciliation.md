@@ -193,3 +193,9 @@ comparison pages). The charged amount in the test checkout was 7999.
 Nothing was changed: the instruction is not to alter existing prices, and the correct resolution is a
 business decision — either the Stripe price or the published copy must move. Until then the published annual
 price is not truthful and this is a launch blocker for the pricing page.
+
+## Annual price discrepancy — resolved (2026-09-16)
+- Owner directed: annual plan is $49.99/year (site copy was correct; Stripe test price was wrong at $79.99).
+- Test-mode fix: old price price_1TjBu6RZ68CcxqGptJtDzqxL ($79.99/yr) deactivated and its lookup key cleared; new price price_1UGBjIRZ68CcxqGpG5bqj5DI ($49.99/yr, USD) created on the same product (prod_UidAz4QknGZ7bQ) with lookup key BTLN_annual. Verified: lookup key now resolves to the $49.99 price.
+- No code changes needed: checkout, webhook, and sync-subscription all resolve by lookup key, and the BTLN_annual → "annual" tier mapping is unchanged.
+- Live mode: the same correction must be applied to the live-mode annual price before going live (this change was test-mode only; live prices were not touched).
