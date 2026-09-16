@@ -133,13 +133,6 @@ export default function Pricing() {
             { "@type": "Offer", name: "Annual full-report plan", price: "49.99", priceCurrency: "USD" }
           ]
         })}</script>
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org", "@type": "FAQPage", mainEntity: [
-            { "@type": "Question", name: "Can I buy a single report before starting it?", acceptedAnswer: { "@type": "Answer", text: "A one-time purchase is securely attached to a specific report, so you start the read before opening checkout." } },
-            { "@type": "Question", name: "Which plans include Deep Read and Group Read?", acceptedAnswer: { "@type": "Answer", text: "The full-report monthly and annual plans include Deep Reads and Group Reads. A Quick Take-only plan does not unlock them." } },
-            { "@type": "Question", name: "What happens after I cancel?", acceptedAnswer: { "@type": "Answer", text: "Full-report access remains available through the paid period shown in your account, then ends unless the plan renews." } }
-          ]
-        })}</script>
         <title>Pricing — BetweenTheLines™</title>
         <meta name="description" content="Unlock deeper relationship insights with BetweenTheLines. Choose a monthly, annual, or single-report plan." />
         <link rel="canonical" href="https://betweenthelines.app/pricing" />

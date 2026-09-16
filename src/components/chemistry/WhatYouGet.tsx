@@ -64,16 +64,16 @@ export const WhatYouGet = () => {
             </div>
           </div>
 
-          {/* 2 — Attachment styles */}
+          {/* 2 — Communication tendencies */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8">
             <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              2 · Attachment styles
+              2 · Communication tendencies
               <Popover>
                 <PopoverTrigger asChild>
                   <button
                     type="button"
                     className="-m-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                    aria-label="What are attachment styles?"
+                    aria-label="What are communication tendencies?"
                   >
                     <HelpCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
@@ -82,20 +82,20 @@ export const WhatYouGet = () => {
                   className="w-80 space-y-2 text-[13px] leading-relaxed"
                   side="top"
                   align="start"
-                  aria-labelledby="attachment-styles-title"
+                  aria-labelledby="communication-tendencies-title"
                 >
-                  <h3 id="attachment-styles-title" className="text-[13px] font-medium text-foreground">Attachment Styles</h3>
+                  <h3 id="communication-tendencies-title" className="text-[13px] font-medium text-foreground">Communication tendencies</h3>
                   <p className="text-muted-foreground">
-                    Based on attachment theory, these patterns describe how people emotionally bond and respond to intimacy in relationships.
+                    These are cautious descriptions of patterns visible in the supplied messages, not diagnoses or fixed personality labels.
                   </p>
                   <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
-                    <li><span className="font-medium text-foreground">Secure</span> — Comfortable with closeness and independence.</li>
-                    <li><span className="font-medium text-foreground">Anxious</span> — Seeks reassurance; fears abandonment.</li>
-                    <li><span className="font-medium text-foreground">Avoidant</span> — Values autonomy; may distance under stress.</li>
-                    <li><span className="font-medium text-foreground">Disorganized</span> — Mixed approach; often from unresolved trauma.</li>
+                    <li><span className="font-medium text-foreground">Direct</span> — States a request or answer clearly.</li>
+                    <li><span className="font-medium text-foreground">Reassuring</span> — Responds with confirmation or warmth.</li>
+                    <li><span className="font-medium text-foreground">Delayed</span> — Takes longer to respond in the supplied exchange.</li>
+                    <li><span className="font-medium text-foreground">Unclear</span> — Leaves a practical question unanswered.</li>
                   </ul>
                   <p className="text-muted-foreground">
-                    Styles can shift over time, especially within a secure relationship.
+                    Patterns can change across topics, situations, and different samples.
                   </p>
                 </PopoverContent>
               </Popover>

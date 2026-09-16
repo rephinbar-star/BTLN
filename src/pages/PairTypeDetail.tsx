@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import * as htmlToImage from "html-to-image";
 import { Check, Download, Loader2, Share2 } from "lucide-react";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoUrl from "@/assets/logo.png";
 import { Footer } from "@/components/chemistry/Footer";
 import { Header } from "@/components/chemistry/Header";
 import { DecorativeElement } from "@/components/chemistry/DecorativeElement";
@@ -179,7 +179,7 @@ const PairTypeDetail = () => {
       try {
         const [image, logo] = await Promise.all([
           f.image ? toDataUrl(f.image) : Promise.resolve(null),
-          toDataUrl(logoAsset.url),
+          toDataUrl(logoUrl),
         ]);
         setShareArt({ image, logo });
         setRenderFormat(format);
