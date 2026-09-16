@@ -12,7 +12,7 @@ export default function About() {
       <section><h2 className="text-xl font-medium text-foreground">Why use a structured read?</h2><p className="mt-3">A general-purpose chat prompt changes with every question. BetweenTheLines adds guided imports, participant mapping, deterministic counts, the same report structure across reads, access controls, and revocable sharing. Those product differences do not make any interpretation a fact.</p></section>
       <section><h2 className="text-xl font-medium text-foreground">What it does not do</h2><p className="mt-3">It does not diagnose people, prove hidden motives, replace therapy, or know what happened outside the supplied messages. Sparse or ambiguous evidence should produce cautious language and unavailable metrics—not invented certainty.</p></section>
       <section>
-        <h2 className="text-xl font-medium text-foreground">Rephael — Founder &amp; Certified Life Coach</h2>
+        <h2 className="text-xl font-medium text-foreground">The Founder - On a Mission to Help People Have Better Relationships</h2>
         <p className="mt-3">Rephael is a Certified Life Coach with deep background in psychology and the founder of BetweenTheLines. He created the app to help people make sense of their conversations, recognize recurring communication patterns, and find practical ways forward—in romantic relationships, friendships, and family life.</p>
       </section>
       <section><h2 className="text-xl font-medium text-foreground">Your privacy choices</h2><p className="mt-3">Raw uploaded conversation text is processed for the requested read and is not stored as a reusable transcript. Structured reports may retain selected evidence excerpts. You control report sharing and can delete saved reports.</p></section>
