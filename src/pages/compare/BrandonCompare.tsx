@@ -98,16 +98,6 @@ export default function BrandonCompare() {
         </div>
       </section>
 
-      <section className="mt-10 rounded-lg border border-border bg-card p-6">
-        <h2 className="text-lg font-medium">Which should you use?</h2>
-        <p className="mt-3 text-[16px] leading-relaxed text-muted-foreground">
-          If you want a sharp, funny verdict you will want to screenshot into the group chat, Brandon
-          is built for exactly that. If you want the same report shape each time, counts you can
-          check against the file, and a shared version that hides names unless you choose otherwise,
-          that is what this product is for. Neither tool diagnoses anyone, and neither can prove what
-          a person was actually thinking.
-        </p>
-      </section>
 
       <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
         Sources: whatbrandonthinks.com home page and FAQ, and its privacy policy (updated
