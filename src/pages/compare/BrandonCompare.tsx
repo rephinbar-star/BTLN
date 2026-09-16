@@ -84,11 +84,6 @@ export default function BrandonCompare() {
                 <td className="py-3">Message and participant counts are computed from the parsed export, not written by the model; metrics the data cannot support are marked unavailable.</td>
               </tr>
               <tr className="border-b border-border">
-                <th scope="row" className="py-3 pr-4 font-normal text-foreground">Languages</th>
-                <td className="py-3 pr-4">Chat in any language; report in English, French or Spanish.</td>
-                <td className="py-3">Reports in English.</td>
-              </tr>
-              <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Sharing</th>
                 <td className="py-3 pr-4">Reports are made to be screenshotted and shared; the site shows a wall of shared reports.</td>
                 <td className="py-3">Revocable share links with pseudonyms by default; names and quotes only if you turn them on.</td>
