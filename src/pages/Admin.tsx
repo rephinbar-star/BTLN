@@ -829,10 +829,8 @@ const WebhookSecretTester = () => {
     setLoading(true);
     setResult(null);
     try {
-      const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
       const { data, error } = await supabase.functions.invoke("test-webhook-secret", {
         body: {
-          adminPassword: password,
           signature: signature.trim(),
           payload,
           env: envMode === "auto" ? undefined : envMode,
@@ -973,18 +971,9 @@ const UsersSection = () => {
     setLoading(true);
     setError(null);
     try {
-      const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
-      if (!password) {
-        // Session was authenticated before the password was cached (older flow).
-        // Force re-auth so the password gets stored for service-role calls.
-        sessionStorage.removeItem(ADMIN_AUTH_KEY);
-        sessionStorage.removeItem(ADMIN_PWD_KEY);
-        window.location.reload();
-        return;
-      }
       const { data: res, error: invokeErr } = await supabase.functions.invoke(
         "admin-list-users",
-        { body: { password } },
+        { body: {} },
       );
       if (invokeErr) throw invokeErr;
       if (!res?.ok) throw new Error(res?.error ?? "Failed to load users");

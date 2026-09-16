@@ -1,4 +1,5 @@
 import { encode } from "https://deno.land/std@0.168.0/encoding/hex.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,6 +12,22 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+async function requireAdmin(req: Request) {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (!authHeader.toLowerCase().startsWith("bearer ")) return false;
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, {
+    auth: { persistSession: false },
+  });
+  const { data, error } = await admin.auth.getUser(authHeader.slice(7));
+  const userId = data.user?.id;
+  if (error || !userId) return false;
+  const { data: isAdmin, error: roleError } = await admin.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  return !roleError && isAdmin === true;
 }
 
 async function computeExpected(secret: string, timestamp: string, body: string) {
@@ -34,13 +51,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "Method not allowed" }, 405);
 
   try {
-    const { adminPassword, payload, signature, env, secretName } = await req.json();
-
-    // Admin gate — same shape as verify-admin-password.
-    const expectedPwd = Deno.env.get("ADMIN_PASSWORD") ?? "";
-    if (!expectedPwd || adminPassword !== expectedPwd) {
-      return json({ ok: false, error: "Unauthorized" }, 401);
-    }
+    if (!(await requireAdmin(req))) return json({ ok: false, error: "Forbidden" }, 403);
+    const { payload, signature, env, secretName } = await req.json();
 
     if (typeof payload !== "string" || typeof signature !== "string") {
       return json({ ok: false, error: "payload and signature are required strings" }, 400);
