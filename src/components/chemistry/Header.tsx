@@ -46,7 +46,7 @@ export const Header = () => {
         <Link to="/" className="flex items-center">
           <img src={logoAsset.url} alt="BetweenTheLines™" className="h-[144px] w-auto object-contain" />
         </Link>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-6"><Link to="/about" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground md:block">About</Link>
           {!loading && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

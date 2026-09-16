@@ -433,8 +433,10 @@ const GroupResult = () => {
             )}
             {coverage?.sampled && (
               <li>
-                Counts and balance use all {coverage.messages_analyzed} messages; the written read
-                quotes only the most recent {coverage.messages_read_by_ai}
+                Counts and balance use all {coverage.messages_analyzed} selected messages. The
+                written read processes the history in ordered passes, then uses the most recent{" "}
+                {coverage.messages_quoted_verbatim ?? coverage.messages_read_by_ai} messages as
+                direct final-step context. Any displayed quote comes from available conversation evidence.
               </li>
             )}
             <li>Confidence: {result.confidence ?? "medium"}</li>

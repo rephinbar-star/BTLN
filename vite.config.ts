@@ -4,6 +4,7 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { mcpPlugin } from "@lovable.dev/mcp-js/stacks/supabase/vite";
 import { prerenderPairTypes } from "./scripts/prerenderPairTypes";
+import { prerenderStaticPages } from "./scripts/prerenderStaticPages";
 
 
 // https://vitejs.dev/config/
@@ -15,7 +16,7 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
-  plugins: [react(), mode === "development" && componentTagger(), mcpPlugin(), prerenderPairTypes()].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger(), mcpPlugin(), prerenderPairTypes(), prerenderStaticPages()].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

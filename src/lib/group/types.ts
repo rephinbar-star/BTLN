@@ -36,6 +36,10 @@ export type GroupResultJson = {
     messages_analyzed?: number;
     messages_supplied?: number;
     messages_read_by_ai?: number;
+    messages_quoted_verbatim?: number;
+    chunk_count?: number;
+    failed_chunks?: number;
+    full_history_read?: boolean;
     sampled?: boolean;
     date_start?: string | null;
     date_end?: string | null;

@@ -143,6 +143,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (kind === "analysis") {
+      if (!analysisId || typeof analysisId !== "string" || !UUID_RE.test(analysisId)) {
+        return new Response(JSON.stringify({ error: "Invalid analysisId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        { auth: { persistSession: false } },
+      );
+      const { data: target } = await admin
+        .from("analyses")
+        .select("id, user_id")
+        .eq("id", analysisId)
+        .maybeSingle();
+      if (!userId || !target || target.user_id !== userId) {
+        return new Response(JSON.stringify({ error: "Not your report" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const env: StripeEnv = environment;
     const stripe = createStripeClient(env);
     const prices = await stripe.prices.list({ lookup_keys: [priceId] });

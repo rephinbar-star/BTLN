@@ -33,6 +33,10 @@ import PairTypeLegacyRedirect from "./pages/PairTypeLegacyRedirect";
 import Trust from "./pages/Trust";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
+import About from "./pages/About";
+import WhatsAppGuide from "./pages/guides/WhatsApp";
+import IMessageGuide from "./pages/guides/IMessage";
+import InstagramGuide from "./pages/guides/Instagram";
 import OAuthConsent from "./pages/OAuthConsent";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -99,6 +103,10 @@ const App = () => (
           <Route path="/trust" element={<Trust />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/guides/whatsapp" element={<WhatsAppGuide />} />
+          <Route path="/guides/imessage" element={<IMessageGuide />} />
+          <Route path="/guides/instagram" element={<InstagramGuide />} />
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

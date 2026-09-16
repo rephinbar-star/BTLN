@@ -890,6 +890,62 @@ export type Database = {
           },
         ]
       }
+      testimonial_candidates: {
+        Row: {
+          analysis_id: string | null
+          attribution: string
+          consented_at: string | null
+          created_at: string
+          id: string
+          is_test: boolean
+          moderated_at: string | null
+          moderation_status: string
+          publication_consent: boolean
+          quote: string
+          session_id: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          analysis_id?: string | null
+          attribution?: string
+          consented_at?: string | null
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          moderated_at?: string | null
+          moderation_status?: string
+          publication_consent?: boolean
+          quote: string
+          session_id: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          analysis_id?: string | null
+          attribution?: string
+          consented_at?: string | null
+          created_at?: string
+          id?: string
+          is_test?: boolean
+          moderated_at?: string | null
+          moderation_status?: string
+          publication_consent?: boolean
+          quote?: string
+          session_id?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimonial_candidates_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -1012,7 +1068,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      approved_testimonials: {
+        Row: {
+          attribution: string | null
+          id: string | null
+          quote: string | null
+        }
+        Insert: {
+          attribution?: string | null
+          id?: string | null
+          quote?: string | null
+        }
+        Update: {
+          attribution?: string | null
+          id?: string | null
+          quote?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       capture_email: {
@@ -1176,6 +1249,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_approved_testimonials: {
+        Args: never
+        Returns: {
+          attribution: string
+          id: string
+          quote: string
+        }[]
+      }
       list_roastable_sources: {
         Args: { p_session_id: string }
         Returns: {
@@ -1263,6 +1344,16 @@ export type Database = {
           p_question_variant: string
           p_session_id: string
           p_trigger_source: string
+        }
+        Returns: string
+      }
+      submit_testimonial_candidate: {
+        Args: {
+          p_analysis_id: string
+          p_attribution: string
+          p_publication_consent: boolean
+          p_quote: string
+          p_session_id: string
         }
         Returns: string
       }

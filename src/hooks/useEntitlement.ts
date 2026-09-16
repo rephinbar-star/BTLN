@@ -43,7 +43,7 @@ export function useEntitlement(
       setIsAnonymousOwner(anonOwner);
       if (owner) {
         const { data: paid } = await supabase.rpc("user_has_paid_access", {
-          p_user_id: user!.id,
+          p_user_id: user.id,
           p_analysis_id: analysisId,
         });
         if (cancelled) return;
