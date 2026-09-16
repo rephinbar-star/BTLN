@@ -170,3 +170,26 @@ SECURITY DEFINER exposure resolved.)
 5. **Live-mode webhook secret** (`STRIPE_WEBHOOK_SECRET_LIVE`) exists but was deliberately never exercised.
 
 **Frontend was not published. No real charges were made.**
+
+---
+
+## 6. Annual subscription — real test-mode checkout through fulfilment (2026-09-16)
+
+| Step | Evidence |
+|---|---|
+| Hosted Stripe **test** Checkout (embedded) completed with card `4242 4242 4242 4242` by synthetic user A (`738e6d55-8fcf-4f45-93a3-bff84edbff7e`) | real checkout, not a fixture |
+| Genuine signed webhook deliveries | `evt_1UGBYPRZ68CcxqGpOn5bJXpu` (`customer.subscription.created`, `processed`), `evt_1UGBYPRZ68CcxqGpWrE8qGaC` (`checkout.session.completed`, `processed`); unrelated events recorded as `ignored` |
+| Entitlement | `user_subscriptions`: tier `annual`, status `active`, period `2026-09-16` → `2027-09-16`, `cancel_at_period_end = false` |
+| UI + reopen | `/account` shows the annual membership; still shown after a full page reload |
+
+### Pricing discrepancy found — owner decision required
+
+The sandbox price with lookup key `BTLN_annual` is **7999 cents ($79.99/year)**
+(`price_1TjBu6RZ68CcxqGptJtDzqxL`, test mode). The site advertises **$49.99/year**
+(`src/pages/Pricing.tsx`, `src/components/PaywallBlur.tsx`, `src/pages/Account.tsx` label
+"Subscribed $49.99/Year", the Offer JSON-LD in `index.html` and `src/pages/Pricing.tsx`, and both
+comparison pages). The charged amount in the test checkout was 7999.
+
+Nothing was changed: the instruction is not to alter existing prices, and the correct resolution is a
+business decision — either the Stripe price or the published copy must move. Until then the published annual
+price is not truthful and this is a launch blocker for the pricing page.
