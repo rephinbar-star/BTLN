@@ -24,18 +24,12 @@ export default function BrandonCompare() {
       </p>
 
       <section className="mt-10">
-        <h2 className="text-xl font-medium">What What Brandon Thinks does well</h2>
-        <ul className="mt-3 list-disc space-y-2 pl-5 text-[16px] leading-relaxed text-muted-foreground">
-          <li>A strong, consistent voice — the report is entertaining as well as analytical, and its
-            awards and per-member sections are built to be screenshotted.</li>
-          <li>A free preview of the start of your first report, with no card needed to reach it.</li>
-          <li>Its own Mac app for exporting iMessage conversations (Apple Silicon, M1 or later).</li>
-          <li>Reports can be written in English, French or Spanish, from a chat in any language.</li>
-          <li>A follow-up mechanism: every report ends with a way to ask a further question about the
-            same chat.</li>
-          <li>Published legal identity, a named support address, and a dated privacy policy with
-            explicit retention periods (uploads deleted within seven days of the most recent report).</li>
-        </ul>
+        <p className="text-[17px] leading-relaxed">
+          <strong>
+            What Brandon Thinks is an entertainment novelty. BetweenTheLines is a relationship
+            decision support tool that&rsquo;s based on modern psychology concepts and frameworks.
+          </strong>
+        </p>
       </section>
 
       <section className="mt-10">
