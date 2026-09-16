@@ -23,7 +23,7 @@ export default function RizzCompare() {
         Every Deep Read returns the same framework-based sections: attachment-style signals for each
         person and a Gottman &ldquo;Four Horsemen&rdquo; check for criticism, contempt, defensiveness
         and stonewalling, tied to the messages they came from. These are interpretations of
-        communication patterns, not a clinical assessment, diagnosis or validated psychological test.
+        communication patterns, using modern psychology concepts and frameworks.
       </p>
 
 

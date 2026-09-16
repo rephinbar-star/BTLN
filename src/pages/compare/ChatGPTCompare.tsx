@@ -23,8 +23,7 @@ export default function ChatGPTCompare() {
         Every Deep Read returns the same framework-based sections: attachment-style signals for each
         person and a Gottman &ldquo;Four Horsemen&rdquo; check for criticism, contempt, defensiveness
         and stonewalling, each tied to the messages it came from. These are interpretations of
-        communication patterns in the text you supplied. They are not a clinical assessment, not a
-        diagnosis, and not a validated psychological test.
+        communication patterns, using modern psychology concepts and frameworks.
       </p>
       <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">
         ChatGPT is a general-purpose assistant. It can apply any framework you describe to a
