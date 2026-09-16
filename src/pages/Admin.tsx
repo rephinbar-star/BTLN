@@ -27,73 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-
-const ADMIN_AUTH_KEY = "chemistry_admin_authed";
-const ADMIN_PWD_KEY = "chemistry_admin_pwd";
-
-/* ---------------- Password gate ---------------- */
-
-const PasswordGate = ({ onSuccess }: { onSuccess: () => void }) => {
-  const [pwd, setPwd] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: invokeErr } = await supabase.functions.invoke(
-        "verify-admin-password",
-        { body: { password: pwd } },
-      );
-      if (invokeErr) throw invokeErr;
-      if (data?.ok) {
-        sessionStorage.setItem(ADMIN_AUTH_KEY, "true");
-        sessionStorage.setItem(ADMIN_PWD_KEY, pwd);
-        onSuccess();
-      } else {
-        setError("Incorrect password");
-        setPwd("");
-      }
-    } catch {
-      setError("Could not verify password. Try again.");
-      setPwd("");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-5">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-sm"
-      >
-            <h1 className="text-xl font-semibold tracking-tight">BetweenTheLines™ admin</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Enter the admin password to continue.
-        </p>
-        <div className="mt-5 space-y-2">
-          <Label htmlFor="admin-pwd">Password</Label>
-          <Input
-            id="admin-pwd"
-            type="password"
-            autoFocus
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-            disabled={loading}
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <Button type="submit" className="mt-5 w-full" disabled={loading || !pwd}>
-          {loading ? "Checking…" : "Continue"}
-        </Button>
-      </form>
-    </div>
-  );
-};
+import { useAuth } from "@/hooks/useAuth";
 
 /* ---------------- Helpers ---------------- */
 
@@ -210,7 +144,7 @@ const TestimonialsSection = ({ testimonials, onRefresh }: { testimonials: Testim
   const moderate = async (id: string, status: TestimonialRow["moderation_status"]) => {
     setBusyId(id);
     const { data, error } = await supabase.functions.invoke("admin-testimonials", {
-      body: { action: "moderate", id, status, password: sessionStorage.getItem(ADMIN_PWD_KEY) },
+      body: { action: "moderate", id, status },
     });
     setBusyId(null);
     if (!error && data?.updated) onRefresh();
@@ -281,7 +215,7 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
       .limit(5000);
 
     const testimonialsP = supabase.functions.invoke("admin-testimonials", {
-      body: { action: "list", password: sessionStorage.getItem(ADMIN_PWD_KEY) },
+      body: { action: "list" },
     });
     const [evRes, anRes, shRes, testRes] = await Promise.all([eventsP, analysesP, sharesP, testimonialsP]);
 
@@ -1391,21 +1325,14 @@ const UsersSection = () => {
 /* ---------------- Page ---------------- */
 
 const Admin = () => {
-  const [authed, setAuthed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem(ADMIN_AUTH_KEY) === "true";
-  });
-
-  if (!authed) {
-    return <PasswordGate onSuccess={() => setAuthed(true)} />;
-  }
+  const { user, loading, signOut } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Checking access…</div>;
+  if (!user) return <div className="flex min-h-screen items-center justify-center px-5"><div className="max-w-sm text-center"><h1 className="text-xl font-semibold">Administrator sign-in required</h1><Button asChild className="mt-5"><Link to="/auth?mode=signin&return_to=%2Fadmin">Sign in</Link></Button></div></div>;
 
   return (
     <Dashboard
       onSignOut={() => {
-        sessionStorage.removeItem(ADMIN_AUTH_KEY);
-        sessionStorage.removeItem(ADMIN_PWD_KEY);
-        setAuthed(false);
+        void signOut();
       }}
     />
   );

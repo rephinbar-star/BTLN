@@ -27,7 +27,7 @@ async function unlockAnalysisForUser(analysisId?: string | null, userId?: string
     .update({ is_paid: true })
     .eq("id", analysisId)
     .eq("user_id", userId);
-  if (error) console.error("analyses subscription unlock error:", error.message);
+  if (error) throw new Error(`analyses unlock failed: ${error.message}`);
 }
 
 async function logWebhookEvent(eventName: string, metadata: Record<string, unknown>) {
@@ -58,8 +58,7 @@ type AuditEntry = {
 };
 
 async function recordAudit(entry: AuditEntry) {
-  try {
-    const row = {
+  const row = {
       provider: "stripe",
       environment: entry.environment,
       event_id: entry.event_id ?? null,
@@ -74,14 +73,12 @@ async function recordAudit(entry: AuditEntry) {
       changes: entry.changes ?? {},
       error_message: entry.error_message ?? null,
       payload_summary: entry.payload_summary ?? {},
-    };
-    if (entry.event_id) {
-      await getSupabase().from("webhook_events").upsert(row, { onConflict: "event_id" });
-    } else {
-      await getSupabase().from("webhook_events").insert(row);
-    }
-  } catch (e) {
-    console.error("webhook_events insert failed:", (e as Error).message);
+  };
+  const result = entry.event_id
+    ? await getSupabase().from("webhook_events").upsert(row, { onConflict: "event_id" })
+    : await getSupabase().from("webhook_events").insert(row);
+  if (result.error) {
+    throw new Error(`webhook audit write failed: ${result.error.message}`);
   }
 }
 
@@ -91,7 +88,7 @@ async function unlockGroupReadForUser(groupReadId: string, userId: string) {
     .update({ access_source: "one_time" })
     .eq("id", groupReadId)
     .eq("user_id", userId);
-  if (error) console.error("group_reads unlock error:", error.message);
+  if (error) throw new Error(`group_reads unlock failed: ${error.message}`);
 }
 
 async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: string) {
@@ -276,7 +273,7 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv, event
     },
     { onConflict: "stripe_subscription_id" },
   );
-  if (error) console.error("user_subscriptions upsert error:", error.message);
+  if (error) throw new Error(`user_subscriptions upsert failed: ${error.message}`);
   if (!error && isAccessGrantingStatus(subscription.status)) {
     await unlockAnalysisForUser(analysisId, userId);
   }
@@ -289,13 +286,13 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv, event
     user_id: userId,
     analysis_id: analysisId ?? null,
     amount_cents: item?.price?.unit_amount ?? null,
-    status: error ? "error" : "processed",
-    error_message: error?.message ?? null,
+    status: "processed",
+    error_message: null,
     changes: {
-      user_subscriptions: error ? "failed" : "upserted",
+      user_subscriptions: "upserted",
       tier,
       status: subscription.status,
-      analyses_is_paid: !error && isAccessGrantingStatus(subscription.status) && analysisId ? true : false,
+      analyses_is_paid: isAccessGrantingStatus(subscription.status) && analysisId ? true : false,
     },
     payload_summary: {
       lookup_key: lookupKey,
@@ -310,7 +307,7 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv, even
     .from("user_subscriptions")
     .update({ status: "canceled", updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", subscription.id);
-  if (error) console.error("user_subscriptions cancel error:", error.message);
+  if (error) throw new Error(`user_subscriptions cancel failed: ${error.message}`);
   await recordAudit({
     environment: env,
     event_id: eventId,
@@ -318,9 +315,9 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv, even
     stripe_subscription_id: subscription.id,
     stripe_customer_id: subscription.customer,
     user_id: subscription.metadata?.userId ?? null,
-    status: error ? "error" : "processed",
-    error_message: error?.message ?? null,
-    changes: { user_subscriptions: error ? "failed" : "canceled" },
+    status: "processed",
+    error_message: null,
+    changes: { user_subscriptions: "canceled" },
     payload_summary: { status: "canceled" },
   });
 }
