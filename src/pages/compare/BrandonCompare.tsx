@@ -59,8 +59,8 @@ export default function BrandonCompare() {
                 <td className="py-3 font-semibold">
                   Attachment-style signals, the Gottman Four Horsemen check and Five Love Languages
                   discovery are part of every Deep Read, without you having to become a psychologist or
-                  prompt engineer &mdash; interpretations of communication patterns, not a clinical
-                  assessment.
+                  prompt engineer &mdash; interpretations of communication patterns, using modern
+                  psychology concepts and frameworks.
                 </td>
               </tr>
               <tr className="border-b border-border">
