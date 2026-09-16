@@ -12,9 +12,8 @@ import { CoupleTypeCard, type CoupleTypeCardRelationship } from "@/components/Co
 import { ShareableCard } from "@/components/chemistry/ShareableCard";
 import { DeepReport, FreeInsights } from "@/pages/Report";
 import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
-const ADMIN_AUTH_KEY = "chemistry_admin_authed";
-const ADMIN_PWD_KEY = "chemistry_admin_pwd";
 
 const DEFAULT_MODELS = [
   "anthropic/claude-sonnet-4-6",
@@ -73,6 +72,7 @@ const jsonBadge = (r: { ok?: boolean; jsonError?: string | null; parse_cleaned?:
 
 const AdminCompare = () => {
   const navigate = useNavigate();
+  const { isAdmin, checking: checkingAdmin } = useAdminRole();
   const [conversation, setConversation] = useState(SAMPLE_CONVERSATION);
   const [name1, setName1] = useState("Alex");
   const [name2, setName2] = useState("Sam");
@@ -100,10 +100,11 @@ const AdminCompare = () => {
   }, [fullOpen]);
 
   useEffect(() => {
-    if (sessionStorage.getItem(ADMIN_AUTH_KEY) !== "true") {
+    if (checkingAdmin) return;
+    if (!isAdmin) {
       navigate(`/admin?return_to=${encodeURIComponent("/admin/compare")}`, { replace: true });
     }
-  }, [navigate]);
+  }, [navigate, isAdmin, checkingAdmin]);
 
   const toggle = (m: string) =>
     setSelected((prev) => (prev.includes(m) ? prev.filter((x) => x !== m) : [...prev, m]));
@@ -146,8 +147,7 @@ const AdminCompare = () => {
   const modelsWithResults = selected.filter((m) => results[m]);
 
   const run = async () => {
-    const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
-    if (!password) {
+    if (!isAdmin) {
       navigate(`/admin?return_to=${encodeURIComponent("/admin/compare")}`, { replace: true });
       return;
     }
@@ -159,7 +159,7 @@ const AdminCompare = () => {
       selected.map(async (model) => {
         try {
           const { data, error: fnErr } = await supabase.functions.invoke("compare-model", {
-            body: { adminPassword: password, model, conversation, context },
+            body: { model, conversation, context },
           });
           if (fnErr) throw fnErr;
           setResults((prev) => ({ ...prev, [model]: { state: "done", ...(data ?? {}) } }));

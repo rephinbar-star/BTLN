@@ -68,12 +68,16 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
 
       // Keep legacy writes for backwards-compat with existing dashboards.
       if (analysisId) {
-        await supabase.rpc("submit_feedback", {
+        await (supabase.rpc as never as (
+          name: string,
+          args: Record<string, unknown>,
+        ) => Promise<unknown>)("submit_feedback", {
           p_analysis_id: analysisId,
           p_score: score,
           p_text: trimmedText || null,
           p_email: trimmedEmail || null,
           p_question_variant: questionVariant,
+          p_session_id: getSessionId(),
         });
       } else {
         await (supabase as any).from("general_feedback").insert([

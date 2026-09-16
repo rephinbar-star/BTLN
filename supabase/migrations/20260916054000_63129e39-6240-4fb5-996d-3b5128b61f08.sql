@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.save_analysis_recipient_perspective(text, integer, text) FROM PUBLIC, anon;

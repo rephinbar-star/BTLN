@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Loader2, Mail, RotateCw, Trash2, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useAdminRole } from "@/hooks/useAdminRole";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -71,13 +72,8 @@ const Account = () => {
   const [displayName, setDisplayName] = useState("");
   const [nameBusy, setNameBusy] = useState(false);
   const [reportToDelete, setReportToDelete] = useState<string | null>(null);
-  const [isAdmin] = useState<boolean>(() => {
-    try {
-      return sessionStorage.getItem("chemistry_admin_authed") === "true";
-    } catch {
-      return false;
-    }
-  });
+  const { isAdmin: adminRole } = useAdminRole();
+  const isAdmin = adminRole === true;
   const [deletingReport, setDeletingReport] = useState(false);
   const [membership, setMembership] = useState<MembershipStatus>({ kind: "none" });
   const [lastSync, setLastSync] = useState<string | null>(null);
