@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION public.list_approved_testimonials() TO anon, authenticated;

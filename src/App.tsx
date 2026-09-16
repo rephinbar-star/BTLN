@@ -39,6 +39,8 @@ import IMessageGuide from "./pages/guides/IMessage";
 import Sample from "./pages/Sample";
 import MixedSignalsGuide from "./pages/guides/MixedSignals";
 import GroupCommunicationGuide from "./pages/guides/GroupCommunication";
+import ChatGPTCompare from "./pages/compare/ChatGPTCompare";
+import RizzCompare from "./pages/compare/RizzCompare";
 import OAuthConsent from "./pages/OAuthConsent";
 import { AuthProvider } from "./hooks/useAuth";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
@@ -111,6 +113,8 @@ const App = () => (
           <Route path="/sample" element={<Sample />} />
           <Route path="/guides/mixed-signal-texts" element={<MixedSignalsGuide />} />
           <Route path="/guides/group-chat-communication" element={<GroupCommunicationGuide />} />
+          <Route path="/compare/chatgpt-vs-betweenthelines" element={<ChatGPTCompare />} />
+          <Route path="/compare/rizz-vs-betweenthelines" element={<RizzCompare />} />
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />

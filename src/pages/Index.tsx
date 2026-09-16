@@ -3,6 +3,7 @@ import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { FinalCta } from "@/components/chemistry/FinalCta";
 import { Footer } from "@/components/chemistry/Footer";
+import { Testimonials } from "@/components/marketing/Testimonials";
 import { Header } from "@/components/chemistry/Header";
 import { Hero } from "@/components/chemistry/Hero";
 import { DecodeHero } from "@/components/chemistry/DecodeHero";
@@ -92,6 +93,7 @@ const Index = () => {
         <HowItWorks />
         <WhatYouGet />
         <SampleSection />
+        <Testimonials />
         <FinalCta />
       </main>
       <Footer />
