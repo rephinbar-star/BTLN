@@ -93,11 +93,6 @@ export default function BrandonCompare() {
                 <td className="py-3 pr-4">Privacy policy: uploads auto-deleted within seven days of the most recent report, 48 hours if abandoned; reports kept until you delete them. <strong>Until deletion, your text messages are exposed to hacking.</strong></td>
                 <td className="py-3">Raw pasted conversations are not persisted for Quick Take; imported files are processed and not stored as raw transcripts; you can delete reports and your account. <strong>Since messages are deleted instantly, there&rsquo;s no risk anyone will ever get their eyes on your text exchanges.</strong></td>
               </tr>
-              <tr>
-                <th scope="row" className="py-3 pr-4 font-normal text-foreground">Price</th>
-                <td className="py-3 pr-4">Free preview of the first report, then pay per report. No price is published on the pages we reviewed, so we are not quoting a figure.</td>
-                <td className="py-3">Free first read, $4.99 for a single report, $9.99/month or $49.99/year for full-report access.</td>
-              </tr>
             </tbody>
           </table>
         </div>
