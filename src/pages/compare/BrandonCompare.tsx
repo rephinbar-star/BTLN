@@ -56,7 +56,12 @@ export default function BrandonCompare() {
                   Frameworks included in the standard report
                 </th>
                 <td className="py-3 pr-4">Not described on the pages we reviewed; the documented output is Brandon&rsquo;s verdict and per-person opinions.</td>
-                <td className="py-3">Attachment-style signals and the Gottman Four Horsemen check are part of every Deep Read &mdash; interpretations of communication patterns, not a clinical assessment.</td>
+                <td className="py-3 font-semibold">
+                  Attachment-style signals, the Gottman Four Horsemen check and Five Love Languages
+                  discovery are part of every Deep Read, without you having to become a psychologist or
+                  prompt engineer &mdash; interpretations of communication patterns, not a clinical
+                  assessment.
+                </td>
               </tr>
               <tr className="border-b border-border">
                 <th scope="row" className="py-3 pr-4 font-normal text-foreground">Main job</th>

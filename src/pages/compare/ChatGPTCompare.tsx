@@ -54,9 +54,10 @@ export default function ChatGPTCompare() {
                   Applies whichever framework you ask for in your prompt; no relationship framework is
                   included by default.
                 </td>
-                <td className="py-3">
-                  Attachment-style signals and the Gottman Four Horsemen check are part of every Deep
-                  Read, with no prompt to write.
+                <td className="py-3 font-semibold">
+                  Attachment-style signals, the Gottman Four Horsemen check and Five Love Languages
+                  discovery are part of every Deep Read, without you having to become a psychologist or
+                  prompt engineer.
                 </td>
               </tr>
               <tr className="border-b border-border">
