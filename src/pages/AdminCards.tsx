@@ -8,8 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 import { cn } from "@/lib/utils";
+import { useAdminRole } from "@/hooks/useAdminRole";
 
-const ADMIN_AUTH_KEY = "chemistry_admin_authed";
 const BUCKET = "couple_types";
 const RELATIONSHIPS = ["romantic", "friend", "family"] as const;
 type Relationship = (typeof RELATIONSHIPS)[number];
