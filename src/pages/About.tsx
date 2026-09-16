@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { PublicPage } from "@/components/marketing/PublicPage";
+import { OPERATOR } from "@/config/operator";
 
 
 export default function About() {
@@ -16,6 +17,7 @@ export default function About() {
       <section><h2 className="text-xl font-medium text-foreground">Why use a structured read?</h2><p className="mt-3">A general-purpose chat prompt changes with every question. BetweenTheLines adds guided imports, participant mapping, deterministic counts, the same report structure across reads, access controls, and revocable sharing. Those product differences do not make any interpretation a fact.</p></section>
       <section><h2 className="text-xl font-medium text-foreground">What it does not do</h2><p className="mt-3">It does not diagnose people, prove hidden motives, replace therapy, or know what happened outside the supplied messages. Sparse or ambiguous evidence should produce cautious language and unavailable metrics—not invented certainty.</p></section>
       <section><h2 className="text-xl font-medium text-foreground">Your privacy choices</h2><p className="mt-3">Raw uploaded conversation text is processed for the requested read and is not stored as a reusable transcript. Structured reports may retain selected evidence excerpts. You control report sharing and can delete saved reports.</p></section>
+      <section><h2 className="text-xl font-medium text-foreground">Contact</h2><p className="mt-3">Questions, account or payment help, and privacy requests: <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">{OPERATOR.contactEmail}</a>.</p></section>
     </div>
     <div className="mt-10 flex flex-wrap gap-3"><Button asChild className="rounded-full"><Link to="/sample">Explore a fictional sample</Link></Button><Button asChild variant="outline" className="rounded-full"><Link to="/trust">Read trust & safety</Link></Button></div>
   </PublicPage>;

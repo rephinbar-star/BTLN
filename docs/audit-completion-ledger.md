@@ -144,3 +144,9 @@ Full detail lives in `docs/audit-reconciliation.md`.
 4. A refund / payment-reversal policy.
 5. Confirmation of What Brandon Thinks' canonical domain, if that comparison is
    wanted.
+
+## Support email resolved (2026-09-16)
+- Owner supplied and approved public support email: btlines.info@gmail.com.
+- Set once in `src/config/operator.ts` (`OPERATOR.contactEmail`); all surfaces read from there: footer Contact link, About Contact section, Pricing payment help, Stripe checkout error fallback, Trust (account deletion, security reports), Privacy (data rights, Contact Us), Terms (refunds, Contact). All use `mailto:btlines.info@gmail.com`; no stale `support@betweenthelines.app` remains (verified by search).
+- Organization JSON-LD now emits `contactPoint` (customer support) automatically.
+- Scope: resolves the support-email input only. Legal entity name, registered address, and refund-policy decisions remain owner-blocked. No email was sent and mailbox deliverability was not independently verified.

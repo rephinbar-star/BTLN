@@ -2,6 +2,7 @@ import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe
 import { getStripe, getStripeEnvironment } from "@/lib/stripe";
 import { supabase } from "@/integrations/supabase/client";
 import { useMemo, useState } from "react";
+import { OPERATOR } from "@/config/operator";
 
 interface Props {
   priceId: string;
@@ -69,7 +70,11 @@ export function StripeEmbeddedCheckout({
         className="rounded-xl border border-border bg-muted p-4 text-[13px] text-muted-foreground"
       >
         Checkout is temporarily unavailable. Please try again in a moment, or
-        contact support@betweenthelines.app if the problem persists.
+        contact{" "}
+        <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+          {OPERATOR.contactEmail}
+        </a>{" "}
+        if the problem persists.
       </div>
     );
   }

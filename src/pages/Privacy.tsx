@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import logoUrl from "@/assets/logo.png";
+import { OPERATOR } from "@/config/operator";
 
 export default function Privacy() {
   return (
@@ -106,7 +107,10 @@ export default function Privacy() {
           <h2 className="text-[20px] font-medium">5. Your Rights</h2>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
             You can delete individual reports from your Account page at any time. You may also request
-            deletion of your account and associated data by contacting us. Depending on your jurisdiction,
+            deletion of your account and associated data by emailing{" "}
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
+            </a>. Depending on your jurisdiction,
             you may have additional rights regarding your personal data.
           </p>
         </section>
@@ -155,8 +159,11 @@ export default function Privacy() {
         <section className="mt-10 space-y-3">
           <h2 className="text-[20px] font-medium">9. Contact Us</h2>
           <p className="text-[15px] leading-relaxed text-muted-foreground">
-            If you have questions about this Privacy Policy or your data, please contact us through the
-            Feedback option in the footer.
+            If you have questions about this Privacy Policy or your data, please email us at{" "}
+            <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
+              {OPERATOR.contactEmail}
+            </a>{" "}
+            or use the Feedback option in the footer.
           </p>
         </section>
 

@@ -32,7 +32,8 @@ export const OPERATOR: OperatorIdentity = {
   founderName: "Rephael",
   founderRole: "Founder & Certified Life Coach",
   postalAddress: null,
-  contactEmail: null,
+  // Owner-supplied and approved public support email.
+  contactEmail: "btlines.info@gmail.com",
   profileUrls: [],
 };
 
