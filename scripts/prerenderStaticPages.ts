@@ -7,6 +7,8 @@ const PAGES = [
   { path: "/sample", title: "Conversation Analysis Sample | BetweenTheLines™", description: "Explore a clearly labeled fictional BetweenTheLines report for romantic, friend, or family conversations." },
   { path: "/guides/mixed-signal-texts", title: "How to Read Mixed-Signal Texts | BetweenTheLines™", description: "A careful guide to reading mixed-signal texts without inventing intent, plus a path to Quick Take." },
   { path: "/guides/group-chat-communication", title: "Understand Group Chat Communication | BetweenTheLines™", description: "Learn what a group-chat read can support, from participation balance to unanswered questions and repair attempts." },
+  { path: "/compare/chatgpt-vs-betweenthelines", title: "BetweenTheLines vs ChatGPT for Reading a Chat | BetweenTheLines\u2122", description: "An evidence-based comparison of using ChatGPT directly versus BetweenTheLines for analysing a WhatsApp or iMessage conversation, with sources and dates." },
+  { path: "/compare/rizz-vs-betweenthelines", title: "RIZZ vs BetweenTheLines: Replies or a Read? | BetweenTheLines\u2122", description: "RIZZ suggests what to send next; BetweenTheLines explains the pattern across a conversation. A sourced comparison of the two workflows." },
   {
     path: "/about",
     title: "About BetweenTheLines™ | Private Chat Analysis",
