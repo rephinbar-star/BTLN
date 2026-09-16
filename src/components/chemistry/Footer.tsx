@@ -19,6 +19,7 @@ export const Footer = () => {
           <a href="/trust" className="hover:text-foreground">Trust</a>
           <a href="/privacy" className="hover:text-foreground">Privacy</a>
           <a href="/terms" className="hover:text-foreground">Terms</a>
+          <a href={`mailto:${OPERATOR.contactEmail}`} className="hover:text-foreground">Contact</a>
           <Button
             type="button"
             variant="link"
