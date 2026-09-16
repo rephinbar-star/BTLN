@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Menu } from "lucide-react";
 import { logEvent } from "@/lib/session";
 import { useAuth } from "@/hooks/useAuth";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoUrl from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -46,7 +46,7 @@ export const Header = () => {
     <header className="sticky top-0 z-40 w-full overflow-hidden bg-background/90 backdrop-blur border-b border-border/70">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-1 sm:px-8">
         <Link to="/" className="flex items-center">
-          <img src={logoAsset.url} alt="BetweenTheLines™" className="h-[144px] w-auto object-contain" />
+          <img src={logoUrl} alt="BetweenTheLines™" className="h-[72px] w-auto object-contain sm:h-[96px]" />
         </Link>
         <div className="flex items-center gap-4">
           <nav className="hidden items-center gap-5 md:flex" aria-label="Main navigation">
@@ -61,12 +61,14 @@ export const Header = () => {
           {!loading && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button
+                <Button
+                  type="button"
+                  size="icon"
                   aria-label="Account menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                  className="h-9 w-9 rounded-full text-xs"
                 >
                   {initials}
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
                 <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">

@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoUrl from "@/assets/logo.png";
 
 export default function Privacy() {
   return (
@@ -16,7 +16,7 @@ export default function Privacy() {
       <header className="border-b border-border px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoAsset.url} alt="BetweenTheLines" className="h-12 w-auto" />
+            <img src={logoUrl} alt="BetweenTheLines" className="h-12 w-auto object-contain" />
           </Link>
           <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
             ← Back

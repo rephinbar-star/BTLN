@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoUrl from "@/assets/logo.png";
 
 const ErrorPage = () => {
   const [params] = useSearchParams();
@@ -28,7 +28,7 @@ const ErrorPage = () => {
         <meta name="robots" content="noindex" />
       </Helmet>
       <div className="flex items-center gap-2">
-        <img src={logoAsset.url} alt="BetweenTheLines™" className="h-8 w-auto" />
+        <img src={logoUrl} alt="BetweenTheLines™" className="h-8 w-auto object-contain" />
       </div>
       <h1 className="mt-8 text-[28px] font-medium tracking-tight sm:text-[36px]">
         Something went wrong.
