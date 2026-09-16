@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Check, Loader2, Sparkles } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
@@ -26,14 +27,14 @@ const TIERS: {
     name: "Single report",
     price: "$4.99",
     period: "one-time",
-    description: "Unlock one full analysis and its deep-dive sections.",
+    description: "After you start a Deep Read or Group Read, unlock that specific report.",
     features: [
       "Full report for one conversation",
       "Communication patterns & attachment styles",
       "The Four Horsemen check",
       "Personalized practice plan",
     ],
-    cta: "Unlock a report",
+    cta: "Start a report",
     highlighted: false,
   },
   {
@@ -44,7 +45,7 @@ const TIERS: {
     badge: "Most popular",
     description: "Unlimited analyses, insights, and relationship tracking.",
     features: [
-      "Unlimited analyses",
+      "Unlimited Deep Reads and Group Reads",
       "All deep-dive sections unlocked",
       "Compare reports over time",
       "Cancel anytime",
@@ -60,7 +61,7 @@ const TIERS: {
     badge: "Best value",
     description: "Save 58% with a full year of unlimited access.",
     features: [
-      "Unlimited analyses for a full year",
+      "Unlimited Deep Reads and Group Reads for a year",
       "All deep-dive sections unlocked",
       "Compare reports over time",
       "Priority support",
@@ -77,6 +78,7 @@ const PRODUCT_TO_OPTION: Record<ProductKey, "monthly" | "annual" | "one_time"> =
 };
 
 export default function Pricing() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [pending, setPending] = useState<ProductKey | null>(null);
@@ -85,6 +87,17 @@ export default function Pricing() {
     setPending(priceId);
     logEvent("pricing_cta_clicked", { product_key: priceId });
     track("pricing_cta_clicked", { source: "pricing_page", option: PRODUCT_TO_OPTION[priceId] });
+
+    if (priceId === "BTLN_report_unlock") {
+      navigate("/#input-section");
+      setPending(null);
+      return;
+    }
+    if (!user) {
+      navigate(`/auth?return_to=${encodeURIComponent("/pricing")}`);
+      setPending(null);
+      return;
+    }
 
     const returnUrl = user
       ? `${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`

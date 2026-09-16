@@ -73,7 +73,7 @@ export default function CheckoutReturn() {
           </h1>
           <p className="mt-3 max-w-md text-[15px] text-muted-foreground">
             {groupReadId
-              ? "Your single group report is unlocked. Add the chat again on the Group Read page and we'll run it — we never keep a copy of your conversation."
+              ? "Your single group report is unlocked. Return to Group Read and add the chat again; the paid target is kept for that retry."
               : "Your full report is unlocked. Thanks for supporting BetweenTheLines™."}
           </p>
           <Link

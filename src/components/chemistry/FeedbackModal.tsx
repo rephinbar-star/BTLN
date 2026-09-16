@@ -113,14 +113,11 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
         trigger_source: triggerSource,
       });
       
-      if (analysisId && consent) {
-        await supabase.rpc("submit_testimonial_candidate", {
-          p_analysis_id: analysisId,
-          p_session_id: getSessionId(),
-          p_quote: trimmedText || "Great analysis!",
-          p_attribution: attribution.trim() || "Anonymous",
-          p_publication_consent: true,
+      if (analysisId && consent && trimmedText) {
+        const { error } = await supabase.functions.invoke("submit-testimonial", {
+          body: { analysis_id: analysisId, session_id: getSessionId(), quote: trimmedText, attribution: attribution.trim() || "Anonymous", publication_consent: true },
         });
+        if (error) throw error;
       }
 
       toast("Thanks. Your feedback helps.");
@@ -226,10 +223,10 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
                 htmlFor="testimonial-consent"
                 className="text-[13px] font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
               >
-                Make my feedback public (anonymous)
+                Allow this written feedback to be considered for publication
               </Label>
               <p className="text-[12px] text-muted-foreground">
-                Help others by sharing your results anonymously.
+                Unchecked by default. Nothing is published automatically; every quote is reviewed first.
               </p>
             </div>
           </div>
@@ -244,7 +241,7 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
                 type="text"
                 value={attribution}
                 onChange={(e) => setAttribution(e.target.value)}
-                placeholder="e.g. Anonymous, Sarah (28), or J."
+                placeholder="Anonymous, initials, or a pseudonym"
                 className="mt-1.5 w-full rounded-lg border border-border bg-background px-3 py-2 text-[13px] focus:border-foreground focus:outline-none"
               />
             </div>
@@ -261,7 +258,7 @@ export const FeedbackModal = ({ analysisId, open, onClose, triggerSource = "manu
           </button>
           <button
             type="button"
-            disabled={submitting || score === null}
+            disabled={submitting || score === null || (consent && !text.trim())}
             onClick={handleSubmit}
             className="rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-60"
           >
