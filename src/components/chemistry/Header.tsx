@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { Menu } from "lucide-react";
 import { logEvent } from "@/lib/session";
 import { useAuth } from "@/hooks/useAuth";
 import logoAsset from "@/assets/logo.png.asset.json";
@@ -46,13 +47,22 @@ export const Header = () => {
         <Link to="/" className="flex items-center">
           <img src={logoAsset.url} alt="BetweenTheLines™" className="h-[144px] w-auto object-contain" />
         </Link>
-        <div className="flex items-center gap-6"><Link to="/about" className="hidden text-sm font-medium text-muted-foreground hover:text-foreground md:block">About</Link>
+        <div className="flex items-center gap-4">
+          <nav className="hidden items-center gap-5 md:flex" aria-label="Main navigation">
+            <Link to="/sample" className="text-sm font-medium text-muted-foreground hover:text-foreground">Sample</Link>
+            <Link to="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground">Pricing</Link>
+            <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground">About</Link>
+          </nav>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><button type="button" aria-label="Open navigation" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border md:hidden"><Menu className="h-4 w-4" /></button></DropdownMenuTrigger>
+            <DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => navigate("/sample")}>Sample</DropdownMenuItem><DropdownMenuItem onSelect={() => navigate("/pricing")}>Pricing</DropdownMenuItem><DropdownMenuItem onSelect={() => navigate("/about")}>About</DropdownMenuItem><DropdownMenuItem onSelect={() => navigate("/types")}>Pair types</DropdownMenuItem></DropdownMenuContent>
+          </DropdownMenu>
           {!loading && user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   aria-label="Account menu"
-                  className="flex h-9 w-9 items-center justify-center rounded-full bg-[#4D5C3E] text-xs font-medium text-white transition-opacity hover:opacity-90"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-medium text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   {initials}
                 </button>

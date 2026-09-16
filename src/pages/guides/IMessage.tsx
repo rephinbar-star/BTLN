@@ -1,49 +1,8 @@
-import { Helmet } from "react-helmet-async";
-import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
-
-const IMessageGuide = () => {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Helmet>
-        <title>How to Export iMessage Chats — BetweenTheLines™</title>
-        <meta
-          name="description"
-          content="Learn how to export your iMessage chat history to get an AI relationship analysis with BetweenTheLines™."
-        />
-      </Helmet>
-      <Header />
-      <main className="mx-auto max-w-3xl px-5 py-20 sm:px-8">
-        <h1 className="text-4xl font-medium tracking-tight sm:text-5xl">How to Export iMessage Chats</h1>
-        <div className="mt-10 space-y-8 text-[17px] leading-relaxed text-muted-foreground">
-          <p>
-            Apple doesn't provide a direct "Export Chat" button for iMessage on iPhone, but there are a
-            few simple ways to get your messages into BetweenTheLines™.
-          </p>
-
-          <section>
-            <h2 className="text-xl font-medium text-foreground">Option 1: Copy and Paste (Recommended)</h2>
-            <p className="mt-2">
-              The easiest way is to select the messages you want to analyze, copy them, and paste them
-              directly into our input field on the homepage.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-medium text-foreground">Option 2: Using a Mac</h2>
-            <ol className="mt-4 list-decimal space-y-3 pl-5">
-              <li>Open the Messages app on your Mac.</li>
-              <li>Select the conversation you want to export.</li>
-              <li>Go to <strong>File > Print...</strong></li>
-              <li>Click the PDF dropdown in the bottom left and select <strong>Save as PDF</strong>.</li>
-              <li>You can then upload this PDF to our site.</li>
-            </ol>
-          </section>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  );
-};
-
-export default IMessageGuide;
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { PublicPage } from "@/components/marketing/PublicPage";
+export default function IMessageGuide() { return <PublicPage title="Import iMessage TXT or CSV | BetweenTheLines™" description="Use a supported plain-text or CSV iMessage export with BetweenTheLines; binary chat.db files and PDFs are not accepted." path="/guides/imessage">
+<p className="text-sm text-muted-foreground">Supported import guide</p><h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">Prepare an iMessage export</h1><p className="mt-5 text-[17px] leading-relaxed text-muted-foreground">Apple does not provide a direct TXT export button in Messages. BetweenTheLines accepts plain-text or CSV exports whose rows clearly identify sender, message, and—when available—time.</p>
+<section className="mt-10"><h2 className="text-xl font-medium">Formats that work</h2><ul className="mt-4 list-disc space-y-3 pl-5 text-muted-foreground"><li>TXT with attributed messages, one entry at a time; multiline bodies are supported.</li><li>CSV with recognizable sender and message columns, plus an optional timestamp column.</li><li>Manual attributed paste for a smaller selection.</li></ul></section>
+<section className="mt-8 rounded-lg border border-border bg-card p-6"><h2 className="text-lg font-medium">Formats that do not work</h2><p className="mt-2 text-muted-foreground">Do not upload Apple’s binary <code>chat.db</code>, an executable, a PDF, or an encrypted archive. The importer rejects those formats clearly rather than pretending to read them. Use a reputable export utility locally to produce TXT or CSV, and review the file before uploading.</p></section>
+<Button asChild className="mt-8 rounded-full"><Link to="/group">Import TXT or CSV</Link></Button></PublicPage>; }

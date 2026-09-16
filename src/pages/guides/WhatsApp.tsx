@@ -1,51 +1,8 @@
-import { Helmet } from "react-helmet-async";
-import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
-
-const WhatsAppGuide = () => {
-  return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Helmet>
-        <title>How to Export WhatsApp Chats — BetweenTheLines™</title>
-        <meta
-          name="description"
-          content="Learn how to export your WhatsApp chat history to get an AI relationship analysis with BetweenTheLines™."
-        />
-      </Helmet>
-      <Header />
-      <main className="mx-auto max-w-3xl px-5 py-20 sm:px-8">
-        <h1 className="text-4xl font-medium tracking-tight sm:text-5xl">How to Export WhatsApp Chats</h1>
-        <div className="mt-10 space-y-8 text-[17px] leading-relaxed text-muted-foreground">
-          <section>
-            <h2 className="text-xl font-medium text-foreground">On iOS</h2>
-            <ol className="mt-4 list-decimal space-y-3 pl-5">
-              <li>Open the chat you want to analyze.</li>
-              <li>Tap on the contact's name at the top.</li>
-              <li>Scroll down and tap <strong>Export Chat</strong>.</li>
-              <li>Choose <strong>Without Media</strong>.</li>
-              <li>Save the .txt file to your phone or send it to yourself.</li>
-            </ol>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-medium text-foreground">On Android</h2>
-            <ol className="mt-4 list-decimal space-y-3 pl-5">
-              <li>Open the chat you want to analyze.</li>
-              <li>Tap the three dots (menu) in the top right.</li>
-              <li>Tap <strong>More</strong>, then <strong>Export Chat</strong>.</li>
-              <li>Choose <strong>Without Media</strong>.</li>
-              <li>Save the .txt file to your device.</li>
-            </ol>
-          </section>
-
-          <p className="mt-8">
-            Once you have your file, simply return to the homepage and upload it to get your analysis.
-          </p>
-        </div>
-      </main>
-      <Footer />
-    </div>
-  );
-};
-
-export default WhatsAppGuide;
+import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { PublicPage } from "@/components/marketing/PublicPage";
+export default function WhatsAppGuide() { return <PublicPage title="Import a WhatsApp Chat | BetweenTheLines™" description="Export a WhatsApp chat without media, preview participants and dates, then route two-person chats to Deep Read or groups to Group Read." path="/guides/whatsapp">
+<p className="text-sm text-muted-foreground">Supported import guide</p><h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">Import a WhatsApp chat</h1><p className="mt-5 text-[17px] leading-relaxed text-muted-foreground">BetweenTheLines reads WhatsApp text exports from iOS and Android, including common localized dates, 12/24-hour clocks, multiline messages, UTF-8/BOM, and ZIP exports containing a transcript.</p>
+<div className="mt-10 grid gap-8 sm:grid-cols-2"><section><h2 className="text-xl font-medium">iPhone</h2><ol className="mt-4 list-decimal space-y-3 pl-5 text-muted-foreground"><li>Open the chat and tap the contact or group name.</li><li>Tap <strong>Export Chat</strong>.</li><li>Choose <strong>Without Media</strong>.</li><li>Save or share the TXT/ZIP export.</li></ol></section><section><h2 className="text-xl font-medium">Android</h2><ol className="mt-4 list-decimal space-y-3 pl-5 text-muted-foreground"><li>Open the chat and tap the menu.</li><li>Choose <strong>More</strong>, then <strong>Export chat</strong>.</li><li>Choose <strong>Without media</strong>.</li><li>Save the TXT/ZIP export.</li></ol></section></div>
+<section className="mt-10 rounded-lg border border-border bg-card p-6"><h2 className="text-lg font-medium">Before analysis</h2><p className="mt-2 text-muted-foreground">You choose the transcript when a ZIP contains candidates, review participants, merge aliases, exclude bots or people, decide how unknown times are handled, and confirm the relationship category. Two-person chats continue to Deep Read; 3–15 participants continue to Group Read.</p></section>
+<div className="mt-8 flex gap-3"><Button asChild className="rounded-full"><Link to="/group">Import an export</Link></Button><Button asChild variant="outline" className="rounded-full"><Link to="/trust">Privacy details</Link></Button></div></PublicPage>; }
