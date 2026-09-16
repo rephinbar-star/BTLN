@@ -72,6 +72,7 @@ const jsonBadge = (r: { ok?: boolean; jsonError?: string | null; parse_cleaned?:
 
 const AdminCompare = () => {
   const navigate = useNavigate();
+  const { isAdmin, checking: checkingAdmin } = useAdminRole();
   const [conversation, setConversation] = useState(SAMPLE_CONVERSATION);
   const [name1, setName1] = useState("Alex");
   const [name2, setName2] = useState("Sam");
