@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoUrl from "@/assets/logo.png";
 
 export default function Terms() {
   return (
@@ -16,7 +16,7 @@ export default function Terms() {
       <header className="border-b border-border px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoAsset.url} alt="BetweenTheLines" className="h-12 w-auto" />
+            <img src={logoUrl} alt="BetweenTheLines" className="h-12 w-auto object-contain" />
           </Link>
           <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
             ← Back
@@ -191,7 +191,7 @@ export default function Terms() {
         </section>
 
         <p className="mt-12 text-[13px] text-muted-foreground">
-          Last updated: June 2026. This page describes current terms and may be updated as the product evolves.
+          Last updated: September 16, 2026. This page describes current terms and may be updated as the product evolves.
         </p>
       </main>
     </div>

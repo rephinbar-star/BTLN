@@ -27,7 +27,7 @@ async function unlockAnalysisForUser(analysisId?: string | null, userId?: string
     .update({ is_paid: true })
     .eq("id", analysisId)
     .eq("user_id", userId);
-  if (error) console.error("analyses subscription unlock error:", error.message);
+  if (error) throw new Error(`analyses unlock failed: ${error.message}`);
 }
 
 async function logWebhookEvent(eventName: string, metadata: Record<string, unknown>) {
@@ -58,8 +58,7 @@ type AuditEntry = {
 };
 
 async function recordAudit(entry: AuditEntry) {
-  try {
-    await getSupabase().from("webhook_events").insert({
+  const row = {
       provider: "stripe",
       environment: entry.environment,
       event_id: entry.event_id ?? null,
@@ -74,9 +73,12 @@ async function recordAudit(entry: AuditEntry) {
       changes: entry.changes ?? {},
       error_message: entry.error_message ?? null,
       payload_summary: entry.payload_summary ?? {},
-    });
-  } catch (e) {
-    console.error("webhook_events insert failed:", (e as Error).message);
+  };
+  const result = entry.event_id
+    ? await getSupabase().from("webhook_events").upsert(row, { onConflict: "event_id" })
+    : await getSupabase().from("webhook_events").insert(row);
+  if (result.error) {
+    throw new Error(`webhook audit write failed: ${result.error.message}`);
   }
 }
 
@@ -86,7 +88,7 @@ async function unlockGroupReadForUser(groupReadId: string, userId: string) {
     .update({ access_source: "one_time" })
     .eq("id", groupReadId)
     .eq("user_id", userId);
-  if (error) console.error("group_reads unlock error:", error.message);
+  if (error) throw new Error(`group_reads unlock failed: ${error.message}`);
 }
 
 async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: string) {
@@ -146,6 +148,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
       );
       if (gErr) throw new Error(`group_read_unlocks upsert failed: ${gErr.message}`);
       await unlockGroupReadForUser(groupReadId, userId);
+      await logWebhookEvent("purchase_completed", { product: "group_read", amount_cents: amount, environment: env });
       await recordAudit({
         environment: env,
         event_id: eventId,
@@ -190,6 +193,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
     );
     if (insertError) throw new Error(`one_time_unlocks upsert failed: ${insertError.message}`);
     await unlockAnalysisForUser(analysisId, userId);
+    await logWebhookEvent("purchase_completed", { product: "deep_read", amount_cents: amount, environment: env });
     await recordAudit({
       environment: env,
       event_id: eventId,
@@ -269,7 +273,7 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv, event
     },
     { onConflict: "stripe_subscription_id" },
   );
-  if (error) console.error("user_subscriptions upsert error:", error.message);
+  if (error) throw new Error(`user_subscriptions upsert failed: ${error.message}`);
   if (!error && isAccessGrantingStatus(subscription.status)) {
     await unlockAnalysisForUser(analysisId, userId);
   }
@@ -282,13 +286,13 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv, event
     user_id: userId,
     analysis_id: analysisId ?? null,
     amount_cents: item?.price?.unit_amount ?? null,
-    status: error ? "error" : "processed",
-    error_message: error?.message ?? null,
+    status: "processed",
+    error_message: null,
     changes: {
-      user_subscriptions: error ? "failed" : "upserted",
+      user_subscriptions: "upserted",
       tier,
       status: subscription.status,
-      analyses_is_paid: !error && isAccessGrantingStatus(subscription.status) && analysisId ? true : false,
+      analyses_is_paid: isAccessGrantingStatus(subscription.status) && analysisId ? true : false,
     },
     payload_summary: {
       lookup_key: lookupKey,
@@ -303,7 +307,7 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv, even
     .from("user_subscriptions")
     .update({ status: "canceled", updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", subscription.id);
-  if (error) console.error("user_subscriptions cancel error:", error.message);
+  if (error) throw new Error(`user_subscriptions cancel failed: ${error.message}`);
   await recordAudit({
     environment: env,
     event_id: eventId,
@@ -311,9 +315,9 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv, even
     stripe_subscription_id: subscription.id,
     stripe_customer_id: subscription.customer,
     user_id: subscription.metadata?.userId ?? null,
-    status: error ? "error" : "processed",
-    error_message: error?.message ?? null,
-    changes: { user_subscriptions: error ? "failed" : "canceled" },
+    status: "processed",
+    error_message: null,
+    changes: { user_subscriptions: "canceled" },
     payload_summary: { status: "canceled" },
   });
 }
@@ -325,15 +329,19 @@ Deno.serve(async (req) => {
     console.error("Webhook invalid env:", rawEnv);
     return new Response(JSON.stringify({ received: true, ignored: "invalid env" }), { status: 200, headers: { "Content-Type": "application/json" } });
   }
+  let eventId: string | null = null;
+  let eventType = "unknown";
   try {
     const event = await verifyWebhook(req, rawEnv);
-    const { data: prior } = await getSupabase()
-      .from("webhook_events")
-      .select("id")
-      .eq("event_id", event.id)
-      .eq("status", "processed")
-      .maybeSingle();
-    if (prior) {
+    eventId = event.id;
+    eventType = event.type;
+    const { data: claimed, error: claimError } = await getSupabase().rpc("claim_webhook_event", {
+      p_event_id: event.id,
+      p_event_type: event.type,
+      p_environment: rawEnv,
+    });
+    if (claimError) throw new Error(`Could not claim webhook event: ${claimError.message}`);
+    if (!claimed) {
       return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
     await logWebhookEvent("stripe_webhook_received", { type: event.type, env: rawEnv });
@@ -380,6 +388,15 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ received: true }), { status: 200, headers: { "Content-Type": "application/json" } });
   } catch (e) {
     console.error("Webhook error:", e);
+    if (eventId) {
+      await recordAudit({
+        environment: rawEnv,
+        event_id: eventId,
+        event_type: eventType,
+        status: "error",
+        error_message: e instanceof Error ? e.message : "Webhook processing failed",
+      });
+    }
     return new Response("Webhook error", { status: 500 });
   }
 });

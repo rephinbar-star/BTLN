@@ -1106,6 +1106,14 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
+      claim_webhook_event: {
+        Args: {
+          p_environment: string
+          p_event_id: string
+          p_event_type: string
+        }
+        Returns: boolean
+      }
       count_completed_decodes: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number

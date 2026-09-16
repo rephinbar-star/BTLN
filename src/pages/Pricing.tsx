@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Check, Loader2, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -26,14 +28,14 @@ const TIERS: {
     name: "Single report",
     price: "$4.99",
     period: "one-time",
-    description: "Unlock one full analysis and its deep-dive sections.",
+    description: "After you start a Deep Read or Group Read, unlock that specific report.",
     features: [
       "Full report for one conversation",
       "Communication patterns & attachment styles",
       "The Four Horsemen check",
       "Personalized practice plan",
     ],
-    cta: "Unlock a report",
+    cta: "Start a report",
     highlighted: false,
   },
   {
@@ -42,9 +44,9 @@ const TIERS: {
     price: "$9.99",
     period: "month",
     badge: "Most popular",
-    description: "Unlimited analyses, insights, and relationship tracking.",
+    description: "Unlimited Deep Reads and Group Reads while the subscription remains eligible.",
     features: [
-      "Unlimited analyses",
+      "Unlimited Deep Reads and Group Reads",
       "All deep-dive sections unlocked",
       "Compare reports over time",
       "Cancel anytime",
@@ -58,9 +60,9 @@ const TIERS: {
     price: "$49.99",
     period: "year",
     badge: "Best value",
-    description: "Save 58% with a full year of unlimited access.",
+    description: "A year of unlimited Deep Reads and Group Reads on the full-report plan.",
     features: [
-      "Unlimited analyses for a full year",
+      "Unlimited Deep Reads and Group Reads for a year",
       "All deep-dive sections unlocked",
       "Compare reports over time",
       "Priority support",
@@ -77,6 +79,7 @@ const PRODUCT_TO_OPTION: Record<ProductKey, "monthly" | "annual" | "one_time"> =
 };
 
 export default function Pricing() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [pending, setPending] = useState<ProductKey | null>(null);
@@ -85,6 +88,17 @@ export default function Pricing() {
     setPending(priceId);
     logEvent("pricing_cta_clicked", { product_key: priceId });
     track("pricing_cta_clicked", { source: "pricing_page", option: PRODUCT_TO_OPTION[priceId] });
+
+    if (priceId === "BTLN_report_unlock") {
+      navigate("/#input-section");
+      setPending(null);
+      return;
+    }
+    if (!user) {
+      navigate(`/auth?return_to=${encodeURIComponent("/pricing")}`);
+      setPending(null);
+      return;
+    }
 
     const returnUrl = user
       ? `${window.location.origin}/account?checkout=success&session_id={CHECKOUT_SESSION_ID}`
@@ -112,6 +126,13 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org", "@type": "SoftwareApplication", name: "BetweenTheLines", applicationCategory: "LifestyleApplication", operatingSystem: "Web", url: "https://betweenthelines.app/pricing", offers: [
+            { "@type": "Offer", name: "Single report", price: "4.99", priceCurrency: "USD" },
+            { "@type": "Offer", name: "Monthly full-report plan", price: "9.99", priceCurrency: "USD" },
+            { "@type": "Offer", name: "Annual full-report plan", price: "49.99", priceCurrency: "USD" }
+          ]
+        })}</script>
         <title>Pricing — BetweenTheLines™</title>
         <meta name="description" content="Unlock deeper relationship insights with BetweenTheLines. Choose a monthly, annual, or single-report plan." />
         <link rel="canonical" href="https://betweenthelines.app/pricing" />
@@ -173,15 +194,12 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <button
+              <Button
                 type="button"
+                variant={tier.highlighted ? "default" : "outline"}
                 onClick={() => launch(tier.key)}
                 disabled={pending === tier.key}
-                className={`mt-8 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-[14px] font-medium transition-all duration-200 hover:scale-[1.03] disabled:opacity-50 ${
-                  tier.highlighted
-                    ? "bg-foreground text-background hover:opacity-90"
-                    : "border border-border bg-card text-foreground hover:bg-foreground hover:text-background"
-                }`}
+                className="mt-8 w-full rounded-full"
               >
                 {pending === tier.key ? (
                   <>
@@ -191,11 +209,20 @@ export default function Pricing() {
                 ) : (
                   tier.cta
                 )}
-              </button>
+              </Button>
             </div>
           ))}
         </div>
 
+
+        <section className="mx-auto mt-16 max-w-3xl border-t border-border pt-10">
+          <h2 className="text-[24px] font-medium">Pricing questions</h2>
+          <div className="mt-6 divide-y divide-border">
+            <div className="py-5"><h3 className="font-medium">Can I buy a single report before starting it?</h3><p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">A one-time purchase is securely attached to a specific report, so start the read first. If payment is needed, checkout appears for that exact report.</p></div>
+            <div className="py-5"><h3 className="font-medium">Which plans include Deep Read and Group Read?</h3><p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">The full-report monthly and annual plans include Deep Reads and Group Reads. A Quick Take-only plan does not unlock them.</p></div>
+            <div className="py-5"><h3 className="font-medium">What happens after I cancel?</h3><p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Full-report access remains available through the paid period shown in your account, then ends unless the plan renews.</p></div>
+          </div>
+        </section>
         <div className="mt-12 text-center">
           <p className="text-[13px] text-muted-foreground">
             Secure checkout via Stripe. Prices in USD. Questions?{" "}

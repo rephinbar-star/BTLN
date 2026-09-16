@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import logoAsset from "@/assets/logo.png.asset.json";
+import logoUrl from "@/assets/logo.png";
 
 export default function Trust() {
   return (
@@ -16,7 +16,7 @@ export default function Trust() {
       <header className="border-b border-border px-5 py-4 sm:px-8">
         <div className="mx-auto flex max-w-3xl items-center justify-between">
           <Link to="/" className="flex items-center">
-            <img src={logoAsset.url} alt="BetweenTheLines" className="h-12 w-auto" />
+            <img src={logoUrl} alt="BetweenTheLines" className="h-12 w-auto object-contain" />
           </Link>
           <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
             ← Back
@@ -93,10 +93,10 @@ export default function Trust() {
         <section className="mt-10 space-y-3">
           <h2 className="text-[20px] font-medium">What we collect</h2>
           <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
-            <li>The conversation content you paste or upload, used only to generate your report.</li>
+            <li>Conversation content you paste or upload, processed to generate the report and not retained as a reusable raw transcript. Structured results may include selected evidence excerpts.</li>
             <li>Basic context you provide (relationship type, names you choose to enter).</li>
             <li>Account email and display name if you sign in.</li>
-            <li>Aggregated, anonymous usage events to improve the product.</li>
+            <li>Allow-listed product usage events to improve the service. They exclude message content, names, email addresses, feedback text, and report content.</li>
           </ul>
         </section>
 
@@ -106,9 +106,9 @@ export default function Trust() {
             We rely on the following providers to operate the app:
           </p>
           <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
-            <li>Supabase — hosted database, authentication, and edge functions.</li>
+            <li>Lovable Cloud — hosted database, authentication, and server functions.</li>
             <li>Stripe — payment processing.</li>
-            <li>OpenRouter / Lovable AI — model inference for the analysis itself.</li>
+            <li>AI model providers — model inference for the analysis itself.</li>
           </ul>
         </section>
 

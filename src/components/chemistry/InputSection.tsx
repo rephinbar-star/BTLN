@@ -628,9 +628,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     <section id="input-section" className="scroll-mt-24 -mt-[10px] px-5 pb-12 pt-0 sm:px-8 sm:pb-16 sm:pt-[13px]">
       {!hideIntro && (
         <div className="mx-auto max-w-3xl text-center">
-          <h2 className="text-[28px] font-medium tracking-tight sm:text-[36px]">Are you a Power Couple? Find out for free</h2>
+          <h2 className="text-[28px] font-medium tracking-tight sm:text-[36px]">See what your conversation pattern looks like</h2>
           <p className="mt-3 text-[16px] text-muted-foreground sm:text-[18px]">
-            Takes about 90 seconds. Free, no signup.
+            Your first Deep Read is free. No signup required.
           </p>
         </div>
       )}

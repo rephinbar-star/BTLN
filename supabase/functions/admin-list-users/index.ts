@@ -12,24 +12,31 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 
+async function requireAdmin(req: Request, admin: ReturnType<typeof createClient>) {
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (!authHeader.toLowerCase().startsWith("bearer ")) return false;
+  const { data, error } = await admin.auth.getUser(authHeader.slice(7));
+  const userId = data.user?.id;
+  if (error || !userId) return false;
+  const { data: isAdmin, error: roleError } = await admin.rpc("has_role", {
+    _user_id: userId,
+    _role: "admin",
+  });
+  return !roleError && isAdmin === true;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { password } = await req.json().catch(() => ({ password: "" }));
-    const expected = Deno.env.get("ADMIN_PASSWORD") ?? "";
-    if (!expected) return json({ ok: false, error: "ADMIN_PASSWORD not configured" }, 500);
-    if (typeof password !== "string" || password !== expected) {
-      return json({ ok: false, error: "Unauthorized" }, 401);
-    }
-
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false },
     });
+    if (!(await requireAdmin(req, admin))) return json({ ok: false, error: "Forbidden" }, 403);
 
     // Pull auth users (paginated). 1000 is sufficient for this admin view.
     const { data: authData, error: authErr } = await admin.auth.admin.listUsers({

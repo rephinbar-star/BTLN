@@ -549,7 +549,7 @@ const GroupResult = () => {
         </section>
 
         <p className="mt-8 text-center text-[13px] text-muted-foreground">
-          The messages you pasted were deleted after we read them. Only this report is stored.
+          Raw messages were processed for this read and are not stored as a reusable transcript. The structured report, including selected evidence, is stored.
         </p>
       </main>
 

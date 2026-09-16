@@ -33,10 +33,10 @@ export const Hero = () => {
               <Check className="h-4 w-4" /> No account required
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Lock className="h-4 w-4" /> Messages deleted after analysis
+              <Lock className="h-4 w-4" /> Raw messages not kept as a transcript
             </span>
             <span className="inline-flex items-center gap-1.5">
-              <Clock className="h-4 w-4" /> Results in 90 seconds
+              <Clock className="h-4 w-4" /> Timing varies with chat length
             </span>
           </div>
         </div>

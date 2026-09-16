@@ -78,7 +78,7 @@ const Index = () => {
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
         <title>BetweenTheLines™ — AI relationship analysis from your texts</title>
-        <meta name="description" content="Paste your texts and get a detailed AI report on your communication style, attachment patterns, and relationship dynamics. No signup, results in 90 seconds." />
+        <meta name="description" content="Use Quick Take for mixed-signal texts or Deep Read for a structured look at a two-person conversation. Your first read needs no signup." />
         <link rel="canonical" href="https://betweenthelines.app/" />
         <meta property="og:title" content="BetweenTheLines™ — AI relationship analysis from your texts" />
         <meta property="og:description" content="Paste your texts and get a detailed AI report on your communication style, attachment patterns, and relationship dynamics." />

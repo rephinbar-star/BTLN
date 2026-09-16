@@ -10,11 +10,11 @@ export default function CheckoutReturn() {
   const sessionId = searchParams.get("session_id");
   const analysisId = searchParams.get("analysis_id");
   const groupReadId = searchParams.get("group_read_id");
-  const [status, setStatus] = useState<"loading" | "ready">(sessionId ? "loading" : "ready");
+  const [status, setStatus] = useState<"loading" | "ready" | "waiting">(sessionId ? "loading" : "waiting");
 
   useEffect(() => {
     if (!sessionId || (!analysisId && !groupReadId)) {
-      setStatus("ready");
+      setStatus("waiting");
       return;
     }
     let cancelled = false;
@@ -36,8 +36,10 @@ export default function CheckoutReturn() {
         granted = data?.is_paid === true;
       }
       if (cancelled) return;
-      if (granted || attempts >= 8) {
+      if (granted) {
         setStatus("ready");
+      } else if (attempts >= 45) {
+        setStatus("waiting");
       } else {
         setTimeout(tick, 1000);
       }
@@ -52,11 +54,11 @@ export default function CheckoutReturn() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background px-6 text-center text-foreground">
       <Helmet>
-        <title>Payment complete — BetweenTheLines™</title>
+        <title>Confirming payment — BetweenTheLines™</title>
         <meta name="description" content="Confirming your payment and unlocking your full BetweenTheLines relationship report." />
         <link rel="canonical" href="https://betweenthelines.app/checkout/return" />
-        <meta property="og:title" content="Payment complete — BetweenTheLines™" />
-        <meta property="og:description" content="Your full report is unlocked." />
+        <meta property="og:title" content="Confirming payment — BetweenTheLines™" />
+        <meta property="og:description" content="Checking the secure payment confirmation for your report." />
         <meta property="og:url" content="https://betweenthelines.app/checkout/return" />
         <meta name="robots" content="noindex" />
       </Helmet>
@@ -65,15 +67,31 @@ export default function CheckoutReturn() {
           <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
           <p className="mt-6 text-[15px] text-muted-foreground">Confirming your payment…</p>
         </>
+      ) : status === "waiting" ? (
+        <>
+          <Loader2 className="h-10 w-10 animate-spin text-muted-foreground" />
+          <h1 className="mt-6 text-[28px] font-medium tracking-tight sm:text-[36px]">
+            Still confirming your payment
+          </h1>
+          <p className="mt-3 max-w-md text-[15px] text-muted-foreground">
+            The secure confirmation has not arrived yet. Your report is not marked paid until it does.
+          </p>
+          <Link
+            to={groupReadId ? "/group" : analysisId ? `/report/${analysisId}` : "/account"}
+            className="mt-8 text-[14px] font-medium text-muted-foreground underline hover:text-foreground"
+          >
+            Check again from your report
+          </Link>
+        </>
       ) : (
         <>
           <CheckCircle2 className="h-12 w-12 text-green-500" />
           <h1 className="mt-6 text-[28px] font-medium tracking-tight sm:text-[36px]">
-            Payment complete
+             Payment verified
           </h1>
           <p className="mt-3 max-w-md text-[15px] text-muted-foreground">
             {groupReadId
-              ? "Your single group report is unlocked. Add the chat again on the Group Read page and we'll run it — we never keep a copy of your conversation."
+              ? "Your single group report is unlocked. Return to Group Read and add the chat again; the paid target is kept for that retry."
               : "Your full report is unlocked. Thanks for supporting BetweenTheLines™."}
           </p>
           <Link

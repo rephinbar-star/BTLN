@@ -27,159 +27,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/integrations/supabase/client";
-
-const ADMIN_AUTH_KEY = "chemistry_admin_authed";
-const ADMIN_PWD_KEY = "chemistry_admin_pwd";
-
-/* ---------------- Password gate ---------------- */
-
-const PasswordGate = ({ onSuccess }: { onSuccess: () => void }) => {
-  const [pwd, setPwd] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const { data, error: invokeErr } = await supabase.functions.invoke(
-        "verify-admin-password",
-        { body: { password: pwd } },
-      );
-      if (invokeErr) throw invokeErr;
-      if (data?.ok) {
-        sessionStorage.setItem(ADMIN_AUTH_KEY, "true");
-        sessionStorage.setItem(ADMIN_PWD_KEY, pwd);
-        onSuccess();
-      } else {
-        setError("Incorrect password");
-        setPwd("");
-      }
-    } catch {
-      setError("Could not verify password. Try again.");
-      setPwd("");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-
-const TestimonialsSection = ({ 
-  testimonials, 
-  onRefresh 
-}: { 
-  testimonials: TestimonialRow[], 
-  onRefresh: () => void 
-}) => {
-  const moderate = async (id: string, action: string) => {
-    try {
-      const { data, error } = await supabase.functions.invoke('admin-moderate-testimonial', {
-        body: { 
-          password: sessionStorage.getItem(ADMIN_PWD_KEY),
-          testimonialId: id,
-          action
-        }
-      });
-      if (error || !data?.ok) throw error || new Error(data?.error);
-      onRefresh();
-    } catch (err) {
-      alert("Failed to moderate: " + (err as Error).message);
-    }
-  };
-
-  return (
-    <SectionShell title="Testimonials Moderation">
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Quote</TableHead>
-                <TableHead>Attribution</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {testimonials.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
-                    No testimonials found.
-                  </TableCell>
-                </TableRow>
-              )}
-              {testimonials.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="text-xs">{new Date(t.created_at).toLocaleDateString()}</TableCell>
-                  <TableCell className="max-w-xs truncate font-medium">{t.quote}</TableCell>
-                  <TableCell>{t.attribution}</TableCell>
-                  <TableCell>
-                    <span className={`rounded-full px-2 py-1 text-[10px] font-bold uppercase ${
-                      t.moderation_status === 'approved' ? 'bg-green-100 text-green-700' :
-                      t.moderation_status === 'rejected' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {t.moderation_status}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {t.moderation_status !== 'approved' && (
-                        <Button size="sm" variant="outline" className="h-8 text-green-600 border-green-200 hover:bg-green-50" onClick={() => moderate(t.id, 'approved')}>
-                          Approve
-                        </Button>
-                      )}
-                      {t.moderation_status !== 'rejected' && (
-                        <Button size="sm" variant="outline" className="h-8 text-red-600 border-red-200 hover:bg-red-50" onClick={() => moderate(t.id, 'rejected')}>
-                          Reject
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
-    </SectionShell>
-
-        <TestimonialsSection testimonials={data.testimonials} onRefresh={load} />
-  );
-};
-
-
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-5">
-      <form
-        onSubmit={submit}
-        className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-sm"
-      >
-            <h1 className="text-xl font-semibold tracking-tight">BetweenTheLines™ admin</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Enter the admin password to continue.
-        </p>
-        <div className="mt-5 space-y-2">
-          <Label htmlFor="admin-pwd">Password</Label>
-          <Input
-            id="admin-pwd"
-            type="password"
-            autoFocus
-            value={pwd}
-            onChange={(e) => setPwd(e.target.value)}
-            disabled={loading}
-          />
-          {error && <p className="text-sm text-destructive">{error}</p>}
-        </div>
-        <Button type="submit" className="mt-5 w-full" disabled={loading || !pwd}>
-          {loading ? "Checking…" : "Continue"}
-        </Button>
-      </form>
-    </div>
-  );
-};
+import { useAuth } from "@/hooks/useAuth";
 
 /* ---------------- Helpers ---------------- */
 
@@ -291,6 +139,31 @@ const ErrorNote = ({ msg }: { msg: string }) => (
   </div>
 );
 
+const TestimonialsSection = ({ testimonials, onRefresh }: { testimonials: TestimonialRow[]; onRefresh: () => void }) => {
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const moderate = async (id: string, status: TestimonialRow["moderation_status"]) => {
+    setBusyId(id);
+    const { data, error } = await supabase.functions.invoke("admin-testimonials", {
+      body: { action: "moderate", id, status },
+    });
+    setBusyId(null);
+    if (!error && data?.updated) onRefresh();
+  };
+  return (
+    <SectionShell title="Publication consent queue">
+      <Card><CardContent className="p-0"><Table>
+        <TableHeader><TableRow><TableHead>Submitted</TableHead><TableHead>Quote</TableHead><TableHead>Attribution</TableHead><TableHead>Status</TableHead><TableHead /></TableRow></TableHeader>
+        <TableBody>{testimonials.length === 0 ? <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground">No consented feedback awaiting review.</TableCell></TableRow> : testimonials.map((item) => (
+          <TableRow key={item.id}>
+            <TableCell className="text-xs">{formatDate(item.created_at)}</TableCell><TableCell className="max-w-md whitespace-normal">{item.quote}</TableCell><TableCell>{item.attribution}</TableCell><TableCell>{item.moderation_status}</TableCell>
+            <TableCell><div className="flex gap-2"><Button size="sm" variant="outline" disabled={busyId === item.id} onClick={() => void moderate(item.id, "approved")}>Approve</Button><Button size="sm" variant="outline" disabled={busyId === item.id} onClick={() => void moderate(item.id, "rejected")}>Reject</Button></div></TableCell>
+          </TableRow>
+        ))}</TableBody>
+      </Table></CardContent></Card>
+    </SectionShell>
+  );
+};
+
 /* ---------------- Dashboard ---------------- */
 
 type DashboardData = {
@@ -306,7 +179,8 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
   const [data, setData] = useState<DashboardData>({
     events: [],
     analyses30: [],
-    shares: [], testimonials: [],
+    shares: [],
+    testimonials: [],
   });
   const [errors, setErrors] = useState<{
     events?: string;
@@ -340,12 +214,12 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
       .gte("created_at", since30)
       .limit(5000);
 
-    const testimonialsP = supabase.functions.invoke('admin-list-testimonials', { 
-      body: { password: sessionStorage.getItem(ADMIN_PWD_KEY) } 
+    const testimonialsP = supabase.functions.invoke("admin-testimonials", {
+      body: { action: "list" },
     });
     const [evRes, anRes, shRes, testRes] = await Promise.all([eventsP, analysesP, sharesP, testimonialsP]);
 
-    const next: DashboardData = { events: [], analyses30: [], shares: [] };
+    const next: DashboardData = { events: [], analyses30: [], shares: [], testimonials: [] };
     const errs: typeof errors = {};
 
     if (evRes.error) errs.events = evRes.error.message;
@@ -358,7 +232,7 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
     if (shRes.error) errs.shares = shRes.error.message;
     else next.shares = (shRes.data ?? []) as ShareRow[];
 
-    if (testRes.data?.ok) next.testimonials = testRes.data.data;
+    if (Array.isArray(testRes.data?.candidates)) next.testimonials = testRes.data.candidates;
 
 
     setData(next);
@@ -718,6 +592,8 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
           </div>
         </SectionShell>
 
+        <TestimonialsSection testimonials={data.testimonials} onRefresh={() => void load()} />
+
         {/* 7. Share/download */}
         <SectionShell title="Share & download — last 30 days">
           {errors.shares && <ErrorNote msg={`Shares: ${errors.shares}`} />}
@@ -953,10 +829,8 @@ const WebhookSecretTester = () => {
     setLoading(true);
     setResult(null);
     try {
-      const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
       const { data, error } = await supabase.functions.invoke("test-webhook-secret", {
         body: {
-          adminPassword: password,
           signature: signature.trim(),
           payload,
           env: envMode === "auto" ? undefined : envMode,
@@ -1097,18 +971,9 @@ const UsersSection = () => {
     setLoading(true);
     setError(null);
     try {
-      const password = sessionStorage.getItem(ADMIN_PWD_KEY) ?? "";
-      if (!password) {
-        // Session was authenticated before the password was cached (older flow).
-        // Force re-auth so the password gets stored for service-role calls.
-        sessionStorage.removeItem(ADMIN_AUTH_KEY);
-        sessionStorage.removeItem(ADMIN_PWD_KEY);
-        window.location.reload();
-        return;
-      }
       const { data: res, error: invokeErr } = await supabase.functions.invoke(
         "admin-list-users",
-        { body: { password } },
+        { body: {} },
       );
       if (invokeErr) throw invokeErr;
       if (!res?.ok) throw new Error(res?.error ?? "Failed to load users");
@@ -1449,21 +1314,14 @@ const UsersSection = () => {
 /* ---------------- Page ---------------- */
 
 const Admin = () => {
-  const [authed, setAuthed] = useState<boolean>(() => {
-    if (typeof window === "undefined") return false;
-    return sessionStorage.getItem(ADMIN_AUTH_KEY) === "true";
-  });
-
-  if (!authed) {
-    return <PasswordGate onSuccess={() => setAuthed(true)} />;
-  }
+  const { user, loading, signOut } = useAuth();
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-muted-foreground">Checking access…</div>;
+  if (!user) return <div className="flex min-h-screen items-center justify-center px-5"><div className="max-w-sm text-center"><h1 className="text-xl font-semibold">Administrator sign-in required</h1><Button asChild className="mt-5"><Link to="/auth?mode=signin&return_to=%2Fadmin">Sign in</Link></Button></div></div>;
 
   return (
     <Dashboard
       onSignOut={() => {
-        sessionStorage.removeItem(ADMIN_AUTH_KEY);
-        sessionStorage.removeItem(ADMIN_PWD_KEY);
-        setAuthed(false);
+        void signOut();
       }}
     />
   );
