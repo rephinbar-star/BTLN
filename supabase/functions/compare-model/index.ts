@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
 
@@ -22,14 +22,31 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const body = await req.json().catch(() => ({}));
-    const { adminPassword, model, conversation, context } = body ?? {};
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+      { auth: { persistSession: false } },
+    );
 
-    const expected = Deno.env.get("ADMIN_PASSWORD") ?? "";
-    if (!expected) return json({ ok: false, error: "ADMIN_PASSWORD not configured" }, 500);
-    if (typeof adminPassword !== "string" || adminPassword !== expected) {
+    // Signed-in administrator only. Role is resolved server-side from the
+    // verified JWT; nothing the client sends can grant access.
+    const authHeader = req.headers.get("Authorization") ?? "";
+    if (!authHeader.toLowerCase().startsWith("bearer ")) {
       return json({ ok: false, error: "Unauthorized" }, 401);
     }
+    const { data: userData, error: userErr } = await supabase.auth.getUser(
+      authHeader.slice(7),
+    );
+    const userId = userData?.user?.id ?? null;
+    if (userErr || !userId) return json({ ok: false, error: "Unauthorized" }, 401);
+    const { data: isAdmin, error: roleErr } = await supabase.rpc("has_role", {
+      _user_id: userId,
+      _role: "admin",
+    });
+    if (roleErr || isAdmin !== true) return json({ ok: false, error: "Forbidden" }, 403);
+
+    const body = await req.json().catch(() => ({}));
+    const { model, conversation, context } = body ?? {};
 
     if (typeof model !== "string" || !model.trim()) {
       return json({ ok: false, error: "model is required" }, 400);
@@ -45,12 +62,6 @@ Deno.serve(async (req) => {
     const referer =
       Deno.env.get("OPENROUTER_HTTP_REFERER") ?? "https://betweenthelines.app";
     const title = Deno.env.get("OPENROUTER_X_TITLE") ?? "BetweenTheLines";
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-      { auth: { persistSession: false } },
-    );
 
     const { data: pv, error: pvErr } = await supabase
       .from("prompt_versions")
