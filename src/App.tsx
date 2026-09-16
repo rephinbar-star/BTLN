@@ -41,6 +41,7 @@ import MixedSignalsGuide from "./pages/guides/MixedSignals";
 import GroupCommunicationGuide from "./pages/guides/GroupCommunication";
 import ChatGPTCompare from "./pages/compare/ChatGPTCompare";
 import RizzCompare from "./pages/compare/RizzCompare";
+import Wrapped from "./pages/Wrapped";
 import BrandonCompare from "./pages/compare/BrandonCompare";
 
 import OAuthConsent from "./pages/OAuthConsent";
@@ -117,6 +118,7 @@ const App = () => (
           <Route path="/guides/group-chat-communication" element={<GroupCommunicationGuide />} />
           <Route path="/compare/chatgpt-vs-betweenthelines" element={<ChatGPTCompare />} />
           <Route path="/compare/rizz-vs-betweenthelines" element={<RizzCompare />} />
+          <Route path="/wrapped" element={<Wrapped />} />
           <Route path="/compare/whatbrandonthinks-vs-betweenthelines" element={<BrandonCompare />} />
 
           <Route path="/.lovable/oauth/consent" element={<OAuthConsent />} />

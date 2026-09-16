@@ -132,7 +132,7 @@ export default function Wrapped() {
         )}
         <p className="mt-3 text-xs text-muted-foreground">
           Need one?{" "}
-          <Link to="/guides/whatsapp-export" className="underline">
+          <Link to="/guides/whatsapp" className="underline">
             How to export a WhatsApp chat
           </Link>
         </p>
