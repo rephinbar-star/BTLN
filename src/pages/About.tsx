@@ -5,7 +5,7 @@ import { PublicPage } from "@/components/marketing/PublicPage";
 
 export default function About() {
   return <PublicPage title="About BetweenTheLines™ | Private Chat Analysis" description="How BetweenTheLines turns selected conversations into structured, private communication reports without claiming certainty about people." path="/about">
-    <p className="text-sm text-muted-foreground">About the product</p>
+    <p className="text-sm text-muted-foreground">About the Founder and the app</p>
     <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">A clearer way to look at a conversation</h1>
     <div className="mt-8 space-y-7 text-[17px] leading-relaxed text-muted-foreground">
       <p>BetweenTheLines helps people reflect on selected romantic, friendship, family, and group conversations. It organizes message patterns, factual counts when the data supports them, selected evidence, and practical next steps into a consistent report.</p>
