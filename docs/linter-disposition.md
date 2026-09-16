@@ -3,9 +3,9 @@
 Date: 2026-09-16 (UTC). Backend only. **Frontend not published. No real charges.**
 
 Counts: **61 → 56** (previous pass) → **58** after the testimonial/approved-quote functions were added
-deliberately → **58** at the time of this triage. Every remaining finding belongs to exactly two lint rules:
+deliberately → **57** after this pass. Every remaining finding belongs to exactly two lint rules:
 
-- `0028_anon_security_definer_function_executable` (WARN) — 24 objects
+- `0028_anon_security_definer_function_executable` (WARN) — 23 objects (was 24)
 - `0029_authenticated_security_definer_function_executable` (WARN) — 34 objects
 
 There are **no RLS-disabled, no missing-policy, and no performance findings outstanding.** The four
@@ -90,7 +90,7 @@ Evidence: bogus and revoked tokens resolve to `null`. No raw transcript is reach
 
 ## Launch-blocker status
 
-None of the 58 remaining findings is a launch blocker. They are the deliberate, individually reviewed public API
+None of the 57 remaining findings is a launch blocker. They are the deliberate, individually reviewed public API
 surface. Revoking anonymous execution would break the anonymous product flow with no security gain.
 
 ## Rollback notes
