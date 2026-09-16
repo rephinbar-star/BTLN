@@ -33,7 +33,7 @@ export const WhatYouGet = () => {
         <p className="text-sm text-muted-foreground">What you&apos;ll get</p>
         <h2 className="mt-3 text-[28px] font-medium tracking-tight sm:text-[36px]">Your full scorecard.</h2>
         <p className="mt-2 text-[14px] text-muted-foreground">
-          <span className="font-semibold text-foreground">Sample report</span> · Alex &amp; Jordan · 4 months together
+          <span className="font-semibold text-foreground">Synthetic sample report</span> · Alex &amp; Jordan are fictional
         </p>
 
         <div className="mt-10 space-y-6">

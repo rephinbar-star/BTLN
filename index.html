@@ -20,7 +20,6 @@
     <meta property="og:image:height" content="640" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
     <meta name="twitter:image" content="https://betweenthelines.app/og-image.png?v=2" />
     <meta property="og:title" content="BetweenTheLines™ — AI relationship analysis from your texts">
   <meta name="twitter:title" content="BetweenTheLines™ — AI relationship analysis from your texts">
@@ -44,11 +43,19 @@
       "operatingSystem": "Web",
       "url": "https://betweenthelines.app/",
       "description": "Paste your texts and get a detailed AI report on your communication style, attachment patterns, and relationship dynamics.",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
+      "offers": [
+        { "@type": "Offer", "name": "Single report", "price": "4.99", "priceCurrency": "USD" },
+        { "@type": "Offer", "name": "Monthly full-report plan", "price": "9.99", "priceCurrency": "USD" },
+        { "@type": "Offer", "name": "Annual full-report plan", "price": "49.99", "priceCurrency": "USD" }
       }
+    }
+  </script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "BetweenTheLines",
+      "url": "https://betweenthelines.app/"
     }
   </script>
 </head>

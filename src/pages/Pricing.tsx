@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Check, Loader2, Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,7 +44,7 @@ const TIERS: {
     price: "$9.99",
     period: "month",
     badge: "Most popular",
-    description: "Unlimited analyses, insights, and relationship tracking.",
+    description: "Unlimited Deep Reads and Group Reads while the subscription remains eligible.",
     features: [
       "Unlimited Deep Reads and Group Reads",
       "All deep-dive sections unlocked",
@@ -59,7 +60,7 @@ const TIERS: {
     price: "$49.99",
     period: "year",
     badge: "Best value",
-    description: "Save 58% with a full year of unlimited access.",
+    description: "A year of unlimited Deep Reads and Group Reads on the full-report plan.",
     features: [
       "Unlimited Deep Reads and Group Reads for a year",
       "All deep-dive sections unlocked",
@@ -125,6 +126,13 @@ export default function Pricing() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
+        <script type="application/ld+json">{JSON.stringify({
+          "@context": "https://schema.org", "@type": "SoftwareApplication", name: "BetweenTheLines", applicationCategory: "LifestyleApplication", operatingSystem: "Web", url: "https://betweenthelines.app/pricing", offers: [
+            { "@type": "Offer", name: "Single report", price: "4.99", priceCurrency: "USD" },
+            { "@type": "Offer", name: "Monthly full-report plan", price: "9.99", priceCurrency: "USD" },
+            { "@type": "Offer", name: "Annual full-report plan", price: "49.99", priceCurrency: "USD" }
+          ]
+        })}</script>
         <title>Pricing — BetweenTheLines™</title>
         <meta name="description" content="Unlock deeper relationship insights with BetweenTheLines. Choose a monthly, annual, or single-report plan." />
         <link rel="canonical" href="https://betweenthelines.app/pricing" />
@@ -186,15 +194,12 @@ export default function Pricing() {
                 ))}
               </ul>
 
-              <button
+              <Button
                 type="button"
+                variant={tier.highlighted ? "default" : "outline"}
                 onClick={() => launch(tier.key)}
                 disabled={pending === tier.key}
-                className={`mt-8 inline-flex w-full items-center justify-center rounded-full px-5 py-3 text-[14px] font-medium transition-all duration-200 hover:scale-[1.03] disabled:opacity-50 ${
-                  tier.highlighted
-                    ? "bg-foreground text-background hover:opacity-90"
-                    : "border border-border bg-card text-foreground hover:bg-foreground hover:text-background"
-                }`}
+                className="mt-8 w-full rounded-full"
               >
                 {pending === tier.key ? (
                   <>
@@ -204,7 +209,7 @@ export default function Pricing() {
                 ) : (
                   tier.cta
                 )}
-              </button>
+              </Button>
             </div>
           ))}
         </div>

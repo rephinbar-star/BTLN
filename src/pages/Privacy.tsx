@@ -76,7 +76,8 @@ export default function Privacy() {
           <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
             <li>To generate the relationship analysis and report you request.</li>
             <li>To save your reports if you create an account.</li>
-            <li>To communicate with you about your account, if applicable.</li>
+            <li>To communicate with you about your account, or send optional product updates when you provide an email for that purpose.</li>
+            <li>To review written feedback; feedback is considered for public use only when you separately opt in, and it is never published automatically.</li>
             <li>To improve the app through anonymous usage analytics.</li>
             <li>To comply with legal obligations or protect our rights.</li>
           </ul>
@@ -116,9 +117,9 @@ export default function Privacy() {
             We rely on the following subprocessors to operate the app:
           </p>
           <ul className="list-disc space-y-2 pl-5 text-[15px] leading-relaxed text-muted-foreground">
-            <li><strong>Supabase</strong> — hosted database, authentication, and edge functions.</li>
+            <li><strong>Lovable Cloud</strong> — hosted database, authentication, and server functions.</li>
             <li><strong>Stripe</strong> — payment processing.</li>
-            <li><strong>OpenRouter / Lovable AI</strong> — model inference for the analysis itself.</li>
+            <li><strong>AI model providers</strong> — model inference for the requested analysis.</li>
             <li>
               <strong>PostHog</strong> — privacy-first product analytics (US region).
               We send screen visits and a small set of named usage events (e.g. report started,
@@ -160,7 +161,7 @@ export default function Privacy() {
         </section>
 
         <p className="mt-12 text-[13px] text-muted-foreground">
-          Last updated: June 2026. This page describes current practices and may be updated as the product evolves.
+          Last updated: September 16, 2026. This page describes current practices and may be updated as the product evolves.
         </p>
       </main>
     </div>

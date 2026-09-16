@@ -229,7 +229,7 @@ export const DecodeInput = () => {
         Get my take <ArrowRight className="h-4 w-4" />
       </button>
       <p className="mt-3 text-center text-[12px] text-muted-foreground">
-        Free. No account. Messages deleted after we read them.
+        First take is free. No account required. Raw messages are processed for this take; structured results remain available to this browser session.
       </p>
     </div>
   );
