@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, Loader2, Upload, Users, X } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { supabase } from "@/integrations/supabase/client";
-import { getSessionId, logEvent } from "@/lib/session";
+import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import {
   assignUnattributed,
@@ -17,7 +17,6 @@ import { GROUP_CATEGORY_LABEL, type GroupCategory } from "@/lib/group/types";
 import { Link } from "react-router-dom";
 import { LIMITS } from "@/lib/ingest/limits";
 import { readChatFile, UnsupportedFileError } from "@/lib/ingest/file";
-import { PrimeOffer } from "@/components/prime/PrimeOffer";
 import type { TranscriptCandidate } from "@/lib/ingest/archive";
 import {
   applyExclusions,
@@ -27,7 +26,6 @@ import {
 } from "@/lib/ingest/aggregate";
 import { setDeepReadHandoff } from "@/lib/ingest/handoff";
 import { useAuth } from "@/hooks/useAuth";
-import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 
 const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
 const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
@@ -75,13 +73,7 @@ const GroupRoastStart = () => {
   const [toDay, setToDay] = useState<string>("");
   const [keepUnknownTime, setKeepUnknownTime] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [locked, setLocked] = useState(false);
-  /** Owned, server-created placeholder this checkout pays for. Id only. */
-  const [unlockTarget, setUnlockTarget] = useState<string | null>(
-    () => sessionStorage.getItem(UNLOCK_TARGET_KEY),
-  );
   const { user } = useAuth();
-  const { openCheckout, checkoutElement, isOpen: checkoutOpen, closeCheckout } = useStripeCheckout();
 
   // Raw text never outlives this page.
   useEffect(() => () => {
@@ -115,6 +107,14 @@ const GroupRoastStart = () => {
   );
 
   const includedMessageCount = payload?.coverage.supplied_messages ?? 0;
+  const selectedParticipantIds = useMemo(
+    () => new Set(selection.map((m) => m.participant_id).filter((id): id is string => id !== null)),
+    [selection],
+  );
+  const selectedParticipants = useMemo(
+    () => included.filter((p) => selectedParticipantIds.has(p.id)),
+    [included, selectedParticipantIds],
+  );
 
   const unattributed = useMemo(
     () =>
@@ -214,15 +214,12 @@ const GroupRoastStart = () => {
     }
     setSubmitting(true);
     setError(null);
-    setLocked(false);
 
     const body = {
       category,
       consent: true,
       selected_period: { from: fromDay || null, to: toDay || null, keep_unknown_time: keepUnknownTime },
-      // When a single report has been paid for, run it against that exact
-      // owned target so the payment is honoured and never double-charged.
-            participants: included.map((p) => ({ id: p.id, display_name: p.display_name })),
+      participants: selectedParticipants.map((p) => ({ id: p.id, display_name: p.display_name })),
       coverage: payload.coverage,
       source_format: parsed.format,
       messages: payload.messages.map((m) => ({
@@ -250,14 +247,6 @@ const GroupRoastStart = () => {
           group_roast_id?: string;
         };
         if (parsedErr?.error) readable = parsedErr.error;
-        if (parsedErr?.code === "payment_required") {
-          setLocked(true);
-          if (parsedErr.group_roast_id) {
-            setUnlockTarget(parsedErr.group_roast_id);
-            sessionStorage.setItem(UNLOCK_TARGET_KEY, parsedErr.group_roast_id);
-          }
-          track("group_paywall_viewed", {});
-        }
       } catch {
         /* keep default */
       }
@@ -270,7 +259,6 @@ const GroupRoastStart = () => {
     setParsed(null);
     pendingZip.current = null;
 
-    sessionStorage.removeItem(UNLOCK_TARGET_KEY);
     navigate(`/group-roast/${data.group_roast_id}`);
 
   };
@@ -294,8 +282,9 @@ const GroupRoastStart = () => {
           Who is carrying the group—and who is creating the chaos?
         </h1>
         <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">
-          Paste a friends, family or work chat with 3–15 people. You'll confirm who's who before
-          anything is analysed, and the messages are deleted after we read them.
+          For group chats with 3 or more people. Upload or paste a supported export, confirm the
+          cast and dates, then see a useful preview before choosing whether to unlock the full
+          roast. Raw messages are deleted after the run.
         </p>
 
         {step === "input" && (
@@ -532,8 +521,8 @@ const GroupRoastStart = () => {
                 <Users className="h-4 w-4" /> We found {parsed.participants.length} people
               </h2>
               <p className="mt-1 text-[14px] text-muted-foreground">
-                Merge duplicates, drop bots and system entries, and tell us which one is you
-                (optional). {includedMessageCount.toLocaleString()} messages from {included.length}{" "}
+                 Merge duplicates, drop bots and system entries, and tell us which one is you
+                 (optional). {includedMessageCount.toLocaleString()} messages from {selectedParticipants.length}{" "}
                 people are selected.
               </p>
 
@@ -634,7 +623,7 @@ const GroupRoastStart = () => {
               )}
             </div>
 
-            {included.length === 2 && (
+             {selectedParticipants.length === 2 && (
               <div className="rounded-2xl border border-border bg-muted/40 p-5">
                 <p className="text-[15px] font-medium">This is a two-person chat</p>
                 <p className="mt-2 text-[14px] text-muted-foreground">
@@ -723,75 +712,6 @@ const GroupRoastStart = () => {
               </p>
             )}
 
-            {locked && (
-              <div className="rounded-2xl border border-border bg-muted/40 p-5">
-                <p className="text-[15px] font-medium">Unlock your full Group Roast</p>
-                <p className="mt-2 text-[14px] text-muted-foreground">
-                  Unlimited group roasts come with a monthly or annual BetweenTheLines plan,
-                  alongside full Deep Read reports. Or unlock just this one report. Your
-                  finished reads stay available either way.
-                </p>
-                <PrimeOffer className="mt-4" returnTo={unlockTarget ? `/group-roast/${unlockTarget}` : "/group-roast"} />
-                {checkoutOpen ? (
-                  <div className="mt-4">
-                    {checkoutElement}
-                    <button
-                      type="button"
-                      onClick={closeCheckout}
-                      className="mt-3 w-full text-center text-[13px] text-muted-foreground underline-offset-2 hover:underline"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                ) : (
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    {user && unlockTarget && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          openCheckout({
-                            priceId: "BTLN_report_unlock",
-                            reportKind: "group_roast",
-                            groupRoastId: unlockTarget,
-                            customerEmail: user.email ?? undefined,
-                            userId: user.id,
-                            returnUrl: `${window.location.origin}/checkout/return?session_id={CHECKOUT_SESSION_ID}&group_roast_id=${unlockTarget}`,
-                          })
-                        }
-                        className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background"
-                      >
-                        Unlock this Group Roast — $4.99
-                      </button>
-                    )}
-                    {!user && (
-                      <Link
-                        to={`/auth?return_to=${encodeURIComponent("/group-roast")}`}
-                        className="inline-flex items-center gap-2 rounded-full bg-foreground px-5 py-2.5 text-[14px] font-medium text-background"
-                      >
-                        Sign in to unlock this one <ArrowRight className="h-4 w-4" />
-                      </Link>
-                    )}
-                    <Link
-                      to="/pricing"
-                      onClick={() => track("group_paywall_viewed", {})}
-                      className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-[14px] font-medium hover:bg-muted/50"
-                    >
-                      See plans <ArrowRight className="h-4 w-4" />
-                    </Link>
-                  </div>
-                )}
-                {user && unlockTarget && (
-                  <p className="mt-3 text-[13px] text-muted-foreground">
-                    After paying you'll come back here and add the chat again — we never keep a
-                    copy of your conversation.
-                  </p>
-                )}
-              </div>
-            )}
-
-            
-
-
             {error && (
               <p className="flex items-start gap-2 text-[14px] text-destructive">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
@@ -812,7 +732,7 @@ const GroupRoastStart = () => {
               <button
                 type="button"
                 onClick={submit}
-                disabled={submitting}
+                disabled={submitting || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -820,7 +740,7 @@ const GroupRoastStart = () => {
               </button>
             </div>
             <p className="text-center text-[12px] text-muted-foreground">
-              {included.length} people · {includedMessageCount.toLocaleString()} messages · messages
+               {selectedParticipants.length} people · {includedMessageCount.toLocaleString()} messages · messages
               deleted after we read them
             </p>
           </section>
