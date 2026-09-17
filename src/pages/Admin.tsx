@@ -14,6 +14,7 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BrandWordmark } from "@/components/chemistry/BrandWordmark";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -342,7 +343,10 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
         {/* Header */}
         <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">BetweenTheLines™ admin</h1>
+            <h1 className="flex items-baseline gap-2">
+              <BrandWordmark />
+              <span className="text-sm font-medium text-muted-foreground">Admin</span>
+            </h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Last refreshed:{" "}
               {refreshedAt ? refreshedAt.toLocaleString() : "—"}

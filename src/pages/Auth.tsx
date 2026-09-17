@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 
 type Mode = "signin" | "signup" | "forgot";
 
@@ -218,7 +217,6 @@ const Auth = () => {
           ← Back home
         </Link>
       </main>
-      <Footer />
     </div>
   );
 };
