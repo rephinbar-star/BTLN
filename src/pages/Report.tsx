@@ -1,6 +1,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { NextSteps } from "@/components/results/NextSteps";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
@@ -150,7 +151,7 @@ class ReportErrorBoundary extends Component<
             </p>
           )}
           <Link
-            to="/#input-section"
+            to="/deep"
             className="mt-8 inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
           >
             Try again
@@ -1075,7 +1076,7 @@ const ReportContent = () => {
                 Curious about another relationship?
               </h3>
               <Link
-                to="/#input-section"
+                to="/deep"
                 className="mt-5 inline-flex w-full max-w-[280px] items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
               >
                 Start a new analysis <ArrowRight className="h-4 w-4" />
@@ -1090,6 +1091,8 @@ const ReportContent = () => {
 
         {safetyMode && <SafetyOverride note={result.meta.safety_note ?? ""} />}
       </main>
+
+      <NextSteps mode="deep" />
 
       {analysisId && (
         <FeedbackModal
@@ -1221,7 +1224,7 @@ const LowConfidenceGate = ({
             practice plan) unlocks.
           </p>
           <Link
-            to="/#input-section"
+            to="/deep"
             onClick={() =>
               logEvent("low_confidence_gate_cta_clicked", { message_count: count })
             }

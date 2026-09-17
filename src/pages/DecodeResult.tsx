@@ -10,6 +10,8 @@ import { useDecodeAccess, FREE_DECODES } from "@/hooks/useDecodeAccess";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
+import { NextSteps } from "@/components/results/NextSteps";
+import { PrimeOffer } from "@/components/prime/PrimeOffer";
 
 const DECODE_PLAN_PRICE_ID = "BTLN_decode_monthly";
 
@@ -356,6 +358,7 @@ const DecodeResult = () => {
                         >
                           <Sparkles className="h-4 w-4" /> Unlock unlimited Quick Takes
                         </button>
+                        <PrimeOffer className="mt-4 text-left" returnTo={`/decode/${decodeId}`} />
                       </div>
                     </div>
                   )}
@@ -387,7 +390,7 @@ const DecodeResult = () => {
                 what keeps repeating. We need at least 20 or 30 text exchanges for the deep report.
               </p>
               <Link
-                to="/#input-section"
+                to="/deep"
                 onClick={() => track("deep_report_upsell_click", {} as never)}
                 className="mt-4 inline-flex items-center gap-2 text-[14px] font-medium underline-offset-4 hover:underline"
               >
@@ -414,6 +417,7 @@ const DecodeResult = () => {
           </div>
         )}
       </main>
+      <NextSteps mode="quick" />
       <Footer />
     </div>
   );

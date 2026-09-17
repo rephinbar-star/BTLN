@@ -416,7 +416,7 @@ const PairTypeDetail = () => {
                   className="mt-6"
                   onClick={() => track("pair_type_cta_click", { id: row.id, relationship })}
                 >
-                  <Link to="/#input-section">Read my chat</Link>
+                  <Link to="/deep">Read my chat</Link>
                 </Button>
               </div>
 

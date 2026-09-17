@@ -19,6 +19,7 @@ import { useGroupAccess } from "@/hooks/useGroupAccess";
 import { Link } from "react-router-dom";
 import { LIMITS } from "@/lib/ingest/limits";
 import { readChatFile, UnsupportedFileError } from "@/lib/ingest/file";
+import { PrimeOffer } from "@/components/prime/PrimeOffer";
 import type { TranscriptCandidate } from "@/lib/ingest/archive";
 import {
   applyExclusions,
@@ -192,7 +193,7 @@ const GroupRead = () => {
     setDeepReadHandoff(lines.join("\n"));
     setText("");
     setParsed(null);
-    navigate("/?from=import");
+    navigate("/deep?from=import");
   };
 
   const submit = async () => {
@@ -736,6 +737,7 @@ const GroupRead = () => {
                   alongside full Deep Read reports. Or unlock just this one report. Your
                   finished reads stay available either way.
                 </p>
+                <PrimeOffer className="mt-4" returnTo="/group" />
                 {checkoutOpen ? (
                   <div className="mt-4">
                     {checkoutElement}

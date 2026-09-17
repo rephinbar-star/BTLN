@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import { getSessionId } from "@/lib/session";
+import { PrimeOffer } from "@/components/prime/PrimeOffer";
 
 type ProductKey = "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
 
@@ -81,7 +82,7 @@ function VisitorCta() {
         Get your couple's full breakdown — communication patterns, attachment styles, hidden dynamics, and a weekly plan.
       </p>
       <Link
-        to="/#input-section"
+        to="/deep"
         className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
       >
         Start your analysis
@@ -245,6 +246,8 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
           onClick={() => launch("BTLN_report_unlock")}
         />
       </div>
+
+      <PrimeOffer className="mt-5 text-left" returnTo={`/report/${analysisId}`} />
 
       <p className="mt-5 text-[12px] text-muted-foreground">
         Secure checkout via Stripe. Cancel anytime.

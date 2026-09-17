@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
+import { NextSteps } from "@/components/results/NextSteps";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
@@ -579,6 +580,7 @@ const GroupResult = () => {
         )}
       </div>
 
+      <NextSteps mode="group" />
       <Footer />
     </div>
   );
