@@ -10,10 +10,11 @@ export default function CheckoutReturn() {
   const sessionId = searchParams.get("session_id");
   const analysisId = searchParams.get("analysis_id");
   const groupReadId = searchParams.get("group_read_id");
+  const groupRoastId = searchParams.get("group_roast_id");
   const [status, setStatus] = useState<"loading" | "ready" | "waiting">(sessionId ? "loading" : "waiting");
 
   useEffect(() => {
-    if (!sessionId || (!analysisId && !groupReadId)) {
+    if (!sessionId || (!analysisId && !groupReadId && !groupRoastId)) {
       setStatus("waiting");
       return;
     }
@@ -22,7 +23,12 @@ export default function CheckoutReturn() {
     const tick = async () => {
       attempts += 1;
       let granted = false;
-      if (groupReadId) {
+      if (groupRoastId) {
+        const { data } = await supabase.functions.invoke("group-roast-data", {
+          body: { action: "get", group_roast_id: groupRoastId },
+        });
+        granted = data?.roast?.is_unlocked === true;
+      } else if (groupReadId) {
         const { data } = await supabase.rpc("has_group_read_unlock", {
           p_group_read_id: groupReadId,
         });
@@ -48,7 +54,7 @@ export default function CheckoutReturn() {
     return () => {
       cancelled = true;
     };
-  }, [sessionId, analysisId, groupReadId]);
+  }, [sessionId, analysisId, groupReadId, groupRoastId]);
 
 
   return (
@@ -77,7 +83,7 @@ export default function CheckoutReturn() {
             The secure confirmation has not arrived yet. Your report is not marked paid until it does.
           </p>
           <Link
-            to={groupReadId ? "/group" : analysisId ? `/report/${analysisId}` : "/account"}
+            to={groupRoastId ? `/group-roast/${groupRoastId}` : groupReadId ? "/group" : analysisId ? `/report/${analysisId}` : "/account"}
             className="mt-8 text-[14px] font-medium text-muted-foreground underline hover:text-foreground"
           >
             Check again from your report
@@ -90,15 +96,17 @@ export default function CheckoutReturn() {
              Payment verified
           </h1>
           <p className="mt-3 max-w-md text-[15px] text-muted-foreground">
-            {groupReadId
+             {groupRoastId
+               ? "Your full Group Roast is unlocked."
+               : groupReadId
               ? "Your single group report is unlocked. Return to Group Read and add the chat again; the paid target is kept for that retry."
               : "Your full report is unlocked. Thanks for supporting BetweenTheLines™."}
           </p>
           <Link
-            to={groupReadId ? "/group" : analysisId ? `/report/${analysisId}` : "/"}
+             to={groupRoastId ? `/group-roast/${groupRoastId}` : groupReadId ? "/group" : analysisId ? `/report/${analysisId}` : "/"}
             className="mt-8 inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
           >
-            {groupReadId ? "Back to Group Read" : "View your report"}
+             {groupRoastId ? "View your Group Roast" : groupReadId ? "Back to Group Read" : "View your report"}
           </Link>
 
         </>

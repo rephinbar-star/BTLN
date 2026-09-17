@@ -110,6 +110,7 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
   const userId = session.metadata?.userId;
   const analysisId = session.metadata?.analysisId;
   const groupReadId = session.metadata?.groupReadId;
+  const groupRoastId = session.metadata?.groupRoastId;
   const reportKind = session.metadata?.reportKind;
   const mode = session.mode; // 'payment' | 'subscription'
 
@@ -135,6 +136,46 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id ?? null;
+
+    if (reportKind === "group_roast") {
+      if (!userId || !groupRoastId || amount !== 499) {
+        await recordAudit({
+          environment: env,
+          event_id: eventId,
+          event_type: "checkout.session.completed",
+          checkout_session_id: session.id,
+          status: "skipped",
+          error_message: "Invalid Group Roast payment metadata or amount",
+          payload_summary: { mode, amount_total: amount, report_kind: reportKind },
+        });
+        return;
+      }
+      const { data: target } = await getSupabase()
+        .from("group_roasts")
+        .select("id")
+        .eq("id", groupRoastId)
+        .eq("user_id", userId)
+        .maybeSingle();
+      if (!target) throw new Error("Group Roast target ownership check failed");
+      const { error: unlockError } = await getSupabase().from("group_roast_unlocks").upsert(
+        { user_id: userId, group_roast_id: groupRoastId, amount_cents: amount, stripe_payment_intent_id: paymentIntent },
+        { onConflict: "user_id,group_roast_id" },
+      );
+      if (unlockError) throw new Error(`group_roast_unlocks upsert failed: ${unlockError.message}`);
+      await logWebhookEvent("purchase_completed", { product: "group_roast", amount_cents: amount, environment: env });
+      await recordAudit({
+        environment: env,
+        event_id: eventId,
+        event_type: "checkout.session.completed",
+        checkout_session_id: session.id,
+        user_id: userId,
+        amount_cents: amount,
+        status: "processed",
+        changes: { group_roast_unlocks: "upserted", group_roast_id: groupRoastId },
+        payload_summary: { mode, report_kind: "group_roast", payment_intent: paymentIntent, amount_total: amount },
+      });
+      return;
+    }
 
     // Single Group Read purchase.
     if (reportKind === "group_read" || (groupReadId && !analysisId)) {

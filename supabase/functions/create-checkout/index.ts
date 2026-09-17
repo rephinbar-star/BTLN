@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
   }
   try {
     const body = await req.json();
-    const { priceId, quantity, customerEmail, userId: bodyUserId, analysisId, groupReadId, reportKind, customerCountry, returnUrl, environment } = body ?? {};
+    const { priceId, quantity, customerEmail, userId: bodyUserId, analysisId, groupReadId, groupRoastId, reportKind, customerCountry, returnUrl, environment } = body ?? {};
 
 
     // Derive userId from the verified JWT — never trust a body-supplied userId,
@@ -109,12 +109,14 @@ Deno.serve(async (req) => {
     // only ever target something the signed-in caller actually owns; the kind
     // is never inferred from the client's word alone.
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    let kind: "analysis" | "group_read" | null = null;
+    let kind: "analysis" | "group_read" | "group_roast" | null = null;
     if (reportKind !== undefined && reportKind !== null) {
-      if (reportKind !== "analysis" && reportKind !== "group_read") {
+      if (reportKind !== "analysis" && reportKind !== "group_read" && reportKind !== "group_roast") {
         return new Response(JSON.stringify({ error: "Invalid reportKind" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       kind = reportKind;
+    } else if (groupRoastId) {
+      kind = "group_roast";
     } else if (groupReadId) {
       kind = "group_read";
     } else if (analysisId) {
@@ -162,6 +164,31 @@ Deno.serve(async (req) => {
       }
     }
 
+    if (kind === "group_roast") {
+      if (!groupRoastId || typeof groupRoastId !== "string" || !UUID_RE.test(groupRoastId)) {
+        return new Response(JSON.stringify({ error: "Invalid groupRoastId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (!userId) {
+        return new Response(JSON.stringify({ error: "Sign in to buy a Group Roast" }), { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      const admin = createClient(
+        Deno.env.get("SUPABASE_URL")!,
+        Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+        { auth: { persistSession: false } },
+      );
+      const { data: target } = await admin
+        .from("group_roasts")
+        .select("id, user_id, status")
+        .eq("id", groupRoastId)
+        .maybeSingle();
+      if (!target || target.user_id !== userId) {
+        return new Response(JSON.stringify({ error: "Not your Group Roast" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+      if (target.status !== "complete") {
+        return new Response(JSON.stringify({ error: "That Group Roast is not ready" }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    }
+
     const env: StripeEnv = environment;
     const stripe = createStripeClient(env);
     const prices = await stripe.prices.list({ lookup_keys: [priceId] });
@@ -170,8 +197,11 @@ Deno.serve(async (req) => {
     }
     const stripePrice = prices.data[0];
     const isRecurring = stripePrice.type === "recurring";
-    if (kind === "group_read" && isRecurring) {
-      return new Response(JSON.stringify({ error: "A group report purchase must be a one-time price" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if ((kind === "group_read" || kind === "group_roast") && isRecurring) {
+      return new Response(JSON.stringify({ error: "This purchase must use a one-time price" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (kind === "group_roast" && (priceId !== "BTLN_report_unlock" || stripePrice.unit_amount !== 499 || stripePrice.currency !== "usd")) {
+      return new Response(JSON.stringify({ error: "The $4.99 Group Roast test price is not configured correctly" }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     const useManagedPayments = false; // disabled until Stripe head office address is set
     const customerId = await resolveOrCreateCustomer(stripe, { email: customerEmail, userId });
@@ -186,6 +216,7 @@ Deno.serve(async (req) => {
         ...(userId && { userId }),
         ...(kind === "analysis" && analysisId && { analysisId }),
         ...(kind === "group_read" && { groupReadId }),
+        ...(kind === "group_roast" && { groupRoastId }),
         ...(kind && { reportKind: kind }),
         ...(customerCountry && { customer_country: customerCountry }),
         managed_payments: useManagedPayments ? "true" : "false",
