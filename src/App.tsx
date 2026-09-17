@@ -49,6 +49,8 @@ import DeepReadStart from "./pages/DeepReadStart";
 import Explore from "./pages/Explore";
 import Prime from "./pages/Prime";
 import GroupRoastStart from "./pages/GroupRoastStart";
+import GroupRoastResult from "./pages/GroupRoastResult";
+import GroupRoastShareView from "./pages/GroupRoastShareView";
 
 import OAuthConsent from "./pages/OAuthConsent";
 import { AuthProvider } from "./hooks/useAuth";
@@ -86,6 +88,8 @@ const App = () => (
           <Route path="/explore" element={<Explore />} />
           <Route path="/prime" element={<Prime />} />
           <Route path="/group-roast" element={<GroupRoastStart />} />
+          <Route path="/group-roast/:groupRoastId" element={<GroupRoastResult />} />
+          <Route path="/gr/:token" element={<GroupRoastShareView />} />
           <Route path="/processing/:analysisId" element={<Processing />} />
           <Route path="/decode/:decodeId" element={<DecodeResult />} />
           <Route path="/group" element={<GroupRead />} />

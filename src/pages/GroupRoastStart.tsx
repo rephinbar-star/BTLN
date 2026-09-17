@@ -31,9 +31,6 @@ const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
 const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
 const MIN_MESSAGES = LIMITS.GROUP_MIN_MESSAGES;
 /** Id of a paid-for group roast placeholder. Never holds chat text. */
-const UNLOCK_TARGET_KEY = "btln_group_roast_unlock_target";
-
-
 const FORMAT_LABEL: Record<ParseResult["format"], string> = {
   whatsapp: "WhatsApp export",
   imessage: "iMessage export",
@@ -198,11 +195,11 @@ const GroupRoastStart = () => {
       navigate(`/auth?return_to=${encodeURIComponent("/group-roast")}`);
       return;
     }
-    if (included.length === 2) {
+    if (selectedParticipants.length === 2) {
       setError("Group Roast is for 3 or more people. Use Deep Read for this two-person chat.");
       return;
     }
-    if (included.length < MIN_PARTICIPANTS || included.length > MAX_PARTICIPANTS) {
+    if (selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS) {
       setError(
         `Group Roast needs between ${MIN_PARTICIPANTS} and ${MAX_PARTICIPANTS} people. Exclude people you don't want read — we never drop anyone silently.`,
       );
@@ -232,7 +229,7 @@ const GroupRoastStart = () => {
 
     track("group_participants_confirmed", {
       category,
-      participant_count: included.length,
+      participant_count: selectedParticipants.length,
     });
 
     const { data, error: fnErr } = await supabase.functions.invoke("analyze-group-roast", { body });
@@ -615,9 +612,9 @@ const GroupRoastStart = () => {
                 </p>
               )}
 
-              {included.length > MAX_PARTICIPANTS && (
+              {selectedParticipants.length > MAX_PARTICIPANTS && (
                 <p className="mt-3 text-[13px] text-destructive">
-                  {included.length} people are selected. Group Roast reads up to {MAX_PARTICIPANTS} —
+                  {selectedParticipants.length} people are selected. Group Roast reads up to {MAX_PARTICIPANTS} —
                   exclude the ones you don't need, so you decide who's left out.
                 </p>
               )}

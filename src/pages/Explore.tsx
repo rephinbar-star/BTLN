@@ -9,6 +9,11 @@ type Item = { to: string; title: string; body: string };
 
 const items: Item[] = [
   {
+    to: "/group-roast",
+    title: "Group Roast",
+    body: "For group chats with 3 or more people. Import one directly—no earlier read required.",
+  },
+  {
     to: "/group",
     title: "Group Read",
     body: "The serious look at a group chat: who carries it, who drifts, how it changes.",

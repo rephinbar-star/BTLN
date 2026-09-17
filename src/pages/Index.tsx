@@ -31,7 +31,7 @@ const MODES = [
     to: "/group-roast",
     eyebrow: "Our group",
     title: "Group Roast",
-    body: "Who keeps this chat together—and who brings the chaos?",
+    body: "For group chats with 3 or more people. Find the roles, rhythms and chaos.",
     icon: UsersRound,
   },
 ];

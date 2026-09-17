@@ -41,3 +41,9 @@ verify_jwt = false
 
 [functions.analysis-share]
 verify_jwt = false
+
+[functions.analyze-group-roast]
+verify_jwt = false
+
+[functions.group-roast-data]
+verify_jwt = false
