@@ -301,3 +301,20 @@ describe("aggregation over long histories", () => {
     }
   });
 });
+
+describe("system-notice detection", () => {
+  it("keeps normal messages that mention added or removed", () => {
+    const r = parseTranscript(
+      [
+        "12/03/2024, 19:04 - Sam: I added you to the list",
+        "12/03/2024, 19:05 - Maya: I removed my post",
+        "12/03/2024, 19:06 - Sam added Maya",
+      ].join("\n"),
+    );
+    const kinds = r.messages.map((m) => m.kind);
+    expect(kinds[0]).not.toBe("system");
+    expect(kinds[1]).not.toBe("system");
+    expect(kinds[2]).toBe("system");
+    expect(r.participants.map((p) => p.display_name).sort()).toEqual(["Maya", "Sam"]);
+  });
+});

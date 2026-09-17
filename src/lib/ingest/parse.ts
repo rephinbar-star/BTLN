@@ -81,9 +81,6 @@ const ATTACHMENT_RE =
   /^(<media omitted>|image omitted|video omitted|audio omitted|sticker omitted|gif omitted|document omitted|<attached:.*>|.*\.(jpg|jpeg|png|webp|opus|mp4|pdf) ?\(file attached\))$/i;
 const DELETED_RE =
   /^(this message was deleted|you deleted this message|message deleted)\.?$/i;
-const WA_SYSTEM_RE =
-  /(messages and calls are end-to-end encrypted|created group|created this group|added |joined using this group|left$| left the group|changed the subject|changed this group's icon|removed |security code changed|changed their phone number|you were added|turned on disappearing messages)/i;
-
 // [12/03/2024, 19:04:11] Sam: hi   /   [2024-03-12, 7:04:11 PM] Sam: hi
 const WA_BRACKET =
   /^\[(\d{1,4}[/.\-]\d{1,2}[/.\-]\d{1,4}),?\s+(\d{1,2}[:.]\d{2}(?:[:.]\d{2})?(?:\s?[APap]\.?[Mm]\.?)?)\]\s*(?:([^:]{1,60}):\s?)?([\s\S]*)$/;
@@ -323,7 +320,7 @@ function parseLineBased(text: string): { raws: Raw[]; format: IngestFormat } {
         content: content.trim(),
         date: splitDate(m[1]),
         time: m[2],
-        kind: !sender || WA_SYSTEM_RE.test(content) ? "system" : classify(content),
+        kind: !sender ? "system" : classify(content),
       });
       continue;
     }
@@ -338,7 +335,7 @@ function parseLineBased(text: string): { raws: Raw[]; format: IngestFormat } {
         content: content.trim(),
         date: splitDate(m[1]),
         time: m[2],
-        kind: !sender || WA_SYSTEM_RE.test(content) ? "system" : classify(content),
+        kind: !sender ? "system" : classify(content),
       });
       continue;
     }
