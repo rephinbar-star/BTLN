@@ -469,6 +469,160 @@ export type Database = {
         }
         Relationships: []
       }
+      group_roast_share_links: {
+        Row: {
+          created_at: string
+          group_roast_id: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string | null
+          snapshot_json: Json
+          token_hash: string
+          updated_at: string
+          visit_count: number
+        }
+        Insert: {
+          created_at?: string
+          group_roast_id: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json: Json
+          token_hash: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Update: {
+          created_at?: string
+          group_roast_id?: string
+          id?: string
+          include_names?: boolean
+          include_quotes?: boolean
+          revoked_at?: string | null
+          snapshot_json?: Json
+          token_hash?: string
+          updated_at?: string
+          visit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_roast_share_links_group_roast_id_fkey"
+            columns: ["group_roast_id"]
+            isOneToOne: false
+            referencedRelation: "group_roasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_roast_unlocks: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          group_roast_id: string
+          id: string
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_cents: number
+          created_at?: string
+          group_roast_id: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          group_roast_id?: string
+          id?: string
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_roast_unlocks_group_roast_id_fkey"
+            columns: ["group_roast_id"]
+            isOneToOne: false
+            referencedRelation: "group_roasts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_roasts: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          coverage_json: Json
+          created_at: string
+          error_message: string | null
+          id: string
+          input_fingerprint: string
+          message_count: number
+          model: string | null
+          observations_json: Json
+          participant_count: number
+          participant_labels: Json
+          preview_json: Json | null
+          result_json: Json | null
+          safety_blocked: boolean
+          selected_period: Json
+          stats_json: Json
+          status: string
+          updated_at: string
+          usage_json: Json
+          user_id: string
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          coverage_json?: Json
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_fingerprint: string
+          message_count: number
+          model?: string | null
+          observations_json?: Json
+          participant_count: number
+          participant_labels?: Json
+          preview_json?: Json | null
+          result_json?: Json | null
+          safety_blocked?: boolean
+          selected_period?: Json
+          stats_json?: Json
+          status?: string
+          updated_at?: string
+          usage_json?: Json
+          user_id: string
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          coverage_json?: Json
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_fingerprint?: string
+          message_count?: number
+          model?: string | null
+          observations_json?: Json
+          participant_count?: number
+          participant_labels?: Json
+          preview_json?: Json | null
+          result_json?: Json | null
+          safety_blocked?: boolean
+          selected_period?: Json
+          stats_json?: Json
+          status?: string
+          updated_at?: string
+          usage_json?: Json
+          user_id?: string
+        }
+        Relationships: []
+      }
       group_share_links: {
         Row: {
           created_at: string
@@ -1481,6 +1635,18 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_group_roast_for_owner: { Args: { p_id: string }; Returns: Json }
+      get_group_roast_share_for_owner: {
+        Args: { p_group_roast_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          include_names: boolean
+          include_quotes: boolean
+          revoked_at: string
+          visit_count: number
+        }[]
+      }
       get_group_share_for_owner: {
         Args: { p_group_read_id: string; p_session_id: string }
         Returns: {
@@ -1553,6 +1719,10 @@ export type Database = {
         Args: { p_group_read_id: string }
         Returns: boolean
       }
+      has_group_roast_unlock: {
+        Args: { p_group_roast_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1614,6 +1784,10 @@ export type Database = {
         Returns: undefined
       }
       resolve_analysis_share: { Args: { p_token_hash: string }; Returns: Json }
+      resolve_group_roast_share: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
       resolve_group_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_roast_share: { Args: { p_token_hash: string }; Returns: Json }
       save_analysis_recipient_perspective: {

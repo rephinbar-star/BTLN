@@ -79,6 +79,8 @@ export type EventMap = {
     safety_mode: boolean;
   };
   group_read_failed: { reason_code: string };
+  group_roast_started: { category: string };
+  group_roast_failed: { reason_code: string };
   group_share_created: {
     group_read_id: string;
     include_names: boolean;
@@ -149,6 +151,8 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   group_participants_confirmed: ["category", "participant_count"],
   group_read_completed: ["group_read_id", "participant_count", "safety_mode"],
   group_read_failed: ["reason_code"],
+  group_roast_started: ["category"],
+  group_roast_failed: ["reason_code"],
   group_share_created: ["group_read_id", "include_names", "include_quotes"],
   group_share_visited: [],
   group_role_card_engaged: ["format"],

@@ -8,7 +8,8 @@ interface CheckoutOptions {
   userId?: string;
   analysisId?: string;
   groupReadId?: string;
-  reportKind?: "analysis" | "group_read";
+  groupRoastId?: string;
+  reportKind?: "analysis" | "group_read" | "group_roast";
   customerCountry?: string;
   returnUrl?: string;
 }

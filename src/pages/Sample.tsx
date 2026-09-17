@@ -32,6 +32,7 @@ export default function Sample() {
         </div>
         <p className="mt-6 text-sm leading-relaxed text-muted-foreground">BetweenTheLines combines guided imports, a consistent report structure, communication metrics when timestamps support them, practical suggestions, pair types, and sharing controls. It is a reflection tool, not therapy or a factual verdict about anyone.</p>
         <Button asChild className="mt-8 rounded-full" onClick={() => track("sample_cta_clicked", { category: kind, destination: "deep_read" })}><Link to="/deep">Start a Deep Read</Link></Button>
+        <div className="mt-8 rounded-lg border border-border bg-card p-5"><h2 className="text-lg font-semibold">Want the playful group version?</h2><p className="mt-2 text-sm text-muted-foreground">Group Roast is for group chats with 3 or more people. It uses a separate synthetic four-person example inside the importer.</p><Button asChild variant="outline" className="mt-4 rounded-full"><Link to="/group-roast">Try Group Roast</Link></Button></div>
       </section>
     </PublicPage>
   );

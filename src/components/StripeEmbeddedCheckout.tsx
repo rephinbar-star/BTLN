@@ -11,7 +11,8 @@ interface Props {
   userId?: string;
   analysisId?: string;
   groupReadId?: string;
-  reportKind?: "analysis" | "group_read";
+  groupRoastId?: string;
+  reportKind?: "analysis" | "group_read" | "group_roast";
   customerCountry?: string;
   returnUrl?: string;
 }
@@ -23,6 +24,7 @@ export function StripeEmbeddedCheckout({
   userId,
   analysisId,
   groupReadId,
+  groupRoastId,
   reportKind,
   customerCountry,
   returnUrl,
@@ -49,6 +51,7 @@ export function StripeEmbeddedCheckout({
         userId,
         analysisId,
         groupReadId,
+        groupRoastId,
         reportKind,
         customerCountry,
         returnUrl,

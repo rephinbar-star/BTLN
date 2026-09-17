@@ -18,7 +18,7 @@ export const PrimeOffer = ({ returnTo, className = "" }: Props) => {
   const { isMember, loading } = useMembership();
   const back = returnTo ?? `${pathname}${search}`;
 
-  if (loading) return null;
+  if (loading || isMember) return null;
 
   return (
     <div
@@ -30,7 +30,7 @@ export const PrimeOffer = ({ returnTo, className = "" }: Props) => {
         </span>
         <div className="min-w-0">
           <p className="text-[15px] font-medium">
-            {isMember ? "Prime — included in your plan soon" : "Prime — $19.99/month"}
+            Prime — $19.99/month
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
             Understand who you are in your relationships—and how you're changing.
@@ -39,7 +39,7 @@ export const PrimeOffer = ({ returnTo, className = "" }: Props) => {
             to={`/prime?return_to=${encodeURIComponent(back)}`}
             className="mt-3 inline-flex min-h-[44px] items-center text-[14px] font-medium text-btln-forest underline-offset-4 hover:underline"
           >
-            {isMember ? "See what Prime adds" : "See what's in Prime"} →
+            See what's in Prime →
           </Link>
         </div>
       </div>
