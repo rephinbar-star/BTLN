@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import { getSessionId } from "@/lib/session";
+import { PrimeOffer } from "@/components/prime/PrimeOffer";
 
 type ProductKey = "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
 
@@ -245,6 +246,8 @@ function UnlockOptions({ analysisId }: { analysisId: string }) {
           onClick={() => launch("BTLN_report_unlock")}
         />
       </div>
+
+      <PrimeOffer className="mt-5 text-left" returnTo={`/report/${analysisId}`} />
 
       <p className="mt-5 text-[12px] text-muted-foreground">
         Secure checkout via Stripe. Cancel anytime.
