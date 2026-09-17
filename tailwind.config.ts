@@ -61,6 +61,15 @@ export default {
         },
         "olive-deep": "hsl(var(--olive-deep))",
         "sage-muted": "hsl(var(--sage-muted))",
+        btln: {
+          paper: "hsl(var(--btln-paper))",
+          ink: "hsl(var(--btln-ink))",
+          muted: "hsl(var(--btln-muted))",
+          line: "hsl(var(--btln-line))",
+          mint: "hsl(var(--btln-mint))",
+          forest: "hsl(var(--btln-forest))",
+          peach: "hsl(var(--btln-peach))",
+        },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
