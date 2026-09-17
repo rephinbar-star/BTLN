@@ -13,6 +13,7 @@ import {
   type WrappedPeriod,
 } from "@/lib/wrapped/stats";
 import { WrappedCard, type WrappedCardVariant } from "@/components/wrapped/WrappedCard";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 
 const SIZE_LABEL: Record<WrappedCardVariant, string> = {
   story: "Story 1080 × 1920",
@@ -112,6 +113,7 @@ export default function Wrapped() {
         imported for that period — nothing is estimated, predicted or written by a model. Your file
         stays in this browser; we don&apos;t save the conversation.
       </p>
+      <SeeExample kind="wrapped" />
 
       <div className="mt-8 rounded-2xl border border-border bg-card p-5">
         <Label htmlFor="wrapped-file" className="text-[15px] font-medium">

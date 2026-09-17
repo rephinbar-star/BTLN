@@ -6,6 +6,7 @@ import { Header } from "@/components/chemistry/Header";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 
 type Source = {
   type: "analysis" | "group_read";
@@ -116,6 +117,7 @@ const RoastStart = () => {
           cruel, with an “Okay, but seriously…” at the end. We don't look at your chat again; we
           only use the read you already got.
         </p>
+        <SeeExample kind="roast" />
 
         <section className="mt-10">
           <h2 className="text-[20px] font-medium">Choose a read</h2>

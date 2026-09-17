@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Check, Info } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { useMembership } from "@/hooks/useMembership";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 
 const INCLUDED = [
   "Quick Take, Deep Read and Group Read in one place",
@@ -43,6 +44,7 @@ const Prime = () => {
           Connect the dots across your conversations. Discover recurring patterns, notice
           what's improving, and get practical guidance for what comes next.
         </p>
+        <SeeExample kind="journey" />
 
         <div className="mt-7 rounded-[20px] border-2 border-btln-forest bg-btln-mint/50 p-[18px]">
           <div className="flex items-baseline justify-between gap-4">

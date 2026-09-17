@@ -51,6 +51,7 @@ import Prime from "./pages/Prime";
 import GroupRoastStart from "./pages/GroupRoastStart";
 import GroupRoastResult from "./pages/GroupRoastResult";
 import GroupRoastShareView from "./pages/GroupRoastShareView";
+import { ExampleIndex, ExamplePage } from "./components/examples/ExampleExperience";
 
 import OAuthConsent from "./pages/OAuthConsent";
 import { AuthProvider } from "./hooks/useAuth";
@@ -137,6 +138,14 @@ const App = () => (
           <Route path="/guides/whatsapp" element={<WhatsAppGuide />} />
           <Route path="/guides/imessage" element={<IMessageGuide />} />
           <Route path="/sample" element={<Sample />} />
+          <Route path="/examples" element={<ExampleIndex />} />
+          <Route path="/examples/quick" element={<ExamplePage kind="quick" />} />
+          <Route path="/examples/deep" element={<ExamplePage kind="deep" />} />
+          <Route path="/examples/group-roast" element={<ExamplePage kind="group-roast" />} />
+          <Route path="/examples/group" element={<ExamplePage kind="group" />} />
+          <Route path="/examples/roast" element={<ExamplePage kind="roast" />} />
+          <Route path="/examples/wrapped" element={<ExamplePage kind="wrapped" />} />
+          <Route path="/examples/journey" element={<ExamplePage kind="journey" />} />
           <Route path="/guides/mixed-signal-texts" element={<MixedSignalsGuide />} />
           <Route path="/guides/group-chat-communication" element={<GroupCommunicationGuide />} />
           <Route path="/compare/chatgpt-vs-betweenthelines" element={<ChatGPTCompare />} />

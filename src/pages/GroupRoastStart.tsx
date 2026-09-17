@@ -26,6 +26,7 @@ import {
 } from "@/lib/ingest/aggregate";
 import { setDeepReadHandoff } from "@/lib/ingest/handoff";
 import { useAuth } from "@/hooks/useAuth";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 
 const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
 const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
@@ -283,6 +284,7 @@ const GroupRoastStart = () => {
           cast and dates, then see a useful preview before choosing whether to unlock the full
           roast. Raw messages are deleted after the run.
         </p>
+        <SeeExample kind="group-roast" />
 
         {step === "input" && (
           <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">

@@ -29,6 +29,7 @@ import {
 import { setDeepReadHandoff } from "@/lib/ingest/handoff";
 import { useAuth } from "@/hooks/useAuth";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 
 const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
 const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
@@ -302,6 +303,7 @@ const GroupRead = () => {
           Paste a friends, family or work chat with 3–15 people. You'll confirm who's who before
           anything is analysed, and the messages are deleted after we read them.
         </p>
+        <SeeExample kind="group" />
 
         {step === "input" && (
           <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">

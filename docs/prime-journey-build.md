@@ -27,6 +27,16 @@ no existing subscriber's billing changed.
 Stage 1 verification still pending: two-account isolation and forged cross-owner
 source tests are Stage 5 items and have **not** been run yet.
 
+## Full product examples — September 17, 2026
+
+- Added public, ungated complete examples at `/examples/quick`, `/examples/deep`, `/examples/group-roast`, `/examples/group`, `/examples/roast`, `/examples/wrapped`, and `/examples/journey`, plus `/examples` as the index. Existing `/sample` remains compatible and links to the full Deep Read.
+- Every example is marked `Fictional example`, uses schema-checked synthetic fixture data, makes no AI/payment/owner API call, and has a correct `Try [product]` action. Group examples contain four distinct participants and internally consistent 312-message coverage.
+- Quick Take includes all three reply options; Deep Read uses the production `DeepReport` renderer with every report section populated; the remaining pages cover the complete public output surface, evidence, limitations and next steps. Wrapped statistics are deterministic fixture counts.
+- Journey is explicitly labelled `Illustrative preview — feature in development`; it demonstrates multiple periods, relationships, evidence, correction/deletion boundaries and coaching without claiming that longitudinal synthesis is live.
+- The shared menu lists every product example without hover. Every product start page, plus Prime and Journey, has the exact underlined `See Example` control above input/purchase/onboarding content.
+- Start-page examples open as an accessible full-screen dialog while the original page stays mounted. Escape/close restores focus; in-memory pasted text, selected files, people and date choices are not reset or persisted in browser storage.
+- Verified all seven public routes anonymously at 360/390/430/1280: each showed its correct product H1 and fictional label with no horizontal overflow. The shared menu exposed all seven by name. Quick Take draft text remained intact after open/Escape at every width and focus returned to `See Example`; the same mounted-dialog design preserves file inputs, participant/date choices and other in-memory state without browser storage. Actual screenshots captured the 390px Quick Take overlay and full menu. Typecheck, 81 tests and production build passed. Nothing was published and no billing configuration changed.
+
 ## Stage 2 — Source adapters (Quick Take, Deep Read, Group Read, Group Roast)
 
 PENDING. Required behaviour, none implemented yet:

@@ -21,6 +21,7 @@ export default function Sample() {
       <p className="text-sm font-medium text-muted-foreground">Fictional demonstration</p>
       <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">See a sample read</h1>
       <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">These examples are synthetic. They show the report format, not a real person or guaranteed outcome.</p>
+      <Button asChild variant="outline" className="mt-5 min-h-11 rounded-full"><Link to="/examples/deep">Open the complete Deep Read example</Link></Button>
       <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Sample relationship type">
         {(Object.keys(samples) as SampleKey[]).map((key) => <Button key={key} variant={kind === key ? "default" : "outline"} role="tab" aria-selected={kind === key} onClick={() => setKind(key)}>{samples[key].label}</Button>)}
       </div>
@@ -32,7 +33,7 @@ export default function Sample() {
         </div>
         <p className="mt-6 text-sm leading-relaxed text-muted-foreground">BetweenTheLines combines guided imports, a consistent report structure, communication metrics when timestamps support them, practical suggestions, pair types, and sharing controls. It is a reflection tool, not therapy or a factual verdict about anyone.</p>
         <Button asChild className="mt-8 rounded-full" onClick={() => track("sample_cta_clicked", { category: kind, destination: "deep_read" })}><Link to="/deep">Start a Deep Read</Link></Button>
-        <div className="mt-8 rounded-lg border border-border bg-card p-5"><h2 className="text-lg font-semibold">Want the playful group version?</h2><p className="mt-2 text-sm text-muted-foreground">Group Roast is for group chats with 3 or more people. It uses a separate synthetic four-person example inside the importer.</p><Button asChild variant="outline" className="mt-4 rounded-full"><Link to="/group-roast">Try Group Roast</Link></Button></div>
+        <div className="mt-8 rounded-lg border border-border bg-card p-5"><h2 className="text-lg font-semibold">Want the playful group version?</h2><p className="mt-2 text-sm text-muted-foreground">Group Roast is for group chats with 3 or more people. Its complete fictional example includes four distinct participants.</p><Button asChild variant="outline" className="mt-4 rounded-full"><Link to="/examples/group-roast">See the Group Roast example</Link></Button></div>
       </section>
     </PublicPage>
   );

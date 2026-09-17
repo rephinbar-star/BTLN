@@ -10,4 +10,8 @@
 - [x] Rewrite ChatGPT/RIZZ comparison pages: neutral non-promotional competitor descriptions; bold key difference = frameworks built into the standard report (verified frameworks only, no clinical claims); table row "Frameworks included in the standard report"
 - [x] Unify the routed app shell: exact `BetweenTheLines` wordmark, compact navigation, remove every legacy shell logo, and verify representative routes
 
-- [ ] Build standalone Group Roast end-to-end: 3–15-person import, AI pipeline, secure preview/unlock, sharing, billing attachment, Journey provenance, and verification
+- [ ] Build standalone Group Roast end-to-end: implementation complete; authenticated 10,000-message AI, Stripe webhook replay/delay, and full ownership/share verification remain blocked or pending
+## Full product samples
+- [x] Add complete fictional examples for Quick Take, Deep Read, Group Roast, Group Read, Roast Us, Wrapped, and illustrative Journey.
+- [x] Add accessible Examples menu and exact See Example links preserving form state.
+- [x] Verify anonymous access, full sections, responsive views, focus/back behavior, typecheck/build.

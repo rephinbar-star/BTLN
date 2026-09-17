@@ -4,6 +4,7 @@ import { Loader2, Plus, Trash2, EyeOff, Eye } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -126,6 +127,7 @@ const Journey = () => {
           private to your account. Nothing is added unless you add it yourself, and there is no
           share link for it.
         </p>
+        <SeeExample kind="journey" />
 
         {loading ? (
           <div className="mt-12 flex justify-center">
