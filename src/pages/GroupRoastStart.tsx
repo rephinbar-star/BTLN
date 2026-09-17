@@ -1,8 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Info } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 
 const STEPS = [
   "Upload or paste the group chat",
@@ -24,13 +23,7 @@ const GroupRoastStart = () => (
     </Helmet>
     <Header />
     <main className="mx-auto max-w-2xl px-5 pb-24 pt-4 sm:px-8">
-      <Link
-        to="/"
-        className="inline-flex min-h-[44px] items-center gap-2 text-[14px] text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Change mode
-      </Link>
-      <h1 className="mt-2 text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[40px]">
+      <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[40px]">
         Our group
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
@@ -92,7 +85,6 @@ const GroupRoastStart = () => (
         </Link>
       </div>
     </main>
-    <Footer />
   </div>
 );
 

@@ -14,7 +14,6 @@ import {
   Users,
 } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 import { NextSteps } from "@/components/results/NextSteps";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
@@ -581,7 +580,6 @@ const GroupResult = () => {
       </div>
 
       <NextSteps mode="group" />
-      <Footer />
     </div>
   );
 };
@@ -594,7 +592,6 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
     </Helmet>
     <Header />
     <main className="mx-auto max-w-3xl px-5 pb-20 pt-16 sm:px-8">{children}</main>
-    <Footer />
   </div>
 );
 

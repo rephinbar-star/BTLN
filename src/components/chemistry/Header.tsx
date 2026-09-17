@@ -1,9 +1,10 @@
-import { Link, useNavigate } from "react-router-dom";
-import { Menu } from "lucide-react";
-import { logEvent } from "@/lib/session";
+import { useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { ArrowLeft, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import logoUrl from "@/assets/logo.png";
 import { Button } from "@/components/ui/button";
+import { FeedbackModal } from "./FeedbackModal";
+import { OPERATOR } from "@/config/operator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,98 +14,96 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const scrollToInput = (location: string) => {
-  logEvent("cta_clicked", { location });
-  document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
+const backTarget = (pathname: string, returnTo: string | null) => {
+  if (pathname === "/prime" && returnTo?.startsWith("/") && !returnTo.startsWith("//")) return returnTo;
+  if (pathname === "/explore" || pathname === "/account") return "/";
+  if (pathname === "/journey") return "/explore";
+  if (pathname === "/quick" || pathname === "/deep" || pathname === "/group-roast") return "/";
+  if (pathname === "/group") return "/explore";
+  if (pathname === "/roast") return "/explore";
+  if (pathname.startsWith("/decode/")) return "/quick";
+  if (pathname.startsWith("/group/")) return "/group";
+  if (pathname.startsWith("/roast/")) return "/roast";
+  if (pathname.startsWith("/report/")) return "/deep";
+  return "/";
 };
 
 export const Header = () => {
   const { user, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [params] = useSearchParams();
+  const [showFeedback, setShowFeedback] = useState(false);
+  const home = pathname === "/";
+  const fallback = backTarget(pathname, params.get("return_to"));
 
-  const initials = (() => {
-    if (!user) return "??";
-    const name =
-      (user.user_metadata?.full_name as string | undefined) ||
-      (user.user_metadata?.name as string | undefined) ||
-      "";
-    if (name.trim()) {
-      const parts = name.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-      }
-      return name.slice(0, 2).toUpperCase();
-    }
-    // Fallback to email
-    const email = user.email ?? "";
-    return email.slice(0, 2).toUpperCase() || "??";
-  })();
-
-  const truncEmail =
-    user?.email && user.email.length > 24 ? `${user.email.slice(0, 21)}…` : user?.email ?? "";
   return (
-    <header className="sticky top-0 z-40 w-full overflow-hidden bg-background/90 backdrop-blur border-b border-border/70">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-1 sm:px-8">
-        <Link to="/" className="flex items-center">
-          <img src={logoUrl} alt="BetweenTheLines™" className="h-[103.7px] w-auto object-contain sm:h-[138.2px]" />
-        </Link>
-        <div className="flex items-center gap-4">
-          <nav className="hidden items-center gap-5 md:flex" aria-label="Main navigation">
-            <Link to="/sample" className="text-sm font-medium text-muted-foreground hover:text-foreground">Sample</Link>
-            <Link to="/pricing" className="text-sm font-medium text-muted-foreground hover:text-foreground">Pricing</Link>
-            <Link to="/about" className="text-sm font-medium text-muted-foreground hover:text-foreground">About</Link>
-          </nav>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button type="button" aria-label="Open navigation" size="icon" variant="outline" className="rounded-full md:hidden"><Menu className="h-4 w-4" /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end"><DropdownMenuItem onSelect={() => navigate("/sample")}>Sample</DropdownMenuItem><DropdownMenuItem onSelect={() => navigate("/pricing")}>Pricing</DropdownMenuItem><DropdownMenuItem onSelect={() => navigate("/about")}>About</DropdownMenuItem><DropdownMenuItem onSelect={() => navigate("/types")}>Pair types</DropdownMenuItem></DropdownMenuContent>
-          </DropdownMenu>
-          {!loading && user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  type="button"
-                  size="icon"
-                  aria-label="Account menu"
-                  className="h-9 w-9 rounded-full text-xs"
-                >
-                  {initials}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel className="truncate text-xs font-normal text-muted-foreground">
-                  {truncEmail}
-                </DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onSelect={() => navigate("/account")}>
-                  My reports
-                </DropdownMenuItem>
-                <DropdownMenuItem onSelect={() => navigate("/account")}>
-                  Account settings
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onSelect={() => {
-                    void signOut().then(() => navigate("/"));
-                  }}
-                >
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+    <>
+      <header className="sticky top-0 z-40 w-full border-b border-btln-line bg-btln-paper/95 backdrop-blur">
+        <div className="mx-auto grid h-[58px] max-w-6xl grid-cols-[44px_1fr_44px] items-center px-[19px] sm:h-[62px]">
+          {home ? (
+            <span aria-hidden className="h-11 w-11" />
           ) : (
-            <>
-              {!loading && (
-                <Link
-                  to="/auth?mode=signin"
-                  className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground hover:text-background"
-                >
-                  Log In / Register
-                </Link>
-              )}
-            </>
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              aria-label="Go back"
+              onClick={() => navigate(fallback)}
+              className="h-11 w-11 rounded-full text-btln-ink hover:bg-btln-mint"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
           )}
+          <Link
+            to="/"
+            aria-label="BetweenTheLines home"
+            className="justify-self-center text-[17px] font-bold text-btln-ink"
+          >
+            between<span className="text-btln-forest">the</span>lines
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                aria-label="Open menu"
+                size="icon"
+                variant="ghost"
+                className="h-11 w-11 rounded-full text-btln-ink hover:bg-btln-mint"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60 p-2">
+              {!loading && (
+                <DropdownMenuItem className="min-h-11" onSelect={() => navigate(user ? "/account" : "/auth?mode=signin")}>
+                  {user ? "My reads and account" : "Log in or register"}
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/explore")}>Explore</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/sample")}>Sample read</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/pricing")}>Plans and pricing</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/about")}>About</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/trust")}>Trust</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/privacy")}>Privacy</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/terms")}>Terms</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/guides/whatsapp")}>Guides</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => { window.location.href = `mailto:${OPERATOR.contactEmail}`; }}>Contact</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-11" onSelect={() => setShowFeedback(true)}>Feedback</DropdownMenuItem>
+              {user && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem className="min-h-11" onSelect={() => void signOut().then(() => navigate("/"))}>
+                    Sign out
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
-    </header>
+      </header>
+      <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
+    </>
   );
 };

@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, Navigate, useLocation } from "react-router-dom";
 import { ArrowRight, MessageSquare, Users, UsersRound } from "lucide-react";
-import { Footer } from "@/components/chemistry/Footer";
 import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { supabase } from "@/integrations/supabase/client";
@@ -179,30 +178,7 @@ const Index = () => {
           </section>
         )}
 
-        <section className="mt-8 rounded-[20px] border border-btln-line bg-btln-mint/50 p-[18px]">
-          <h2 className="text-[16px] font-medium">Before you decide anything</h2>
-          <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-            Every read explains the patterns it sees and where it isn't sure. It reads
-            communication, not people — it isn't a diagnosis or a clinical assessment.
-            You see what a read covers before anything is paid for.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-4">
-            <Link
-              to="/sample"
-              className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-btln-forest underline-offset-4 hover:underline"
-            >
-              See a sample read →
-            </Link>
-            <Link
-              to="/explore"
-              className="inline-flex min-h-[44px] items-center text-[14px] font-medium text-btln-forest underline-offset-4 hover:underline"
-            >
-              Group Read, Wrapped and more →
-            </Link>
-          </div>
-        </section>
       </main>
-      <Footer />
       <BottomNav />
     </div>
   );

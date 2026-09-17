@@ -17,7 +17,7 @@ export const BottomNav = () => {
   return (
     <nav
       aria-label="Primary"
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-btln-line bg-background/95 backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 border-t border-btln-line bg-btln-paper/95 px-2 pt-2 backdrop-blur md:static md:mx-auto md:mb-8 md:max-w-2xl md:rounded-[20px] md:border md:p-2"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       <ul className="mx-auto flex max-w-md items-stretch justify-around">
@@ -28,8 +28,8 @@ export const BottomNav = () => {
               <Link
                 to={to}
                 aria-current={active ? "page" : undefined}
-                className={`flex min-h-[56px] flex-col items-center justify-center gap-1 px-2 py-2 text-[12px] ${
-                  active ? "text-btln-forest font-medium" : "text-muted-foreground"
+                className={`flex min-h-[52px] flex-col items-center justify-center gap-1 rounded-[14px] px-2 py-2 text-[12px] ${
+                  active ? "bg-btln-mint text-btln-ink font-semibold" : "text-muted-foreground hover:bg-btln-mint/50"
                 }`}
               >
                 <Icon className="h-5 w-5" />

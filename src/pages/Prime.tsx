@@ -1,8 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Check, Info } from "lucide-react";
+import { Check, Info } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 import { useMembership } from "@/hooks/useMembership";
 
 const INCLUDED = [
@@ -37,15 +36,7 @@ const Prime = () => {
       </Helmet>
       <Header />
       <main className="mx-auto max-w-2xl px-5 pb-24 pt-4 sm:px-8">
-        {returnTo && (
-          <Link
-            to={returnTo}
-            className="inline-flex min-h-[44px] items-center gap-2 text-[14px] text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" /> Back to what you were doing
-          </Link>
-        )}
-        <h1 className="mt-2 text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[42px]">
+        <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[42px]">
           Understand who you are in your relationships—and how you're changing.
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
@@ -125,7 +116,6 @@ const Prime = () => {
           .
         </p>
       </main>
-      <Footer />
     </div>
   );
 };

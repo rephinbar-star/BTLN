@@ -215,7 +215,6 @@ const RoastStart = () => {
           Roast us
         </button>
       </main>
-      <Footer />
     </div>
   );
 };

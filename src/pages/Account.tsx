@@ -20,7 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
+import { BottomNav } from "@/components/nav/BottomNav";
 import { getStripeEnvironment } from "@/lib/stripe";
 import type { AnalysisResult } from "@/lib/analysis-types";
 
@@ -608,7 +608,7 @@ const Account = () => {
           </button>
         </section>
       </main>
-      <Footer />
+      <BottomNav />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

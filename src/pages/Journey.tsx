@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Loader2, Plus, Trash2, EyeOff, Eye } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
+import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -395,7 +395,7 @@ const Journey = () => {
           </>
         )}
       </main>
-      <Footer />
+      <BottomNav />
     </div>
   );
 };
