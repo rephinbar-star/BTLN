@@ -1,0 +1,180 @@
+import { supabase } from "@/integrations/supabase/client";
+import type {
+  JourneyRelationship,
+  JourneySource,
+  JourneySourceKind,
+  LinkableReport,
+  RelationshipKind,
+} from "./types";
+
+/**
+ * Journey data access.
+ *
+ * Every table below is owner-only at the database level (RLS), and linking a
+ * report into a Journey is validated server-side against the report's owner —
+ * the browser cannot link a conversation it does not own. Nothing here ever
+ * reads or stores raw message text.
+ */
+
+export async function getOptInState(): Promise<{ optedInAt: string | null } | null> {
+  const { data } = await supabase
+    .from("journey_profiles")
+    .select("opted_in_at")
+    .maybeSingle();
+  return data ? { optedInAt: data.opted_in_at } : null;
+}
+
+export async function optIn(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("journey_profiles")
+    .upsert({ user_id: userId, opted_in_at: new Date().toISOString() }, { onConflict: "user_id" });
+  if (error) throw error;
+}
+
+export async function optOut(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from("journey_profiles")
+    .update({ opted_in_at: null })
+    .eq("user_id", userId);
+  if (error) throw error;
+}
+
+export async function listRelationships(): Promise<JourneyRelationship[]> {
+  const { data, error } = await supabase
+    .from("journey_relationships")
+    .select("id, kind, label, data_version, created_at")
+    .order("created_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as JourneyRelationship[];
+}
+
+export async function createRelationship(
+  userId: string,
+  kind: RelationshipKind,
+  label: string,
+): Promise<JourneyRelationship> {
+  const { data, error } = await supabase
+    .from("journey_relationships")
+    .insert({ user_id: userId, kind, label: label.trim() })
+    .select("id, kind, label, data_version, created_at")
+    .single();
+  if (error) throw error;
+  return data as JourneyRelationship;
+}
+
+export async function deleteRelationship(id: string): Promise<void> {
+  const { error } = await supabase.from("journey_relationships").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function listSources(relationshipId: string): Promise<JourneySource[]> {
+  const { data, error } = await supabase
+    .from("journey_sources")
+    .select(
+      "id, relationship_id, source_kind, source_id, subject_participant, observed_period_start, observed_period_end, uploaded_at, consent_at, excluded_at",
+    )
+    .eq("relationship_id", relationshipId)
+    .order("uploaded_at", { ascending: false });
+  if (error) throw error;
+  return (data ?? []) as JourneySource[];
+}
+
+export async function linkSource(params: {
+  userId: string;
+  relationshipId: string;
+  kind: JourneySourceKind;
+  sourceId: string;
+  subjectParticipant: string;
+}): Promise<void> {
+  const { error } = await supabase.from("journey_sources").insert({
+    user_id: params.userId,
+    relationship_id: params.relationshipId,
+    source_kind: params.kind,
+    source_id: params.sourceId,
+    subject_participant: params.subjectParticipant.trim() || null,
+  });
+  if (error) throw error;
+}
+
+export async function setSourceExcluded(id: string, excluded: boolean): Promise<void> {
+  const { error } = await supabase
+    .from("journey_sources")
+    .update({ excluded_at: excluded ? new Date().toISOString() : null })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function removeSource(id: string): Promise<void> {
+  const { error } = await supabase.from("journey_sources").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteEverything(): Promise<void> {
+  const { error } = await supabase.rpc("journey_delete_all");
+  if (error) throw error;
+}
+
+/**
+ * Reports the signed-in person owns. Only claimed (signed-in) reports appear —
+ * anonymous browser-session reports must be saved to the account first, which
+ * is the consent step that stops silent cross-matching of private chats.
+ */
+export async function listOwnedReports(userId: string): Promise<LinkableReport[]> {
+  const [deep, group, quick, roast] = await Promise.all([
+    supabase
+      .from("analyses")
+      .select("id, created_at, context_data, status")
+      .eq("user_id", userId)
+      .eq("status", "complete")
+      .order("created_at", { ascending: false })
+      .limit(40),
+    supabase
+      .from("group_reads")
+      .select("id, created_at, participant_count, status")
+      .eq("user_id", userId)
+      .eq("status", "complete")
+      .order("created_at", { ascending: false })
+      .limit(40),
+    supabase
+      .from("decodes")
+      .select("id, created_at, status")
+      .eq("user_id", userId)
+      .eq("status", "complete")
+      .order("created_at", { ascending: false })
+      .limit(40),
+    supabase
+      .from("roasts")
+      .select("id, created_at, status, source_type")
+      .eq("user_id", userId)
+      .eq("status", "complete")
+      .order("created_at", { ascending: false })
+      .limit(40),
+  ]);
+
+  const out: LinkableReport[] = [];
+  for (const row of deep.data ?? []) {
+    const ctx = (row.context_data ?? {}) as { name1?: string; name2?: string };
+    const names = [ctx.name1, ctx.name2].filter(Boolean).join(" & ");
+    out.push({
+      kind: "deep_read",
+      id: row.id,
+      label: names || "Deep Read",
+      created_at: row.created_at,
+    });
+  }
+  for (const row of group.data ?? []) {
+    out.push({
+      kind: "group_read",
+      id: row.id,
+      label: `${row.participant_count} people`,
+      created_at: row.created_at,
+    });
+  }
+  for (const row of quick.data ?? []) {
+    out.push({ kind: "quick_take", id: row.id, label: "Quick Take", created_at: row.created_at });
+  }
+  for (const row of roast.data ?? []) {
+    out.push({ kind: "group_roast", id: row.id, label: "Roast", created_at: row.created_at });
+  }
+  return out.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+}
