@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/chemistry/Header";
 import { DecodeInput } from "@/components/chemistry/DecodeInput";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 
 const QuickTake = () => (
   <div className="min-h-screen bg-btln-paper text-foreground">
@@ -21,6 +22,7 @@ const QuickTake = () => (
         Stuck on what they meant—or what to say back? Add the screenshot or paste the message.
         You'll get the likely read, what's going on underneath, and three replies you could send.
       </p>
+      <SeeExample kind="quick" />
       <div className="mt-6">
         <DecodeInput />
       </div>

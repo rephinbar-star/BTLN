@@ -1,6 +1,7 @@
 import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/chemistry/Header";
 import { InputSection } from "@/components/chemistry/InputSection";
+import { SeeExample } from "@/components/examples/ExampleExperience";
 
 const DeepReadStart = () => (
   <div className="min-h-screen bg-btln-paper text-foreground">
@@ -23,6 +24,7 @@ const DeepReadStart = () => (
         Five Love Languages discovery and practical next steps — read as communication
         patterns, not a clinical assessment.
       </p>
+      <SeeExample kind="deep" />
       <InputSection hideIntro />
     </main>
   </div>

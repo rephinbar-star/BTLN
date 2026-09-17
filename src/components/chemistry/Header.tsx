@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FeedbackModal } from "./FeedbackModal";
 import { OPERATOR } from "@/config/operator";
 import { BrandWordmark } from "./BrandWordmark";
+import { EXAMPLES } from "@/lib/examples/catalog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,7 +83,13 @@ export const Header = () => {
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/explore")}>Explore</DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/sample")}>Sample read</DropdownMenuItem>
+              <DropdownMenuLabel className="pt-3 text-xs uppercase text-muted-foreground">Examples</DropdownMenuLabel>
+              {EXAMPLES.map((example) => (
+                <DropdownMenuItem key={example.kind} className="min-h-11 pl-5" onSelect={() => navigate(example.route)}>
+                  {example.name}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuItem className="min-h-11 font-medium" onSelect={() => navigate("/examples")}>All examples</DropdownMenuItem>
               <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/pricing")}>Plans and pricing</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/about")}>About</DropdownMenuItem>
