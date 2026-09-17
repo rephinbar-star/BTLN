@@ -174,7 +174,9 @@ export async function listOwnedReports(userId: string): Promise<LinkableReport[]
     out.push({ kind: "quick_take", id: row.id, label: "Quick Take", created_at: row.created_at });
   }
   for (const row of roast.data ?? []) {
-    out.push({ kind: "group_roast", id: row.id, label: "Roast", created_at: row.created_at });
+    // Only group roasts are a Journey source kind; pair roasts stay out.
+    if (row.source_type !== "group_read") continue;
+    out.push({ kind: "group_roast", id: row.id, label: "Group Roast", created_at: row.created_at });
   }
   return out.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }

@@ -43,6 +43,7 @@ import ChatGPTCompare from "./pages/compare/ChatGPTCompare";
 import RizzCompare from "./pages/compare/RizzCompare";
 import Wrapped from "./pages/Wrapped";
 import BrandonCompare from "./pages/compare/BrandonCompare";
+import Journey from "./pages/Journey";
 
 import OAuthConsent from "./pages/OAuthConsent";
 import { AuthProvider } from "./hooks/useAuth";
@@ -103,6 +104,14 @@ const App = () => (
             element={
               <ProtectedRoute>
                 <Account />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/journey"
+            element={
+              <ProtectedRoute>
+                <Journey />
               </ProtectedRoute>
             }
           />
