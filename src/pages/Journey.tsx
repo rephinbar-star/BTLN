@@ -202,7 +202,7 @@ const Journey = () => {
                 return (
                   <section
                     key={rel.id}
-                    className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm"
+                    className="mt-6 rounded-[20px] border border-btln-line bg-card p-5 shadow-sm"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
