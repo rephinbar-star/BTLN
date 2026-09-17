@@ -2,7 +2,6 @@ import type { AnalysisResult, ContextData } from "@/lib/analysis-types";
 import type { GroupResultJson, GroupStatsJson } from "@/lib/group/types";
 import type { GroupRoastResult } from "@/lib/groupRoast/types";
 import type { RoastResultJson } from "@/lib/roast/types";
-import type { WrappedStats } from "@/lib/wrapped/stats";
 export { calculatedWrappedExample as wrappedExample } from "./sourceFixtures";
 
 export const deepContext: ContextData = { name1: "Maya", name2: "Jonas", relationship_stage: "dating", duration: "8 months", goal: "Understand our planning loop" };

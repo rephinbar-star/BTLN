@@ -10,6 +10,7 @@ describe("fictional sample sources", () => {
     expect(groupRoastResult.coverage?.messages_supplied).toBe(groupMessages.length);
     for (const role of groupResult.role_cards ?? []) expect(texts(groupMessages)).toContain(role.evidence);
     for (const role of groupRoastResult.participant_roles ?? []) expect(texts(groupMessages)).toContain(role.evidence);
+    for (const moment of groupRoastResult.standout_moments ?? []) expect(texts(groupMessages)).toContain(moment.evidence);
   });
   it("derives Wrapped values from every displayed source message", () => {
     expect(calculatedWrappedExample.totals.messages).toBe(wrappedMessages.length);

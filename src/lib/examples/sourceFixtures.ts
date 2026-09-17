@@ -7,7 +7,6 @@ const m = (id: string, sender: string, text: string, ts: string): ExampleMessage
 export const quickMessages = [
   m("q1","You","Still want to grab dinner this week?","2026-08-11T17:42:00Z"),
   m("q2","Alex","Yes — sorry, work is chaos. Thursday should work, but I might run late.","2026-08-11T17:49:00Z"),
-  m("q3","You","Thursday works. Want to pick a time once you know how work looks?","2026-08-11T17:53:00Z"),
 ];
 export const pairMessages = [
   m("d1","Maya","Are we still on for Friday? No stress if work is wild.","2026-02-06T09:02:00Z"),
