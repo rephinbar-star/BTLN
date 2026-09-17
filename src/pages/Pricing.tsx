@@ -10,6 +10,7 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import { OPERATOR } from "@/config/operator";
+import { PrimeOffer } from "@/components/prime/PrimeOffer";
 
 type ProductKey = "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
 
@@ -215,6 +216,10 @@ export default function Pricing() {
           ))}
         </div>
 
+
+        <div className="mx-auto mt-10 max-w-3xl">
+          <PrimeOffer />
+        </div>
 
         <section className="mx-auto mt-16 max-w-3xl border-t border-border pt-10">
           <h2 className="text-[24px] font-medium">Pricing questions</h2>

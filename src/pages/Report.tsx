@@ -1,6 +1,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { NextSteps } from "@/components/results/NextSteps";
 import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import * as htmlToImage from "html-to-image";
@@ -1090,6 +1091,8 @@ const ReportContent = () => {
 
         {safetyMode && <SafetyOverride note={result.meta.safety_note ?? ""} />}
       </main>
+
+      <NextSteps mode="deep" />
 
       {analysisId && (
         <FeedbackModal
