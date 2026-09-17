@@ -40,8 +40,8 @@ export const Header = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-btln-line bg-btln-paper/95 backdrop-blur">
-        <div className="mx-auto grid h-[58px] max-w-6xl grid-cols-[44px_1fr_44px] items-center px-[19px] sm:h-[62px]">
+      <header className="sticky top-0 z-40 h-[58px] w-full border-b border-btln-line bg-btln-paper/95 backdrop-blur sm:h-[62px]">
+        <div className="mx-auto grid h-full max-w-6xl grid-cols-[44px_1fr_44px] items-center px-[19px]">
           {home ? (
             <span aria-hidden className="h-11 w-11" />
           ) : (
