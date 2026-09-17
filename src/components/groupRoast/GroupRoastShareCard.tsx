@@ -30,7 +30,7 @@ export const GroupRoastShareCard = forwardRef<HTMLDivElement, Props>(
           {role.observed_behavior}
         </p>
         {role.evidence && (
-          <p className="mt-8 border-l-4 border-btln-leaf pl-6 text-[27px] italic leading-relaxed text-muted-foreground">
+          <p className="mt-8 border-l-4 border-btln-wordmark-accent pl-6 text-[27px] italic leading-relaxed text-muted-foreground">
             “{role.evidence}”
           </p>
         )}

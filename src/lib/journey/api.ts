@@ -86,14 +86,23 @@ export async function linkSource(params: {
   sourceId: string;
   subjectParticipant: string;
 }): Promise<void> {
-  const { error } = await supabase.from("journey_sources").insert({
+  const { data, error } = await supabase.from("journey_sources").insert({
     user_id: params.userId,
     relationship_id: params.relationshipId,
     source_kind: params.kind,
     source_id: params.sourceId,
     subject_participant: params.subjectParticipant.trim() || null,
-  });
+  }).select("id").single();
   if (error) throw error;
+  if (params.kind === "group_roast" && data?.id) {
+    const { error: adapterError } = await supabase.functions.invoke("group-roast-data", {
+      body: { action: "adapt_journey", group_roast_id: params.sourceId, journey_source_id: data.id },
+    });
+    if (adapterError) {
+      await supabase.from("journey_sources").delete().eq("id", data.id);
+      throw adapterError;
+    }
+  }
 }
 
 export async function setSourceExcluded(id: string, excluded: boolean): Promise<void> {
@@ -120,7 +129,7 @@ export async function deleteEverything(): Promise<void> {
  * is the consent step that stops silent cross-matching of private chats.
  */
 export async function listOwnedReports(userId: string): Promise<LinkableReport[]> {
-  const [deep, group, quick, roast] = await Promise.all([
+  const [deep, group, quick, roast, groupRoasts] = await Promise.all([
     supabase
       .from("analyses")
       .select("id, created_at, context_data, status")
@@ -128,6 +137,7 @@ export async function listOwnedReports(userId: string): Promise<LinkableReport[]
       .eq("status", "complete")
       .order("created_at", { ascending: false })
       .limit(40),
+    supabase.functions.invoke("group-roast-data", { body: { action: "list" } }),
     supabase
       .from("group_reads")
       .select("id, created_at, participant_count, status")
@@ -177,6 +187,9 @@ export async function listOwnedReports(userId: string): Promise<LinkableReport[]
     // Only group roasts are a Journey source kind; pair roasts stay out.
     if (row.source_type !== "group_read") continue;
     out.push({ kind: "group_roast", id: row.id, label: "Group Roast", created_at: row.created_at });
+  }
+  for (const row of groupRoasts.data?.roasts ?? []) {
+    out.push({ kind: "group_roast", id: row.id, label: `Group Roast · ${row.participant_count} people`, created_at: row.created_at });
   }
   return out.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
 }

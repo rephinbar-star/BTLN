@@ -18,6 +18,10 @@ Deno.serve(async(req)=>{
  }
  const auth=req.headers.get("Authorization")??""; const token=auth.toLowerCase().startsWith("bearer ")?auth.slice(7).trim():""; const {data:a}=token?await db.auth.getUser(token):{data:{user:null}}; const uid=a.user?.id;
  if(!uid)return json(401,{error:"Sign in to open a private Group Roast."});
+  if(action==="list"){
+    const {data}=await db.from("group_roasts").select("id,created_at,participant_count,status").eq("user_id",uid).eq("status","complete").order("created_at",{ascending:false}).limit(40);
+    return json(200,{roasts:data??[]});
+  }
  const id=String(body.group_roast_id??""); if(!UUID_RE.test(id))return json(400,{error:"Missing Group Roast."});
  const {data:g}=await db.from("group_roasts").select("*").eq("id",id).eq("user_id",uid).maybeSingle(); if(!g)return json(404,{error:"That Group Roast isn't yours."});
  const {data:sub}=await db.from("user_subscriptions").select("tier,status,current_period_end").eq("user_id",uid);

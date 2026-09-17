@@ -39,14 +39,14 @@ Rules:
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
-  const key = Deno.env.get("OPENROUTER_API_KEY");
-  if (!key) return json(500, { error: "AI is not configured." });
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
   const authHeader = req.headers.get("Authorization") ?? "";
   const token = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : "";
   const { data: authData } = token ? await supabase.auth.getUser(token) : { data: { user: null } };
   const userId = authData.user?.id ?? null;
   if (!userId) return json(401, { error: "Sign in before generating a private Group Roast.", code: "sign_in_required" });
+  const key = Deno.env.get("OPENROUTER_API_KEY");
+  if (!key) return json(500, { error: "AI is not configured." });
   const declared = Number(req.headers.get("content-length") ?? "0");
   if (declared > MAX_BODY_BYTES) return json(413, { error: "Select a shorter date range." });
   let body: Record<string, unknown>;
