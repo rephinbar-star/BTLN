@@ -355,7 +355,7 @@ const Journey = () => {
               })
             )}
 
-            <section className="mt-10 rounded-2xl border border-border bg-muted/40 p-5">
+            <section className="mt-10 rounded-[20px] border border-btln-line bg-btln-mint p-5">
               <h2 className="text-[16px] font-semibold text-foreground">Privacy controls</h2>
               <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                 Journey stores structured observations and the reports you linked — never the raw
