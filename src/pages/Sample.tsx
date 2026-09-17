@@ -31,7 +31,7 @@ export default function Sample() {
           {[['Pattern', item.pattern], ['Released evidence', item.evidence], ['A practical next step', item.next]].map(([label, value]) => <div key={label} className="rounded-lg border border-border bg-card p-5"><h2 className="text-sm font-semibold uppercase text-muted-foreground">{label}</h2><p className="mt-2 text-[16px] leading-relaxed">{value}</p></div>)}
         </div>
         <p className="mt-6 text-sm leading-relaxed text-muted-foreground">BetweenTheLines combines guided imports, a consistent report structure, communication metrics when timestamps support them, practical suggestions, pair types, and sharing controls. It is a reflection tool, not therapy or a factual verdict about anyone.</p>
-        <Button asChild className="mt-8 rounded-full" onClick={() => track("sample_cta_clicked", { category: kind, destination: "deep_read" })}><Link to="/#input-section">Start a Deep Read</Link></Button>
+        <Button asChild className="mt-8 rounded-full" onClick={() => track("sample_cta_clicked", { category: kind, destination: "deep_read" })}><Link to="/deep">Start a Deep Read</Link></Button>
       </section>
     </PublicPage>
   );

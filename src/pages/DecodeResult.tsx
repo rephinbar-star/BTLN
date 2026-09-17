@@ -387,7 +387,7 @@ const DecodeResult = () => {
                 what keeps repeating. We need at least 20 or 30 text exchanges for the deep report.
               </p>
               <Link
-                to="/#input-section"
+                to="/deep"
                 onClick={() => track("deep_report_upsell_click", {} as never)}
                 className="mt-4 inline-flex items-center gap-2 text-[14px] font-medium underline-offset-4 hover:underline"
               >

@@ -91,7 +91,7 @@ export default function Pricing() {
     track("pricing_cta_clicked", { source: "pricing_page", option: PRODUCT_TO_OPTION[priceId] });
 
     if (priceId === "BTLN_report_unlock") {
-      navigate("/#input-section");
+      navigate("/deep");
       setPending(null);
       return;
     }

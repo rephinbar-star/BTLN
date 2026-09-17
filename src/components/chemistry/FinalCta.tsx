@@ -13,7 +13,7 @@ const startNewAnalysis = () => {
   }
   // Hard-navigate to the input section so the input form remounts with
   // clean state.
-  window.location.assign("/#input-section");
+  window.location.assign("/deep");
 };
 
 export const FinalCta = () => {

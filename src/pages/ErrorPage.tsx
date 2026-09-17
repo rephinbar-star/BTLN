@@ -35,7 +35,7 @@ const ErrorPage = () => {
       </h1>
       <p className="mt-4 max-w-md text-[15px] text-muted-foreground">{body}</p>
       <Link
-        to="/#input-section"
+        to="/deep"
         className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
       >
         Try again

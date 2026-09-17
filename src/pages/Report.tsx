@@ -150,7 +150,7 @@ class ReportErrorBoundary extends Component<
             </p>
           )}
           <Link
-            to="/#input-section"
+            to="/deep"
             className="mt-8 inline-flex items-center justify-center rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
           >
             Try again
@@ -1075,7 +1075,7 @@ const ReportContent = () => {
                 Curious about another relationship?
               </h3>
               <Link
-                to="/#input-section"
+                to="/deep"
                 className="mt-5 inline-flex w-full max-w-[280px] items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
               >
                 Start a new analysis <ArrowRight className="h-4 w-4" />
@@ -1221,7 +1221,7 @@ const LowConfidenceGate = ({
             practice plan) unlocks.
           </p>
           <Link
-            to="/#input-section"
+            to="/deep"
             onClick={() =>
               logEvent("low_confidence_gate_cta_clicked", { message_count: count })
             }

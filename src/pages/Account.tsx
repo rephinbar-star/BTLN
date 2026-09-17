@@ -477,7 +477,7 @@ const Account = () => {
               No reports yet. Run an analysis from the homepage to get started.
             </p>
             <Link
-              to="/#input-section"
+              to="/deep"
               className="mt-4 inline-flex rounded-full bg-foreground px-5 py-2.5 text-sm font-medium text-background"
             >
               Run your first analysis
@@ -515,7 +515,7 @@ const Account = () => {
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            navigate(`/?redo=${r.id}#input-section`);
+                            navigate(`/deep?redo=${r.id}`);
                           }}
                           className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground flex-shrink-0"
                         >

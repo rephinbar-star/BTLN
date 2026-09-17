@@ -44,6 +44,11 @@ import RizzCompare from "./pages/compare/RizzCompare";
 import Wrapped from "./pages/Wrapped";
 import BrandonCompare from "./pages/compare/BrandonCompare";
 import Journey from "./pages/Journey";
+import QuickTake from "./pages/QuickTake";
+import DeepReadStart from "./pages/DeepReadStart";
+import Explore from "./pages/Explore";
+import Prime from "./pages/Prime";
+import GroupRoastStart from "./pages/GroupRoastStart";
 
 import OAuthConsent from "./pages/OAuthConsent";
 import { AuthProvider } from "./hooks/useAuth";
@@ -76,6 +81,11 @@ const App = () => (
         <PaymentTestModeBanner />
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/quick" element={<QuickTake />} />
+          <Route path="/deep" element={<DeepReadStart />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/prime" element={<Prime />} />
+          <Route path="/group-roast" element={<GroupRoastStart />} />
           <Route path="/processing/:analysisId" element={<Processing />} />
           <Route path="/decode/:decodeId" element={<DecodeResult />} />
           <Route path="/group" element={<GroupRead />} />

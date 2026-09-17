@@ -81,7 +81,7 @@ function VisitorCta() {
         Get your couple's full breakdown — communication patterns, attachment styles, hidden dynamics, and a weekly plan.
       </p>
       <Link
-        to="/#input-section"
+        to="/deep"
         className="mt-6 inline-flex items-center justify-center rounded-full bg-foreground px-6 py-3 text-[14px] font-medium text-background hover:opacity-90"
       >
         Start your analysis
