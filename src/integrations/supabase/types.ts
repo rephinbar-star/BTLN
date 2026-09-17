@@ -516,6 +516,309 @@ export type Database = {
           },
         ]
       }
+      journey_jobs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: string
+          input_fingerprint: string | null
+          kind: string
+          relationship_id: string | null
+          started_from_version: number
+          status: string
+          updated_at: string
+          usage_json: Json
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_fingerprint?: string | null
+          kind: string
+          relationship_id?: string | null
+          started_from_version: number
+          status?: string
+          updated_at?: string
+          usage_json?: Json
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          input_fingerprint?: string | null
+          kind?: string
+          relationship_id?: string | null
+          started_from_version?: number
+          status?: string
+          updated_at?: string
+          usage_json?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_jobs_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "journey_relationships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_observations: {
+        Row: {
+          alternatives: Json
+          confidence: string
+          corrected_at: string | null
+          created_at: string
+          evidence_refs: Json
+          excluded_at: string | null
+          id: string
+          journey_source_id: string
+          observation_type: string
+          observed_period_end: string | null
+          observed_period_start: string | null
+          relationship_id: string
+          statement: string
+          subject_kind: string
+          subject_label: string | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          alternatives?: Json
+          confidence?: string
+          corrected_at?: string | null
+          created_at?: string
+          evidence_refs?: Json
+          excluded_at?: string | null
+          id?: string
+          journey_source_id: string
+          observation_type: string
+          observed_period_end?: string | null
+          observed_period_start?: string | null
+          relationship_id: string
+          statement: string
+          subject_kind: string
+          subject_label?: string | null
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          alternatives?: Json
+          confidence?: string
+          corrected_at?: string | null
+          created_at?: string
+          evidence_refs?: Json
+          excluded_at?: string | null
+          id?: string
+          journey_source_id?: string
+          observation_type?: string
+          observed_period_end?: string | null
+          observed_period_start?: string | null
+          relationship_id?: string
+          statement?: string
+          subject_kind?: string
+          subject_label?: string | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_observations_journey_source_id_fkey"
+            columns: ["journey_source_id"]
+            isOneToOne: false
+            referencedRelation: "journey_sources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_observations_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "journey_relationships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_profiles: {
+        Row: {
+          created_at: string
+          data_version: number
+          opted_in_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_version?: number
+          opted_in_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_version?: number
+          opted_in_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journey_relationships: {
+        Row: {
+          created_at: string
+          data_version: number
+          id: string
+          kind: string
+          label: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_version?: number
+          id?: string
+          kind: string
+          label: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_version?: number
+          id?: string
+          kind?: string
+          label?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      journey_sources: {
+        Row: {
+          adapter_version: number
+          consent_at: string
+          created_at: string
+          excluded_at: string | null
+          id: string
+          notes: string | null
+          observed_period_end: string | null
+          observed_period_start: string | null
+          relationship_id: string
+          source_id: string
+          source_kind: string
+          subject_participant: string | null
+          updated_at: string
+          uploaded_at: string
+          user_id: string
+        }
+        Insert: {
+          adapter_version?: number
+          consent_at?: string
+          created_at?: string
+          excluded_at?: string | null
+          id?: string
+          notes?: string | null
+          observed_period_end?: string | null
+          observed_period_start?: string | null
+          relationship_id: string
+          source_id: string
+          source_kind: string
+          subject_participant?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          user_id: string
+        }
+        Update: {
+          adapter_version?: number
+          consent_at?: string
+          created_at?: string
+          excluded_at?: string | null
+          id?: string
+          notes?: string | null
+          observed_period_end?: string | null
+          observed_period_start?: string | null
+          relationship_id?: string
+          source_id?: string
+          source_kind?: string
+          subject_participant?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_sources_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "journey_relationships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_summaries: {
+        Row: {
+          built_from_version: number
+          content: Json
+          coverage: Json
+          created_at: string
+          evidence_source_ids: string[]
+          generated_at: string
+          id: string
+          is_stale: boolean
+          model: string | null
+          relationship_id: string | null
+          scope: string
+          updated_at: string
+          usage_json: Json
+          user_id: string
+        }
+        Insert: {
+          built_from_version: number
+          content: Json
+          coverage?: Json
+          created_at?: string
+          evidence_source_ids?: string[]
+          generated_at?: string
+          id?: string
+          is_stale?: boolean
+          model?: string | null
+          relationship_id?: string | null
+          scope: string
+          updated_at?: string
+          usage_json?: Json
+          user_id: string
+        }
+        Update: {
+          built_from_version?: number
+          content?: Json
+          coverage?: Json
+          created_at?: string
+          evidence_source_ids?: string[]
+          generated_at?: string
+          id?: string
+          is_stale?: boolean
+          model?: string | null
+          relationship_id?: string | null
+          scope?: string
+          updated_at?: string
+          usage_json?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_summaries_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "journey_relationships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages_temp: {
         Row: {
           analysis_id: string
@@ -1254,6 +1557,20 @@ export type Database = {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
+        }
+        Returns: boolean
+      }
+      journey_delete_all: { Args: never; Returns: undefined }
+      journey_write_summary: {
+        Args: {
+          p_content: Json
+          p_coverage: Json
+          p_evidence_source_ids: string[]
+          p_job_id: string
+          p_model: string
+          p_relationship_id: string
+          p_scope: string
+          p_usage: Json
         }
         Returns: boolean
       }
