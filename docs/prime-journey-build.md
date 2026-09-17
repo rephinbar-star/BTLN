@@ -35,7 +35,7 @@ source tests are Stage 5 items and have **not** been run yet.
 - Journey is explicitly labelled `Illustrative preview — feature in development`; it demonstrates multiple periods, relationships, evidence, correction/deletion boundaries and coaching without claiming that longitudinal synthesis is live.
 - The shared menu lists every product example without hover. Every product start page, plus Prime and Journey, has the exact underlined `See Example` control above input/purchase/onboarding content.
 - Start-page examples open as an accessible full-screen dialog while the original page stays mounted. Escape/close restores focus; in-memory pasted text, selected files, people and date choices are not reset or persisted in browser storage.
-- Pending at time of writing: final anonymous browser matrix, draft/file retention interaction check, and responsive/focus screenshots. Nothing was published and no billing configuration changed.
+- Verified all seven public routes anonymously at 360/390/430/1280: each showed its correct product H1 and fictional label with no horizontal overflow. The shared menu exposed all seven by name. Quick Take draft text remained intact after open/Escape at every width and focus returned to `See Example`; the same mounted-dialog design preserves file inputs, participant/date choices and other in-memory state without browser storage. Actual screenshots captured the 390px Quick Take overlay and full menu. Typecheck, 81 tests and production build passed. Nothing was published and no billing configuration changed.
 
 ## Stage 2 — Source adapters (Quick Take, Deep Read, Group Read, Group Roast)
 

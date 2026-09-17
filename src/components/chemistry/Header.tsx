@@ -76,7 +76,7 @@ export const Header = () => {
                 <Menu className="h-5 w-5" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-60 p-2">
+            <DropdownMenuContent align="end" className="max-h-[calc(100vh-76px)] w-60 overflow-y-auto p-2">
               {!loading && (
                 <DropdownMenuItem className="min-h-11" onSelect={() => navigate(user ? "/account" : "/auth?mode=signin")}>
                   {user ? "My reads and account" : "Log in or register"}

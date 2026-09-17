@@ -14,4 +14,4 @@
 ## Full product samples
 - [x] Add complete fictional examples for Quick Take, Deep Read, Group Roast, Group Read, Roast Us, Wrapped, and illustrative Journey.
 - [x] Add accessible Examples menu and exact See Example links preserving form state.
-- [ ] Verify anonymous access, full sections, responsive views, focus/back behavior, typecheck/build.
+- [x] Verify anonymous access, full sections, responsive views, focus/back behavior, typecheck/build.
