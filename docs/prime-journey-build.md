@@ -90,3 +90,23 @@ All user-facing promotion of those pages is removed from the rest of the app:
 
 Visitors arriving from search or a direct link can still enter the product via the
 CTA on the comparison page itself.
+
+## Screen-by-screen ledger — mobile redesign turn
+
+| Screen | Route | Status | Notes |
+|---|---|---|---|
+| Home (guest + signed-in, one variant) | `/` | DONE | Benefit-led H1 + 3 mode cards (Quick Take / Deep Read / Group Roast). Resume block only renders when the signed-in user actually has saved `analyses` rows. Old stacked heroes and the home Deep Read form removed. |
+| Quick Take input | `/quick` | DONE | Existing `DecodeInput` handlers/state unchanged. |
+| Deep Read input | `/deep` | DONE | Existing `InputSection` (hideIntro). Receives all legacy inbound traffic. |
+| Explore | `/explore` | DONE | Group Read, Roast Us, Wrapped, pair types, sample, pricing, Journey (signed-in). |
+| Prime pre-sales | `/prime` | DONE (frontend) | $19.99/month, included list, sample timeline, privacy, `return_to` same-site only. Purchase button disabled and labelled not open yet — no Stripe Prime price exists. |
+| Group Roast standalone | `/group-roast` | UX DONE / ENGINE PENDING | Honest status screen, noindex, links to Group Read and pair Roast as available today. Does NOT route to source-required Roast Us. |
+| Bottom nav | all non-focused | DONE | Start / My reads / Explore, `md:hidden`, safe-area padding, >=44px targets. |
+| Prime offer at purchase entries | `/pricing`, PaywallBlur, Group Read unlock, Quick Take paywall | DONE | `PrimeOffer` hidden for active members; never starts checkout. |
+| Post-result follow-through | Report, DecodeResult, GroupResult, RoastResult | DONE | `NextSteps` = repeat + cross-sell + Prime offer, entitlement-aware. |
+
+Legacy inbound handling: `/#input-section`, `/?from=import`, `/?redo=<id>` all forward to `/deep` with the query string intact (`Index.tsx` Navigate, replace). `GroupRead` two-person handoff now navigates to `/deep?from=import`; the in-memory `handoff.ts` store is unchanged, so no raw chat touches browser storage.
+
+Checks actually run this turn: `bunx vitest run` 81/81, `tsgo --noEmit` clean, `bun run build` clean (18 static + 39 pair-type pages prerendered), Playwright at 360/390/430/1280 across `/`, `/quick`, `/deep`, `/explore`, `/prime`, `/group-roast` — no horizontal overflow at any width (scrollWidth == viewport), correct H1 per route, screenshots in /tmp/browser/home. Console errors observed are a pre-existing react-helmet-async forwardRef warning cascade, unrelated to these screens.
+
+Still pending: Journey stages 2 and 3 (source adapters, longitudinal synthesis and coaching), standalone Group Roast engine, Prime checkout (needs a test-mode Prime product/price + lookup key), metering allowance numbers, stage 5 verification. Nothing published.
