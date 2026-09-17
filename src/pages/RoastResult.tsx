@@ -5,6 +5,7 @@ import * as htmlToImage from "html-to-image";
 import { AlertTriangle, Check, Copy, Download, Flame, Link2, Loader2, ShieldAlert } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
+import { NextSteps } from "@/components/results/NextSteps";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 import { track } from "@/lib/analytics";
@@ -430,6 +431,7 @@ const RoastResult = () => {
         />
       </div>
 
+      <NextSteps mode="roast" />
       <Footer />
     </div>
   );

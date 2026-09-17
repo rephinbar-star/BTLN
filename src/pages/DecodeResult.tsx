@@ -10,6 +10,7 @@ import { useDecodeAccess, FREE_DECODES } from "@/hooks/useDecodeAccess";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
+import { NextSteps } from "@/components/results/NextSteps";
 
 const DECODE_PLAN_PRICE_ID = "BTLN_decode_monthly";
 
@@ -414,6 +415,7 @@ const DecodeResult = () => {
           </div>
         )}
       </main>
+      <NextSteps mode="quick" />
       <Footer />
     </div>
   );
