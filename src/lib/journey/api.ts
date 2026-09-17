@@ -129,7 +129,7 @@ export async function deleteEverything(): Promise<void> {
  * is the consent step that stops silent cross-matching of private chats.
  */
 export async function listOwnedReports(userId: string): Promise<LinkableReport[]> {
-  const [deep, group, quick, roast, groupRoasts] = await Promise.all([
+  const [deep, groupRoasts, group, quick, roast] = await Promise.all([
     supabase
       .from("analyses")
       .select("id, created_at, context_data, status")
