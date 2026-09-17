@@ -837,7 +837,6 @@ const GroupRead = () => {
           </section>
         )}
       </main>
-      <Footer />
     </div>
   );
 };

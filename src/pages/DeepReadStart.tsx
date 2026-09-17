@@ -1,6 +1,4 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { InputSection } from "@/components/chemistry/InputSection";
 
@@ -16,13 +14,7 @@ const DeepReadStart = () => (
     </Helmet>
     <Header />
     <main className="mx-auto max-w-3xl px-5 pb-20 pt-4 sm:px-8">
-      <Link
-        to="/"
-        className="inline-flex min-h-[44px] items-center gap-2 text-[14px] text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" /> Change mode
-      </Link>
-      <h1 className="mt-2 text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[40px]">
+      <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[40px]">
         The two of us
       </h1>
       <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">

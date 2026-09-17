@@ -66,9 +66,6 @@ results will be reported separately.
    (or approval for me to create it in test mode only).
 2. Metering policy values (what the configurable allowance should be), since
    "unlimited" is not approved.
-3. Confirmation that `/prime` may be reached from the existing purchase screens
-   before the longitudinal capability is complete — currently gated as
-   "in progress" rather than sold as ready.
 
 ## Decision — comparison pages are search landing pages only (owner-approved)
 
@@ -101,11 +98,15 @@ CTA on the comparison page itself.
 | Explore | `/explore` | DONE | Group Read, Roast Us, Wrapped, pair types, sample, pricing, Journey (signed-in). |
 | Prime pre-sales | `/prime` | DONE (frontend) | $19.99/month, included list, sample timeline, privacy, `return_to` same-site only. Purchase button disabled and labelled not open yet — no Stripe Prime price exists. |
 | Group Roast standalone | `/group-roast` | UX DONE / ENGINE PENDING | Honest status screen, noindex, links to Group Read and pair Roast as available today. Does NOT route to source-required Roast Us. |
-| Bottom nav | all non-focused | DONE | Start / My reads / Explore, `md:hidden`, safe-area padding, >=44px targets. |
+| Shared compact header | redesigned screens + results | DONE | Prototype-matched 58px mobile / 62px desktop shell, centered text wordmark, deterministic back control and one accessible menu. No wide desktop link row. |
+| Bottom nav | `/`, `/account`, `/explore`, `/journey` | DONE | Start / My reads / Explore with equal items, active mint state, safe-area padding and >=44px targets; compact static navigation at the desktop content boundary. |
+| Legacy marketing footer | home, focused product screens, results | REMOVED | No oversized logo footer, duplicate navigation or arbitrary mobile spacer on these flows. Legal and unrelated public pages retain their existing footer. |
 | Prime offer at purchase entries | `/pricing`, PaywallBlur, Group Read unlock, Quick Take paywall | DONE | `PrimeOffer` hidden for active members; never starts checkout. |
 | Post-result follow-through | Report, DecodeResult, GroupResult, RoastResult | DONE | `NextSteps` = repeat + cross-sell + Prime offer, entitlement-aware. |
 
 Legacy inbound handling: `/#input-section`, `/?from=import`, `/?redo=<id>` all forward to `/deep` with the query string intact (`Index.tsx` Navigate, replace). `GroupRead` two-person handoff now navigates to `/deep?from=import`; the in-memory `handoff.ts` store is unchanged, so no raw chat touches browser storage.
+
+Owner correction applied: the complete `Before you decide anything` section was removed from `/` and was not relocated or replaced. Header menu keeps account/sign-in, Explore, sample, pricing, About, Trust, Privacy, Terms, guides, contact and feedback reachable; competitor pages are not linked.
 
 Checks actually run this turn: `bunx vitest run` 81/81, `tsgo --noEmit` clean, `bun run build` clean (18 static + 39 pair-type pages prerendered), Playwright at 360/390/430/1280 across `/`, `/quick`, `/deep`, `/explore`, `/prime`, `/group-roast` — no horizontal overflow at any width (scrollWidth == viewport), correct H1 per route, screenshots in /tmp/browser/home. Console errors observed are a pre-existing react-helmet-async forwardRef warning cascade, unrelated to these screens.
 

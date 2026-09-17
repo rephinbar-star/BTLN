@@ -2,7 +2,6 @@ import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -91,7 +90,6 @@ const Explore = () => {
           ))}
         </ul>
       </main>
-      <Footer />
       <BottomNav />
     </div>
   );

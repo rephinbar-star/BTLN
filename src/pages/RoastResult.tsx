@@ -4,7 +4,6 @@ import { Link, useParams } from "react-router-dom";
 import * as htmlToImage from "html-to-image";
 import { AlertTriangle, Check, Copy, Download, Flame, Link2, Loader2, ShieldAlert } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 import { NextSteps } from "@/components/results/NextSteps";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
@@ -34,7 +33,6 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
     </Helmet>
     <Header />
     <main className="mx-auto max-w-2xl px-5 pb-20 pt-12 sm:px-8">{children}</main>
-    <Footer />
   </div>
 );
 
@@ -432,7 +430,6 @@ const RoastResult = () => {
       </div>
 
       <NextSteps mode="roast" />
-      <Footer />
     </div>
   );
 };
