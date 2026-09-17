@@ -128,6 +128,7 @@ const GroupRead = () => {
 
   const doParse = (raw: string, opts?: { dayFirst?: boolean }) => {
     setError(null);
+    lastRaw.current = raw;
     if (raw.trim().length === 0) {
       setError("Paste a group chat first.");
       return;
