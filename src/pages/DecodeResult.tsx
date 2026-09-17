@@ -11,6 +11,7 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
 import { NextSteps } from "@/components/results/NextSteps";
+import { PrimeOffer } from "@/components/prime/PrimeOffer";
 
 const DECODE_PLAN_PRICE_ID = "BTLN_decode_monthly";
 
@@ -357,6 +358,7 @@ const DecodeResult = () => {
                         >
                           <Sparkles className="h-4 w-4" /> Unlock unlimited Quick Takes
                         </button>
+                        <PrimeOffer className="mt-4 text-left" returnTo={`/decode/${decodeId}`} />
                       </div>
                     </div>
                   )}
