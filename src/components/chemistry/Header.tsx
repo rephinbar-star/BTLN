@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { FeedbackModal } from "./FeedbackModal";
 import { OPERATOR } from "@/config/operator";
+import { BrandWordmark } from "./BrandWordmark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,9 +59,9 @@ export const Header = () => {
           <Link
             to="/"
             aria-label="BetweenTheLines home"
-            className="justify-self-center text-[17px] font-bold text-btln-ink"
+            className="justify-self-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            between<span className="text-btln-forest">the</span>lines
+            <BrandWordmark />
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

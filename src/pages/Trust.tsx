@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
-import logoUrl from "@/assets/logo.png";
 import { OPERATOR } from "@/config/operator";
+import { Header } from "@/components/chemistry/Header";
+import { Footer } from "@/components/chemistry/Footer";
 
 export default function Trust() {
   return (
@@ -14,16 +14,7 @@ export default function Trust() {
         <meta property="og:description" content="How we protect your data, handle your conversations, and keep your relationship analysis private." />
         <meta property="og:url" content="https://betweenthelines.app/trust" />
       </Helmet>
-      <header className="border-b border-border px-5 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logoUrl} alt="BetweenTheLines" className="h-[103.7px] w-auto object-contain sm:h-[138.2px]" />
-          </Link>
-          <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
-            ← Back
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-16">
         <h1 className="text-[32px] font-medium tracking-tight sm:text-[40px]">
@@ -141,6 +132,7 @@ export default function Trust() {
           product evolves.
         </p>
       </main>
+      <Footer />
     </div>
   );
 }
