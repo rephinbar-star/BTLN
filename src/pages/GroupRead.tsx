@@ -192,7 +192,7 @@ const GroupRead = () => {
     setDeepReadHandoff(lines.join("\n"));
     setText("");
     setParsed(null);
-    navigate("/?from=import");
+    navigate("/deep?from=import");
   };
 
   const submit = async () => {
