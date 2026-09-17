@@ -1,0 +1,10 @@
+REVOKE ALL ON FUNCTION public.has_group_roast_unlock(uuid) FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_group_roast_for_owner(uuid) FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.get_group_roast_share_for_owner(uuid) FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.resolve_group_roast_share(text) FROM anon, authenticated;
+REVOKE ALL ON FUNCTION public.journey_validate_source() FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.has_group_roast_unlock(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.get_group_roast_for_owner(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.get_group_roast_share_for_owner(uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.resolve_group_roast_share(text) TO service_role;
+GRANT EXECUTE ON FUNCTION public.journey_validate_source() TO service_role;
