@@ -62,6 +62,7 @@ const GroupRead = () => {
 
   const [step, setStep] = useState<"input" | "confirm">("input");
   const [text, setText] = useState("");
+  const lastRaw = useRef("");
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [category, setCategory] = useState<GroupCategory>("friends");
   const [selfId, setSelfId] = useState<string | null>(null);
@@ -457,9 +458,9 @@ const GroupRead = () => {
                         aria-pressed={dayFirst === o.value}
                         onClick={() => {
                           setDayFirst(o.value);
-                          doParse(text || "", { dayFirst: o.value });
+                          doParse(lastRaw.current || text, { dayFirst: o.value });
                         }}
-                        disabled={!text}
+                        disabled={!lastRaw.current && !text}
                         className={`rounded-full border px-3 py-1.5 text-[13px] ${
                           dayFirst === o.value
                             ? "border-foreground bg-foreground text-background"
