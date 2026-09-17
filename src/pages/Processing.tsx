@@ -4,7 +4,7 @@ import { Helmet } from "react-helmet-async";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 import { track, messageCountBucket } from "@/lib/analytics";
-import logoUrl from "@/assets/logo.png";
+import { BrandWordmark } from "@/components/chemistry/BrandWordmark";
 
 const RELATIONSHIP_FACTS: string[] = [
   "Couples who stay together respond to each other's small bids for attention about 86% of the time; couples who divorce, only 33%.",
@@ -266,9 +266,7 @@ const Processing = () => {
         <meta property="og:url" content="https://betweenthelines.app/processing" />
         <meta name="robots" content="noindex" />
       </Helmet>
-      <div className="flex items-center gap-2">
-        <img src={logoUrl} alt="BetweenTheLines™" className="h-24 w-auto object-contain" />
-      </div>
+      <BrandWordmark />
 
       <h1 className="sr-only">Analyzing your conversation</h1>
 

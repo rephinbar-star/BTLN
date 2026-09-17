@@ -8,3 +8,4 @@
 - [x] Validate desktop/mobile/keyboard, authorization, metadata, tests, typecheck, and build
 - [x] Produce reconciliation matrix and owner handoff list; keep unpublished
 - [x] Rewrite ChatGPT/RIZZ comparison pages: neutral non-promotional competitor descriptions; bold key difference = frameworks built into the standard report (verified frameworks only, no clinical claims); table row "Frameworks included in the standard report"
+- [x] Unify the routed app shell: exact `BetweenTheLines` wordmark, compact navigation, remove every legacy shell logo, and verify representative routes

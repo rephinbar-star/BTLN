@@ -3,7 +3,6 @@ import { Helmet } from "react-helmet-async";
 import { useNavigate } from "react-router-dom";
 import { AlertTriangle, ArrowRight, Loader2, Upload, Users, X } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId, logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";

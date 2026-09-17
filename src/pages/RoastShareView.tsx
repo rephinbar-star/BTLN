@@ -3,7 +3,6 @@ import { Helmet } from "react-helmet-async";
 import { Link, useParams } from "react-router-dom";
 import { ArrowRight, Loader2 } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { track } from "@/lib/analytics";
 import { hashRoastShareToken, type RoastShareSnapshot } from "@/lib/roast/types";
@@ -120,7 +119,6 @@ const RoastShareView = () => {
           </>
         )}
       </main>
-      <Footer />
     </div>
   );
 };

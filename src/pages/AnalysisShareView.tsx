@@ -3,7 +3,6 @@ import { Helmet } from "react-helmet-async";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { ArrowRight, Check, Loader2 } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { track } from "@/lib/analytics";
@@ -249,7 +248,6 @@ const AnalysisShareView = () => {
           </>
         )}
       </main>
-      <Footer />
     </div>
   );
 };

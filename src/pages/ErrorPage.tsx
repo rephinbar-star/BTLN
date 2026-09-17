@@ -1,6 +1,6 @@
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import logoUrl from "@/assets/logo.png";
+import { BrandWordmark } from "@/components/chemistry/BrandWordmark";
 
 const ErrorPage = () => {
   const [params] = useSearchParams();
@@ -27,9 +27,7 @@ const ErrorPage = () => {
         <meta property="og:url" content="https://betweenthelines.app/error" />
         <meta name="robots" content="noindex" />
       </Helmet>
-      <div className="flex items-center gap-2">
-        <img src={logoUrl} alt="BetweenTheLines™" className="h-8 w-auto object-contain" />
-      </div>
+      <BrandWordmark />
       <h1 className="mt-8 text-[28px] font-medium tracking-tight sm:text-[36px]">
         Something went wrong.
       </h1>
@@ -41,7 +39,7 @@ const ErrorPage = () => {
         Try again
       </Link>
       <p className="mt-6 max-w-md text-[12px] text-muted-foreground">
-        If this keeps happening, let us know via the Feedback link in the footer.
+        If this keeps happening, let us know via Feedback in the menu.
       </p>
     </div>
   );

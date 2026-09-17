@@ -1,7 +1,7 @@
 import { Helmet } from "react-helmet-async";
-import { Link } from "react-router-dom";
-import logoUrl from "@/assets/logo.png";
 import { OPERATOR } from "@/config/operator";
+import { Header } from "@/components/chemistry/Header";
+import { Footer } from "@/components/chemistry/Footer";
 
 export default function Terms() {
   return (
@@ -14,16 +14,7 @@ export default function Terms() {
         <meta property="og:description" content="The terms and conditions for using BetweenTheLines." />
         <meta property="og:url" content="https://betweenthelines.app/terms" />
       </Helmet>
-      <header className="border-b border-border px-5 py-4 sm:px-8">
-        <div className="mx-auto flex max-w-3xl items-center justify-between">
-          <Link to="/" className="flex items-center">
-            <img src={logoUrl} alt="BetweenTheLines" className="h-[103.7px] w-auto object-contain sm:h-[138.2px]" />
-          </Link>
-          <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
-            ← Back
-          </Link>
-        </div>
-      </header>
+      <Header />
 
       <main className="mx-auto max-w-3xl px-5 py-10 sm:px-8 sm:py-16">
         <h1 className="text-[32px] font-medium tracking-tight sm:text-[40px]">
@@ -193,7 +184,7 @@ export default function Terms() {
             <a href={`mailto:${OPERATOR.contactEmail}`} className="underline hover:text-foreground">
               {OPERATOR.contactEmail}
             </a>{" "}
-            or use the Feedback option in the footer.
+            or use the Feedback option in the menu.
           </p>
         </section>
 
@@ -201,6 +192,7 @@ export default function Terms() {
           Last updated: September 16, 2026. This page describes current terms and may be updated as the product evolves.
         </p>
       </main>
+      <Footer />
     </div>
   );
 }

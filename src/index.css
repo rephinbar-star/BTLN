@@ -68,7 +68,9 @@
 
     /* Mobile prototype v1 palette (docs/design/BTLN-Mobile-Prototype-v1.html) */
     --btln-paper: 80 16% 97%;      /* #F7F8F5 */
-    --btln-ink: 168 42% 16%;       /* #183B35 */
+    --btln-ink: 169.714 42.169% 16.275%; /* #183B35 */
+    --btln-wordmark: 169.714 42.169% 16.275%; /* #183B35 */
+    --btln-wordmark-accent: 151.071 25.455% 43.137%; /* #528A6F */
     --btln-muted: 160 9% 37%;      /* #576963 */
     --btln-line: 145 14% 88%;      /* #DCE4DE */
     --btln-mint: 152 39% 93%;      /* #E5F3EC */

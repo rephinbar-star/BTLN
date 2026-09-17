@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { FeedbackModal } from "./FeedbackModal";
 import { OPERATOR } from "@/config/operator";
+import { BrandWordmark } from "./BrandWordmark";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -39,8 +40,8 @@ export const Header = () => {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-btln-line bg-btln-paper/95 backdrop-blur">
-        <div className="mx-auto grid h-[58px] max-w-6xl grid-cols-[44px_1fr_44px] items-center px-[19px] sm:h-[62px]">
+      <header className="sticky top-0 z-40 h-[58px] w-full border-b border-btln-line bg-btln-paper/95 backdrop-blur sm:h-[62px]">
+        <div className="mx-auto grid h-full max-w-6xl grid-cols-[44px_1fr_44px] items-center px-[19px]">
           {home ? (
             <span aria-hidden className="h-11 w-11" />
           ) : (
@@ -58,9 +59,9 @@ export const Header = () => {
           <Link
             to="/"
             aria-label="BetweenTheLines home"
-            className="justify-self-center text-[17px] font-bold text-btln-ink"
+            className="justify-self-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            between<span className="text-btln-forest">the</span>lines
+            <BrandWordmark />
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

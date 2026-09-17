@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Header } from "@/components/chemistry/Header";
-import { Footer } from "@/components/chemistry/Footer";
 
 const ResetPassword = () => {
   const navigate = useNavigate();
@@ -60,7 +59,6 @@ const ResetPassword = () => {
           </Button>
         </form>
       </main>
-      <Footer />
     </div>
   );
 };

@@ -64,6 +64,8 @@ export default {
         btln: {
           paper: "hsl(var(--btln-paper))",
           ink: "hsl(var(--btln-ink))",
+          wordmark: "hsl(var(--btln-wordmark))",
+          "wordmark-accent": "hsl(var(--btln-wordmark-accent))",
           muted: "hsl(var(--btln-muted))",
           line: "hsl(var(--btln-line))",
           mint: "hsl(var(--btln-mint))",
