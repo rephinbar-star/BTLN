@@ -69,3 +69,24 @@ results will be reported separately.
 3. Confirmation that `/prime` may be reached from the existing purchase screens
    before the longitudinal capability is complete — currently gated as
    "in progress" rather than sold as ready.
+
+## Decision — comparison pages are search landing pages only (owner-approved)
+
+The three competitor comparison pages stay public, indexable and unchanged:
+`/compare/chatgpt-vs-betweenthelines`, `/compare/rizz-vs-betweenthelines`,
+`/compare/whatbrandonthinks-vs-betweenthelines`. URLs, content, canonical
+metadata and sitemap entries are preserved; they are not noindexed, robots-blocked,
+gated or deleted, and they serve identical content to visitors and crawlers
+(no hidden links, no bot-specific rendering).
+
+All user-facing promotion of those pages is removed from the rest of the app:
+- Removed the "Compare" link from the shared footer (`src/components/chemistry/Footer.tsx`).
+- No Compare entry exists in desktop or mobile navigation, the menu, homepage,
+  Explore, product input/result screens, upsells, the Prime page or checkout —
+  verified by search across `src/`.
+- The previously proposed contextual competitor comparisons are NOT added.
+- Benefit messaging in ordinary app journeys stays BTLN-specific, with no
+  competitor references and no outbound competitor links.
+
+Visitors arriving from search or a direct link can still enter the product via the
+CTA on the comparison page itself.

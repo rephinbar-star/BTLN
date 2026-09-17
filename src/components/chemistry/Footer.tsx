@@ -16,7 +16,7 @@ export const Footer = () => {
           <a href="/pricing" className="hover:text-foreground">Pricing</a>
           <a href="/about" className="hover:text-foreground">About</a>
           <a href="/types" className="hover:text-foreground">Pair types</a>
-          <a href="/compare/chatgpt-vs-betweenthelines" className="hover:text-foreground">Compare</a>
+          
           <a href="/trust" className="hover:text-foreground">Trust</a>
           <a href="/privacy" className="hover:text-foreground">Privacy</a>
           <a href="/terms" className="hover:text-foreground">Terms</a>
