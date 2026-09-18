@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, Navigate, useLocation } from "react-router-dom";
-import { ArrowRight, MessageSquare, Users, UsersRound } from "lucide-react";
+import { ArrowRight, MessageSquare, Sparkles, Users, UsersRound, type LucideIcon } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
+import { SeeExample } from "@/components/examples/ExampleExperience";
+import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import type { ExampleKind } from "@/lib/examples/catalog";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
 
@@ -15,28 +18,129 @@ const REF_KEY = "btln_ref_visit_fired";
 const MODES = [
   {
     to: "/quick",
-    eyebrow: "One text",
-    title: "Quick Take",
-    body: "Stuck on what they meant—or what to say back?",
+    label: "Quick Take",
+    title: "What did they mean? What should I say?",
+    scenario:
+      "You’ve started dating someone. They send a message, and you’re not sure whether they’re interested, pulling away, or just busy—or how to reply.",
+    benefit:
+      "Quick Take looks at your exchange, explains possible meanings, and gives you three ways to respond.",
+    extras: [
+      "A friend’s reply feels unexpectedly cold.",
+      "A family message touches a nerve and you want to respond thoughtfully.",
+    ],
+    cta: "Help me with this text",
+    exampleKind: "quick" as const,
     icon: MessageSquare,
+    tone: "bg-btln-mint",
   },
   {
     to: "/deep",
-    eyebrow: "The two of us",
-    title: "Deep Read",
-    body: "Does the same thing keep happening between you?",
+    label: "Deep Read",
+    title: "Why does this keep happening between us?",
+    scenario:
+      "You care about someone, but conversations keep ending in the same argument—or you’ve noticed a change in how you communicate and can’t quite explain it.",
+    benefit:
+      "Deep Read examines the wider conversation to reveal recurring patterns, where you connect, where you get stuck, and practical things to try.",
+    extras: [
+      "You’re wondering whether you’re doing most of the work to stay connected.",
+      "You want to understand a friendship or family relationship better.",
+    ],
+    cta: "Help me understand us",
+    exampleKind: "deep" as const,
     icon: Users,
+    tone: "bg-card",
   },
   {
     to: "/group-roast",
-    eyebrow: "Our group",
-    title: "Group Roast",
-    body: "For group chats with 3 or more people. Find the roles, rhythms and chaos.",
+    label: "Group Roast",
+    title: "Our group chat deserves its own comedy special.",
+    scenario:
+      "One friend organises everything. Another appears only when food is mentioned. Someone sends seventeen messages instead of one. Sound familiar?",
+    benefit:
+      "Upload your group chat and get a playful roast of everyone’s role, the group’s habits, and the dynamics that make you unmistakably you.",
+    note: "For three or more people.",
+    extras: [
+      "A family chat with strong opinions and questionable memes.",
+      "A work or hobby group with its own cast of characters.",
+    ],
+    cta: "Roast our group",
+    exampleKind: "group-roast" as const,
     icon: UsersRound,
+    tone: "bg-btln-peach",
   },
 ];
 
 type RecentRead = { id: string; created_at: string };
+
+type Mode = {
+  to: string;
+  label: string;
+  title: string;
+  scenario: string;
+  benefit: string;
+  note?: string;
+  extras: string[];
+  cta: string;
+  exampleKind: ExampleKind;
+  icon: LucideIcon;
+  tone: string;
+};
+
+const SituationCard = ({ mode }: { mode: Mode }) => {
+  const [expanded, setExpanded] = useState(false);
+  const detailsId = `home-${mode.exampleKind}-situations`;
+  const Icon = mode.icon;
+
+  return (
+    <article className={`rounded-[20px] border border-btln-line p-5 sm:p-6 ${mode.tone}`}>
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-background/80">
+          <Icon className="h-5 w-5 text-btln-forest" aria-hidden="true" />
+        </span>
+        <p className="text-[13px] font-semibold uppercase text-btln-forest">{mode.label}</p>
+      </div>
+
+      <h2 className="mt-4 text-[24px] font-medium leading-tight sm:text-[27px]">{mode.title}</h2>
+      <div className="mt-4 space-y-3 text-[15px] leading-6">
+        <p>{mode.scenario}</p>
+        <p className="font-medium text-btln-forest">{mode.benefit}</p>
+        {mode.note && <p className="text-[14px] font-semibold">{mode.note}</p>}
+      </div>
+
+      <Button
+        type="button"
+        variant="link"
+        onClick={() => setExpanded((current) => !current)}
+        aria-expanded={expanded}
+        aria-controls={detailsId}
+        className="mt-2 min-h-11 px-0 text-foreground underline underline-offset-4"
+      >
+        {expanded ? "Fewer situations" : "More situations"}
+      </Button>
+
+      <div id={detailsId} hidden={!expanded}>
+        <ul className="space-y-2 border-l-2 border-btln-line pl-4 text-[14px] leading-6 text-muted-foreground">
+          {mode.extras.map((extra) => (
+            <li key={extra}>{extra}</li>
+          ))}
+        </ul>
+      </div>
+
+      <div className="mt-5 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-5">
+        <Button asChild className="min-h-12 rounded-full px-5">
+          <Link
+            to={mode.to}
+            onClick={() => logEvent("cta_clicked", { location: `home_${mode.label}` })}
+          >
+            {mode.cta}
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </Button>
+        <SeeExample kind={mode.exampleKind} />
+      </div>
+    </article>
+  );
+};
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -120,36 +224,48 @@ const Index = () => {
       <Header />
       <main className="mx-auto max-w-2xl px-5 pb-28 pt-2 sm:px-8 md:pb-16">
         <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[44px]">
-          {user ? "What are we reading today?" : "Know what's really being said."}
+          What brought you here today?
         </h1>
         <p className="mt-3 text-[16px] leading-relaxed text-muted-foreground">
-          Bring a text, a conversation, or a group chat. You'll get a clear read of what's
-          going on and something practical to do next — in plain language, in minutes.
+          Find the read that fits your situation.
         </p>
 
-        <ul className="mt-7 flex flex-col gap-3">
-          {MODES.map(({ to, eyebrow, title, body, icon: Icon }) => (
-            <li key={to}>
-              <Link
-                to={to}
-                onClick={() => logEvent("cta_clicked", { location: `home_${title}` })}
-                className="flex min-h-[88px] items-center gap-4 rounded-[20px] border border-btln-line bg-card p-[18px] transition-colors hover:bg-muted/40"
-              >
-                <span className="flex h-[45px] w-[45px] shrink-0 items-center justify-center rounded-2xl bg-btln-mint">
-                  <Icon className="h-5 w-5 text-btln-forest" />
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[13px] text-muted-foreground">{eyebrow}</span>
-                  <span className="block text-[17px] font-medium">{title}</span>
-                  <span className="mt-1 block text-[14px] leading-relaxed text-muted-foreground">
-                    {body}
-                  </span>
-                </span>
-                <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-              </Link>
-            </li>
+        <div className="mt-7 space-y-4">
+          {MODES.map((mode) => (
+            <SituationCard key={mode.to} mode={mode} />
           ))}
-        </ul>
+        </div>
+
+        <section className="mt-9 border-y border-btln-line py-7" aria-labelledby="prime-heading">
+          <div className="flex items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-btln-mint">
+              <Sparkles className="h-5 w-5 text-btln-forest" aria-hidden="true" />
+            </span>
+            <p className="text-[13px] font-semibold text-btln-forest">PRIME</p>
+          </div>
+          <h2 id="prime-heading" className="mt-4 text-[24px] font-medium leading-tight sm:text-[27px]">
+            Is this a pattern in my relationships?
+          </h2>
+          <p className="mt-4 text-[15px] leading-6">
+            You’ve noticed something familiar across different relationships—perhaps you avoid
+            difficult conversations, seek reassurance, or keep taking responsibility for everyone
+            else. You want to understand whether the pattern is real and how it changes.
+          </p>
+          <p className="mt-3 text-[15px] font-medium leading-6 text-btln-forest">
+            We’re building Your Relationship Journey to connect insights from conversations you
+            choose to include, help you recognise patterns over time, and offer practical guidance
+            and check-ins.
+          </p>
+          <p className="mt-3 text-[13px] font-semibold text-muted-foreground">
+            Journey preview · In development
+          </p>
+          <Button asChild className="mt-5 min-h-12 rounded-full px-5">
+            <Link to="/prime">
+              Explore Prime — $19.99/month
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </Link>
+          </Button>
+        </section>
 
         {user && recent && recent.length > 0 && (
           <section className="mt-8">
