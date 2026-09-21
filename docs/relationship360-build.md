@@ -47,9 +47,9 @@ Observed behaviour, introspection questions, generated advice and self-reported 
 
 - Pattern details use **Introspection**, never a passive motive interpretation. The observation and its evidence stay
   separate from any question about what drove it.
-- Introspection opens with one question about the person's experience, then zero to three plausible reflection paths
-  only when the cited evidence makes them relevant. Each path links feeling, interpretation, need and action through
-  questions; it is never presented as a hidden motive or diagnosis.
+- Introspection opens with one question about the person's experience, followed inline by zero to three plausible
+  reflection paths only when the cited evidence makes them relevant. Each path links feeling, interpretation, need and
+  action through questions; neither the Insight nor its paths requires a click to read.
 - Ask what the behaviour accomplished immediately and what it cost or changed over time. Invite the person to decide
   what fits, reject a path, or name another explanation. Boundaries, kindness and useful strategies receive meaningful
   reflection too; no pattern is automatically framed as unhealthy.
@@ -70,9 +70,9 @@ Observed behaviour, introspection questions, generated advice and self-reported 
 - Default overview: one meaningful headline plus at most three distinct linked takeaways, about 60–90 words maximum
   when enough evidence exists and less when sparse. Show up to three prioritized, meaning-level distinct pattern cards;
   put further genuinely distinct patterns behind **More insights**. This is a maximum, never a quota.
-- A collapsed pattern shows a short title, one sentence about why it matters, observed period and its change/evidence
-  state. Expansion owns the grounded observation and Introspection. Show one open coaching question first; **Explore
-  this further** reveals at most two source-supported paths. Evidence lives under **Why we're showing this**.
+- A pattern shows a short title, one sentence about why it matters, observed period and its change/evidence state. Its
+  underlined, noninteractive **Insight** heading, grounded observation, open coaching question and up to three supported
+  reflection paths are visible in the normal reading flow. Evidence alone remains under **Why we're showing this**.
 - Suggested next steps contain at most three meaning-level distinct communication/behavioural actions, each with a
   short reason and expandable evidence. A pattern links to its canonical recommendation instead of restating it.
   What's working is omitted when it repeats a canonical pattern; no praise or action is generated to fill space.
@@ -174,14 +174,14 @@ fictional illustration and is never presented as the working feature.
 
 The owner-approved Introspection revision is implemented in the Stage 1 shared pattern renderer and fictional
 fixture. It includes a source-grounded uncertainty example, a useful boundary/directness reflection, a sparse-data
-state and an explicitly self-reported rejected alternative. One path is visible initially and further supported paths
-expand inline. There is no reflection save control because real reflection persistence and synthesis remain pending.
+state and an explicitly self-reported rejected alternative. All supported paths are visible inline. There is no
+reflection save control because real reflection persistence and synthesis remain pending.
 The Stage 4 contract and validation requirements above are recorded, but no real synthesis prompt or output validator
 exists yet and none is claimed complete.
 
 The concise editorial revision is also implemented in the shared Stage 1 components and preview. Overlapping fixture
-claims collapse by `semanticKey`; overview and monthly review link to canonical pattern/recommendation details; pattern,
-evidence, Introspection, Then / Now and monthly-review content progressively disclose. The same contracts are ready for
+claims collapse by `semanticKey`; overview and monthly review link to canonical pattern/recommendation details; Insight
+and Introspection render inline while evidence, Then / Now and monthly-review content progressively disclose. The same contracts are ready for
 the real renderer, but the real synthesis/summary reader remains Stage 4 work and is not presented as complete.
 On the long fictional fixture, the default page fell from 1,598 to 810 visible words overall; the report's default
 visible narrative is 192 words (source controls, labels and navigation excluded), within the 250–350-word maximum.

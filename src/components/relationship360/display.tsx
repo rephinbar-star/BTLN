@@ -163,14 +163,9 @@ export const R360PatternDetail = ({
   questionLabel: string;
   onEvidenceOpen?: () => void;
 }) => {
-  const [open, setOpen] = useState(false);
   const [evidenceOpen, setEvidenceOpen] = useState(false);
-  const [deeperOpen, setDeeperOpen] = useState(false);
   const id = useId();
-  const introspectionId = useId();
   const introspection = pattern.introspection;
-  const visiblePaths = introspection?.paths.slice(0, 1) ?? [];
-  const deeperPaths = introspection?.paths.slice(1) ?? [];
   return (
     <R360Card className="mt-3" >
       <article id={`pattern-${pattern.id}`} className="scroll-mt-20" data-r360-narrative>
@@ -183,35 +178,20 @@ export const R360PatternDetail = ({
         <p className="mt-1 text-[13px] text-muted-foreground">Observed {pattern.observedRange}</p>
       )}
       <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{pattern.whyItMatters ?? pattern.statement}</p>
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-controls={id}
-        className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4"
-      >
-        {open ? "Close insight" : "Open insight"}
-      </button>
-      <div id={id} hidden={!open}>
+      <section className="mt-4 border-t border-btln-line pt-4" aria-labelledby={`${id}-insight-heading`}>
+      <h4 id={`${id}-insight-heading`} className="text-[15px] font-medium underline decoration-btln-sage underline-offset-4">Insight</h4>
       <p className="mt-2 text-[15px] leading-relaxed"><strong className="font-medium">What we observed:</strong> {pattern.statement}</p>
-      <section className="mt-4 border-t border-btln-line pt-4" aria-labelledby={`${introspectionId}-heading`}>
-        <h4 id={`${introspectionId}-heading`} className="text-[15px] font-medium">Introspection</h4>
+      <section className="mt-4" aria-labelledby={`${id}-introspection-heading`}>
+        <h5 id={`${id}-introspection-heading`} className="text-[15px] font-medium">Introspection</h5>
         {introspection ? (
           <>
             <p className="mt-2 text-[15px] leading-relaxed">{introspection.openingQuestion}</p>
             {introspection.paths.length > 0 && (
-              <button
-                type="button"
-                aria-expanded={deeperOpen}
-                aria-controls={`${introspectionId}-deeper`}
-                onClick={() => setDeeperOpen((value) => !value)}
-                className="inline-flex min-h-11 items-center text-[14px] underline underline-offset-4"
-              >
-                {deeperOpen ? "Show less" : "Explore this further"}
-              </button>
+              <h6 className="mt-4 text-[14px] font-medium">Reflection paths</h6>
             )}
-            <div id={`${introspectionId}-deeper`} hidden={!deeperOpen || introspection.paths.length === 0}>
-              {[...visiblePaths, ...deeperPaths].slice(0, 2).map((path) => (
+            {introspection.paths.length > 0 && (
+              <div>
+              {introspection.paths.map((path) => (
                 <div key={path.label} className="mt-3 rounded-lg bg-btln-mint/40 p-3">
                   <p className="text-[14px] font-medium">{path.label}</p>
                   {path.questions.map((question) => (
@@ -219,8 +199,9 @@ export const R360PatternDetail = ({
                   ))}
                 </div>
               ))}
-            </div>
-            {deeperOpen && <p className="mt-3 text-[14px] leading-relaxed">{introspection.closingQuestion}</p>}
+              </div>
+            )}
+            <p className="mt-3 text-[14px] leading-relaxed">{introspection.closingQuestion}</p>
             {introspection.selfReportedReflection && (
               <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                 <strong className="font-medium text-foreground">Self-reported reflection:</strong>{" "}
@@ -267,7 +248,7 @@ export const R360PatternDetail = ({
       <p className="mt-3 text-[12px] text-muted-foreground">
         {pattern.confidence} confidence · {pattern.limitation}
       </p>
-      </div>
+      </section>
       </article>
     </R360Card>
   );
