@@ -122,10 +122,13 @@ export const relationship360Preview: R360Data = {
   patterns: [
     {
       id: "pat-notice",
+      semanticKey: "preemptive-withdrawal",
+      priority: 1,
       state: "again",
       observedRange: "6 March – 2 June 2026",
       question: "noticing",
       title: "You withdraw a request before the other person has answered it",
+      whyItMatters: "It can close a conversation before the other person has given you a clear answer.",
       statement:
         "In several conversations you offered an exit before anyone declined, then treated a neutral reply as a refusal.",
       introspection: {
@@ -170,10 +173,13 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-repeat",
+      semanticKey: "preemptive-withdrawal",
+      priority: 3,
       state: "again",
       observedRange: "March and June 2026",
       question: "repeating",
       title: "The same withdrawal happens in more than one period",
+      whyItMatters: "Seeing it in separate periods suggests this is more than one difficult exchange.",
       statement:
         "The pattern appears in March and again in June, in separate conversations rather than one long argument.",
       introspection: {
@@ -205,10 +211,13 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-change",
+      semanticKey: "direct-choice",
+      priority: 2,
       state: "different",
       observedRange: "11 June – 12 September 2026",
       question: "changed",
       title: "You started asking directly instead of retreating",
+      whyItMatters: "A clear choice kept the plan open and gave the other person room to answer.",
       statement:
         "From mid-June onward you put the choice into the message itself, and in September you asked about the plan rather than cancelling it.",
       introspection: {
@@ -241,11 +250,14 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-across",
+      semanticKey: "preemptive-withdrawal",
+      priority: 4,
       state: "again",
       observedRange: "March – June 2026",
       exception: "The family group is the exception: there you named a specific option first, and the plan held.",
       question: "across",
       title: "It shows up with a partner and with a friend, but not in the family group",
+      whyItMatters: "The family exception shows that this response is not fixed across every relationship.",
       statement:
         "The withdrawal appears with Sam and with Priya. In the family group you named the plan and held it.",
       introspection: {
@@ -279,6 +291,7 @@ export const relationship360Preview: R360Data = {
   working: [
     {
       id: "w1",
+      semanticKey: "direct-choice",
       statement: "When you state a plan plainly, it gets settled in a few messages and nobody has to guess.",
       evidence: [
         { sourceId: "s4", messageId: "s4m5" },
@@ -287,6 +300,7 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "w2",
+      semanticKey: "naming-needs",
       statement: "You now say what you actually want when a friend checks in, instead of closing the subject.",
       evidence: [{ sourceId: "s6", messageId: "s6m2" }],
     },
@@ -294,6 +308,7 @@ export const relationship360Preview: R360Data = {
   recommendations: [
     {
       id: "rec-1",
+      semanticKey: "pause-for-answer",
       type: "communication",
       observation: "You add an exit clause to a request and then act on the exit yourself.",
       action:
@@ -307,6 +322,7 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "rec-2",
+      semanticKey: "pause-for-answer",
       type: "behavioral",
       observation: "A short neutral reply from the other person is followed within minutes by you cancelling.",
       action:
@@ -319,6 +335,7 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "rec-3",
+      semanticKey: "offer-clear-options",
       type: "communication",
       observation: "The family group settles plans quickly when you name a specific option.",
       action: "Carry the same two-option phrasing into the conversations where you tend to retreat.",

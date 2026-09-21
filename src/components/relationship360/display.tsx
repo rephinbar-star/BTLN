@@ -28,16 +28,24 @@ export const R360Card = ({ children, className = "" }: { children: React.ReactNo
 
 export const R360Overview = ({
   headline,
-  supporting,
+  takeaways,
   counts,
 }: {
   headline: string;
-  supporting: string;
+  takeaways: { id: string; label: string }[];
   counts: { sources: number; relationships: number; periods: number };
 }) => (
-  <section className="min-w-0">
+  <section className="min-w-0" data-r360-narrative>
     <h2 className="text-[22px] font-medium leading-tight tracking-[-0.5px] sm:text-[26px]">{headline}</h2>
-    <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">{supporting}</p>
+    {takeaways.length > 0 && (
+      <ul className="mt-3 space-y-1 text-[15px] leading-relaxed text-muted-foreground">
+        {takeaways.slice(0, 3).map((item) => (
+          <li key={item.id}>
+            <a className="underline decoration-btln-sage underline-offset-4" href={`#pattern-${item.id}`}>{item.label}</a>
+          </li>
+        ))}
+      </ul>
+    )}
     <p className="mt-3 text-[14px] text-muted-foreground">
       Built from {counts.sources} included {counts.sources === 1 ? "conversation" : "conversations"} across{" "}
       {counts.relationships} {counts.relationships === 1 ? "relationship" : "relationships"} and {counts.periods}{" "}
@@ -163,7 +171,8 @@ export const R360PatternDetail = ({
   const visiblePaths = introspection?.paths.slice(0, 1) ?? [];
   const deeperPaths = introspection?.paths.slice(1) ?? [];
   return (
-    <R360Card className="mt-3">
+    <R360Card className="mt-3" >
+      <article id={`pattern-${pattern.id}`} className="scroll-mt-20" data-r360-narrative>
       <div className="flex flex-wrap items-center gap-2">
         <p className="text-[13px] font-medium text-btln-forest">{questionLabel}</p>
         {pattern.state && <R360StateChip state={pattern.state} />}
@@ -172,24 +181,24 @@ export const R360PatternDetail = ({
       {pattern.observedRange && (
         <p className="mt-1 text-[13px] text-muted-foreground">Observed {pattern.observedRange}</p>
       )}
-      <p className="mt-2 text-[15px] leading-relaxed">{pattern.statement}</p>
+      <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{pattern.whyItMatters}</p>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+        aria-controls={id}
+        className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4"
+      >
+        {open ? "Close insight" : "Open insight"}
+      </button>
+      <div id={id} hidden={!open}>
+      <p className="mt-2 text-[15px] leading-relaxed"><strong className="font-medium">What we observed:</strong> {pattern.statement}</p>
       <section className="mt-4 border-t border-btln-line pt-4" aria-labelledby={`${introspectionId}-heading`}>
         <h4 id={`${introspectionId}-heading`} className="text-[15px] font-medium">Introspection</h4>
         {introspection ? (
           <>
             <p className="mt-2 text-[15px] leading-relaxed">{introspection.openingQuestion}</p>
-            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
-              These are questions to explore, not conclusions about your motives.
-            </p>
-            {visiblePaths.map((path) => (
-              <div key={path.label} className="mt-3 rounded-lg bg-btln-mint/40 p-3">
-                <p className="text-[14px] font-medium">{path.label}</p>
-                {path.questions.map((question) => (
-                  <p key={question} className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{question}</p>
-                ))}
-              </div>
-            ))}
-            {deeperPaths.length > 0 && (
+            {introspection.paths.length > 0 && (
               <button
                 type="button"
                 aria-expanded={deeperOpen}
@@ -197,11 +206,11 @@ export const R360PatternDetail = ({
                 onClick={() => setDeeperOpen((value) => !value)}
                 className="inline-flex min-h-11 items-center text-[14px] underline underline-offset-4"
               >
-                {deeperOpen ? "Show fewer questions" : "Explore another possibility"}
+                {deeperOpen ? "Show less" : "Explore this further"}
               </button>
             )}
-            <div id={`${introspectionId}-deeper`} hidden={!deeperOpen || deeperPaths.length === 0}>
-              {deeperPaths.map((path) => (
+            <div id={`${introspectionId}-deeper`} hidden={!deeperOpen || introspection.paths.length === 0}>
+              {[...visiblePaths, ...deeperPaths].slice(0, 2).map((path) => (
                 <div key={path.label} className="mt-3 rounded-lg bg-btln-mint/40 p-3">
                   <p className="text-[14px] font-medium">{path.label}</p>
                   {path.questions.map((question) => (
@@ -210,18 +219,17 @@ export const R360PatternDetail = ({
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-[14px] leading-relaxed">{introspection.closingQuestion}</p>
+            {deeperOpen && <p className="mt-3 text-[14px] leading-relaxed">{introspection.closingQuestion}</p>}
             {introspection.selfReportedReflection && (
               <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                 <strong className="font-medium text-foreground">Self-reported reflection:</strong>{" "}
                 “{introspection.selfReportedReflection}”
               </p>
             )}
-            {introspection.focusedReflection && (
-              <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
-                <strong className="font-medium text-foreground">For your suggested next step:</strong>{" "}
-                {introspection.focusedReflection}
-              </p>
+            {introspection.suggestedNextStepId && (
+              <a className="mt-2 inline-flex min-h-11 items-center text-[14px] underline underline-offset-4" href={`#recommendation-${introspection.suggestedNextStepId}`}>
+                See the related next step
+              </a>
             )}
           </>
         ) : (
@@ -247,17 +255,19 @@ export const R360PatternDetail = ({
           if (!open) onEvidenceOpen?.();
         }}
         aria-expanded={open}
-        aria-controls={id}
+        aria-controls={`${id}-evidence`}
         className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4"
       >
-        {open ? "Hide evidence" : `Evidence (${evidence.length})`}
+        {open ? "Hide evidence" : `Why we're showing this (${evidence.length})`}
       </button>
-      <div id={id} hidden={!open}>
+      <div id={`${id}-evidence`} hidden={!open}>
         <EvidenceList items={evidence} />
       </div>
       <p className="mt-3 text-[12px] text-muted-foreground">
         {pattern.confidence} confidence · {pattern.limitation}
       </p>
+      </div>
+      </article>
     </R360Card>
   );
 };
@@ -428,25 +438,21 @@ export const R360RecommendationCard = ({
   onCheckIn?: (value: "yes" | "no") => void;
 }) => (
   <R360Card className="mt-3">
+    <article id={`recommendation-${recommendation.id}`} className="scroll-mt-20" data-r360-narrative>
     <p className="text-[13px] font-medium text-btln-forest">
       {recommendation.type === "communication" ? "Communication" : "Behaviour"}
     </p>
-    <h4 className="mt-1 text-[16px] font-medium">Suggestions for next time</h4>
-    <dl className="mt-2 space-y-2 text-[15px] leading-relaxed">
-      <div>
-        <dt className="text-[13px] text-muted-foreground">Observation</dt>
-        <dd>{recommendation.observation}</dd>
-      </div>
-      <div>
-        <dt className="text-[13px] text-muted-foreground">Suggested response</dt>
-        <dd>{recommendation.action}</dd>
-      </div>
+    <h4 className="mt-1 text-[16px] font-medium">{recommendation.action}</h4>
+    <dl className="mt-2 space-y-2 text-[14px] leading-relaxed">
       <div>
         <dt className="text-[13px] text-muted-foreground">Why it may help</dt>
         <dd>{recommendation.why}</dd>
       </div>
     </dl>
-    <EvidenceList items={evidence} />
+    <details className="mt-1">
+      <summary className="flex min-h-11 cursor-pointer items-center text-[14px] underline underline-offset-4">Why we're suggesting this ({evidence.length})</summary>
+      <EvidenceList items={evidence} />
+    </details>
     {onCheckIn && (
       <div className="mt-4 border-t border-btln-line pt-3">
         <p className="text-[14px] font-medium">Did you use this suggestion?</p>
@@ -473,6 +479,7 @@ export const R360RecommendationCard = ({
     {recommendation.selfReport && (
       <p className="mt-3 text-[13px] text-muted-foreground">{recommendation.selfReport.note}</p>
     )}
+    </article>
   </R360Card>
 );
 
