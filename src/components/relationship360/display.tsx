@@ -181,7 +181,7 @@ export const R360PatternDetail = ({
             <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
               These are questions to explore, not conclusions about your motives.
             </p>
-            {[...visiblePaths, ...(deeperOpen ? deeperPaths : [])].map((path) => (
+            {visiblePaths.map((path) => (
               <div key={path.label} className="mt-3 rounded-lg bg-btln-mint/40 p-3">
                 <p className="text-[14px] font-medium">{path.label}</p>
                 {path.questions.map((question) => (
@@ -200,7 +200,16 @@ export const R360PatternDetail = ({
                 {deeperOpen ? "Show fewer questions" : "Explore another possibility"}
               </button>
             )}
-            <div id={`${introspectionId}-deeper`} hidden={!deeperOpen || deeperPaths.length === 0} />
+            <div id={`${introspectionId}-deeper`} hidden={!deeperOpen || deeperPaths.length === 0}>
+              {deeperPaths.map((path) => (
+                <div key={path.label} className="mt-3 rounded-lg bg-btln-mint/40 p-3">
+                  <p className="text-[14px] font-medium">{path.label}</p>
+                  {path.questions.map((question) => (
+                    <p key={question} className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{question}</p>
+                  ))}
+                </div>
+              ))}
+            </div>
             <p className="mt-3 text-[14px] leading-relaxed">{introspection.closingQuestion}</p>
             {introspection.selfReportedReflection && (
               <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
