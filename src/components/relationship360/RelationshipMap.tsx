@@ -23,8 +23,11 @@ type Props = {
  * carries exactly the same information for anyone who prefers it.
  */
 export const RelationshipMap = ({ relationships, active, onSelect, countFor }: Props) => {
-  const [view, setView] = useState<"map" | "list">("map");
+  const [preferred, setPreferred] = useState<"map" | "list">("map");
+  // More than four nodes crowds a phone-width circle, so the list becomes the map.
+  const view = relationships.length > 4 ? "list" : preferred;
   const n = Math.max(relationships.length, 1);
+
 
   const nodeAt = (index: number) => {
     const angle = (index / n) * 2 * Math.PI - Math.PI / 2;
