@@ -183,6 +183,8 @@ The concise editorial revision is also implemented in the shared Stage 1 compone
 claims collapse by `semanticKey`; overview and monthly review link to canonical pattern/recommendation details; pattern,
 evidence, Introspection, Then / Now and monthly-review content progressively disclose. The same contracts are ready for
 the real renderer, but the real synthesis/summary reader remains Stage 4 work and is not presented as complete.
+On the long fictional fixture, the default page fell from 1,598 to 810 visible words overall; the report's default
+visible narrative is 192 words (source controls, labels and navigation excluded), within the 250–350-word maximum.
 
 ## Stage 1 — delivered (implementation, not just spec)
 

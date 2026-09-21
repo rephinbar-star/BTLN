@@ -337,7 +337,7 @@ export const relationship360Preview: R360Data = {
       semanticKey: "offer-clear-options",
       type: "communication",
       observation: "The family group settles plans quickly when you name a specific option.",
-      action: "Carry the same two-option phrasing into the conversations where you tend to retreat.",
+      action: "Use the same two-option phrasing when you notice yourself preparing to retreat.",
       why: "The direct version already produced a decision in the same week it was used.",
       evidence: [
         { sourceId: "s4", messageId: "s4m2" },
