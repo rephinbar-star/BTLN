@@ -9,18 +9,15 @@ import {
   R360RecommendationCard,
   R360SourceManager,
   R360ThenNow,
-  R360WhatsNew,
   R360WhatsWorking,
 } from "@/components/relationship360/display";
 import { RelationshipMap } from "@/components/relationship360/RelationshipMap";
-import { computeR360View, QUESTION_LABELS, resolveEvidence } from "@/lib/relationship360/select";
+import { computeR360View, distinctByMeaning, QUESTION_LABELS, resolveEvidence } from "@/lib/relationship360/select";
 import { relationship360Preview as data } from "@/lib/relationship360/preview";
 import { track } from "@/lib/analytics";
 
 export const R360_HEADLINE =
   "Understand who you are in your relationships—and get insights and coaching for self improvement.";
-export const R360_SUPPORTING =
-  "See the patterns in how you communicate, respond, and connect—with practical coaching that develops as you add more conversations.";
 
 type DemoState = "sparse" | "initial" | "updated";
 
@@ -47,6 +44,7 @@ export const Relationship360Preview = () => {
   const [period, setPeriod] = useState<string | null>(null);
   const [relationship, setRelationship] = useState<string | null>(null);
   const [checkIns, setCheckIns] = useState<Record<string, "yes" | "no">>({});
+  const [showMoreInsights, setShowMoreInsights] = useState(false);
   // What the fictional person had already seen when they last reviewed the profile.
   const [reviewed, setReviewed] = useState<string[]>(DEMO_SOURCES.initial);
   const visits = useRef(0);
@@ -79,9 +77,13 @@ export const Relationship360Preview = () => {
     return true;
   };
 
-  const patterns = view.patterns.filter((p) => p.evidence.some((e) => inScope(e.sourceId)));
-  const working = view.working.filter((w) => w.evidence.some((e) => inScope(e.sourceId)));
-  const recommendations = view.recommendations.filter((r) => r.evidence.some((e) => inScope(e.sourceId)));
+  const patterns = distinctByMeaning(view.patterns.filter((p) => p.evidence.some((e) => inScope(e.sourceId))));
+  const patternKeys = new Set(patterns.flatMap((pattern) => pattern.semanticKey ? [pattern.semanticKey] : []));
+  const working = distinctByMeaning(view.working.filter((item) =>
+    item.evidence.some((e) => inScope(e.sourceId)) && !patternKeys.has(item.semanticKey),
+  ));
+  const recommendations = distinctByMeaning(view.recommendations.filter((r) => r.evidence.some((e) => inScope(e.sourceId)))).slice(0, 3);
+  const visiblePatterns = showMoreInsights ? patterns : patterns.slice(0, 3);
 
   const relationshipLabel = (id: string) => data.relationships.find((r) => r.id === id)?.label ?? id;
   const includedCount = (relationshipId: string) =>
@@ -89,33 +91,8 @@ export const Relationship360Preview = () => {
 
   const newSources = view.includedSources.filter((s) => !reviewed.includes(s.id));
 
-  // "What's new": a supported change, a recurrence, and something working. Slots stay empty
-  // when the included evidence does not support them.
   const change = patterns.find((p) => p.state === "different");
   const recurring = patterns.find((p) => p.state === "again");
-  const whatsNew = [
-    change && {
-      id: change.id,
-      kind: "What changed",
-      conclusion: change.statement,
-      observed: change.observedRange ?? "the included conversations",
-      evidence: resolveEvidence(data, change.evidence),
-    },
-    recurring && {
-      id: recurring.id,
-      kind: "What keeps happening",
-      conclusion: recurring.statement,
-      observed: recurring.observedRange ?? "the included conversations",
-      evidence: resolveEvidence(data, recurring.evidence),
-    },
-    working[0] && {
-      id: working[0].id,
-      kind: "What's working",
-      conclusion: working[0].statement,
-      observed: "the included conversations",
-      evidence: resolveEvidence(data, working[0].evidence),
-    },
-  ].filter(Boolean) as { id: string; kind: string; conclusion: string; observed: string; evidence: ReturnType<typeof resolveEvidence> }[];
 
   const comparison = (data.comparisons ?? []).find(
     (c) =>
@@ -134,7 +111,7 @@ export const Relationship360Preview = () => {
     <div className="min-w-0">
       <R360Overview
         headline={R360_HEADLINE}
-        supporting={R360_SUPPORTING}
+        takeaways={patterns.slice(0, 3).map((pattern) => ({ id: pattern.id, label: pattern.title }))}
         counts={{
           sources: view.includedSources.length,
           relationships: new Set(view.includedSources.map((s) => s.relationshipId)).size,
@@ -200,9 +177,11 @@ export const Relationship360Preview = () => {
         />
       </div>
 
-      <R360WhatsNew items={whatsNew} />
-
       {comparison ? (
+        <details className="mt-8">
+          <summary className="flex min-h-11 cursor-pointer items-center text-[18px] font-medium underline decoration-btln-sage underline-offset-4">
+            Compare Then / Now
+          </summary>
         <R360ThenNow
           comparison={comparison}
           periods={data.periods}
@@ -211,6 +190,7 @@ export const Relationship360Preview = () => {
           nowEvidence={resolveEvidence(data, comparison.now.evidence)}
           onOpen={() => track("comparison_opened", { demo: true })}
         />
+        </details>
       ) : (
         <section className="mt-8 min-w-0">
           <h2 className="text-[18px] font-medium">Then / Now</h2>
@@ -242,7 +222,7 @@ export const Relationship360Preview = () => {
             Not enough included evidence in this selection to describe a pattern.
           </p>
         ) : (
-          patterns.map((pattern) => (
+          visiblePatterns.map((pattern) => (
             <R360PatternDetail
               key={pattern.id}
               pattern={pattern}
@@ -251,6 +231,16 @@ export const Relationship360Preview = () => {
               onEvidenceOpen={() => track("evidence_opened", { surface: "pattern", demo: true })}
             />
           ))
+        )}
+        {patterns.length > 3 && (
+          <button
+            type="button"
+            aria-expanded={showMoreInsights}
+            onClick={() => setShowMoreInsights((value) => !value)}
+            className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4"
+          >
+            {showMoreInsights ? "Fewer insights" : `More insights (${patterns.length - 3})`}
+          </button>
         )}
         {view.withheld.length > 0 && (
           <R360Card className="mt-3 bg-btln-mint/40">
@@ -292,29 +282,32 @@ export const Relationship360Preview = () => {
       </section>
 
       <section className="mt-8 min-w-0">
-        <h2 className="text-[18px] font-medium">Monthly review</h2>
         {newSources.length >= 2 ? (
+          <details>
+            <summary className="flex min-h-11 cursor-pointer items-center text-[18px] font-medium underline decoration-btln-sage underline-offset-4">
+              Monthly review
+            </summary>
           <ol className="mt-3 space-y-3">
             {[
-              recurring && { label: "What repeated", text: recurring.statement },
-              change && { label: "What changed", text: change.statement },
-              working[0] && { label: "What to continue", text: working[0].statement },
-              recommendations[0] && { label: "Suggested next step", text: recommendations[0].action },
+              recurring && { label: "What repeated", href: `#pattern-${recurring.id}` },
+              change && { label: "What changed", href: `#pattern-${change.id}` },
+              recommendations[0] && { label: "Suggested next step", href: `#recommendation-${recommendations[0].id}` },
             ]
               .filter(Boolean)
               .map((step) => (
                 <li key={(step as { label: string }).label}>
-                  <R360Card>
-                    <p className="text-[13px] font-medium text-btln-forest">{(step as { label: string }).label}</p>
-                    <p className="mt-1 text-[15px] leading-relaxed">{(step as { text: string }).text}</p>
-                  </R360Card>
+                  <a
+                    href={(step as { href: string }).href}
+                    className="inline-flex min-h-11 items-center text-[15px] underline decoration-btln-sage underline-offset-4"
+                  >
+                    {(step as { label: string }).label}
+                  </a>
                 </li>
               ))}
           </ol>
+          </details>
         ) : (
-          <p className="mt-2 text-[14px] text-muted-foreground">
-            A review is written only when there is enough new evidence to say something different. There isn't yet.
-          </p>
+          <p className="text-[14px] text-muted-foreground">Monthly review appears when enough new evidence supports one.</p>
         )}
       </section>
 
@@ -344,6 +337,7 @@ export const Relationship360Preview = () => {
             setPeriod(null);
             setRelationship(null);
             setCheckIns({});
+            setShowMoreInsights(false);
             setReviewed(DEMO_SOURCES.initial);
           }}
         >

@@ -43,6 +43,17 @@ export type R360View = {
   withheld: { title: string; reason: string }[];
 };
 
+/** Keep the first editorially-prioritized item for each meaning, not each wording. */
+export const distinctByMeaning = <T extends { id: string; semanticKey?: string }>(items: T[]): T[] => {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    const key = item.semanticKey ?? item.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
 /**
  * Recalculates what may honestly be shown from the currently included sources.
  * Recurrence needs independent periods; cross-relationship claims need distinct
@@ -83,7 +94,7 @@ export const computeR360View = (data: R360Data, excluded: Set<string>): R360View
             .filter((path) => path.evidenceRefs.length > 0),
         }
       : undefined,
-  }));
+  })).sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER));
 
   const working = data.working
     .map((item) => ({ ...item, evidence: evidenceIn(item.evidence) }))

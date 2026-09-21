@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { relationship360Preview as data } from "@/lib/relationship360/preview";
-import { computeR360View, resolveEvidence } from "@/lib/relationship360/select";
+import { computeR360View, distinctByMeaning, resolveEvidence } from "@/lib/relationship360/select";
 
 const allRefs = [
   ...data.patterns.flatMap((p) => p.evidence),
@@ -52,5 +52,19 @@ describe("Relationship360 preview fixture", () => {
     expect(sparse.patterns.every((pattern) => pattern.introspection?.paths.every((path) => path.evidenceRefs.every((ref) => ref.sourceId === "s2")) ?? true)).toBe(true);
     expect(data.patterns.some((pattern) => pattern.introspection?.paths.some((path) => path.label.toLowerCase().includes("boundary")))).toBe(true);
     expect(data.patterns.some((pattern) => pattern.introspection?.selfReportedReflection?.includes("doesn't fit"))).toBe(true);
+  });
+
+  it("collapses overlapping claims by meaning without filling card quotas", () => {
+    expect(data.patterns).toHaveLength(4);
+    expect(distinctByMeaning(data.patterns).map((pattern) => pattern.id)).toEqual(["pat-notice", "pat-change"]);
+    expect(distinctByMeaning(data.recommendations).map((recommendation) => recommendation.id)).toEqual(["rec-1", "rec-3"]);
+  });
+
+  it("keeps generated-card fields within the editorial contract", () => {
+    expect(data.patterns.every((pattern) => pattern.title.length <= 90)).toBe(true);
+    expect(data.patterns.every((pattern) => (pattern.whyItMatters?.length ?? 0) <= 160)).toBe(true);
+    expect(data.patterns.every((pattern) => pattern.introspection?.paths.length ? pattern.introspection.paths.length <= 2 : true)).toBe(true);
+    expect(distinctByMeaning(data.recommendations).length).toBeLessThanOrEqual(3);
+    expect(data.recommendations.every((recommendation) => recommendation.action.length <= 180 && recommendation.why.length <= 180)).toBe(true);
   });
 });
