@@ -37,6 +37,9 @@ describe("Relationship360 preview fixture", () => {
       expect(introspection.closingQuestion.trim().endsWith("?")).toBe(true);
       expect(introspection.paths.length).toBeGreaterThan(0);
       expect(introspection.paths.length).toBeLessThanOrEqual(3);
+      if (introspection.suggestedNextStepId) {
+        expect(data.recommendations.some((recommendation) => recommendation.id === introspection.suggestedNextStepId)).toBe(true);
+      }
       for (const path of introspection.paths) {
         expect(resolveEvidence(data, path.evidenceRefs)).toHaveLength(path.evidenceRefs.length);
         expect(path.questions.every((question) => question.includes("?"))).toBe(true);

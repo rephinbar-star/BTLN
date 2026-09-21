@@ -146,6 +146,13 @@ Observed behaviour, introspection questions, generated advice and self-reported 
 Stage 1 is implemented and verified. Stages 2–7 are not started; the preview is explicitly a
 fictional illustration and is never presented as the working feature.
 
+The owner-approved Introspection revision is implemented in the Stage 1 shared pattern renderer and fictional
+fixture. It includes a source-grounded uncertainty example, a useful boundary/directness reflection, a sparse-data
+state and an explicitly self-reported rejected alternative. One path is visible initially and further supported paths
+expand inline. There is no reflection save control because real reflection persistence and synthesis remain pending.
+The Stage 4 contract and validation requirements above are recorded, but no real synthesis prompt or output validator
+exists yet and none is claimed complete.
+
 ## Stage 1 — delivered (implementation, not just spec)
 
 Files added:
