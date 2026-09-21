@@ -289,18 +289,19 @@ export const Relationship360Preview = () => {
             </summary>
           <ol className="mt-3 space-y-3">
             {[
-              recurring && { label: "What repeated", text: recurring.statement },
-              change && { label: "What changed", text: change.statement },
-              working[0] && { label: "What to continue", text: working[0].statement },
-              recommendations[0] && { label: "Suggested next step", text: recommendations[0].action },
+              recurring && { label: "What repeated", href: `#pattern-${recurring.id}` },
+              change && { label: "What changed", href: `#pattern-${change.id}` },
+              recommendations[0] && { label: "Suggested next step", href: `#recommendation-${recommendations[0].id}` },
             ]
               .filter(Boolean)
               .map((step) => (
                 <li key={(step as { label: string }).label}>
-                  <R360Card>
-                    <p className="text-[13px] font-medium text-btln-forest">{(step as { label: string }).label}</p>
-                    <p className="mt-1 text-[15px] leading-relaxed">{(step as { text: string }).text}</p>
-                  </R360Card>
+                  <a
+                    href={(step as { href: string }).href}
+                    className="inline-flex min-h-11 items-center text-[15px] underline decoration-btln-sage underline-offset-4"
+                  >
+                    {(step as { label: string }).label}
+                  </a>
                 </li>
               ))}
           </ol>

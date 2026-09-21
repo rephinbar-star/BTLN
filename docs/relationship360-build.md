@@ -179,6 +179,11 @@ expand inline. There is no reflection save control because real reflection persi
 The Stage 4 contract and validation requirements above are recorded, but no real synthesis prompt or output validator
 exists yet and none is claimed complete.
 
+The concise editorial revision is also implemented in the shared Stage 1 components and preview. Overlapping fixture
+claims collapse by `semanticKey`; overview and monthly review link to canonical pattern/recommendation details; pattern,
+evidence, Introspection, Then / Now and monthly-review content progressively disclose. The same contracts are ready for
+the real renderer, but the real synthesis/summary reader remains Stage 4 work and is not presented as complete.
+
 ## Stage 1 — delivered (implementation, not just spec)
 
 Files added:
