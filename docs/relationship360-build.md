@@ -170,3 +170,35 @@ alias — correct H1, no horizontal overflow, evidence disclosure, exclusion pro
 Still pending: Stages 2–7 (identity/automatic inclusion, Quick Take follow-up, grounded
 profile engine, actions/Prime billing, Group Roast humour pass, release validation).
 Prime billing remains switched off; no Stripe test credentials are configured.
+
+## Stage 1 visual steering (owner addition) — delivered
+
+Implemented in the fictional preview with shared components ready for the real profile:
+
+- `src/components/relationship360/RelationshipMap.tsx` — "Your relationship landscape". "You" in the
+  centre, relationships on equal-length, equal-weight spokes; position encodes nothing. Tap filters the
+  whole profile. Equivalent list view (forced above four relationships), 44px targets, `aria-pressed`,
+  "Show everyone" reset.
+- `R360WhatsNew` — one supported change, one recurrence, one "what's working"; each with a conclusion,
+  the observed period and expandable evidence. Unsupported slots are omitted, never filled.
+- `R360ThenNow` — Then/Now period buttons, one observation and real coverage per side, evidence, and
+  counted metrics only (label, unit, value **of** denominator, missing-data note). No 0–100 scores, no
+  radar, no progress rings.
+- `R360StateChip` / pattern cards — "Noticed again", "Different this time", "Not enough to compare",
+  plus observed range and an explicit exception line. Text carries the meaning; colour never alone.
+- "Since your last review" — compares the last *viewed* source set against the current one. Time passing
+  or revisiting changes nothing; honest "No new conversations since your last review" state. No streaks,
+  countdowns or notifications.
+- Monthly review — a short story sequence (what repeated / what changed / what to continue / suggested
+  next step) rendered only when at least two new conversations have been included. Extra uploads are
+  never described as growth.
+- Demo states in the preview: One conversation (sparse), First review, After new conversations. Absent
+  conversations are treated exactly like excluded ones, so unsupported claims are withheld.
+- Motion: `transition-colors` with `motion-reduce:transition-none` throughout.
+- Analytics (no names, messages or insight text): `profile_viewed` (first/returning),
+  `relationship_filter_used`, `comparison_opened`, `evidence_opened`, `recommendation_selected`,
+  `checkin_completed`, `source_added`.
+
+Verified: tsgo clean, 86 tests, build OK; Playwright at 360/390/430/1280 — no horizontal overflow, all
+sections present, map filter → list view → period comparison → next step interaction completes,
+screenshots captured. Still fictional and labelled in development; Stages 2–7 pending.

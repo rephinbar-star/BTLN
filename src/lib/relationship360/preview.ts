@@ -10,10 +10,11 @@ const m = (id: string, sender: string, text: string, ts: string): ExampleMessage
  */
 export const relationship360Preview: R360Data = {
   periods: [
-    { id: "p1", label: "March 2026" },
-    { id: "p2", label: "June 2026" },
-    { id: "p3", label: "September 2026" },
+    { id: "p1", label: "March 2026", range: "6–21 March 2026" },
+    { id: "p2", label: "June 2026", range: "2–14 June 2026" },
+    { id: "p3", label: "September 2026", range: "12–20 September 2026" },
   ],
+
   relationships: [
     { id: "r-sam", label: "Sam", scope: "pair", context: "romantic" },
     { id: "r-priya", label: "Priya", scope: "pair", context: "friend" },
@@ -121,6 +122,8 @@ export const relationship360Preview: R360Data = {
   patterns: [
     {
       id: "pat-notice",
+      state: "again",
+      observedRange: "6 March – 2 June 2026",
       question: "noticing",
       title: "You withdraw a request before the other person has answered it",
       statement:
@@ -137,6 +140,8 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-repeat",
+      state: "again",
+      observedRange: "March and June 2026",
       question: "repeating",
       title: "The same withdrawal happens in more than one period",
       statement:
@@ -151,6 +156,8 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-change",
+      state: "different",
+      observedRange: "11 June – 12 September 2026",
       question: "changed",
       title: "You started asking directly instead of retreating",
       statement:
@@ -166,6 +173,9 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-across",
+      state: "again",
+      observedRange: "March – June 2026",
+      exception: "The family group is the exception: there you named a specific option first, and the plan held.",
       question: "across",
       title: "It shows up with a partner and with a friend, but not in the family group",
       statement:
@@ -233,6 +243,40 @@ export const relationship360Preview: R360Data = {
         { sourceId: "s4", messageId: "s4m2" },
         { sourceId: "s5", messageId: "s5m2" },
       ],
+    },
+  ],
+  comparisons: [
+    {
+      id: "cmp-1",
+      earlierPeriodId: "p1",
+      laterPeriodId: "p3",
+      then: {
+        observation: "You offered a way out in the same message as the invitation, then cancelled before Sam had answered.",
+        coverage: "March 2026 · 2 conversations · 12 messages",
+        evidence: [
+          { sourceId: "s1", messageId: "s1m1" },
+          { sourceId: "s1", messageId: "s1m4" },
+        ],
+      },
+      now: {
+        observation: "You kept the plan on the table and asked Sam to choose between two options.",
+        coverage: "September 2026 · 2 conversations · 8 messages",
+        evidence: [
+          { sourceId: "s5", messageId: "s5m2" },
+          { sourceId: "s6", messageId: "s6m2" },
+        ],
+      },
+      note: "September has fewer messages than March, so this compares how you opened each plan, not how often.",
+    },
+  ],
+  metrics: [
+    {
+      id: "met-1",
+      label: "Plans you withdrew before the other person replied",
+      unit: "conversations",
+      then: { periodId: "p1", value: 2, of: 2 },
+      now: { periodId: "p3", value: 0, of: 2 },
+      missingData: "Counted only in the included conversations. Calls and voice notes are not counted.",
     },
   ],
 };

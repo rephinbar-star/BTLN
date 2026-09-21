@@ -1,13 +1,18 @@
 import { useId, useState } from "react";
 import { Check } from "lucide-react";
 import { SourceConversation } from "@/components/examples/SourceConversation";
-import type {
-  R360Pattern,
-  R360Recommendation,
-  R360Relationship,
-  R360Source,
-  R360Working,
+import {
+  PATTERN_STATE_LABEL,
+  type R360Comparison,
+  type R360Metric,
+  type R360Pattern,
+  type R360PatternState,
+  type R360Recommendation,
+  type R360Relationship,
+  type R360Source,
+  type R360Working,
 } from "@/lib/relationship360/types";
+
 import type { ResolvedEvidence } from "@/lib/relationship360/select";
 
 const CONTEXT_LABEL: Record<R360Relationship["context"], string> = {
@@ -128,21 +133,40 @@ const EvidenceList = ({ items }: { items: ResolvedEvidence[] }) => (
 );
 
 /** Pattern with disclosable evidence. Observation, interpretation and limits stay separate. */
+/** Plain-language state. Text carries the meaning; colour never carries it alone. */
+export const R360StateChip = ({ state }: { state: R360PatternState }) => (
+  <span
+    className={`inline-flex min-h-7 items-center rounded-full border px-3 text-[12px] font-medium ${
+      state === "different" ? "border-btln-forest bg-btln-mint" : "border-btln-line bg-card"
+    }`}
+  >
+    {PATTERN_STATE_LABEL[state]}
+  </span>
+);
+
 export const R360PatternDetail = ({
   pattern,
   evidence,
   questionLabel,
+  onEvidenceOpen,
 }: {
   pattern: R360Pattern;
   evidence: ResolvedEvidence[];
   questionLabel: string;
+  onEvidenceOpen?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
   const id = useId();
   return (
     <R360Card className="mt-3">
-      <p className="text-[13px] font-medium text-btln-forest">{questionLabel}</p>
-      <h3 className="mt-1 text-[17px] font-medium">{pattern.title}</h3>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-[13px] font-medium text-btln-forest">{questionLabel}</p>
+        {pattern.state && <R360StateChip state={pattern.state} />}
+      </div>
+      <h3 className="mt-2 text-[17px] font-medium">{pattern.title}</h3>
+      {pattern.observedRange && (
+        <p className="mt-1 text-[13px] text-muted-foreground">Observed {pattern.observedRange}</p>
+      )}
       <p className="mt-2 text-[15px] leading-relaxed">{pattern.statement}</p>
       {pattern.interpretation && (
         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
@@ -154,9 +178,17 @@ export const R360PatternDetail = ({
           <strong className="font-medium text-foreground">Counterexample:</strong> {pattern.counterexample}
         </p>
       )}
+      {pattern.exception && (
+        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+          <strong className="font-medium text-foreground">The exception:</strong> {pattern.exception}
+        </p>
+      )}
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+          if (!open) onEvidenceOpen?.();
+        }}
         aria-expanded={open}
         aria-controls={id}
         className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4"
@@ -172,6 +204,140 @@ export const R360PatternDetail = ({
     </R360Card>
   );
 };
+
+/** One short story: a change, a recurrence, something working — only when supported. */
+export const R360WhatsNew = ({
+  items,
+}: {
+  items: { id: string; kind: string; conclusion: string; observed: string; evidence: ResolvedEvidence[] }[];
+}) => (
+  <section className="mt-8 min-w-0" aria-labelledby="r360-whats-new">
+    <h2 id="r360-whats-new" className="text-[18px] font-medium">
+      What's new
+    </h2>
+    {items.length === 0 ? (
+      <p className="mt-2 text-[14px] text-muted-foreground">
+        Nothing here is supported by the conversations you have included yet.
+      </p>
+    ) : (
+      items.map((item) => <WhatsNewItem key={item.id} item={item} />)
+    )}
+  </section>
+);
+
+const WhatsNewItem = ({
+  item,
+}: {
+  item: { id: string; kind: string; conclusion: string; observed: string; evidence: ResolvedEvidence[] };
+}) => {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <R360Card className="mt-3">
+      <p className="text-[13px] font-medium text-btln-forest">{item.kind}</p>
+      <p className="mt-1 text-[16px] leading-relaxed">{item.conclusion}</p>
+      <p className="mt-1 text-[13px] text-muted-foreground">Observed {item.observed}</p>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-controls={id}
+        className="mt-1 inline-flex min-h-11 items-center underline underline-offset-4"
+      >
+        {open ? "Hide evidence" : `Evidence (${item.evidence.length})`}
+      </button>
+      <div id={id} hidden={!open}>
+        <EvidenceList items={item.evidence} />
+      </div>
+    </R360Card>
+  );
+};
+
+/** Then / Now. Two observations, real coverage on each side, counted metrics only. */
+export const R360ThenNow = ({
+  comparison,
+  periods,
+  metrics,
+  thenEvidence,
+  nowEvidence,
+  onOpen,
+}: {
+  comparison: R360Comparison;
+  periods: { id: string; label: string; range?: string }[];
+  metrics: R360Metric[];
+  thenEvidence: ResolvedEvidence[];
+  nowEvidence: ResolvedEvidence[];
+  onOpen?: () => void;
+}) => {
+  const [side, setSide] = useState<"then" | "now">("then");
+  const id = useId();
+  const label = (periodId: string) => periods.find((p) => p.id === periodId)?.label ?? periodId;
+  const active = side === "then" ? comparison.then : comparison.now;
+  const evidence = side === "then" ? thenEvidence : nowEvidence;
+  return (
+    <section className="mt-8 min-w-0" aria-labelledby="r360-thennow">
+      <h2 id="r360-thennow" className="text-[18px] font-medium">
+        Then / Now
+      </h2>
+      <div className="mt-3 flex gap-2" role="group" aria-label="Compare periods">
+        {(["then", "now"] as const).map((key) => (
+          <button
+            key={key}
+            type="button"
+            aria-pressed={side === key}
+            onClick={() => {
+              setSide(key);
+              onOpen?.();
+            }}
+            className={`min-h-11 flex-1 rounded-full border px-4 text-[14px] transition-colors motion-reduce:transition-none ${side === key ? "border-foreground bg-foreground text-background" : "border-btln-line text-muted-foreground"}`}
+          >
+            {key === "then" ? "Then" : "Now"} · {label(key === "then" ? comparison.earlierPeriodId : comparison.laterPeriodId)}
+          </button>
+        ))}
+      </div>
+      <R360Card className="mt-3">
+        <p className="text-[15px] leading-relaxed">{active.observation}</p>
+        <p className="mt-2 text-[13px] text-muted-foreground">{active.coverage}</p>
+        <div id={id}>
+          <EvidenceList items={evidence} />
+        </div>
+      </R360Card>
+      {metrics.map((metric) => {
+        const then = metric.then;
+        const now = metric.now;
+        return (
+          <R360Card key={metric.id} className="mt-3">
+            <p className="text-[14px] font-medium">{metric.label}</p>
+            <ul className="mt-2 space-y-2">
+              {[
+                { key: "then", label: label(then.periodId), value: then.value, of: then.of },
+                { key: "now", label: label(now.periodId), value: now.value, of: now.of },
+              ].map((row) => (
+                <li key={row.key} className="min-w-0">
+                  <div className="flex items-baseline justify-between gap-3 text-[13px]">
+                    <span>{row.label}</span>
+                    <span className="text-muted-foreground">
+                      {row.value} of {row.of} {metric.unit}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-2 w-full rounded-full bg-btln-line" aria-hidden>
+                    <div
+                      className="h-2 rounded-full bg-btln-forest"
+                      style={{ width: `${row.of === 0 ? 0 : (row.value / row.of) * 100}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            {metric.missingData && <p className="mt-2 text-[12px] text-muted-foreground">{metric.missingData}</p>}
+          </R360Card>
+        );
+      })}
+      <p className="mt-3 text-[13px] text-muted-foreground">{comparison.note}</p>
+    </section>
+  );
+};
+
 
 export const R360WhatsWorking = ({ items, evidenceFor }: { items: R360Working[]; evidenceFor: (item: R360Working) => ResolvedEvidence[] }) => (
   <section className="mt-6 min-w-0">
