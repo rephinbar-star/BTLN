@@ -9,7 +9,7 @@ const INCLUDED = [
   "Quick Take, Deep Read and Group Read in one place",
   "Group Roast, including the standalone version as it lands",
   "Relationship Wrapped recaps for the periods you import",
-  "Relationship Journey: your private, opt-in view across your own reads",
+  "Relationship360: your private, opt-in view across your own reads",
 ];
 
 const TIMELINE = [
@@ -31,19 +31,20 @@ const Prime = () => {
         <title>BTLN Prime — understand who you are in your relationships</title>
         <meta
           name="description"
-          content="Prime is $19.99 a month: every BetweenTheLines feature plus your private Relationship Journey across your own conversations."
+          content="Prime is $19.99 a month: every BetweenTheLines feature plus your private Relationship360 across your own conversations."
         />
         <link rel="canonical" href="https://betweenthelines.app/prime" />
       </Helmet>
       <Header />
       <main className="mx-auto max-w-2xl px-5 pb-24 pt-4 sm:px-8">
         <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[42px]">
-          Understand who you are in your relationships—and how you're changing.
+          Understand who you are in your relationships—and get insights and coaching for self improvement.
         </h1>
         <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
-          Connect the dots across your conversations. Discover recurring patterns, notice
-          what's improving, and get practical guidance for what comes next.
+          See the patterns in how you communicate, respond, and connect—with practical coaching
+          that develops as you add more conversations.
         </p>
+
         <SeeExample kind="journey" />
 
         <div className="mt-7 rounded-[20px] border-2 border-btln-forest bg-btln-mint/50 p-[18px]">
@@ -104,11 +105,12 @@ const Prime = () => {
 
         <h2 className="mt-10 text-[20px] font-medium tracking-tight">Your privacy</h2>
         <ul className="mt-3 flex flex-col gap-2 text-[15px] text-muted-foreground">
-          <li>Journey is off until you switch it on, and private to your account.</li>
+          <li>Relationship360 is off until you switch it on, and private to your account.</li>
           <li>You choose which of your own reads are included, one at a time.</li>
           <li>You can correct, exclude or delete anything, including all of it.</li>
-          <li>There is no public Journey link, and raw chats aren't kept in your browser.</li>
+          <li>There is no public Relationship360 link, and raw chats aren't kept in your browser.</li>
         </ul>
+
 
         <p className="mt-8 text-[14px] text-muted-foreground">
           Want today's options instead?{" "}

@@ -252,13 +252,14 @@ const Index = () => {
             else. You want to understand whether the pattern is real and how it changes.
           </p>
           <p className="mt-3 text-[15px] font-medium leading-6 text-btln-forest">
-            We’re building Your Relationship Journey to connect insights from conversations you
-            choose to include, help you recognise patterns over time, and offer practical guidance
+            We’re building Your Relationship360 to connect insights from conversations you
+            choose to include, help you recognise patterns over time, and offer practical coaching
             and check-ins.
           </p>
           <p className="mt-3 text-[13px] font-semibold text-muted-foreground">
-            Journey preview · In development
+            Relationship360 Preview · In development
           </p>
+
           <Button asChild className="mt-5 min-h-12 rounded-full px-5">
             <Link to="/prime">
               Explore Prime — $19.99/month
