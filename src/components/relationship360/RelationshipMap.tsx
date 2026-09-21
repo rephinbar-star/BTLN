@@ -69,13 +69,16 @@ export const RelationshipMap = ({ relationships, active, onSelect, countFor }: P
         <h2 id="r360-landscape" className="text-[18px] font-medium">
           Your relationship landscape
         </h2>
-        <button
-          type="button"
-          onClick={() => setView((v) => (v === "map" ? "list" : "map"))}
-          className="inline-flex min-h-11 items-center underline underline-offset-4"
-        >
-          {view === "map" ? "List view" : "Map view"}
-        </button>
+        {relationships.length <= 4 && (
+          <button
+            type="button"
+            onClick={() => setPreferred((v) => (v === "map" ? "list" : "map"))}
+            className="inline-flex min-h-11 items-center underline underline-offset-4"
+          >
+            {view === "map" ? "List view" : "Map view"}
+          </button>
+        )}
+
       </div>
       <p className="mt-1 text-[13px] text-muted-foreground">
         Every relationship sits the same distance from you. Distance and line weight carry no meaning —
