@@ -72,7 +72,18 @@ export const computeR360View = (data: R360Data, excluded: Set<string>): R360View
       return false;
     }
     return true;
-  }).map((pattern) => ({ ...pattern, evidence: evidenceIn(pattern.evidence) }));
+  }).map((pattern) => ({
+    ...pattern,
+    evidence: evidenceIn(pattern.evidence),
+    introspection: pattern.introspection
+      ? {
+          ...pattern.introspection,
+          paths: pattern.introspection.paths
+            .map((path) => ({ ...path, evidenceRefs: evidenceIn(path.evidenceRefs) }))
+            .filter((path) => path.evidenceRefs.length > 0),
+        }
+      : undefined,
+  }));
 
   const working = data.working
     .map((item) => ({ ...item, evidence: evidenceIn(item.evidence) }))

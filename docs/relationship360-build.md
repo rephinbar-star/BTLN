@@ -41,7 +41,27 @@ recommendation **if applicable**. Never fill slots with invented advice. Include
 working" backed by evidence, especially where no change is needed. Each recommendation states
 observation, suggested action, why it may help, supporting evidence. No diagnosis, no certain
 mind-reading, no unsupported health scores, no claim of clinically validated assessment.
-Observed behaviour, interpretation, generated advice and self-reported outcomes stay distinct.
+Observed behaviour, introspection questions, generated advice and self-reported outcomes stay distinct.
+
+## Introspection coaching contract — owner-approved revision
+
+- Pattern details use **Introspection**, never a passive motive interpretation. The observation and its evidence stay
+  separate from any question about what drove it.
+- Introspection opens with one question about the person's experience, then zero to three plausible reflection paths
+  only when the cited evidence makes them relevant. Each path links feeling, interpretation, need and action through
+  questions; it is never presented as a hidden motive or diagnosis.
+- Ask what the behaviour accomplished immediately and what it cost or changed over time. Invite the person to decide
+  what fits, reject a path, or name another explanation. Boundaries, kindness and useful strategies receive meaningful
+  reflection too; no pattern is automatically framed as unhealthy.
+- End with an optional focused reflection connected to an applicable suggested next step. No mandatory questionnaire
+  and no fake save control. Any future saved answer must remain private, optional and explicitly self-reported; it
+  cannot become observed evidence or confirmation merely because a person selected a question.
+- Contract: `introspection { openingQuestion, paths[{ label, questions, evidenceRefs }], closingQuestion,
+  focusedReflection?, suggestedNextStepId?, selfReportedReflection? }`. Path evidence references must be authorized and
+  valid after source exclusion. Old summaries without this field receive one neutral reflection prompt or an explicit
+  regeneration path; do not invent detailed motives/evidence and do not bulk regenerate paid summaries.
+- Stage 4 synthesis must generate and validate this strict shape, reject diagnostic conclusions and unsupported paths,
+  preserve confidence/limitations/alternatives metadata, and keep reflection responses outside observation records.
 
 ## Staged acceptance checklist
 
@@ -126,6 +146,13 @@ Observed behaviour, interpretation, generated advice and self-reported outcomes 
 Stage 1 is implemented and verified. Stages 2–7 are not started; the preview is explicitly a
 fictional illustration and is never presented as the working feature.
 
+The owner-approved Introspection revision is implemented in the Stage 1 shared pattern renderer and fictional
+fixture. It includes a source-grounded uncertainty example, a useful boundary/directness reflection, a sparse-data
+state and an explicitly self-reported rejected alternative. One path is visible initially and further supported paths
+expand inline. There is no reflection save control because real reflection persistence and synthesis remain pending.
+The Stage 4 contract and validation requirements above are recorded, but no real synthesis prompt or output validator
+exists yet and none is claimed complete.
+
 ## Stage 1 — delivered (implementation, not just spec)
 
 Files added:
@@ -140,7 +167,7 @@ Files added:
   with a stated reason rather than softened.
 - `src/components/relationship360/display.tsx` — shared typed display components used by
   both fictional and (later) real data: Overview, PeriodTimeline, RelationshipCards,
-  PatternDetail (disclosable evidence, interpretation and counterexample kept separate),
+  PatternDetail (disclosable evidence, introspection questions and counterexample kept separate),
   WhatsWorking, RecommendationCard ("Suggestions for next time", "Suggested response",
   "Did you use this suggestion?", self-report labelled), SourceManager (Included /
   Excluded with the full source conversation and More/Less).

@@ -43,6 +43,26 @@ export const PATTERN_STATE_LABEL: Record<R360PatternState, string> = {
   insufficient: "Not enough to compare",
 };
 
+export type R360IntrospectionPath = {
+  /** A short possibility to explore, never a conclusion about motive. */
+  label: string;
+  /** Contextual questions connecting feeling, interpretation, need and action. */
+  questions: string[];
+  /** Evidence that makes this path relevant enough to ask. */
+  evidenceRefs: R360EvidenceRef[];
+};
+
+export type R360Introspection = {
+  openingQuestion: string;
+  paths: R360IntrospectionPath[];
+  closingQuestion: string;
+  /** Optional bridge to an applicable recommendation. */
+  focusedReflection?: string;
+  suggestedNextStepId?: string;
+  /** Optional fictional/user-provided context; never treated as observed behaviour. */
+  selfReportedReflection?: string;
+};
+
 export type R360Pattern = {
   id: string;
   question: Exclude<R360Question, "next">;
@@ -51,8 +71,8 @@ export type R360Pattern = {
   state?: R360PatternState;
   /** Observed period of the evidence, written for a person to read. */
   observedRange?: string;
-  /** Interpretation kept separate from the observed behaviour above. */
-  interpretation?: string;
+  /** Questions for reflection, kept separate from observed behaviour and motives. */
+  introspection?: R360Introspection;
   counterexample?: string;
   /** Why an exception happened, when the evidence explains it. */
   exception?: string;
