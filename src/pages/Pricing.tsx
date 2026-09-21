@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Check, Loader2, MessageCircle, Users, BookOpen, Laugh, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -40,6 +39,16 @@ const ModeChips = ({ modes }: { modes: ModeKey[] }) => (
     })}
   </ul>
 );
+
+/**
+ * One shared button style for every first-party control on this page:
+ * logo dark green background (#183B35, btln-ink) with logo light green
+ * text/icons (#528A6F, btln-wordmark-accent). Note: this exact color pair
+ * sits below WCAG AA contrast for small text; it is an explicit owner
+ * styling decision, so it is applied as requested rather than substituted.
+ */
+export const PRICING_BTN =
+  "inline-flex min-h-11 w-full items-center justify-center rounded-full bg-btln-ink px-5 py-2.5 text-[15px] font-medium text-btln-wordmark-accent transition-all duration-200 motion-reduce:transition-none hover:shadow-md hover:ring-1 hover:ring-btln-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-btln-ink focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:text-btln-wordmark-accent";
 
 type Tier = {
   key: ProductKey | "prime";
@@ -312,20 +321,19 @@ export default function Pricing() {
         </ul>
 
         {tier.key === "prime" ? (
-          <Button asChild variant="outline" className="mt-8 w-full rounded-full">
-            <Link to={`/prime?return_to=${encodeURIComponent("/pricing")}`}>{tier.cta}</Link>
-          </Button>
+          <Link to={`/prime?return_to=${encodeURIComponent("/pricing")}`} className={`mt-8 ${PRICING_BTN}`}>
+            {tier.cta}
+          </Link>
         ) : isCurrent ? (
-          <Button asChild variant="outline" className="mt-8 w-full rounded-full">
-            <Link to="/account">Your current plan · Manage</Link>
-          </Button>
+          <Link to="/account" className={`mt-8 ${PRICING_BTN}`}>
+            Your current plan · Manage
+          </Link>
         ) : (
-          <Button
+          <button
             type="button"
-            variant="outline"
             onClick={() => launch(tier.key as ProductKey)}
             disabled={pending === tier.key}
-            className="mt-8 w-full rounded-full"
+            className={`mt-8 ${PRICING_BTN}`}
           >
             {pending === tier.key ? (
               <>
@@ -335,7 +343,7 @@ export default function Pricing() {
             ) : (
               tier.cta
             )}
-          </Button>
+          </button>
         )}
         {isMember && tier.key === "prime" && (
           <p className="mt-3 text-[13px] text-muted-foreground">
@@ -541,15 +549,15 @@ export default function Pricing() {
                 { to: "/group", label: "Group Read — a serious read of a group chat" },
                 { to: "/group-roast", label: "Group Roast — a playful roast of a group chat" },
               ].map((item) => (
-                <Button key={item.to} asChild variant="outline" className="min-h-12 justify-start rounded-full">
-                  <Link to={item.to}>{item.label}</Link>
-                </Button>
+                <Link key={item.to} to={item.to} className={`${PRICING_BTN} justify-start`}>
+                  {item.label}
+                </Link>
               ))}
             </div>
             <button
               type="button"
               onClick={() => setChooseMode(false)}
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center text-[14px] underline underline-offset-4"
+              className={`mt-4 ${PRICING_BTN}`}
             >
               Close
             </button>
@@ -563,7 +571,7 @@ export default function Pricing() {
             <button
               type="button"
               onClick={closeCheckout}
-              className="mb-3 w-full text-right text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+              className={`mb-3 ${PRICING_BTN}`}
             >
               Close
             </button>
@@ -571,7 +579,7 @@ export default function Pricing() {
             <button
               type="button"
               onClick={closeCheckout}
-              className="mt-4 w-full text-center text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+              className={`mt-4 ${PRICING_BTN}`}
             >
               Cancel
             </button>
