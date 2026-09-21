@@ -202,3 +202,17 @@ Implemented in the fictional preview with shared components ready for the real p
 Verified: tsgo clean, 86 tests, build OK; Playwright at 360/390/430/1280 — no horizontal overflow, all
 sections present, map filter → list view → period comparison → next step interaction completes,
 screenshots captured. Still fictional and labelled in development; Stages 2–7 pending.
+
+## Pricing page correction (verified coverage)
+
+Server-audited entitlements behind every matrix cell:
+- Quick Take (`useDecodeAccess` + `count_completed_decodes`): any active subscription lifts the one-free-read limit.
+- Deep Read (`user_has_paid_access`): tiers monthly/annual, or a one-time unlock bound to that analysis.
+- Group Read (`analyze-group` FULL_PLAN_TIERS): monthly/annual, or a `group_read_unlocks` row.
+- Group Roast (`group-roast-data`): monthly/annual, or a `group_roast_unlocks` row. Group Read access does NOT grant it.
+- Relationship360: no entitlement exists; engine in development, Prime not purchasable.
+
+Quick Take plan price key: `BTLN_decode_monthly`, $6.99/month — matches `DecodeResult.tsx` and docs/audit-reconciliation.md.
+NOT verified against live Stripe (no STRIPE_TEST_SECRET_KEY in the sandbox); no price or product was created or changed.
+One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, /group, /group-roast) instead of charging an unbound report.
+"Most popular" badge removed (no usage data). Prime rendered as a full pricing card (36px price, mint background) with its in-development status and current-plan note for members.
