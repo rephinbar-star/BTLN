@@ -42,13 +42,12 @@ const ModeChips = ({ modes }: { modes: ModeKey[] }) => (
 
 /**
  * One shared button style for every first-party control on this page:
- * logo dark green background (#183B35, btln-ink) with logo light green
- * text/icons (#528A6F, btln-wordmark-accent). Note: this exact color pair
- * sits below WCAG AA contrast for small text; it is an explicit owner
- * styling decision, so it is applied as requested rather than substituted.
+ * logo dark green background (#183B35, btln-ink) with white (#FFFFFF)
+ * text/icons — an explicit owner styling decision that supersedes an
+ * earlier light-green text instruction. Logo colors elsewhere are untouched.
  */
 export const PRICING_BTN =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-full bg-btln-ink px-5 py-2.5 text-[15px] font-medium text-btln-wordmark-accent transition-all duration-200 motion-reduce:transition-none hover:shadow-md hover:ring-1 hover:ring-btln-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-btln-ink focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:text-btln-wordmark-accent";
+  "inline-flex min-h-11 w-full items-center justify-center rounded-full bg-btln-ink px-5 py-2.5 text-[15px] font-medium text-white transition-all duration-200 motion-reduce:transition-none hover:shadow-md hover:ring-1 hover:ring-btln-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-btln-ink focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:text-white";
 
 type Tier = {
   key: ProductKey | "prime";
