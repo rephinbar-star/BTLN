@@ -1,13 +1,18 @@
 import { useId, useState } from "react";
 import { Check } from "lucide-react";
 import { SourceConversation } from "@/components/examples/SourceConversation";
-import type {
-  R360Pattern,
-  R360Recommendation,
-  R360Relationship,
-  R360Source,
-  R360Working,
+import {
+  PATTERN_STATE_LABEL,
+  type R360Comparison,
+  type R360Metric,
+  type R360Pattern,
+  type R360PatternState,
+  type R360Recommendation,
+  type R360Relationship,
+  type R360Source,
+  type R360Working,
 } from "@/lib/relationship360/types";
+
 import type { ResolvedEvidence } from "@/lib/relationship360/select";
 
 const CONTEXT_LABEL: Record<R360Relationship["context"], string> = {
