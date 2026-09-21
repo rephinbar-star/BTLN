@@ -84,7 +84,9 @@ export const Header = () => {
               )}
               <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/explore")}>Explore</DropdownMenuItem>
               <DropdownMenuLabel className="pt-3 text-xs uppercase text-muted-foreground">Examples</DropdownMenuLabel>
-              {EXAMPLES.map((example) => (
+              {/* Two-person "Roast Us" stays reachable via Explore and /roast, but is
+                  deliberately not a main-menu entry. Group Roast (3+) remains listed. */}
+              {EXAMPLES.filter((example) => example.kind !== "roast").map((example) => (
                 <DropdownMenuItem key={example.kind} className="min-h-11 pl-5" onSelect={() => navigate(example.route)}>
                   {example.name}
                 </DropdownMenuItem>
