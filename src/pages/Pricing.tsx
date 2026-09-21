@@ -573,7 +573,7 @@ export default function Pricing() {
             <button
               type="button"
               onClick={closeCheckout}
-              className="mb-3 w-full text-right text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+              className={`mb-3 ${PRICING_BTN}`}
             >
               Close
             </button>
@@ -581,7 +581,7 @@ export default function Pricing() {
             <button
               type="button"
               onClick={closeCheckout}
-              className="mt-4 w-full text-center text-[13px] text-muted-foreground underline-offset-2 hover:underline"
+              className={`mt-4 ${PRICING_BTN}`}
             >
               Cancel
             </button>
