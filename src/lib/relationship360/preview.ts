@@ -128,8 +128,38 @@ export const relationship360Preview: R360Data = {
       title: "You withdraw a request before the other person has answered it",
       statement:
         "In several conversations you offered an exit before anyone declined, then treated a neutral reply as a refusal.",
-      interpretation:
-        "One reading is that you are protecting the other person from having to say no. Another is that you expect the no. The messages alone do not say which.",
+      introspection: {
+        openingQuestion: "What was happening for you when you closed the invitation before they answered?",
+        paths: [
+          {
+            label: "Avoiding a possible no",
+            questions: [
+              "Did stepping back feel easier than waiting for an answer? If so, what would a no have meant to you—disappointment, rejection, or something else?",
+            ],
+            evidenceRefs: [
+              { sourceId: "s1", messageId: "s1m1" },
+              { sourceId: "s1", messageId: "s1m4" },
+            ],
+          },
+          {
+            label: "Wanting clarity",
+            questions: [
+              "Were you frustrated by the uncertainty? What did you need from them at that moment? If anger was present, what was it responding to?",
+            ],
+            evidenceRefs: [
+              { sourceId: "s1", messageId: "s1m2" },
+              { sourceId: "s2", messageId: "s2m2" },
+            ],
+          },
+        ],
+        closingQuestion:
+          "Does either explanation fit, or was something else going on? What did ending the invitation give you in the moment, and did it help you get what you wanted?",
+        focusedReflection:
+          "Before the next plan changes, notice what you feel, what you are assuming, and what answer you actually need.",
+        suggestedNextStepId: "rec-1",
+        selfReportedReflection:
+          "Avoiding a no doesn't fit this time. I was tired of not knowing whether the plan was happening.",
+      },
       evidence: [
         { sourceId: "s1", messageId: "s1m1" },
         { sourceId: "s1", messageId: "s1m4" },
@@ -146,6 +176,25 @@ export const relationship360Preview: R360Data = {
       title: "The same withdrawal happens in more than one period",
       statement:
         "The pattern appears in March and again in June, in separate conversations rather than one long argument.",
+      introspection: {
+        openingQuestion: "What feels familiar about the moment just before you withdraw the request?",
+        paths: [
+          {
+            label: "Reducing uncertainty quickly",
+            questions: [
+              "Does cancelling settle the uncertainty faster, even when it also removes the chance of getting a clear answer? What would help you stay with the question a little longer?",
+            ],
+            evidenceRefs: [
+              { sourceId: "s1", messageId: "s1m4" },
+              { sourceId: "s3", messageId: "s3m3" },
+            ],
+          },
+        ],
+        closingQuestion:
+          "What does withdrawing solve in the moment, and what becomes harder to communicate when it happens repeatedly?",
+        focusedReflection: "Name the answer you need before changing the plan yourself.",
+        suggestedNextStepId: "rec-2",
+      },
       evidence: [
         { sourceId: "s1", messageId: "s1m4" },
         { sourceId: "s3", messageId: "s3m3" },
@@ -162,6 +211,25 @@ export const relationship360Preview: R360Data = {
       title: "You started asking directly instead of retreating",
       statement:
         "From mid-June onward you put the choice into the message itself, and in September you asked about the plan rather than cancelling it.",
+      introspection: {
+        openingQuestion: "What helped you leave the question open long enough for the other person to answer?",
+        paths: [
+          {
+            label: "Directness as a useful strategy",
+            questions: [
+              "Did offering two clear options feel more honest, calmer, or simply more practical? What made that approach fit these conversations?",
+            ],
+            evidenceRefs: [
+              { sourceId: "s3", messageId: "s3m7" },
+              { sourceId: "s5", messageId: "s5m2" },
+            ],
+          },
+        ],
+        closingQuestion:
+          "Which part of this approach would you want to keep, and where might a firm boundary be more useful than leaving options open?",
+        focusedReflection: "Keep the clear choice when flexibility is useful; state a boundary plainly when it is not.",
+        suggestedNextStepId: "rec-3",
+      },
       evidence: [
         { sourceId: "s3", messageId: "s3m7" },
         { sourceId: "s5", messageId: "s5m2" },
@@ -180,6 +248,22 @@ export const relationship360Preview: R360Data = {
       title: "It shows up with a partner and with a friend, but not in the family group",
       statement:
         "The withdrawal appears with Sam and with Priya. In the family group you named the plan and held it.",
+      introspection: {
+        openingQuestion: "What was different for you in the family conversation, where you named the plan and kept it in place?",
+        paths: [
+          {
+            label: "A clear plan may have been the boundary",
+            questions: [
+              "Did having a specific time and place make it easier to be direct? Was holding the plan a deliberate boundary, an act of care for the group, or simply the most practical choice?",
+            ],
+            evidenceRefs: [{ sourceId: "s4", messageId: "s4m2" }],
+          },
+        ],
+        closingQuestion:
+          "What fits about that explanation, what does not, and what else helped you stay clear without withdrawing?",
+        focusedReflection: "Notice which conditions make direct communication feel useful rather than risky.",
+        suggestedNextStepId: "rec-3",
+      },
       counterexample:
         "In the family group you proposed Sunday lunch outright and confirmed it once two people agreed.",
       evidence: [

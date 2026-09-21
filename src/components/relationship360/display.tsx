@@ -132,7 +132,7 @@ const EvidenceList = ({ items }: { items: ResolvedEvidence[] }) => (
   </ul>
 );
 
-/** Pattern with disclosable evidence. Observation, interpretation and limits stay separate. */
+/** Pattern with disclosable evidence. Observation, introspection and limits stay separate. */
 /** Plain-language state. Text carries the meaning; colour never carries it alone. */
 export const R360StateChip = ({ state }: { state: R360PatternState }) => (
   <span
@@ -156,7 +156,12 @@ export const R360PatternDetail = ({
   onEvidenceOpen?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const [deeperOpen, setDeeperOpen] = useState(false);
   const id = useId();
+  const introspectionId = useId();
+  const introspection = pattern.introspection;
+  const visiblePaths = introspection?.paths.slice(0, 1) ?? [];
+  const deeperPaths = introspection?.paths.slice(1) ?? [];
   return (
     <R360Card className="mt-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -168,11 +173,54 @@ export const R360PatternDetail = ({
         <p className="mt-1 text-[13px] text-muted-foreground">Observed {pattern.observedRange}</p>
       )}
       <p className="mt-2 text-[15px] leading-relaxed">{pattern.statement}</p>
-      {pattern.interpretation && (
-        <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-          <strong className="font-medium text-foreground">Interpretation:</strong> {pattern.interpretation}
-        </p>
-      )}
+      <section className="mt-4 border-t border-btln-line pt-4" aria-labelledby={`${introspectionId}-heading`}>
+        <h4 id={`${introspectionId}-heading`} className="text-[15px] font-medium">Introspection</h4>
+        {introspection ? (
+          <>
+            <p className="mt-2 text-[15px] leading-relaxed">{introspection.openingQuestion}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">
+              These are questions to explore, not conclusions about your motives.
+            </p>
+            {[...visiblePaths, ...(deeperOpen ? deeperPaths : [])].map((path) => (
+              <div key={path.label} className="mt-3 rounded-lg bg-btln-mint/40 p-3">
+                <p className="text-[14px] font-medium">{path.label}</p>
+                {path.questions.map((question) => (
+                  <p key={question} className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{question}</p>
+                ))}
+              </div>
+            ))}
+            {deeperPaths.length > 0 && (
+              <button
+                type="button"
+                aria-expanded={deeperOpen}
+                aria-controls={`${introspectionId}-deeper`}
+                onClick={() => setDeeperOpen((value) => !value)}
+                className="inline-flex min-h-11 items-center text-[14px] underline underline-offset-4"
+              >
+                {deeperOpen ? "Show fewer questions" : "Explore another possibility"}
+              </button>
+            )}
+            <div id={`${introspectionId}-deeper`} hidden={!deeperOpen || deeperPaths.length === 0} />
+            <p className="mt-3 text-[14px] leading-relaxed">{introspection.closingQuestion}</p>
+            {introspection.selfReportedReflection && (
+              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+                <strong className="font-medium text-foreground">Self-reported reflection:</strong>{" "}
+                “{introspection.selfReportedReflection}”
+              </p>
+            )}
+            {introspection.focusedReflection && (
+              <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+                <strong className="font-medium text-foreground">For your suggested next step:</strong>{" "}
+                {introspection.focusedReflection}
+              </p>
+            )}
+          </>
+        ) : (
+          <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+            What was happening for you here? Which parts felt deliberate, useful or surprising, and what might you want to understand before deciding what to do next?
+          </p>
+        )}
+      </section>
       {pattern.counterexample && (
         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
           <strong className="font-medium text-foreground">Counterexample:</strong> {pattern.counterexample}
