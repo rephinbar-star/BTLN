@@ -78,7 +78,7 @@ const Journey = () => {
         setSources({});
       }
     } catch (e) {
-      fail(e, "Could not load your Journey");
+      fail(e, "Could not load your Relationship360");
     } finally {
       setLoading(false);
     }
@@ -271,7 +271,7 @@ const Journey = () => {
                               </button>
                               <button
                                 type="button"
-                                aria-label="Remove from Journey"
+                                aria-label="Remove from Relationship360"
                                 disabled={busy}
                                 className="min-h-[44px] min-w-[44px] rounded-full text-muted-foreground hover:text-destructive"
                                 onClick={() =>
