@@ -145,7 +145,10 @@ const App = () => (
           <Route path="/examples/group" element={<ExamplePage kind="group" />} />
           <Route path="/examples/roast" element={<ExamplePage kind="roast" />} />
           <Route path="/examples/wrapped" element={<ExamplePage kind="wrapped" />} />
+          <Route path="/examples/relationship360" element={<ExamplePage kind="journey" />} />
+          {/* Legacy alias kept working */}
           <Route path="/examples/journey" element={<ExamplePage kind="journey" />} />
+
           <Route path="/guides/mixed-signal-texts" element={<MixedSignalsGuide />} />
           <Route path="/guides/group-chat-communication" element={<GroupCommunicationGuide />} />
           <Route path="/compare/chatgpt-vs-betweenthelines" element={<ChatGPTCompare />} />
