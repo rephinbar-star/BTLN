@@ -322,17 +322,16 @@ export default function Pricing() {
         </ul>
 
         {tier.key === "prime" ? (
-          <Button asChild variant="ghost" className={`mt-8 ${PRICING_BTN}`}>
-            <Link to={`/prime?return_to=${encodeURIComponent("/pricing")}`}>{tier.cta}</Link>
-          </Button>
+          <Link to={`/prime?return_to=${encodeURIComponent("/pricing")}`} className={`mt-8 ${PRICING_BTN}`}>
+            {tier.cta}
+          </Link>
         ) : isCurrent ? (
-          <Button asChild variant="ghost" className={`mt-8 ${PRICING_BTN}`}>
-            <Link to="/account">Your current plan · Manage</Link>
-          </Button>
+          <Link to="/account" className={`mt-8 ${PRICING_BTN}`}>
+            Your current plan · Manage
+          </Link>
         ) : (
-          <Button
+          <button
             type="button"
-            variant="ghost"
             onClick={() => launch(tier.key as ProductKey)}
             disabled={pending === tier.key}
             className={`mt-8 ${PRICING_BTN}`}
@@ -345,7 +344,7 @@ export default function Pricing() {
             ) : (
               tier.cta
             )}
-          </Button>
+          </button>
         )}
         {isMember && tier.key === "prime" && (
           <p className="mt-3 text-[13px] text-muted-foreground">
