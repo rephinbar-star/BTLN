@@ -125,3 +125,48 @@ Observed behaviour, interpretation, generated advice and self-reported outcomes 
 
 Stage 1 is implemented and verified. Stages 2–7 are not started; the preview is explicitly a
 fictional illustration and is never presented as the working feature.
+
+## Stage 1 — delivered (implementation, not just spec)
+
+Files added:
+- `src/lib/relationship360/preview.ts` — one fictional person ("Rae") across three
+  relationships (romantic pair, friend pair, family group) and three periods
+  (March / June / September 2026), six source conversations. Every pattern,
+  what's-working item and recommendation cites a message id present in these fixtures.
+- `src/lib/relationship360/select.ts` — `QUESTION_LABELS` (the five approved questions),
+  `resolveEvidence`, and `computeR360View`, which recalculates what may honestly be
+  shown when sources are excluded: recurrence needs ≥2 independent periods,
+  cross-relationship claims need ≥2 relationships, otherwise the claim is withheld
+  with a stated reason rather than softened.
+- `src/components/relationship360/display.tsx` — shared typed display components used by
+  both fictional and (later) real data: Overview, PeriodTimeline, RelationshipCards,
+  PatternDetail (disclosable evidence, interpretation and counterexample kept separate),
+  WhatsWorking, RecommendationCard ("Suggestions for next time", "Suggested response",
+  "Did you use this suggestion?", self-report labelled), SourceManager (Included /
+  Excluded with the full source conversation and More/Less).
+- `src/components/relationship360/Relationship360Preview.tsx` — interactive preview with
+  period/relationship switching, evidence disclosure, local check-ins, source exclusion
+  and "Reset this demo". Local state only: no account writes, no AI calls.
+- `src/lib/relationship360/preview.test.ts` — evidence/fixture consistency, ≥3
+  relationships and periods, recurrence withheld when its second period is excluded.
+
+Files changed:
+- `src/lib/examples/catalog.ts` — example renamed to "Relationship360 Preview",
+  route `/examples/relationship360`, CTA points at `/prime`. Internal kind stays `journey`.
+- `src/App.tsx` — added `/examples/relationship360`; `/examples/journey` kept as alias.
+- `src/components/examples/ExampleExperience.tsx` — journey kind now renders the shared
+  Relationship360 preview; generic "Try …" CTA suppressed for it (no "try" wording).
+- `src/pages/Prime.tsx` — approved headline and supporting copy, Relationship360 naming.
+- `src/pages/Journey.tsx` — "Your Relationship360" naming; privacy controls (turn off,
+  delete) moved out of the opted-in branch so they remain reachable after opt-out, with
+  the distinction from source-report deletion stated.
+- `src/pages/Index.tsx`, `src/pages/Explore.tsx` — Relationship360 naming, "practical coaching".
+
+Checks actually run: `tsgo --noEmit` clean; vitest 86 tests pass; production build OK;
+Playwright at 360/390/430/1280 on `/examples/relationship360` and the `/examples/journey`
+alias — correct H1, no horizontal overflow, evidence disclosure, exclusion producing a
+"Withheld after your changes" note, and reset restoring the full profile.
+
+Still pending: Stages 2–7 (identity/automatic inclusion, Quick Take follow-up, grounded
+profile engine, actions/Prime billing, Group Roast humour pass, release validation).
+Prime billing remains switched off; no Stripe test credentials are configured.
