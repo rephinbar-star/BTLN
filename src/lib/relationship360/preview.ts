@@ -122,6 +122,8 @@ export const relationship360Preview: R360Data = {
   patterns: [
     {
       id: "pat-notice",
+      state: "again",
+      observedRange: "6 March – 2 June 2026",
       question: "noticing",
       title: "You withdraw a request before the other person has answered it",
       statement:
@@ -138,6 +140,8 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-repeat",
+      state: "again",
+      observedRange: "March and June 2026",
       question: "repeating",
       title: "The same withdrawal happens in more than one period",
       statement:
@@ -152,6 +156,8 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-change",
+      state: "different",
+      observedRange: "11 June – 12 September 2026",
       question: "changed",
       title: "You started asking directly instead of retreating",
       statement:
@@ -167,6 +173,9 @@ export const relationship360Preview: R360Data = {
     },
     {
       id: "pat-across",
+      state: "again",
+      observedRange: "March – June 2026",
+      exception: "The family group is the exception: there you named a specific option first, and the plan held.",
       question: "across",
       title: "It shows up with a partner and with a friend, but not in the family group",
       statement:
