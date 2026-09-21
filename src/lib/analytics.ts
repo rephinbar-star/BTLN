@@ -106,6 +106,15 @@ export type EventMap = {
   roast_share_visited: Record<string, never>;
   roast_share_conversion: Record<string, never>;
   sample_viewed: { category: string };
+  // Relationship360. Structural only: never names, message text or insight text.
+  profile_viewed: { visitor: "first" | "returning"; demo: boolean };
+  relationship_filter_used: { scope: "pair" | "group" | "all"; demo: boolean };
+  comparison_opened: { demo: boolean };
+  evidence_opened: { surface: "pattern" | "recommendation" | "working"; demo: boolean };
+  recommendation_selected: { type: "communication" | "behavioral"; demo: boolean };
+  checkin_completed: { used: boolean; demo: boolean };
+  source_added: { demo: boolean };
+
   sample_cta_clicked: { category: string; destination: string };
   guide_cta_clicked: { guide: string; destination: string };
 };
