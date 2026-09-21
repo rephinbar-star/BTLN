@@ -19,7 +19,7 @@ import { shouldRunAnalytics, getConsent } from "@/lib/consent";
 
 type RelationshipType = "romantic" | "friend" | "family" | string;
 type MessageCountBucket = "<30" | "30-79" | "80+";
-type PaywallOption = "one_time" | "monthly" | "annual";
+type PaywallOption = "one_time" | "monthly" | "annual" | "decode_monthly";
 type TriggerSource = "scroll" | "dwell" | "button" | "manual";
 type QuestionVariant = "wrong" | "balanced";
 
