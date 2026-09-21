@@ -10,10 +10,11 @@ const m = (id: string, sender: string, text: string, ts: string): ExampleMessage
  */
 export const relationship360Preview: R360Data = {
   periods: [
-    { id: "p1", label: "March 2026" },
-    { id: "p2", label: "June 2026" },
-    { id: "p3", label: "September 2026" },
+    { id: "p1", label: "March 2026", range: "6–21 March 2026" },
+    { id: "p2", label: "June 2026", range: "2–14 June 2026" },
+    { id: "p3", label: "September 2026", range: "12–20 September 2026" },
   ],
+
   relationships: [
     { id: "r-sam", label: "Sam", scope: "pair", context: "romantic" },
     { id: "r-priya", label: "Priya", scope: "pair", context: "friend" },
