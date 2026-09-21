@@ -164,6 +164,7 @@ export const R360PatternDetail = ({
   onEvidenceOpen?: () => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const [evidenceOpen, setEvidenceOpen] = useState(false);
   const [deeperOpen, setDeeperOpen] = useState(false);
   const id = useId();
   const introspectionId = useId();
@@ -251,16 +252,16 @@ export const R360PatternDetail = ({
       <button
         type="button"
         onClick={() => {
-          setOpen((v) => !v);
-          if (!open) onEvidenceOpen?.();
+          setEvidenceOpen((value) => !value);
+          if (!evidenceOpen) onEvidenceOpen?.();
         }}
-        aria-expanded={open}
+        aria-expanded={evidenceOpen}
         aria-controls={`${id}-evidence`}
         className="mt-2 inline-flex min-h-11 items-center underline underline-offset-4"
       >
-        {open ? "Hide evidence" : `Why we're showing this (${evidence.length})`}
+        {evidenceOpen ? "Hide evidence" : `Why we're showing this (${evidence.length})`}
       </button>
-      <div id={`${id}-evidence`} hidden={!open}>
+      <div id={`${id}-evidence`} hidden={!evidenceOpen}>
         <EvidenceList items={evidence} />
       </div>
       <p className="mt-3 text-[12px] text-muted-foreground">
@@ -418,7 +419,12 @@ export const R360WhatsWorking = ({ items, evidenceFor }: { items: R360Working[];
             <Check className="mt-1 h-4 w-4 shrink-0 text-btln-forest" aria-hidden />
             {item.statement}
           </p>
-          <EvidenceList items={evidenceFor(item)} />
+          <details className="mt-1">
+            <summary className="flex min-h-11 cursor-pointer items-center text-[14px] underline underline-offset-4">
+              Why we're showing this ({evidenceFor(item).length})
+            </summary>
+            <EvidenceList items={evidenceFor(item)} />
+          </details>
         </R360Card>
       ))
     )}
