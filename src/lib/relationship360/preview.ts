@@ -245,4 +245,38 @@ export const relationship360Preview: R360Data = {
       ],
     },
   ],
+  comparisons: [
+    {
+      id: "cmp-1",
+      earlierPeriodId: "p1",
+      laterPeriodId: "p3",
+      then: {
+        observation: "You offered a way out in the same message as the invitation, then cancelled before Sam had answered.",
+        coverage: "March 2026 · 2 conversations · 12 messages",
+        evidence: [
+          { sourceId: "s1", messageId: "s1m1" },
+          { sourceId: "s1", messageId: "s1m4" },
+        ],
+      },
+      now: {
+        observation: "You kept the plan on the table and asked Sam to choose between two options.",
+        coverage: "September 2026 · 2 conversations · 8 messages",
+        evidence: [
+          { sourceId: "s5", messageId: "s5m2" },
+          { sourceId: "s6", messageId: "s6m2" },
+        ],
+      },
+      note: "September has fewer messages than March, so this compares how you opened each plan, not how often.",
+    },
+  ],
+  metrics: [
+    {
+      id: "met-1",
+      label: "Plans you withdrew before the other person replied",
+      unit: "conversations",
+      then: { periodId: "p1", value: 2, of: 2 },
+      now: { periodId: "p3", value: 0, of: 2 },
+      missingData: "Counted only in the included conversations. Calls and voice notes are not counted.",
+    },
+  ],
 };
