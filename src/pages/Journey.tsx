@@ -358,46 +358,52 @@ const Journey = () => {
               })
             )}
 
-            <section className="mt-10 rounded-[20px] border border-btln-line bg-btln-mint p-5">
-              <h2 className="text-[16px] font-semibold text-foreground">Privacy controls</h2>
-              <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
-                Journey stores structured observations and the reports you linked — never the raw
-                chat you uploaded, which follows the deletion rules already described in your
-                privacy settings. Turning Journey off stops anything new being added; deleting
-                removes everything Journey holds.
-              </p>
-              <div className="mt-4 flex flex-col gap-2">
-                <Button
-                  variant="outline"
-                  className="h-12 rounded-full"
-                  disabled={busy}
-                  onClick={() => run(() => optOut(user!.id), "Could not turn Journey off")}
-                >
-                  Turn Journey off
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="h-12 rounded-full"
-                  disabled={busy}
-                  onClick={() => {
-                    if (!window.confirm("Delete everything in your Journey? This cannot be undone."))
-                      return;
-                    void run(() => deleteEverything(), "Could not delete your Journey");
-                  }}
-                >
-                  Delete my Journey data
-                </Button>
-              </div>
-            </section>
-
             <p className="mt-8 text-[13px] leading-relaxed text-muted-foreground">
-              Timelines and patterns across these conversations are still being built. Until they
+              Patterns and coaching across these conversations are still being built. Until they
               are ready, this page shows only what you have chosen to include — no trends are
               claimed from it.
             </p>
           </>
         )}
+
+        {/* Privacy controls stay available whether or not Relationship360 is on. */}
+        {!loading && (
+          <section className="mt-10 rounded-[20px] border border-btln-line bg-btln-mint p-5">
+            <h2 className="text-[16px] font-semibold text-foreground">Privacy controls</h2>
+            <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
+              Relationship360 stores structured observations and the reports you linked — never the
+              raw chat you uploaded, which follows the deletion rules already described in your
+              privacy settings. Turning Relationship360 off stops anything new being added; deleting
+              removes everything Relationship360 holds. Your original reports are not deleted by this.
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              {optedInAt && (
+                <Button
+                  variant="outline"
+                  className="h-12 rounded-full"
+                  disabled={busy}
+                  onClick={() => run(() => optOut(user!.id), "Could not turn Relationship360 off")}
+                >
+                  Turn Relationship360 off
+                </Button>
+              )}
+              <Button
+                variant="destructive"
+                className="h-12 rounded-full"
+                disabled={busy}
+                onClick={() => {
+                  if (!window.confirm("Delete everything in your Relationship360? This cannot be undone."))
+                    return;
+                  void run(() => deleteEverything(), "Could not delete your Relationship360 data");
+                }}
+              >
+                Delete my Relationship360 data
+              </Button>
+            </div>
+          </section>
+        )}
       </main>
+
       <BottomNav />
     </div>
   );
