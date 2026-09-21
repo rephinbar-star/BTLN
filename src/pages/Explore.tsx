@@ -52,8 +52,9 @@ const Explore = () => {
         ...items,
         {
           to: "/journey",
-          title: "Relationship Journey",
-          body: "Your private, opt-in view across your own reads. Early — timelines are still being built.",
+          title: "Your Relationship360",
+          body: "Your private, opt-in view across your own reads. Early — the profile is still being built.",
+
         },
       ]
     : items;

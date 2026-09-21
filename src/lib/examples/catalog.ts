@@ -7,5 +7,7 @@ export const EXAMPLES: { kind: ExampleKind; name: string; route: string; tryRout
   { kind: "group", name: "Group Read", route: "/examples/group", tryRoute: "/group" },
   { kind: "roast", name: "Roast Us", route: "/examples/roast", tryRoute: "/roast" },
   { kind: "wrapped", name: "Wrapped", route: "/examples/wrapped", tryRoute: "/wrapped" },
-  { kind: "journey", name: "Relationship Journey", route: "/examples/journey", tryRoute: "/journey" },
+  // Internal kind stays "journey" so existing links and data keep working.
+  { kind: "journey", name: "Relationship360 Preview", route: "/examples/relationship360", tryRoute: "/prime" },
+
 ];
