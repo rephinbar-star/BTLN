@@ -551,7 +551,7 @@ export default function Pricing() {
                 { to: "/group", label: "Group Read — a serious read of a group chat" },
                 { to: "/group-roast", label: "Group Roast — a playful roast of a group chat" },
               ].map((item) => (
-                <Button key={item.to} asChild variant="outline" className="min-h-12 justify-start rounded-full">
+                <Button key={item.to} asChild variant="ghost" className={`${PRICING_BTN} justify-start`}>
                   <Link to={item.to}>{item.label}</Link>
                 </Button>
               ))}
@@ -559,7 +559,7 @@ export default function Pricing() {
             <button
               type="button"
               onClick={() => setChooseMode(false)}
-              className="mt-4 inline-flex min-h-11 w-full items-center justify-center text-[14px] underline underline-offset-4"
+              className={`mt-4 ${PRICING_BTN}`}
             >
               Close
             </button>
