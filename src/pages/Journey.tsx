@@ -109,10 +109,10 @@ const Journey = () => {
   return (
     <div className="min-h-screen bg-background">
       <Helmet>
-        <title>Your Journey | BetweenTheLines</title>
+        <title>Your Relationship360 | BetweenTheLines</title>
         <meta
           name="description"
-          content="Your private Relationship Journey: the conversations you chose to include, and what they show over time."
+          content="Your private Relationship360: the conversations you chose to include, and what they show over time."
         />
         <meta name="robots" content="noindex, nofollow" />
       </Helmet>
@@ -120,12 +120,12 @@ const Journey = () => {
 
       <main className="mx-auto max-w-2xl px-5 pb-24 pt-8">
         <h1 className="text-[28px] font-semibold leading-tight text-foreground sm:text-[34px]">
-          Your Journey
+          Your Relationship360
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-          Understand who you are in your relationships — and how you're changing. Journey is
-          private to your account. Nothing is added unless you add it yourself, and there is no
-          share link for it.
+          Understand who you are in your relationships—and get insights and coaching for self
+          improvement. Relationship360 is private to your account. Nothing is added unless you add
+          it yourself, and there is no share link for it.
         </p>
         <SeeExample kind="journey" />
 
@@ -135,7 +135,7 @@ const Journey = () => {
           </div>
         ) : !optedInAt ? (
           <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm">
-            <h2 className="text-[18px] font-semibold text-foreground">Turn Journey on</h2>
+            <h2 className="text-[18px] font-semibold text-foreground">Turn Relationship360 on</h2>
             <ul className="mt-3 space-y-2 text-[14px] leading-relaxed text-muted-foreground">
               <li>• You choose which of your own reports are included — one at a time.</li>
               <li>• You tell us which person in the chat is you. Nothing is matched by name.</li>
@@ -145,11 +145,12 @@ const Journey = () => {
             <Button
               className="mt-5 h-12 w-full rounded-full"
               disabled={busy || !user}
-              onClick={() => run(() => optIn(user!.id), "Could not turn Journey on")}
+              onClick={() => run(() => optIn(user!.id), "Could not turn Relationship360 on")}
             >
-              Turn Journey on
+              Turn Relationship360 on
             </Button>
           </section>
+
         ) : (
           <>
             <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm">
