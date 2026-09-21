@@ -113,4 +113,7 @@ export type R360Data = {
   patterns: R360Pattern[];
   working: R360Working[];
   recommendations: R360Recommendation[];
+  comparisons?: R360Comparison[];
+  metrics?: R360Metric[];
+
 };
