@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { Check, Loader2, MessageCircle, Users, BookOpen, Laugh, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
 import { useAuth } from "@/hooks/useAuth";
@@ -550,9 +549,9 @@ export default function Pricing() {
                 { to: "/group", label: "Group Read — a serious read of a group chat" },
                 { to: "/group-roast", label: "Group Roast — a playful roast of a group chat" },
               ].map((item) => (
-                <Button key={item.to} asChild variant="ghost" className={`${PRICING_BTN} justify-start`}>
-                  <Link to={item.to}>{item.label}</Link>
-                </Button>
+                <Link key={item.to} to={item.to} className={`${PRICING_BTN} justify-start`}>
+                  {item.label}
+                </Link>
               ))}
             </div>
             <button
