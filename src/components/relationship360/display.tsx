@@ -182,7 +182,7 @@ export const R360PatternDetail = ({
       {pattern.observedRange && (
         <p className="mt-1 text-[13px] text-muted-foreground">Observed {pattern.observedRange}</p>
       )}
-      <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{pattern.whyItMatters}</p>
+      <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{pattern.whyItMatters ?? pattern.statement}</p>
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
@@ -269,54 +269,6 @@ export const R360PatternDetail = ({
       </p>
       </div>
       </article>
-    </R360Card>
-  );
-};
-
-/** One short story: a change, a recurrence, something working — only when supported. */
-export const R360WhatsNew = ({
-  items,
-}: {
-  items: { id: string; kind: string; conclusion: string; observed: string; evidence: ResolvedEvidence[] }[];
-}) => (
-  <section className="mt-8 min-w-0" aria-labelledby="r360-whats-new">
-    <h2 id="r360-whats-new" className="text-[18px] font-medium">
-      What's new
-    </h2>
-    {items.length === 0 ? (
-      <p className="mt-2 text-[14px] text-muted-foreground">
-        Nothing here is supported by the conversations you have included yet.
-      </p>
-    ) : (
-      items.map((item) => <WhatsNewItem key={item.id} item={item} />)
-    )}
-  </section>
-);
-
-const WhatsNewItem = ({
-  item,
-}: {
-  item: { id: string; kind: string; conclusion: string; observed: string; evidence: ResolvedEvidence[] };
-}) => {
-  const [open, setOpen] = useState(false);
-  const id = useId();
-  return (
-    <R360Card className="mt-3">
-      <p className="text-[13px] font-medium text-btln-forest">{item.kind}</p>
-      <p className="mt-1 text-[16px] leading-relaxed">{item.conclusion}</p>
-      <p className="mt-1 text-[13px] text-muted-foreground">Observed {item.observed}</p>
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-expanded={open}
-        aria-controls={id}
-        className="mt-1 inline-flex min-h-11 items-center underline underline-offset-4"
-      >
-        {open ? "Hide evidence" : `Evidence (${item.evidence.length})`}
-      </button>
-      <div id={id} hidden={!open}>
-        <EvidenceList items={item.evidence} />
-      </div>
     </R360Card>
   );
 };

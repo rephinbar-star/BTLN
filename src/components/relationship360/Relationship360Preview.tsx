@@ -18,8 +18,6 @@ import { track } from "@/lib/analytics";
 
 export const R360_HEADLINE =
   "Understand who you are in your relationships—and get insights and coaching for self improvement.";
-export const R360_SUPPORTING =
-  "See the patterns in how you communicate, respond, and connect—with practical coaching that develops as you add more conversations.";
 
 type DemoState = "sparse" | "initial" | "updated";
 
@@ -80,7 +78,7 @@ export const Relationship360Preview = () => {
   };
 
   const patterns = distinctByMeaning(view.patterns.filter((p) => p.evidence.some((e) => inScope(e.sourceId))));
-  const patternKeys = new Set(patterns.map((pattern) => pattern.semanticKey));
+  const patternKeys = new Set(patterns.flatMap((pattern) => pattern.semanticKey ? [pattern.semanticKey] : []));
   const working = distinctByMeaning(view.working.filter((item) =>
     item.evidence.some((e) => inScope(e.sourceId)) && !patternKeys.has(item.semanticKey),
   ));
@@ -338,6 +336,7 @@ export const Relationship360Preview = () => {
             setPeriod(null);
             setRelationship(null);
             setCheckIns({});
+            setShowMoreInsights(false);
             setReviewed(DEMO_SOURCES.initial);
           }}
         >

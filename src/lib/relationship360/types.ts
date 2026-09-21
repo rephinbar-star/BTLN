@@ -66,12 +66,12 @@ export type R360Introspection = {
 export type R360Pattern = {
   id: string;
   /** Meaning-level identity used to prevent paraphrased duplicates. */
-  semanticKey: string;
+  semanticKey?: string;
   /** Lower numbers appear first; never used to fill a quota. */
-  priority: number;
+  priority?: number;
   question: Exclude<R360Question, "next">;
   title: string;
-  whyItMatters: string;
+  whyItMatters?: string;
   statement: string;
   state?: R360PatternState;
   /** Observed period of the evidence, written for a person to read. */
@@ -116,14 +116,14 @@ export type R360Metric = {
 
 export type R360Working = {
   id: string;
-  semanticKey: string;
+  semanticKey?: string;
   statement: string;
   evidence: R360EvidenceRef[];
 };
 
 export type R360Recommendation = {
   id: string;
-  semanticKey: string;
+  semanticKey?: string;
   type: "communication" | "behavioral";
   observation: string;
   action: string;

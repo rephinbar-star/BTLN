@@ -44,11 +44,12 @@ export type R360View = {
 };
 
 /** Keep the first editorially-prioritized item for each meaning, not each wording. */
-export const distinctByMeaning = <T extends { semanticKey: string }>(items: T[]): T[] => {
+export const distinctByMeaning = <T extends { id: string; semanticKey?: string }>(items: T[]): T[] => {
   const seen = new Set<string>();
   return items.filter((item) => {
-    if (seen.has(item.semanticKey)) return false;
-    seen.add(item.semanticKey);
+    const key = item.semanticKey ?? item.id;
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
 };
@@ -93,7 +94,7 @@ export const computeR360View = (data: R360Data, excluded: Set<string>): R360View
             .filter((path) => path.evidenceRefs.length > 0),
         }
       : undefined,
-  })).sort((a, b) => a.priority - b.priority);
+  })).sort((a, b) => (a.priority ?? Number.MAX_SAFE_INTEGER) - (b.priority ?? Number.MAX_SAFE_INTEGER));
 
   const working = data.working
     .map((item) => ({ ...item, evidence: evidenceIn(item.evidence) }))

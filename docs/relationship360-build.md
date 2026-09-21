@@ -63,6 +63,32 @@ Observed behaviour, introspection questions, generated advice and self-reported 
 - Stage 4 synthesis must generate and validate this strict shape, reject diagnostic conclusions and unsupported paths,
   preserve confidence/limitations/alternatives metadata, and keep reflection responses outside observation records.
 
+## Editorial and default-reading contract — owner-approved revision
+
+- One canonical detailed home per insight. Overview, relationship/time filters, Then / Now, monthly review and return
+  states may link to or activate that insight, but must not repeat its explanatory prose.
+- Default overview: one meaningful headline plus at most three distinct linked takeaways, about 60–90 words maximum
+  when enough evidence exists and less when sparse. Show up to three prioritized, meaning-level distinct pattern cards;
+  put further genuinely distinct patterns behind **More insights**. This is a maximum, never a quota.
+- A collapsed pattern shows a short title, one sentence about why it matters, observed period and its change/evidence
+  state. Expansion owns the grounded observation and Introspection. Show one open coaching question first; **Explore
+  this further** reveals at most two source-supported paths. Evidence lives under **Why we're showing this**.
+- Suggested next steps contain at most three meaning-level distinct communication/behavioural actions, each with a
+  short reason and expandable evidence. A pattern links to its canonical recommendation instead of restating it.
+  What's working is omitted when it repeats a canonical pattern; no praise or action is generated to fill space.
+- Then / Now and monthly review are purposeful, user-opened views. Since your last review contains only newly supported
+  developments; visiting or time passing creates no change.
+- Default visible narrative has a soft maximum of 250–350 words, excluding labels/navigation and collapsed source
+  evidence. Evidence, uncertainty, counterexamples and original source messages remain available and are not truncated
+  to meet that count.
+- Generation/editorial pipeline rules for Stage 4: every section must add new information or a different interaction;
+  assign a stable `semanticKey`, prioritize before rendering, deduplicate by meaning (not string), avoid reusing a quote
+  across cards, and validate title/reason/action lengths plus card/path maxima. Use the existing generation call and a
+  deterministic editorial pass; do not add a second model call per view. Avoid formulaic openings, conclusions,
+  repeated “you tend to” paraphrases, hype, flattery and motivational filler. Preserve qualifications near each claim.
+- Compatibility: `semanticKey`, `priority` and `whyItMatters` are optional when reading old summaries. Missing fields
+  fall back to the existing id/order/statement; old history is not automatically regenerated.
+
 ## Staged acceptance checklist
 
 ### Stage 1 — Shared mobile UX + complete interactive preview — DONE

@@ -315,7 +315,6 @@ export const relationship360Preview: R360Data = {
         "Ask the question and stop there — one message, one choice, no pre-emptive withdrawal. Wait for the reply before adjusting the plan.",
       why: "In the conversations where you did this, the other person answered with a concrete option instead of a delay.",
       evidence: [
-        { sourceId: "s3", messageId: "s3m7" },
         { sourceId: "s3", messageId: "s3m8" },
       ],
       selfReport: { used: true, note: "Self-reported: \"Used it in September. Sam answered straight away.\"" },
@@ -342,7 +341,6 @@ export const relationship360Preview: R360Data = {
       why: "The direct version already produced a decision in the same week it was used.",
       evidence: [
         { sourceId: "s4", messageId: "s4m2" },
-        { sourceId: "s5", messageId: "s5m2" },
       ],
     },
   ],
