@@ -54,26 +54,39 @@ export function RelationshipGrouping({
     }
   };
 
+  const periods = (
+    <div className="mt-3 space-y-2">
+      {sources.map((source) => (
+        <SourcePeriod key={source.id} source={source} busy={busy} onChanged={onChanged} />
+      ))}
+    </div>
+  );
+
   if (relationship.is_confirmed) {
-    // Already resolved: the only control needed is the undo for a wrong grouping.
-    if (sources.length < 2) return null;
+    // Already resolved: the controls needed are the undo for a wrong grouping
+    // and, where a conversation has no readable dates, a way to say when it was.
     return (
       <div className="mt-4 rounded-xl border border-dashed border-border px-3 py-2">
-        <p className="text-[13px] text-muted-foreground">Grouped these conversations by mistake?</p>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {sources.map((source) => (
-            <Button
-              key={source.id}
-              size="sm"
-              variant="outline"
-              disabled={busy}
-              className="min-h-[44px]"
-              onClick={() => run(() => splitSource(source.id, `${relationship.label} (separated)`), "Could not separate that conversation")}
-            >
-              Separate this {source.source_kind.replace("_", " ")}
-            </Button>
-          ))}
-        </div>
+        {sources.length >= 2 && (
+          <>
+            <p className="text-[13px] text-muted-foreground">Grouped these conversations by mistake?</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {sources.map((source) => (
+                <Button
+                  key={source.id}
+                  size="sm"
+                  variant="outline"
+                  disabled={busy}
+                  className="min-h-[44px]"
+                  onClick={() => run(() => splitSource(source.id, `${relationship.label} (separated)`), "Could not separate that conversation")}
+                >
+                  Separate this {source.source_kind.replace("_", " ")}
+                </Button>
+              ))}
+            </div>
+          </>
+        )}
+        {periods}
       </div>
     );
   }
