@@ -167,6 +167,12 @@ signed-out free path; signing in raises the ceiling.
 - Mapping correction and source deletion invalidating derived state.
 - Interactive Mode: confirmed sent reply → subsequent exchange → real contextual model
   response in one owned thread, with no second OCR pass and no duplicated observations.
-- `coachingPreferences` consent policy: the loader currently treats
-  `personalization_consent !== false` as consent, which includes `NULL`. Legacy rows
-  must not be silently included — to be resolved before personalization is relied on.
+**Resolved this pass — consent policy.** `supabase/functions/_shared/coachingPreferences.ts`
+previously treated `personalization_consent !== false` as consent, which would have
+included `NULL`. It now requires `=== true`, matching the SQL side
+(`WHERE f.personalization_consent`) exactly. The column is `NOT NULL DEFAULT true`, so no
+`NULL` rows exist today and the change is behaviour-preserving for real data, but an
+unknown value can no longer be silently read as consent. `reset_coaching_personalization`
+sets the flag to `false`, and a reset therefore now removes those rows from
+personalization on both the SQL and the edge-function path. Redeployed:
+`interactive-mode`, `decode-conversation`.
