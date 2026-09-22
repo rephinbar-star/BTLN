@@ -523,3 +523,40 @@ engine for an opted-in Prime account; the public preview remains fictional and l
 - Billing lifecycle remains blocked on provider test credentials (no Interactive Mode price).
 - Persistent operator-authorised evaluation store, Group Roast humour pass, 10,000-message
   end-to-end run and the mobile matrix are still open.
+
+## Dated ledger — 2026-09-22 (grouping + conversation dates + Then/Now)
+
+Implemented
+- `report_ingest_meta` now records dates for reports finished before sign-in (the
+  earlier `if (!input.userId) return` dropped them silently). Deep Read parses its
+  own transcript server-side; no client-supplied date is trusted.
+- `journey_auto_include` is SECURITY DEFINER (anon revoked in a follow-up
+  migration) so it can read that metadata; existing staged conversations were
+  backfilled from retained metadata only — nothing regenerated.
+- Per-source period control in `RelationshipGrouping.tsx`: parsed ranges shown as
+  read; undated conversations offer "From/To", stored via `journey_set_source_period`
+  and labelled self-reported, invalidating affected profiles.
+- Then/Now section in `Relationship360Live.tsx` renders `coverage.comparison`,
+  with named honest reasons when a comparison is not supported.
+- Tests: `src/lib/relationship360/dates.test.ts` (9) covering parsed ranges,
+  day/month ambiguity, unknown stays unknown, future rejection, OCR provenance,
+  identical-vs-edited transcript keys, long-span claims losing dates, and an
+  undated later exchange never inheriting the original period. Suite: 132 passing.
+
+Actually verified (test account A, real model calls)
+- Two dated Deep Reads (03–06 Mar 2026 and 06–09 Aug 2026) → metadata stored with
+  provenance `parsed`, 8 dated / 0 undated each, ambiguity noted.
+- Suggestion offered for the existing confirmed relationship rather than a silent
+  merge; label confirmed; second conversation assigned.
+- Build: 2 sources, 1 confirmed relationship, 14 observations, 14 dated,
+  comparison available with the two real periods (7 observations each) and no
+  improvement claim; narrative 46 words.
+- UI at 390px: parsed ranges, "no dates could be read" period editor, and Then/Now
+  under the relationship filter.
+
+Pending / blocked
+- Deep Read observations still carry no structured actor, so Then/Now sides report
+  0 about you / 0 about them and say so plainly.
+- Concurrency-during-correction and cross-account forged-date rejection re-checks
+  for this increment not re-run.
+- Add-on billing still blocked: no provider test price.
