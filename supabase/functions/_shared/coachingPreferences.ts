@@ -68,7 +68,9 @@ export const loadCoachingPreferences = async (
   }
   if (!rows || rows.length === 0) return empty;
 
-  const consented = rows.filter((row) => row.personalization_consent !== false);
+  // Consent must be explicit. A NULL (legacy or unknown) is NOT consent and is
+  // never silently included in personalization.
+  const consented = rows.filter((row) => row.personalization_consent === true);
   if (consented.length === 0) return empty;
 
   const tally = (rating: string) => {
