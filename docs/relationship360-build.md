@@ -388,6 +388,44 @@ One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, 
 | 8 | Release validation matrix (isolation, injection, 10k-message ingestion, linter triage) | part done | Two-account isolation, forged-participant rejection, deletion invalidating derived state, guest-path preservation and hostile-header rate-limit bypass all run as real authenticated HTTP requests on 2026-09-22 — see `docs/security-triage.md`, which also records the two defects those runs found and fixed. Still to run: prompt injection, 10k-message upload → model analysis → adapter, mobile matrix |
 
 
+## Step 4 — real engine, live verification (2026-09-22)
+
+Run against the deployed `relationship360` function with two synthetic accounts
+(`r360-a/b-1790055777@btln-test.dev`). Account A's Prime came from a `test_fixture`
+entitlement row, **not a purchase**.
+
+What actually ran:
+- Two **real** Deep Reads through `analyze-conversation` (real model calls, `analyses`
+  `92a90023…` and `f6eb038f…`, both `complete`), claimed to account A.
+- Activation with automatic inclusion staged both as `pending`; a duplicate manual link was
+  rejected by the canonical unique index.
+- `journey_confirm_identity` refused an invented participant ("choose a participant from this
+  conversation") and accepted "Taylor"; account B confirming A's source returned `false`.
+- `build` → `complete`, coverage `{sources:2, relationships:2, observations:15}`, grounded
+  narrative that explicitly refuses to over-read ("does not establish that you always do more"),
+  evidence ids validated against stored observations.
+- Excluding one source removed its observations (15 → 8) and marked the summary stale; the rebuild
+  reported `single_read: true` with one source. Re-including and rebuilding returned to 2/15.
+- `reflect` saved a private note (`{"saved":true}`).
+- Denials: account B `build` → 402 "Relationship360 is part of Prime"; signed-out → 401; B reading
+  A's `journey_summaries` / `journey_observations` over REST → `[]`.
+- UI: `/journey` at 390px signed in as A renders the real profile — relationship chips, "Built from
+  2 included conversations across 2 relationships and 1 period", underlined Insight open,
+  Introspection inline, no fixture content. Only pre-existing React ref warnings in console.
+
+Known rough edge, not hidden: automatic inclusion creates one relationship per staged report, so the
+same person can appear as two relationships until the user merges or relabels them. The synthesis
+says so rather than inventing a cross-relationship pattern.
+
+Unit coverage: `src/lib/relationship360/adapters.test.ts` (6 tests) pins the attribution rules —
+behaviour is the person's only when their confirmed participant is named, suggested replies stay
+`ai_advice` ("not known to be sent"), self-reports stay `self_report`, Group Roast yields no
+observations, group role cards map by confirmed name only. 119 tests total, `tsgo` clean.
+
+Still pending in steps 4/5: periodic reviews driven by new evidence, and reflections feeding the
+next synthesis with explicit provenance.
+
+
 ## Feedback-to-improvement loop (2026-09-22)
 
 Two separate loops, both built as working code rather than a ratings UI on top of a table.
