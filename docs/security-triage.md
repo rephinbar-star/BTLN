@@ -226,3 +226,56 @@ unknown value can no longer be silently read as consent. `reset_coaching_persona
 sets the flag to `false`, and a reset therefore now removes those rows from
 personalization on both the SQL and the edge-function path. Redeployed:
 `interactive-mode`, `decode-conversation`.
+
+
+## Two-account isolation run — 2026-09-22 (real authenticated requests)
+
+Two synthetic accounts were created through the normal signup endpoint on
+`@btln-test.dev` (`iso-a-1790053620725`, `iso-b-1790053620725`), confirmed by reading their
+own confirmation tokens, then signed in with password grants. No real customer data was
+touched. Scripts: `/tmp/isolation.mjs`, `/tmp/iso2.mjs`, `/tmp/iso3.mjs`.
+
+Passing (verified by HTTP response, not by unit test):
+
+- B cannot read A's report by id, by direct table select, or by deleting it.
+- B cannot rate A's report (`submit_ai_feedback` → 400 "not authorized for this report"),
+  cannot list A's ratings, cannot read `ai_feedback` rows, cannot undo A's rating.
+- A changing a rating updates the existing row: one row, rating `down`, never two.
+- A's reset clears personalisation memory (context totals back to 0) and
+  `delete_my_ai_feedback` leaves zero rows.
+- B's Relationship360 export contains nothing of A's; B cannot exclude or re-identify
+  A's source (both return `false`).
+- Privacy controls still work after opting out: export and delete-all both succeed
+  post-`journey_opt_out`.
+- Participant confirmation is evidence-bound: choices come from the report itself
+  (`["Rae","Sam"]`), a forged name returns 400 "choose a participant from this
+  conversation", and Quick Take — which stores no verified display names — offers no
+  choices at all rather than inventing one.
+- Guest flow intact: an unclaimed report is readable by its own browser id and returns
+  `[]` for any other; claiming after sign-in still works.
+
+### Two defects found and fixed in this run
+
+1. **Cross-account read via a known browser id.** `get_decode_for_session` and
+   `get_analysis_for_session` (and the two free-usage counters) accepted the
+   `session_id` branch even when the row already belonged to an account, so a signed-in
+   stranger — or a signed-out caller — holding the owner's session UUID could read the
+   report. `group_reads` and `roasts` already carried the `user_id IS NULL` guard; these
+   four did not. Fixed by adding the same guard. Re-tested: B with A's browser id → 0
+   rows; anonymous with A's browser id → 0 rows; owner and guest paths unaffected.
+2. **Deleted reports left derived Relationship360 state behind.** `journey_sources`
+   references reports polymorphically with no foreign key, so deleting a report left its
+   source row and observations in place. Added
+   `public.journey_purge_deleted_source()` with AFTER DELETE triggers on `decodes`,
+   `analyses`, `group_reads` and `group_roasts`: it deletes the source and its
+   observations and marks any summary built on it stale. Re-tested: source rows drop to 0
+   on report deletion.
+
+### Migration convention discovered
+
+A `REVOKE EXECUTE ... FROM anon, authenticated` issued in the *same* migration as the
+`CREATE FUNCTION` does not stick — the grant is present again afterwards
+(`has_function_privilege` → true). The revoke must be a separate, later migration. This is
+the same mechanism behind the original root cause. Standing rule: create the function in
+one migration, revoke in the next, and verify with `has_function_privilege` rather than
+assuming.
