@@ -84,6 +84,20 @@ export const classify = (actor: string | null | undefined, ctx: Ctx): { kind: Su
   return { kind: "other_behavior", label: name };
 };
 
+/** Longest span a single report may date a claim within. */
+export const MAX_DATED_SPAN_DAYS = 92;
+
+const datesFor = (ctx: Ctx): { observed_period_start: string | null; observed_period_end: string | null } => {
+  const start = ctx.observedStart;
+  const end = ctx.observedEnd ?? ctx.observedStart;
+  if (!start || !end) return { observed_period_start: null, observed_period_end: null };
+  const span = (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000;
+  if (!Number.isFinite(span) || span < 0 || span > MAX_DATED_SPAN_DAYS) {
+    return { observed_period_start: null, observed_period_end: null };
+  }
+  return { observed_period_start: start, observed_period_end: end };
+};
+
 const make = (
   ctx: Ctx,
   kind: SubjectKind,
@@ -103,8 +117,10 @@ const make = (
     evidence_refs: evidence.slice(0, 3),
     confidence,
     alternatives: [],
-    observed_period_start: ctx.observedStart,
-    observed_period_end: ctx.observedEnd,
+    // A claim only carries a date its evidence can support. A report covering a
+    // long stretch cannot date an individual claim, so the claim stays undated
+    // rather than borrowing the whole range's start.
+    ...datesFor(ctx),
   };
 };
 
@@ -239,10 +255,11 @@ export const adaptInteractiveEvent = (event: any, ctx: Ctx): ObservationDraft[] 
   const out: (ObservationDraft | null)[] = [];
 
   const day = exchangeDay(result.exchange_date ?? result.observed_date ?? provenance.exchange_date ?? provenance.observed_date);
+  // A later exchange has its own date or none at all. It never inherits the
+  // period of the original conversation: that would manufacture chronology.
   const local: Ctx = day
     ? { ...ctx, observedStart: day, observedEnd: day }
-    // No verified exchange date: inherit the source's verified period, or stay unknown.
-    : { ...ctx };
+    : { ...ctx, observedStart: null, observedEnd: null };
 
   if (type === "sent_reply") {
     out.push(make(local, "user_behavior", ctx.subject, "interactive.sent_reply", "You continued this exchange with a reply you confirmed you sent.", [], "high"));
