@@ -563,6 +563,23 @@ export default function Pricing() {
           <h2 className="text-[24px] font-medium">Pricing questions</h2>
           <div className="mt-6 divide-y divide-border">
             <div className="py-5">
+              <h3 className="font-medium">What is Interactive Mode, and what does it cost?</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+                Quick Take on its own reads one message and suggests three replies. Interactive Mode
+                lets you carry on: tell us what you actually sent, add what came back, and get an
+                updated read. It is an add-on to the Quick Take plan at $2.99/month on top of
+                $6.99/month — $9.98/month combined — and it is included in Prime. It is still being
+                built, so it cannot be bought yet and no account has it.
+              </p>
+            </div>
+            <div className="py-5">
+              <h3 className="font-medium">Does the $4.99 single report cover a Quick Take?</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+                No. The single-report payment is attached to one Deep Read, Group Read or Group
+                Roast. Quick Take has its own free first session, then the $6.99/month plan.
+              </p>
+            </div>
+            <div className="py-5">
               <h3 className="font-medium">Can I buy a single report before starting it?</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
                 A one-time purchase is attached to a specific report, so start the read first. Choose Deep Read,
