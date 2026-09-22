@@ -61,10 +61,11 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
           client_request_id: crypto.randomUUID(),
           event_type: eventType,
           raw_text: rawText,
-          screenshot_base64_array: draft.screenshots.map((item) => item.dataUrl),
+          screenshot_base64_array: [],
           ingestion: draft.conversation,
           confirmed_self_participant_id: draft.selfParticipantId,
           confirmed_self_side: draft.screenshotSelfSide,
+          confirmed_self_absent: draft.selfAbsent,
           speaker_order: eventType === "observed_followup" ? [speakerOrder] : [],
         },
       });
@@ -114,7 +115,7 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
           <Button type="button" variant="ghost" className="min-h-11" disabled={busy} onClick={() => void submit("chose_not_to_reply")}>I chose not to reply</Button>
         </div>
       )}
-      <Button type="button" className="mt-4 min-h-11 w-full" disabled={busy || (mode === "self_report" ? !reflection.trim() : !draft.conversation || draft.conversation.format === "screenshots_pending" || (mode === "observed_followup" && !(draft.selfParticipantId || draft.screenshotSelfSide)))} onClick={() => void submit()}>
+      <Button type="button" className="mt-4 min-h-11 w-full" disabled={busy || (mode === "self_report" ? !reflection.trim() : !draft.conversation || draft.conversation.format === "screenshots_pending" || (mode === "observed_followup" && !(draft.selfParticipantId || draft.screenshotSelfSide || draft.selfAbsent)))} onClick={() => void submit()}>
         {busy ? <><Loader2 className="animate-spin" /> Updating your take…</> : mode === "self_report" ? "Save private reflection" : "Get an updated take"}
       </Button>
       {error && <p role="alert" className="mt-3 text-[13px] text-destructive">{error}</p>}

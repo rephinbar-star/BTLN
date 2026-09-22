@@ -15,7 +15,7 @@ export const DecodeInput = () => {
   const navigate = useNavigate();
 
   const hasInput = Boolean(draft.conversation && draft.conversation.format !== "screenshots_pending");
-  const identityConfirmed = draft.method === "screenshots" ? Boolean(draft.screenshotSelfSide) : Boolean(draft.selfParticipantId);
+  const identityConfirmed = draft.selfAbsent || (draft.method === "screenshots" ? Boolean(draft.screenshotSelfSide) : Boolean(draft.selfParticipantId));
 
   const onSubmit = async () => {
     if (!hasInput || !identityConfirmed || submitting) return;
@@ -35,13 +35,12 @@ export const DecodeInput = () => {
     const input: Record<string, unknown> = {
       name1: selected?.display_name ?? "You",
       name2: other?.display_name ?? "Them",
-      identity_confirmation: draft.method === "screenshots"
-        ? { self_side: draft.screenshotSelfSide }
+      identity_confirmation: draft.selfAbsent ? { absent: true } : draft.method === "screenshots"
+        ? { self_side: draft.screenshotSelfSide, participant_id: draft.selfParticipantId }
         : { participant_id: draft.selfParticipantId, conversation_id: draft.conversation?.id },
       ingestion: draft.conversation,
     };
-    if (draft.method === "screenshots") input.screenshot_base64_array = draft.screenshots.map((shot) => shot.dataUrl);
-    else input.raw_text = draft.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? draft.text;
+    input.raw_text = draft.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? draft.text;
 
     logEvent("decode_started", { has_images: draft.method === "screenshots", image_count: draft.screenshots.length });
     track("decode_started", { input_method: draft.method });

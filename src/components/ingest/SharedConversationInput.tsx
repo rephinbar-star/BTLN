@@ -14,6 +14,7 @@ export type ConversationDraft = {
   conversation: CanonicalConversation | null;
   selfParticipantId: string | null;
   screenshotSelfSide: "left" | "right" | null;
+  selfAbsent: boolean;
 };
 
 type Props = {
@@ -40,6 +41,7 @@ export const emptyConversationDraft = (): ConversationDraft => ({
   conversation: null,
   selfParticipantId: null,
   screenshotSelfSide: null,
+  selfAbsent: false,
 });
 
 export function SharedConversationInput({ value, onChange, maxScreenshots = SCREENSHOT_LIMITS.maxCount, compact = false, requireSelf = true, pastePlaceholder = "You: Are we still on for Friday?\nThem: Yes — sorry, today got away from me.", extractScreenshots }: Props) {
@@ -59,10 +61,10 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
   const parseText = (text: string, kind: "paste" | "chat_export", sourceName: string | null) => {
     try {
       const parsed = parseTranscript(text);
-      patch({ method: kind, text, conversation: canonicalizeParsedConversation(parsed, kind, sourceName), selfParticipantId: parsed.participants.find((item) => item.is_self)?.id ?? null, screenshots: [] });
+      patch({ method: kind, text, conversation: canonicalizeParsedConversation(parsed, kind, sourceName), selfParticipantId: parsed.participants.find((item) => item.is_self)?.id ?? null, selfAbsent: false, screenshots: [] });
       setError(null);
     } catch (cause) {
-      patch({ method: kind, text, conversation: null, selfParticipantId: null, screenshots: [] });
+      patch({ method: kind, text, conversation: null, selfParticipantId: null, selfAbsent: false, screenshots: [] });
       setError(cause instanceof UnsupportedFormatError ? cause.message : "We couldn't read that conversation.");
     }
   };
@@ -104,7 +106,7 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
     if (total > SCREENSHOT_LIMITS.maxTotalBytes) {
       setError("Those screenshots exceed the 8 MB processed total. Remove some or upload a shorter exchange.");
     } else {
-      patch({ method: "screenshots", screenshots, text: "", conversation: canonicalScreenshotConversation(screenshots.map((item) => item.name)), selfParticipantId: null });
+      patch({ method: "screenshots", screenshots, text: "", conversation: canonicalScreenshotConversation(screenshots.map((item) => item.name)), selfParticipantId: null, selfAbsent: false });
       if (files.length > room) setError(`Only the first ${room} fit within the ${maxScreenshots}-screenshot limit.`);
       else if (failure) setError(failure.reason instanceof ScreenshotValidationError ? failure.reason.message : "One screenshot couldn't be read. Save it as PNG, JPG or WebP and retry.");
     }
@@ -168,11 +170,11 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
         <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4"><div><dt className="text-muted-foreground">Source</dt><dd>{preview.format.replaceAll("_", " ")}</dd></div><div><dt className="text-muted-foreground">People</dt><dd>{preview.participants.length}</dd></div><div><dt className="text-muted-foreground">Messages</dt><dd>{preview.messages.length.toLocaleString()}</dd></div><div><dt className="text-muted-foreground">Dates</dt><dd>{preview.dateRange.start ? `${preview.dateRange.start.slice(0, 10)} – ${preview.dateRange.end?.slice(0, 10)}` : "Not provided"}</dd></div></dl>
         {preview.ambiguousDates && <p className="mt-2 text-xs text-muted-foreground">Some dates can be read in more than one locale. Confirm the date order in the next step.</p>}
         <ol className="mt-3 max-h-44 space-y-2 overflow-auto border-t border-border pt-3">{preview.messages.slice(0, 8).map((message) => <li key={message.id} className="text-xs leading-relaxed"><span className="font-semibold">{message.raw_sender ?? "Sender unclear"}:</span> {message.content}</li>)}</ol>
-        {requireSelf && <fieldset className="mt-4"><legend className="text-sm font-semibold">Which participant is you?</legend><div className="mt-2 grid gap-1">{preview.participants.map((person) => <label key={person.id} className="flex min-h-11 items-center gap-3 rounded-md px-2 hover:bg-muted"><input type="radio" name={`self-${preview.id}`} checked={value.selfParticipantId === person.id} onChange={() => patch({ selfParticipantId: person.id })} />{person.display_name}</label>)}</div></fieldset>}
+        {requireSelf && <fieldset className="mt-4"><legend className="text-sm font-semibold">Which participant is you?</legend><div className="mt-2 grid gap-1">{preview.participants.map((person) => <label key={person.id} className="flex min-h-11 items-center gap-3 rounded-md px-2 hover:bg-muted"><input type="radio" name={`self-${preview.id}`} checked={!value.selfAbsent && value.selfParticipantId === person.id} onChange={() => patch({ selfParticipantId: person.id, selfAbsent: false })} />{person.display_name}</label>)}<label className="flex min-h-11 items-center gap-3 rounded-md px-2 hover:bg-muted"><input type="radio" name={`self-${preview.id}`} checked={value.selfAbsent} onChange={() => patch({ selfParticipantId: null, selfAbsent: true })} />I am not in this conversation</label></div></fieldset>}
       </section>}
 
-      {value.method === "screenshots" && value.screenshots.length > 0 && requireSelf && <fieldset className="rounded-lg border border-border p-4"><legend className="px-1 text-sm font-semibold">Which side is you?</legend><p className="mb-2 text-xs text-muted-foreground">We will show the extracted messages for correction before analysis. This confirms the starting layout only.</p><div className="grid grid-cols-2 gap-2">{(["left", "right"] as const).map((side) => <Button key={side} type="button" variant={value.screenshotSelfSide === side ? "default" : "outline"} className="min-h-11" aria-pressed={value.screenshotSelfSide === side} onClick={() => patch({ screenshotSelfSide: side })}>{side === "left" ? "I am on the left" : "I am on the right"}</Button>)}</div></fieldset>}
-      {value.method === "screenshots" && value.screenshots.length > 0 && value.screenshotSelfSide && extractScreenshots && <Button type="button" variant="outline" className="min-h-11 w-full" disabled={extracting} onClick={async () => { setExtracting(true); setError(null); try { const conversation = await extractScreenshots(value.screenshots, value.screenshotSelfSide); patch({ conversation, selfParticipantId: conversation.participants.find((person) => person.is_self)?.id ?? null }); } catch (cause) { setError(cause instanceof Error ? cause.message : "We couldn't preview those screenshots."); } finally { setExtracting(false); } }}>{extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Reading screenshots…</> : "Preview extracted messages"}</Button>}
+      {value.method === "screenshots" && value.screenshots.length > 0 && requireSelf && <fieldset className="rounded-lg border border-border p-4"><legend className="px-1 text-sm font-semibold">Which side is you?</legend><p className="mb-2 text-xs text-muted-foreground">We will show the extracted messages for correction before analysis. This confirms the starting layout only.</p><div className="grid grid-cols-2 gap-2">{(["left", "right"] as const).map((side) => <Button key={side} type="button" variant={!value.selfAbsent && value.screenshotSelfSide === side ? "default" : "outline"} className="min-h-11" aria-pressed={!value.selfAbsent && value.screenshotSelfSide === side} onClick={() => patch({ screenshotSelfSide: side, selfAbsent: false })}>{side === "left" ? "I am on the left" : "I am on the right"}</Button>)}</div><Button type="button" variant={value.selfAbsent ? "secondary" : "ghost"} className="mt-2 min-h-11 w-full" aria-pressed={value.selfAbsent} onClick={() => patch({ screenshotSelfSide: null, selfParticipantId: null, selfAbsent: true })}>I am not in this conversation</Button></fieldset>}
+      {value.method === "screenshots" && value.screenshots.length > 0 && (value.screenshotSelfSide || value.selfAbsent) && extractScreenshots && <Button type="button" variant="outline" className="min-h-11 w-full" disabled={extracting} onClick={async () => { setExtracting(true); setError(null); try { const conversation = await extractScreenshots(value.screenshots, value.screenshotSelfSide ?? "right"); patch({ conversation, selfParticipantId: value.selfAbsent ? null : conversation.participants.find((person) => person.is_self)?.id ?? null }); } catch (cause) { setError(cause instanceof Error ? cause.message : "We couldn't preview those screenshots."); } finally { setExtracting(false); } }}>{extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Reading screenshots…</> : "Preview extracted messages"}</Button>}
     </div>
   );
 }
