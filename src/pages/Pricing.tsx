@@ -338,10 +338,11 @@ export default function Pricing() {
   const TierCard = ({ tier }: { tier: Tier }) => {
     const isCurrent = currentPlanKey === tier.key;
     const isIntended = intended === tier.key;
+    const isAddon = tier.key === "interactive_addon";
     return (
       <div
         ref={isIntended ? intendedRef : undefined}
-        className={`relative flex flex-col rounded-2xl border p-6 transition-all duration-200 motion-reduce:transition-none hover:shadow-lg ${
+        className={`relative flex w-full flex-col rounded-2xl border p-6 transition-all duration-200 motion-reduce:transition-none hover:shadow-lg sm:w-[330px] ${
           tier.mint ? "border-btln-line bg-btln-mint/60" : "border-border bg-card"
         } ${isIntended ? "ring-2 ring-foreground/40" : ""}`}
       >
@@ -352,6 +353,9 @@ export default function Pricing() {
           <span className="text-[36px] font-medium tracking-tight">{tier.price}</span>
           <span className="text-[14px] text-muted-foreground">/{tier.period}</span>
         </div>
+        {tier.priceNote && (
+          <p className="mt-1 text-[13px] font-medium text-foreground">{tier.priceNote}</p>
+        )}
         <ModeChips modes={tier.modes} />
         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{tier.description}</p>
 
@@ -364,7 +368,20 @@ export default function Pricing() {
           ))}
         </ul>
 
-        {tier.key === "prime" ? (
+        {isAddon ? (
+          <>
+            {/* No add-on price is configured with the payment provider yet, so
+                there is no checkout to open. Never advertise a purchase that
+                cannot complete. */}
+            <button type="button" disabled className={`mt-8 ${PRICING_BTN}`}>
+              Not available to buy yet
+            </button>
+            <p className="mt-3 text-[13px] text-muted-foreground">
+              Interactive Mode is being built. Nothing is charged and no add-on is active on any
+              account today.
+            </p>
+          </>
+        ) : tier.key === "prime" ? (
           <Link to={`/prime?return_to=${encodeURIComponent("/pricing")}`} className={`mt-8 ${PRICING_BTN}`}>
             {tier.cta}
           </Link>
@@ -389,7 +406,7 @@ export default function Pricing() {
             )}
           </button>
         )}
-        {isMember && tier.key === "prime" && (
+        {isMember && memberTier !== "prime" && tier.key === "prime" && (
           <p className="mt-3 text-[13px] text-muted-foreground">
             You're on the {memberTier} plan. Prime isn't available to buy yet.
           </p>
@@ -397,6 +414,7 @@ export default function Pricing() {
       </div>
     );
   };
+
 
   return (
     <div className="min-h-screen bg-background text-foreground">
