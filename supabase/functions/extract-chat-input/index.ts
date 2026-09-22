@@ -59,10 +59,11 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !serviceKey) return json(503, { error: "Screenshot reading is not configured." });
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   const userId = await resolveUserId(req.headers.get("Authorization"));
-  const buckets: Array<{ key: string; limits: { requests: number; images: number } }> = [
-    { key: `ip:${clientIp(req)}`, limits: LIMITS.ip },
-  ];
-  if (userId) buckets.push({ key: `user:${userId}`, limits: LIMITS.user });
+  // Signed-in callers are metered per account (not spoofable); signed-out
+  // callers are metered per network address, never by a client-supplied id.
+  const buckets: Array<{ key: string; limits: { requests: number; images: number } }> = userId
+    ? [{ key: `user:${userId}`, limits: LIMITS.user }]
+    : [{ key: `ip:${clientIp(req)}`, limits: LIMITS.ip }];
   for (const bucket of buckets) {
     const { data, error } = await admin.rpc("claim_extraction_budget", {
       p_bucket: bucket.key,
