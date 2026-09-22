@@ -12,6 +12,9 @@ import { Header } from "@/components/chemistry/Header";
 import { NextSteps } from "@/components/results/NextSteps";
 import { PrimeOffer } from "@/components/prime/PrimeOffer";
 import { InteractiveModePanel } from "@/components/interactive/InteractiveModePanel";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
+import { FeedbackControl } from "@/components/feedback/FeedbackControl";
+
 
 const DECODE_PLAN_PRICE_ID = "BTLN_decode_monthly";
 
@@ -28,7 +31,15 @@ type DecodeResultJson = {
   confidence?: string;
 };
 
-const ReplyCard = ({ option }: { option: ReplyOption }) => {
+const ReplyCard = ({
+  option,
+  index,
+  decodeId,
+}: {
+  option: ReplyOption;
+  index: number;
+  decodeId: string;
+}) => {
   const [copied, setCopied] = useState(false);
   const copy = async () => {
     const text = option.text ?? "";
@@ -47,18 +58,20 @@ const ReplyCard = ({ option }: { option: ReplyOption }) => {
     window.setTimeout(() => setCopied(false), 1600);
   };
   return (
-    <button
-      type="button"
-      onClick={copy}
-      className={`group w-full rounded-xl border bg-card p-4 text-left transition-all active:scale-[0.99] ${
-        copied ? "border-emerald-500 ring-2 ring-emerald-500/30" : "border-border hover:border-foreground/40"
+    <div
+      className={`group w-full rounded-xl border bg-card p-4 text-left transition-all ${
+        copied ? "border-emerald-500 ring-2 ring-emerald-500/30" : "border-border"
       }`}
     >
       <div className="flex items-center justify-between gap-3">
         <span className="text-[12px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
           {option.tone ?? "Reply"}
         </span>
-        <span className="inline-flex items-center gap-1 text-[12px] font-medium text-muted-foreground group-hover:text-foreground">
+        <button
+          type="button"
+          onClick={copy}
+          className="inline-flex min-h-[44px] items-center gap-1 rounded-full px-2 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+        >
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5 text-emerald-600" /> Copied
@@ -68,12 +81,25 @@ const ReplyCard = ({ option }: { option: ReplyOption }) => {
               <Copy className="h-3.5 w-3.5" /> Copy
             </>
           )}
-        </span>
+        </button>
       </div>
       <p className="mt-2 text-[16px] leading-relaxed text-foreground">{option.text}</p>
-    </button>
+      <div className="mt-2 flex justify-end">
+        <FeedbackControl
+          compact
+          label={`reply option ${index + 1}${option.tone ? ` (${option.tone})` : ""}`}
+          target={{
+            sourceKind: "quick_take",
+            sourceId: decodeId,
+            targetKind: "reply_option",
+            targetKey: `reply_${index + 1}`,
+          }}
+        />
+      </div>
+    </div>
   );
 };
+
 
 const MANIPULATION_TYPES = [
   "gaslighting",
@@ -238,6 +264,7 @@ const DecodeResult = () => {
         <meta name="robots" content="noindex" />
       </Helmet>
       <Header />
+      <FeedbackProvider sourceKind="quick_take" sourceId={decodeId}>
       <main className="mx-auto max-w-2xl px-5 py-10 sm:px-8">
         {status !== "complete" && status !== "failed" && (
           <div className="flex flex-col items-center py-20 text-center">
@@ -273,6 +300,21 @@ const DecodeResult = () => {
             {result.read && (
               <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">{result.read}</p>
             )}
+
+            {decodeId && (
+              <div className="mt-4 flex justify-end">
+                <FeedbackControl
+                  label="this Quick Take"
+                  target={{
+                    sourceKind: "quick_take",
+                    sourceId: decodeId,
+                    targetKind: "overall",
+                    targetKey: "main",
+                  }}
+                />
+              </div>
+            )}
+
 
             {!!result.signals?.length && (
               <ul className="mt-5 flex flex-wrap gap-2">
@@ -335,8 +377,14 @@ const DecodeResult = () => {
                     aria-hidden={locked}
                   >
                     {replies.map((o, i) => (
-                      <ReplyCard key={`${o.tone ?? "reply"}-${i}`} option={o} />
+                      <ReplyCard
+                        key={`${o.tone ?? "reply"}-${i}`}
+                        option={o}
+                        index={i}
+                        decodeId={decodeId ?? ""}
+                      />
                     ))}
+
                   </div>
 
                   {locked && (
@@ -419,6 +467,7 @@ const DecodeResult = () => {
           </div>
         )}
       </main>
+      </FeedbackProvider>
       <NextSteps mode="quick" />
     </div>
   );
