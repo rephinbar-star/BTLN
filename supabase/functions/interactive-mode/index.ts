@@ -14,6 +14,8 @@ const MAX_CONTEXT_EVENTS = 12;
 const MAX_EVENTS_PER_THREAD = 100;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type EventType = "sent_reply" | "no_reply" | "chose_not_to_reply" | "observed_followup" | "self_report";
+type CanonicalMessage = { id: string; participant_id?: string | null; raw_sender?: string | null; content: string; order: number };
+type ReviewedIngestion = { id: string; participants: Array<{ id: string; display_name?: string }>; messages: CanonicalMessage[] };
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), {
   status,
@@ -29,6 +31,22 @@ const hashText = async (value: string) => {
 const active = (row: { status?: string; current_period_end?: string | null }) =>
   ["active", "trialing", "past_due"].includes(row.status ?? "") &&
   (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now());
+
+const reviewedIngestion = (value: unknown): ReviewedIngestion | null => {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.id !== "string" || !candidate.id.startsWith("conv_") || !Array.isArray(candidate.participants) || !Array.isArray(candidate.messages)) return null;
+  if (candidate.messages.length < 1 || candidate.messages.length > 1_000 || candidate.participants.length > 15) return null;
+  const participants = candidate.participants.filter((person): person is { id: string; display_name?: string } => Boolean(person && typeof person === "object" && typeof (person as Record<string, unknown>).id === "string"));
+  if (participants.length !== candidate.participants.length) return null;
+  const participantIds = new Set(participants.map((person) => person.id));
+  const messages = candidate.messages.filter((message): message is CanonicalMessage => {
+    if (!message || typeof message !== "object") return false;
+    const item = message as Record<string, unknown>;
+    return typeof item.id === "string" && item.id.startsWith("msg_") && typeof item.content === "string" && item.content.trim().length > 0 && item.content.length <= 1_200 && Number.isInteger(item.order) && (!item.participant_id || participantIds.has(String(item.participant_id)));
+  });
+  return messages.length === candidate.messages.length ? { id: candidate.id, participants, messages } : null;
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -52,6 +70,10 @@ Deno.serve(async (req) => {
   const eventType = payload?.event_type as EventType;
   const action = payload?.action === "list" ? "list" : "continue";
   const rawText = typeof payload?.raw_text === "string" ? payload.raw_text.trim() : "";
+  const ingestion = reviewedIngestion(payload?.ingestion);
+  const confirmedParticipantId = typeof payload?.confirmed_self_participant_id === "string" ? payload.confirmed_self_participant_id : null;
+  const confirmedSelfSide = payload?.confirmed_self_side === "left" || payload?.confirmed_self_side === "right" ? payload.confirmed_self_side : null;
+  const confirmedAbsent = payload?.confirmed_self_absent === true;
   const screenshots = Array.isArray(payload?.screenshot_base64_array) ? payload.screenshot_base64_array : [];
   const speakerOrder = Array.isArray(payload?.speaker_order) ? payload.speaker_order : [];
   const allowedEvents: EventType[] = ["sent_reply", "no_reply", "chose_not_to_reply", "observed_followup", "self_report"];
@@ -62,8 +84,13 @@ Deno.serve(async (req) => {
     return json(413, { error: "This update is too large. Add a shorter excerpt or up to three screenshots." });
   }
   const needsContent = eventType === "sent_reply" || eventType === "observed_followup" || eventType === "self_report";
-  if (needsContent && !rawText && screenshots.length === 0) return json(400, { error: "Add what happened before continuing." });
+  if (needsContent && !rawText && screenshots.length === 0 && !ingestion) return json(400, { error: "Add what happened before continuing." });
   if (eventType === "observed_followup" && speakerOrder.length === 0) return json(400, { error: "Confirm who spoke first." });
+  if ((eventType === "sent_reply" || eventType === "observed_followup") && ingestion) {
+    const participantIds = new Set(ingestion.participants.map((person) => person.id));
+    const validIdentity = confirmedAbsent || Boolean(confirmedSelfSide) || Boolean(confirmedParticipantId && participantIds.has(confirmedParticipantId));
+    if (!validIdentity || (confirmedAbsent && (confirmedSelfSide || confirmedParticipantId))) return json(400, { error: "Confirm your actual participant, screenshot side, or that you are absent." });
+  }
 
   const [{ data: entitlementRows }, { data: subscriptionRows }, { data: decode }] = await Promise.all([
     admin.from("subscription_entitlements").select("status,current_period_end,entitlement").eq("user_id", user.id).in("entitlement", ["quick_take", "interactive_mode", "prime"]),
@@ -100,7 +127,7 @@ Deno.serve(async (req) => {
   const { count: eventCount } = await admin.from("interactive_events").select("id", { count: "exact", head: true }).eq("thread_id", thread.id);
   if ((eventCount ?? 0) >= MAX_EVENTS_PER_THREAD) return json(409, { error: "This continuation has reached its supported update limit. Start a new Quick Take to continue." });
 
-  const contentFingerprint = rawText || screenshots.join("|");
+  const contentFingerprint = ingestion ? JSON.stringify(ingestion.messages.map(({ id, participant_id, content, order }) => ({ id, participant_id, content, order }))) : rawText || screenshots.join("|");
   const { data: event, error: eventError } = await admin.from("interactive_events").insert({
     user_id: user.id,
     thread_id: thread.id,
@@ -113,6 +140,10 @@ Deno.serve(async (req) => {
       source: eventType === "sent_reply" ? "confirmed_sent" : eventType === "observed_followup" ? "observed_exchange" : "self_reported",
       screenshot_count: screenshots.length,
       original_decode_id: decodeId,
+      canonical_conversation_id: ingestion?.id ?? null,
+      confirmed_self_participant_id: confirmedParticipantId,
+      confirmed_self_side: confirmedSelfSide,
+      confirmed_self_absent: confirmedAbsent,
     },
     status: "pending",
     started_from_version: thread.context_version,
@@ -135,7 +166,14 @@ Deno.serve(async (req) => {
 
   try {
     await admin.from("interactive_events").update({ status: "extracting" }).eq("id", event.id);
-    const extracted = eventType === "sent_reply" && rawText
+    const extracted = ingestion
+      ? { messages: ingestion.messages.map((message) => ({
+          sender_role: (confirmedParticipantId && message.participant_id === confirmedParticipantId) || message.raw_sender?.trim().toLowerCase() === "you" ? "user" as const : "partner" as const,
+          content: message.content,
+          timestamp_estimate: null,
+          sequence_order: message.order,
+        })) }
+      : eventType === "sent_reply" && rawText
       ? { messages: [{ sender_role: "user" as const, content: rawText, timestamp_estimate: null, sequence_order: 1 }] }
       : await extractMessages({
           input_method: screenshots.length ? "screenshot" : "paste",
