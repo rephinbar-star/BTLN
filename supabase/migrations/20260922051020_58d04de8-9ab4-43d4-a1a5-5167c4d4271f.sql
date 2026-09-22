@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.journey_purge_deleted_source() FROM PUBLIC, anon, authenticated;

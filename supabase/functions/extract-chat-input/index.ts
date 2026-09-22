@@ -1,6 +1,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter, extractMessages } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
+import { dedupeTranscript } from "../_shared/dedupTranscript.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -13,18 +14,31 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const MAX_IMAGES = 10;
 const MAX_TOTAL_BYTES = 12_000_000;
 
-// Server-authoritative hourly budgets. Signed-in callers get a per-account
-// budget; every caller is additionally metered by network address so a
-// signed-out client cannot mint fresh "sessions" to buy more model calls.
+// Server-authoritative hourly budgets.
+//
+// Signed-in callers are metered per account id, which the caller cannot forge:
+// it comes from verifying the bearer token server-side.
+//
+// Signed-out callers CANNOT be metered by network address here. Measured
+// 2026-09-22: this runtime passes `x-forwarded-for` through as sent, so a caller
+// can shard a per-address bucket at will (16 requests with distinct spoofed
+// values all passed a 12/hour per-address limit). The per-address bucket is
+// therefore kept only as a best-effort nuisance limit, and the spend ceiling
+// that actually holds is a single global signed-out budget that no header can
+// split. Guests keep working; total guest spend per hour is bounded.
 const LIMITS = {
   user: { requests: 30, images: 120 },
   ip: { requests: 12, images: 60 },
+  anonGlobal: { requests: 60, images: 240 },
 };
 
-function clientIp(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for") ?? "";
-  const first = forwarded.split(",")[0]?.trim();
-  return first || req.headers.get("cf-connecting-ip") || "unknown";
+// Best-effort only — see above. Never treated as an identity.
+function clientIpHint(req: Request): string {
+  const chain = (req.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  return (chain.length ? chain[chain.length - 1] : "") || "unattributed";
 }
 
 async function resolveUserId(authorization: string | null): Promise<string | null> {
@@ -59,11 +73,16 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !serviceKey) return json(503, { error: "Screenshot reading is not configured." });
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   const userId = await resolveUserId(req.headers.get("Authorization"));
-  // Signed-in callers are metered per account (not spoofable); signed-out
-  // callers are metered per network address, never by a client-supplied id.
+  // Signed-in callers are metered per verified account id (not spoofable).
+  // Signed-out callers are charged against a global guest budget first — the
+  // only ceiling a forged header cannot split — then against a best-effort
+  // per-address bucket.
   const buckets: Array<{ key: string; limits: { requests: number; images: number } }> = userId
     ? [{ key: `user:${userId}`, limits: LIMITS.user }]
-    : [{ key: `ip:${clientIp(req)}`, limits: LIMITS.ip }];
+    : [
+        { key: "anon:global", limits: LIMITS.anonGlobal },
+        { key: `ip:${clientIpHint(req)}`, limits: LIMITS.ip },
+      ];
   for (const bucket of buckets) {
     const { data, error } = await admin.rpc("claim_extraction_budget", {
       p_bucket: bucket.key,
@@ -94,15 +113,10 @@ Deno.serve(async (req) => {
   if ("error" in extracted) return json(502, { error: extracted.error });
   const messages = extracted.messages.slice(0, 1000).filter((message) => message.content?.trim());
   if (!messages.length) return json(422, { error: "No readable messages were found. Reorder clearer screenshots or use paste text." });
-  const seen = new Set<string>();
-  let overlaps = 0;
-  const lines: string[] = [];
-  for (const message of messages) {
-    const label = mode === "group" ? String(message.raw_sender ?? "Unknown participant").trim().slice(0, 80) : message.sender_role === "user" ? "You" : "Them";
-    const keyValue = `${label}|${message.timestamp_estimate ?? ""}|${message.content.trim()}`;
-    if (seen.has(keyValue)) { overlaps += 1; continue; }
-    seen.add(keyValue);
-    lines.push(`${label}: ${message.content.trim()}`);
-  }
-  return json(200, { transcript: lines.join("\n"), message_count: lines.length, warnings: overlaps ? [`${overlaps} exact overlapping message${overlaps === 1 ? " was" : "s were"} removed. Review the preview for uncertain overlap.`] : [] });
+  const deduped = dedupeTranscript(messages.map((message) => ({
+    label: mode === "group" ? String(message.raw_sender ?? "Unknown participant").trim().slice(0, 80) : message.sender_role === "user" ? "You" : "Them",
+    content: message.content,
+    timestamp: message.timestamp_estimate ?? null,
+  })));
+  return json(200, { transcript: deduped.lines.join("\n"), message_count: deduped.lines.length, warnings: deduped.warnings });
 });
