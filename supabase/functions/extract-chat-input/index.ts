@@ -73,11 +73,16 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !serviceKey) return json(503, { error: "Screenshot reading is not configured." });
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
   const userId = await resolveUserId(req.headers.get("Authorization"));
-  // Signed-in callers are metered per account (not spoofable); signed-out
-  // callers are metered per network address, never by a client-supplied id.
+  // Signed-in callers are metered per verified account id (not spoofable).
+  // Signed-out callers are charged against a global guest budget first — the
+  // only ceiling a forged header cannot split — then against a best-effort
+  // per-address bucket.
   const buckets: Array<{ key: string; limits: { requests: number; images: number } }> = userId
     ? [{ key: `user:${userId}`, limits: LIMITS.user }]
-    : [{ key: `ip:${clientIp(req)}`, limits: LIMITS.ip }];
+    : [
+        { key: "anon:global", limits: LIMITS.anonGlobal },
+        { key: `ip:${clientIpHint(req)}`, limits: LIMITS.ip },
+      ];
   for (const bucket of buckets) {
     const { data, error } = await admin.rpc("claim_extraction_budget", {
       p_bucket: bucket.key,
