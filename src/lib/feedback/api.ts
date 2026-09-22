@@ -87,12 +87,12 @@ export const listFeedbackForSource = async (
   }));
 };
 
-export const resetCoachingPersonalization = async (): Promise<boolean> => {
+export const resetCoachingPersonalization = async (): Promise<{ ok: boolean; error?: string }> => {
   const { error } = await rpc("reset_coaching_personalization", {});
-  return !error;
+  return error ? { ok: false, error: error.message } : { ok: true };
 };
 
-export const deleteMyFeedback = async (): Promise<boolean> => {
+export const deleteMyFeedback = async (): Promise<{ ok: boolean; error?: string }> => {
   const { error } = await rpc("delete_my_ai_feedback", {});
-  return !error;
+  return error ? { ok: false, error: error.message } : { ok: true };
 };

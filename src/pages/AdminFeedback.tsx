@@ -23,7 +23,7 @@ const WINDOWS = [7, 30, 90] as const;
  * feedback — only counts by mode, section, model and prompt version.
  */
 const AdminFeedback = () => {
-  const { isAdmin, loading: roleLoading } = useAdminRole();
+  const { isAdmin, checking: roleLoading } = useAdminRole();
   const [days, setDays] = useState<number>(30);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -36,7 +36,7 @@ const AdminFeedback = () => {
       p_days: days,
     });
     if (err) setError(err.message);
-    setRows(((data ?? []) as Row[]) ?? []);
+    setRows((data ?? []) as Row[]);
     setLoading(false);
   }, [days]);
 
