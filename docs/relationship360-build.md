@@ -276,3 +276,41 @@ Quick Take plan price key: `BTLN_decode_monthly`, $6.99/month — matches `Decod
 NOT verified against live Stripe (no STRIPE_TEST_SECRET_KEY in the sandbox); no price or product was created or changed.
 One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, /group, /group-roast) instead of charging an unbound report.
 "Most popular" badge removed (no usage data). Prime rendered as a full pricing card (36px price, mint background) with its in-development status and current-plan note for members.
+
+## Owner-approved commercial revision (2026-09-22) and eight-step ledger
+
+### Decisions recorded
+- **Interactive Mode** is the name for continued Quick Take exchanges. It is a **$2.99/month
+  add-on** on top of the **$6.99/month** Quick Take plan (**$9.98/month combined**), never sold
+  standalone. Base Quick Take = one initial read plus three suggested replies. Interactive Mode =
+  continue the same conversation with the reply actually sent, later screenshots, and updated
+  reads/replies, keeping generated / draft / copied / sent / self-reported distinct.
+- **Prime $19.99/month includes everything**, Interactive Mode and Relationship360 included. A
+  Prime member is never upsold.
+- **Entitlement audit (current server truth, unchanged by this revision):** Quick Take metering is
+  `count_completed_decodes` + "any active subscription" (`useDecodeAccess`); Deep Read is
+  `user_has_paid_access`; Group Read is `analyze-group` FULL_PLAN_TIERS (monthly/annual) or
+  `group_read_unlocks`; Group Roast is `group-roast-data` (monthly/annual) or `group_roast_unlocks`;
+  Relationship360 has **no** entitlement. Therefore **Interactive Mode must become its own
+  entitlement**: existing monthly/annual/decode_monthly subscribers must NOT gain it through the
+  current "any active subscription" rule. Legacy access to everything they have today is
+  grandfathered and must not be revoked.
+- **Single report ($4.99) stays report-bound.** It grants no Quick Take session, so the Quick Take
+  row of the Single-report column states the real status ("Not included — first session free")
+  instead of the requested "1 single session" label, which the server does not support. Reported as
+  an explicit mismatch rather than advertised.
+- **Relationship360 coverage:** exactly "Not Included" on every non-Prime plan; Prime shows
+  "Included in Prime · In development" until the real engine ships.
+- No live billing, no publication, no silent migration of existing subscriptions.
+
+### Eight-step completion ledger
+| # | Step | Status | Evidence / blocker |
+|---|------|--------|--------------------|
+| 1 | Close browser verification (inline Insight/Introspection, pricing corrections, guide, menus) | in progress | Menus already exclude Roast Us/Wrapped (Header.tsx filter); pricing rebuilt this pass; Playwright run pending in this stage |
+| 2 | Participant confirmation, inclusion consent, identity pending state | pending | not started |
+| 3 | Paid Interactive Mode (sent replies, ongoing exchanges, provenance) | pending | requires step 6 entitlement first |
+| 4 | Real Relationship360 adapters + synthesis engine | pending | fixtures only today |
+| 5 | Private saved reflections and periodic reviews | pending | not started |
+| 6 | Prime/add-on billing + entitlement reconciliation | pending | no Interactive Mode price exists with the payment provider; BYOK `STRIPE_SECRET_KEY` mode unverified in this sandbox |
+| 7 | Group Roast humour pass, Playful/Spicy, share cards | pending | not started |
+| 8 | Release validation matrix (isolation, injection, 10k-message ingestion, linter triage) | pending | not started |

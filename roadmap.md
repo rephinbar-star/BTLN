@@ -6,3 +6,9 @@
 - [x] Update sample coverage documentation.
 - [x] Replace homepage modes with situation-led choices and an honest Prime preview.
 - [x] Verify homepage actions, expansion controls, and responsive layouts.
+- [ ] Interactive Mode add-on: entitlement, purchase prerequisite, lifecycle (step 6 then 3).
+- [ ] Relationship360 real adapters + synthesis engine (step 4).
+- [ ] Participant confirmation and inclusion consent (step 2).
+- [ ] Saved reflections and periodic reviews (step 5).
+- [ ] Group Roast humour pass (step 7).
+- [ ] Release validation matrix (step 8).

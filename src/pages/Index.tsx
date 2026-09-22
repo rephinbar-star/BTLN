@@ -236,6 +236,15 @@ const Index = () => {
           ))}
         </div>
 
+        {/* Optional and never in the way: the situation cards above stay the
+            direct path. */}
+        <p className="mt-6 text-[15px]">
+          Not sure which one?{" "}
+          <Link to="/pricing#sec-quick" className="underline underline-offset-4">
+            Help me choose
+          </Link>
+        </p>
+
         <section className="mt-9 border-y border-btln-line py-7" aria-labelledby="prime-heading">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-btln-mint">
