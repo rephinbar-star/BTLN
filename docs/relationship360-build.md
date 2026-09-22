@@ -239,8 +239,10 @@ paying for another extraction pass. Source kind and conversation/message provena
 
 Still unverified: a real group screenshot extraction sample, full screenshot-to-each-mode completion,
 10,000-message real model analysis through a Relationship360 adapter, mobile browser/file-picker and
-draft-return matrix, encrypted-ZIP behavior, and paid provider checkout. The database linter still
-reports 57 broader SECURITY DEFINER execution warnings; it is not clean.
+draft-return matrix, encrypted-ZIP behavior, and paid provider checkout. The database linter reports
+**69** SECURITY DEFINER execution warnings as of the 2026-09-22 snapshot (27 anon-executable,
+42 signed-in-executable); see `docs/security-triage.md` for the object-by-object disposition. It is
+not clean, and an elevated-privilege function is not by itself an exploit.
 
 The concise editorial revision is also implemented in the shared Stage 1 components and preview. Overlapping fixture
 claims collapse by `semanticKey`; overview and monthly review link to canonical pattern/recommendation details; Insight

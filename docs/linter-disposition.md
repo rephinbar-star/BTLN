@@ -2,10 +2,16 @@
 
 Date: 2026-09-16 (UTC). Backend only. **Frontend not published. No real charges.**
 
-Counts: **61 → 56** (previous pass) → **58** after the testimonial/approved-quote functions were added
-deliberately → **57** after this pass. Every remaining finding belongs to exactly two lint rules:
+**Superseded count.** The counts in this section are the 2026-09-16 snapshot and are kept only as
+history. The authoritative, current snapshot is in `docs/security-triage.md` (2026-09-22: **69** =
+27 anon-executable + 42 authenticated-executable). The rise from 57 to 69 is not a regression: it is
+the feedback, entitlement and Relationship360 functions added since, plus four objects that were
+always anon-executable and were previously mis-recorded as authenticated-only (see the root-cause
+section in the triage doc). Numbers moved for both reasons and neither count is a security claim.
 
-- `0028_anon_security_definer_function_executable` (WARN) — 23 objects (was 24)
+Historical 2026-09-16 counts: **61 → 56** → **58** → **57**, split as:
+
+- `0028_anon_security_definer_function_executable` (WARN) — 23 objects
 - `0029_authenticated_security_definer_function_executable` (WARN) — 34 objects
 
 There are **no RLS-disabled, no missing-policy, and no performance findings outstanding.** The four
