@@ -6,6 +6,7 @@ import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
 import { SeeExample } from "@/components/examples/ExampleExperience";
+import { Relationship360Live } from "@/components/relationship360/Relationship360Live";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
