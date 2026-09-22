@@ -76,11 +76,14 @@ Deno.serve(async (req) => {
     input?.screenshot_base64_array ?? payload?.screenshot_base64_array;
   const name1: string = input?.name1 ?? "You";
   const name2: string = input?.name2 ?? "Them";
+  const ingestionSupplied = input?.ingestion !== undefined && input?.ingestion !== null;
   const ingestion = parseReviewedIngestion(input?.ingestion);
   const identity = input?.identity_confirmation && typeof input.identity_confirmation === "object" ? input.identity_confirmation as Record<string, unknown> : null;
   const confirmedAbsent = identity?.absent === true;
   const confirmedParticipantId = typeof identity?.participant_id === "string" ? identity.participant_id : null;
   const confirmedSide = identity?.self_side === "left" || identity?.self_side === "right" ? identity.self_side : null;
+
+  if (ingestionSupplied && !ingestion) return json(400, { error: "The reviewed conversation is invalid. Review the upload again." });
 
   if (!session_id) return json(400, { error: "Missing session_id" });
   const hasImages = !!screenshot_base64_array?.length;

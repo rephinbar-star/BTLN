@@ -70,10 +70,12 @@ Deno.serve(async (req) => {
   const eventType = payload?.event_type as EventType;
   const action = payload?.action === "list" ? "list" : "continue";
   const rawText = typeof payload?.raw_text === "string" ? payload.raw_text.trim() : "";
+  const ingestionSupplied = payload?.ingestion !== undefined && payload?.ingestion !== null;
   const ingestion = reviewedIngestion(payload?.ingestion);
   const confirmedParticipantId = typeof payload?.confirmed_self_participant_id === "string" ? payload.confirmed_self_participant_id : null;
   const confirmedSelfSide = payload?.confirmed_self_side === "left" || payload?.confirmed_self_side === "right" ? payload.confirmed_self_side : null;
   const confirmedAbsent = payload?.confirmed_self_absent === true;
+  if (ingestionSupplied && !ingestion) return json(400, { error: "The reviewed conversation is invalid. Review the upload again." });
   const screenshots = Array.isArray(payload?.screenshot_base64_array) ? payload.screenshot_base64_array : [];
   const speakerOrder = Array.isArray(payload?.speaker_order) ? payload.speaker_order : [];
   const allowedEvents: EventType[] = ["sent_reply", "no_reply", "chose_not_to_reply", "observed_followup", "self_report"];
