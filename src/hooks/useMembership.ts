@@ -7,6 +7,9 @@ export type MembershipState = {
   /** True when the signed-in user has an active paid plan of any kind. */
   isMember: boolean;
   tier: string | null;
+  /** All active tiers, so a future add-on can coexist with its required base plan. */
+  tiers: string[];
+  hasInteractiveMode: boolean;
 };
 
 /**
@@ -20,12 +23,14 @@ export function useMembership(): MembershipState {
     loading: true,
     isMember: false,
     tier: null,
+    tiers: [],
+    hasInteractiveMode: false,
   });
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
-      setState({ loading: false, isMember: false, tier: null });
+      setState({ loading: false, isMember: false, tier: null, tiers: [], hasInteractiveMode: false });
       return;
     }
     let cancelled = false;
@@ -34,11 +39,21 @@ export function useMembership(): MembershipState {
         .from("user_subscriptions")
         .select("tier,status")
         .eq("user_id", user.id)
-        .eq("status", "active")
-        .limit(1);
+        .eq("status", "active");
       if (cancelled) return;
-      const row = data?.[0] as { tier: string | null } | undefined;
-      setState({ loading: false, isMember: !!row, tier: row?.tier ?? null });
+      const rows = (data ?? []) as { tier: string | null }[];
+      const tiers = rows.flatMap((row) => row.tier ? [row.tier] : []);
+      const tier = tiers.find((value) => value === "prime")
+        ?? tiers.find((value) => value !== "interactive_addon")
+        ?? tiers[0]
+        ?? null;
+      setState({
+        loading: false,
+        isMember: tiers.length > 0,
+        tier,
+        tiers,
+        hasInteractiveMode: tiers.includes("prime") || tiers.includes("interactive_addon"),
+      });
     })();
     return () => {
       cancelled = true;

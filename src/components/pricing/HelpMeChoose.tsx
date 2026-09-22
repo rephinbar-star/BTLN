@@ -32,10 +32,13 @@ const REC: Record<string, Rec> = {
     reason:
       "You want help as the conversation continues, not just on one message. Interactive Mode adds ongoing exchanges on top of Quick Take.",
     price: "$6.99/month + $2.99/month = $9.98/month combined.",
-    primary: { to: "/quick", label: "Start a Quick Take" },
+    primary: {
+      to: "/pricing?plan=BTLN_decode_monthly&interactive=1#sec-quick",
+      label: "See Quick Take + Interactive Mode",
+    },
     example: { to: "/examples/quick-take", label: "See Example" },
     availability:
-      "Interactive Mode is being built and cannot be bought yet. Quick Take works today.",
+      "Interactive Mode is being built and cannot be bought yet. Your selection will be shown on the Quick Take card; base Quick Take works today.",
   },
   deep_one: {
     title: "Single report",

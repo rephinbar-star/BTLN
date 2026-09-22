@@ -47,7 +47,7 @@ const ModeChips = ({ modes }: { modes: ModeKey[] }) => (
 export { PRICING_BTN };
 
 type Tier = {
-  key: ProductKey | "prime" | "interactive_addon";
+  key: ProductKey | "prime";
   name: string;
   price: string;
   period: string;
@@ -56,8 +56,6 @@ type Tier = {
   features: string[];
   cta: string;
   mint?: boolean;
-  /** Shown under the price on add-on style cards. */
-  priceNote?: string;
 };
 
 const QUICK_TIER: Tier = {
@@ -76,25 +74,6 @@ const QUICK_TIER: Tier = {
     "Cancel anytime",
   ],
   cta: "Subscribe to Quick Take",
-};
-
-const INTERACTIVE_TIER: Tier = {
-  key: "interactive_addon",
-  name: "Interactive Mode add-on",
-  price: "+ $2.99",
-  period: "month",
-  priceNote: "Requires Quick Take · $6.99/month — $9.98/month combined",
-  modes: ["quick", "interactive"],
-  description:
-    "Keep the same conversation going: tell us what you actually sent, add what came back, and get an updated read with new suggested replies.",
-  features: [
-    "Continue the same conversation instead of starting over",
-    "Add the reply you actually sent, or a later screenshot",
-    "Updated read and fresh suggested replies as it develops",
-    "Requires an active Quick Take plan — not sold on its own",
-    "Included in Prime at $19.99/month",
-  ],
-  cta: "Interactive Mode",
 };
 
 const REPORT_TIERS: Tier[] = [
@@ -198,7 +177,6 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
     row: "Quick Take",
     cells: {
       quick: "Included",
-      interactive: "Requires Quick Take",
       single: "Not included — first session free",
       monthly: "Included",
       annual: "Included",
@@ -208,8 +186,7 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
   {
     row: "Interactive Mode",
     cells: {
-      quick: "Not included",
-      interactive: "Included · + $2.99/mo",
+      quick: "Optional +$2.99/mo · In development",
       single: "Not included",
       monthly: "Not included",
       annual: "Not included",
@@ -220,7 +197,6 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
     row: "Deep Read",
     cells: {
       quick: "Not included",
-      interactive: "Not included",
       single: "1 selected report",
       monthly: "Included",
       annual: "Included",
@@ -231,7 +207,6 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
     row: "Group Read",
     cells: {
       quick: "Not included",
-      interactive: "Not included",
       single: "1 selected report",
       monthly: "Included",
       annual: "Included",
@@ -242,7 +217,6 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
     row: "Group Roast",
     cells: {
       quick: "Not included",
-      interactive: "Not included",
       single: "1 selected report",
       monthly: "Included",
       annual: "Included",
@@ -253,7 +227,6 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
     row: "Relationship360",
     cells: {
       quick: "Not Included",
-      interactive: "Not Included",
       single: "Not Included",
       monthly: "Not Included",
       annual: "Not Included",
@@ -263,8 +236,7 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
 ];
 
 const COLUMNS = [
-  { id: "quick", label: "Quick Take plan · $6.99/mo" },
-  { id: "interactive", label: "Interactive Mode add-on · + $2.99/mo" },
+  { id: "quick", label: "Quick Take · $6.99/mo · optional Interactive Mode" },
   { id: "single", label: "Single report · $4.99" },
   { id: "monthly", label: "Monthly · $9.99/mo" },
   { id: "annual", label: "Annual · $49.99/yr" },
@@ -275,7 +247,7 @@ const COLUMNS = [
 export default function Pricing() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isMember, tier: memberTier } = useMembership();
+  const { isMember, tier: memberTier, hasInteractiveMode } = useMembership();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [pending, setPending] = useState<string | null>(null);
   const [chooseMode, setChooseMode] = useState(false);
@@ -283,6 +255,9 @@ export default function Pricing() {
   // A plan the user picked before signing in. It is only highlighted on return —
   // never charged automatically.
   const intended = searchParams.get("plan");
+  const selectedByGuide = searchParams.get("interactive") === "1";
+  const isPrime = memberTier === "prime";
+  const [interactiveSelected, setInteractiveSelected] = useState(selectedByGuide);
   const intendedRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -290,6 +265,20 @@ export default function Pricing() {
       intendedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   }, [intended]);
+
+  useEffect(() => {
+    if (selectedByGuide || hasInteractiveMode || isPrime) setInteractiveSelected(true);
+  }, [selectedByGuide, hasInteractiveMode, isPrime]);
+
+  const setInteractiveIntent = (checked: boolean) => {
+    if (hasInteractiveMode || isPrime) return;
+    setInteractiveSelected(checked);
+    const next = new URLSearchParams(searchParams);
+    next.set("plan", "BTLN_decode_monthly");
+    if (checked) next.set("interactive", "1");
+    else next.delete("interactive");
+    navigate(`/pricing?${next.toString()}#sec-quick`, { replace: true });
+  };
 
   const launch = (priceId: ProductKey) => {
     setPending(priceId);
@@ -338,7 +327,6 @@ export default function Pricing() {
   const TierCard = ({ tier }: { tier: Tier }) => {
     const isCurrent = currentPlanKey === tier.key;
     const isIntended = intended === tier.key;
-    const isAddon = tier.key === "interactive_addon";
     return (
       <div
         ref={isIntended ? intendedRef : undefined}
@@ -353,9 +341,6 @@ export default function Pricing() {
           <span className="text-[36px] font-medium tracking-tight">{tier.price}</span>
           <span className="text-[14px] text-muted-foreground">/{tier.period}</span>
         </div>
-        {tier.priceNote && (
-          <p className="mt-1 text-[13px] font-medium text-foreground">{tier.priceNote}</p>
-        )}
         <ModeChips modes={tier.modes} />
         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{tier.description}</p>
 
@@ -368,20 +353,7 @@ export default function Pricing() {
           ))}
         </ul>
 
-        {isAddon ? (
-          <>
-            {/* No add-on price is configured with the payment provider yet, so
-                there is no checkout to open. Never advertise a purchase that
-                cannot complete. */}
-            <button type="button" disabled className={`mt-8 ${PRICING_BTN}`}>
-              Not available to buy yet
-            </button>
-            <p className="mt-3 text-[13px] text-muted-foreground">
-              Interactive Mode is being built. Nothing is charged and no add-on is active on any
-              account today.
-            </p>
-          </>
-        ) : tier.key === "prime" ? (
+        {tier.key === "prime" ? (
           <Link to={`/prime?return_to=${encodeURIComponent("/pricing")}`} className={`mt-8 ${PRICING_BTN}`}>
             {tier.cta}
           </Link>
@@ -410,6 +382,116 @@ export default function Pricing() {
           <p className="mt-3 text-[13px] text-muted-foreground">
             You're on the {memberTier} plan. Prime isn't available to buy yet.
           </p>
+        )}
+      </div>
+    );
+  };
+
+  const QuickTakeCard = () => {
+    const quickIsCurrent = currentPlanKey === "BTLN_decode_monthly";
+    const addonIncluded = hasInteractiveMode || isPrime;
+    const bundleUnavailable = interactiveSelected && !addonIncluded;
+    const status = isPrime
+      ? "Included with Prime — no add-on charge"
+      : hasInteractiveMode
+        ? "Interactive Mode is current on your account"
+        : "In development — not available to buy yet";
+
+    return (
+      <div
+        ref={intended === QUICK_TIER.key ? intendedRef : undefined}
+        className={`relative flex w-full max-w-[600px] flex-col rounded-2xl border border-border bg-card p-5 transition-all duration-200 motion-reduce:transition-none hover:shadow-lg sm:p-6 ${intended === QUICK_TIER.key ? "ring-2 ring-foreground/40" : ""}`}
+      >
+        <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">Quick Take plan</div>
+        <div className="mt-2 flex items-baseline gap-1">
+          <span className="text-[36px] font-medium tracking-tight">$6.99</span>
+          <span className="text-[14px] text-muted-foreground">/month</span>
+        </div>
+        <ModeChips modes={["quick"]} />
+        <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
+          The base plan reads one message at a time and gives you three suggested replies.
+        </p>
+        <ul className="mt-4 space-y-2.5">
+          {QUICK_TIER.features.map((feature) => (
+            <li key={feature} className="flex items-start gap-2 text-[14px]">
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden />
+              <span>{feature}</span>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-6 rounded-xl border border-btln-line bg-btln-mint/30 p-4">
+          <label className={`flex min-h-11 items-start gap-3 ${addonIncluded ? "cursor-default" : "cursor-pointer"}`}>
+            <input
+              type="checkbox"
+              checked={interactiveSelected}
+              disabled={addonIncluded}
+              onChange={(event) => setInteractiveIntent(event.target.checked)}
+              className="mt-1 h-5 w-5 flex-none accent-btln-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-btln-ink focus-visible:ring-offset-2"
+            />
+            <span>
+              <span className="block text-[15px] font-medium">Add Interactive Mode — +$2.99/month</span>
+              <span className="mt-1 block text-[13px] text-muted-foreground">Requires Quick Take · $6.99/month</span>
+            </span>
+          </label>
+
+          <div className="mt-3 border-t border-btln-line pt-3" aria-live="polite" aria-atomic="true">
+            <p className="text-[20px] font-medium">{interactiveSelected ? "$9.98/month" : "$6.99/month"}</p>
+            <p className="text-[13px] text-muted-foreground">
+              {interactiveSelected ? "$6.99 Quick Take + $2.99 Interactive Mode" : "$6.99 Quick Take only"}
+            </p>
+          </div>
+
+          <h3 className="mt-4 text-[15px] font-medium">Interactive Mode adds:</h3>
+          <ul className="mt-2 space-y-2 text-[14px] leading-relaxed">
+            {[
+              "Continue the same conversation as new messages arrive.",
+              "Add the response you actually sent, by text or follow-up screenshot.",
+              "Get updated insights and fresh reply suggestions based on the continuing exchange.",
+              "Keep the context together instead of starting a new read each time.",
+              "Record what happened next and reflect on how the exchange unfolded.",
+            ].map((benefit) => (
+              <li key={benefit} className="flex items-start gap-2">
+                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden />
+                <span>{benefit}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-[13px] text-muted-foreground">
+            With Prime, eligible exchanges also contribute to your Relationship360.
+          </p>
+          <p className="mt-3 text-[13px] font-medium">{status}</p>
+        </div>
+
+        {isPrime ? (
+          <Link to="/account" className={`mt-6 ${PRICING_BTN}`}>Included with Prime · Manage</Link>
+        ) : hasInteractiveMode ? (
+          <Link to="/account" className={`mt-6 ${PRICING_BTN}`}>Interactive Mode current · Manage</Link>
+        ) : bundleUnavailable ? (
+          <>
+            <button type="button" disabled className={`mt-6 ${PRICING_BTN}`}>Bundle not available to buy yet</button>
+            <button
+              type="button"
+              onClick={() => {
+                setInteractiveIntent(false);
+                if (!quickIsCurrent) launch("BTLN_decode_monthly");
+              }}
+              className="mt-3 min-h-11 text-[14px] font-medium underline underline-offset-4"
+            >
+              {quickIsCurrent ? "Keep my current Quick Take plan" : "Continue with base Quick Take only — $6.99/month"}
+            </button>
+          </>
+        ) : quickIsCurrent ? (
+          <Link to="/account" className={`mt-6 ${PRICING_BTN}`}>Your current plan · Manage</Link>
+        ) : (
+          <button
+            type="button"
+            onClick={() => launch("BTLN_decode_monthly")}
+            disabled={pending === "BTLN_decode_monthly"}
+            className={`mt-6 ${PRICING_BTN}`}
+          >
+            {pending === "BTLN_decode_monthly" ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Opening checkout…</> : "Subscribe to Quick Take — $6.99/month"}
+          </button>
         )}
       </div>
     );
@@ -457,7 +539,9 @@ export default function Pricing() {
 
         {intended && !isMember && (
           <p className="mx-auto mt-6 max-w-xl rounded-2xl border border-border bg-muted/40 p-4 text-center text-[14px]">
-            Your plan choice is still selected below. Nothing has been charged — open checkout when you're ready.
+            {selectedByGuide
+              ? "Your Quick Take + Interactive Mode choice is selected below. Nothing has been charged. The combined purchase is not available yet, but you can continue with base Quick Take only."
+              : "Your plan choice is still selected below. Nothing has been charged — open checkout when you're ready."}
           </p>
         )}
 
@@ -470,8 +554,7 @@ export default function Pricing() {
             conversation going.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-6">
-            <TierCard tier={QUICK_TIER} />
-            <TierCard tier={INTERACTIVE_TIER} />
+            <QuickTakeCard />
           </div>
         </section>
 
@@ -567,9 +650,10 @@ export default function Pricing() {
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
                 Quick Take on its own reads one message and suggests three replies. Interactive Mode
                 lets you carry on: tell us what you actually sent, add what came back, and get an
-                updated read. It is an add-on to the Quick Take plan at $2.99/month on top of
-                $6.99/month — $9.98/month combined — and it is included in Prime. It is still being
-                built, so it cannot be bought yet and no account has it.
+                updated read. Select the optional checkbox inside the Quick Take card to see the
+                $6.99 base plus $2.99 add-on breakdown — $9.98/month combined. It is included in
+                Prime without an add-on charge. It is still being built, so selecting it cannot
+                start a bundle purchase yet.
               </p>
             </div>
             <div className="py-5">
