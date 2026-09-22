@@ -1113,6 +1113,7 @@ export type Database = {
           created_at: string
           data_version: number
           id: string
+          is_confirmed: boolean
           kind: string
           label: string
           scope: string
@@ -1123,6 +1124,7 @@ export type Database = {
           created_at?: string
           data_version?: number
           id?: string
+          is_confirmed?: boolean
           kind: string
           label: string
           scope?: string
@@ -1133,6 +1135,7 @@ export type Database = {
           created_at?: string
           data_version?: number
           id?: string
+          is_confirmed?: boolean
           kind?: string
           label?: string
           scope?: string
@@ -1145,6 +1148,7 @@ export type Database = {
         Row: {
           adapter_version: number
           consent_at: string
+          conversation_key: string | null
           created_at: string
           excluded_at: string | null
           id: string
@@ -1163,6 +1167,7 @@ export type Database = {
         Insert: {
           adapter_version?: number
           consent_at?: string
+          conversation_key?: string | null
           created_at?: string
           excluded_at?: string | null
           id?: string
@@ -1181,6 +1186,7 @@ export type Database = {
         Update: {
           adapter_version?: number
           consent_at?: string
+          conversation_key?: string | null
           created_at?: string
           excluded_at?: string | null
           id?: string
@@ -1215,6 +1221,7 @@ export type Database = {
           evidence_source_ids: string[]
           generated_at: string
           id: string
+          input_fingerprint: string | null
           is_stale: boolean
           model: string | null
           relationship_id: string | null
@@ -1231,6 +1238,7 @@ export type Database = {
           evidence_source_ids?: string[]
           generated_at?: string
           id?: string
+          input_fingerprint?: string | null
           is_stale?: boolean
           model?: string | null
           relationship_id?: string | null
@@ -1247,6 +1255,7 @@ export type Database = {
           evidence_source_ids?: string[]
           generated_at?: string
           id?: string
+          input_fingerprint?: string | null
           is_stale?: boolean
           model?: string | null
           relationship_id?: string | null
@@ -2120,15 +2129,31 @@ export type Database = {
         Args: { p_auto_include: boolean }
         Returns: undefined
       }
+      journey_assign_source: {
+        Args: { p_relationship_id: string; p_source_id: string }
+        Returns: boolean
+      }
       journey_auto_include: { Args: never; Returns: number }
       journey_confirm_identity: {
         Args: { p_participant: string; p_source_id: string }
         Returns: boolean
       }
+      journey_confirm_relationship: {
+        Args: { p_kind: string; p_label: string; p_relationship_id: string }
+        Returns: boolean
+      }
       journey_delete_all: { Args: never; Returns: undefined }
       journey_export: { Args: never; Returns: Json }
       journey_mark_absent: { Args: { p_source_id: string }; Returns: boolean }
+      journey_merge_relationships: {
+        Args: { p_from: string; p_into: string }
+        Returns: boolean
+      }
       journey_opt_out: { Args: never; Returns: undefined }
+      journey_set_reflection_excluded: {
+        Args: { p_excluded: boolean; p_reflection_id: string }
+        Returns: boolean
+      }
       journey_set_source_excluded: {
         Args: { p_excluded: boolean; p_source_id: string }
         Returns: boolean
@@ -2136,6 +2161,26 @@ export type Database = {
       journey_source_participants: {
         Args: { p_source_id: string; p_source_kind: string }
         Returns: string[]
+      }
+      journey_split_source: {
+        Args: { p_label: string; p_source_id: string }
+        Returns: string
+      }
+      journey_suggest_relationships: {
+        Args: { p_source_id: string }
+        Returns: {
+          id: string
+          is_confirmed: boolean
+          kind: string
+          label: string
+          reason: string
+          scope: string
+          source_count: number
+        }[]
+      }
+      journey_touch_relationship: {
+        Args: { p_rel: string; p_user: string }
+        Returns: undefined
       }
       journey_write_summary: {
         Args: {

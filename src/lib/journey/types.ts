@@ -34,6 +34,8 @@ export type JourneyRelationship = {
   kind: RelationshipKind;
   scope: RelationshipScope;
   label: string;
+  /** False while the person has not yet said who this relationship is about. */
+  is_confirmed: boolean;
   data_version: number;
   created_at: string;
 };
