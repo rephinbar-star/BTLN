@@ -31,7 +31,7 @@ type Props = {
 const ACCEPT_EXPORT = ".txt,.csv,text/plain,text/csv,.zip,application/zip,application/x-zip-compressed";
 const tabs: { id: CanonicalSourceKind; label: string }[] = [
   { id: "screenshots", label: "Screenshots" },
-  { id: "chat_export", label: "Chat export" },
+  { id: "chat_export", label: "Import" },
   { id: "paste", label: "Paste text" },
 ];
 
