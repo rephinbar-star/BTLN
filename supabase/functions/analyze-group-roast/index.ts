@@ -67,6 +67,10 @@ Deno.serve(async (req) => {
     participants.push({ id, display_name });
   }
   const ids = new Set(participants.map((p) => p.id));
+  const identity = body.identity_confirmation && typeof body.identity_confirmation === "object" ? body.identity_confirmation as { participant_id?: unknown; absent?: unknown } : {};
+  const confirmedId = typeof identity.participant_id === "string" ? identity.participant_id : null;
+  const absent = identity.absent === true;
+  if ((absent && confirmedId) || (!absent && (!confirmedId || !ids.has(confirmedId)))) return json(400, { error: "Confirm which selected participant is you, or confirm that you are not in this conversation." });
   const selectedPeriod = body.selected_period && typeof body.selected_period === "object" ? body.selected_period as { from?: unknown; to?: unknown; keep_unknown_time?: unknown } : {};
   const from = typeof selectedPeriod.from === "string" && /^\d{4}-\d{2}-\d{2}$/.test(selectedPeriod.from) ? selectedPeriod.from : null;
   const to = typeof selectedPeriod.to === "string" && /^\d{4}-\d{2}-\d{2}$/.test(selectedPeriod.to) ? selectedPeriod.to : null;

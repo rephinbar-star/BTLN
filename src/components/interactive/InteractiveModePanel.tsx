@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
-import { Camera, Loader2, MessageCircleMore } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Loader2, MessageCircleMore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { compressImage } from "@/lib/image-compress";
 import { useMembership } from "@/hooks/useMembership";
+import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
+import { extractScreenshotConversation } from "@/lib/ingest/extract";
 
 type InteractiveResult = {
   verdict?: string;
@@ -19,14 +20,13 @@ type HistoryEvent = { id: string; event_type: InteractiveEventType; status: stri
 export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const { loading, hasInteractiveMode } = useMembership();
   const [mode, setMode] = useState<"sent_reply" | "observed_followup" | "self_report">("sent_reply");
-  const [text, setText] = useState("");
-  const [images, setImages] = useState<string[]>([]);
+  const [draft, setDraft] = useState<ConversationDraft>(emptyConversationDraft);
+  const [reflection, setReflection] = useState("");
   const [speakerOrder, setSpeakerOrder] = useState("them_first");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InteractiveResult | null>(null);
   const [history, setHistory] = useState<HistoryEvent[]>([]);
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!hasInteractiveMode) return;
@@ -50,13 +50,20 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
     setBusy(true);
     setError(null);
     try {
+      const rawText = eventType === "self_report"
+        ? reflection
+        : draft.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? draft.text;
       const { data, error: invokeError } = await supabase.functions.invoke("interactive-mode", {
         body: {
           decode_id: decodeId,
           client_request_id: crypto.randomUUID(),
           event_type: eventType,
-          raw_text: text,
-          screenshot_base64_array: images,
+          raw_text: rawText,
+          screenshot_base64_array: [],
+          ingestion: draft.conversation,
+          confirmed_self_participant_id: draft.selfParticipantId,
+          confirmed_self_side: draft.screenshotSelfSide,
+          confirmed_self_absent: draft.selfAbsent,
           speaker_order: eventType === "observed_followup" ? [speakerOrder] : [],
         },
       });
@@ -64,19 +71,13 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
       setResult((data?.result ?? null) as InteractiveResult | null);
       const refreshed = await supabase.functions.invoke("interactive-mode", { body: { action: "list", decode_id: decodeId } });
       setHistory((refreshed.data?.events ?? []) as HistoryEvent[]);
-      setText("");
-      setImages([]);
+      setDraft(emptyConversationDraft());
+      setReflection("");
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not update this conversation.");
     } finally {
       setBusy(false);
     }
-  };
-
-  const addScreenshots = async (files: FileList | null) => {
-    if (!files) return;
-    const next = await Promise.all(Array.from(files).slice(0, 3).map((file) => compressImage(file).then((item) => item.dataUrl)));
-    setImages(next);
   };
 
   return (
@@ -105,24 +106,14 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
           </select>
         </label>
       )}
-      <label className="mt-4 block text-[13px] font-medium">
-        {mode === "sent_reply" ? "Paste the response you actually sent" : mode === "observed_followup" ? "Paste the later exchange" : "What happened, in your own words?"}
-        <textarea value={text} onChange={(event) => setText(event.target.value)} maxLength={24000} rows={5} className="mt-1 w-full rounded-md border border-input bg-background p-3 text-[15px] leading-relaxed" />
-      </label>
-      {mode !== "self_report" && (
-        <>
-          <input ref={fileRef} className="sr-only" type="file" accept="image/*" multiple onChange={(event) => void addScreenshots(event.target.files)} />
-          <Button type="button" variant="outline" className="mt-2 min-h-11" onClick={() => fileRef.current?.click()}><Camera /> Add follow-up screenshots</Button>
-          {images.length > 0 && <p className="mt-2 text-[12px] text-muted-foreground">{images.length} screenshot{images.length === 1 ? "" : "s"} ready. Images are processed for this update and are not stored.</p>}
-        </>
-      )}
+      {mode === "self_report" ? <label className="mt-4 block text-[13px] font-medium">What happened, in your own words?<textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={24000} rows={5} className="mt-1 w-full rounded-md border border-input bg-background p-3 text-[15px] leading-relaxed" /></label> : <div className="mt-4"><SharedConversationInput value={draft} onChange={setDraft} maxScreenshots={3} compact requireSelf extractScreenshots={extractScreenshotConversation} pastePlaceholder={mode === "sent_reply" ? "You: Paste the response you actually sent" : "Them: Paste the first later message\nYou: Paste your next response"} /></div>}
       {mode === "sent_reply" && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button type="button" variant="ghost" className="min-h-11" disabled={busy} onClick={() => void submit("no_reply")}>I haven&apos;t replied</Button>
           <Button type="button" variant="ghost" className="min-h-11" disabled={busy} onClick={() => void submit("chose_not_to_reply")}>I chose not to reply</Button>
         </div>
       )}
-      <Button type="button" className="mt-4 min-h-11 w-full" disabled={busy || (!text.trim() && images.length === 0)} onClick={() => void submit()}>
+      <Button type="button" className="mt-4 min-h-11 w-full" disabled={busy || (mode === "self_report" ? !reflection.trim() : !draft.conversation || draft.conversation.format === "screenshots_pending" || !(draft.selfParticipantId || draft.screenshotSelfSide || draft.selfAbsent))} onClick={() => void submit()}>
         {busy ? <><Loader2 className="animate-spin" /> Updating your take…</> : mode === "self_report" ? "Save private reflection" : "Get an updated take"}
       </Button>
       {error && <p role="alert" className="mt-3 text-[13px] text-destructive">{error}</p>}

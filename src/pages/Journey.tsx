@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Download, Loader2, Plus, Trash2, EyeOff, Eye, UserCheck } from "lucide-react";
+import { Download, Loader2, Plus, Trash2, EyeOff, Eye, UserCheck, Upload } from "lucide-react";
+import { Link } from "react-router-dom";
 import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -317,6 +318,18 @@ const Journey = () => {
                 participant is you. Until then they contribute nothing.
 
               </p>
+            )}
+
+            {optedIn && !needsReconsent && (
+              <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+                <h2 className="text-[18px] font-semibold text-foreground">Add a conversation</h2>
+                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
+                  Start an eligible read with screenshots, a supported chat export, or pasted text. After that read completes, you can include its structured observations here and confirm which participant is you. Relationship360 never profiles a raw upload directly.
+                </p>
+                <Button asChild variant="outline" className="mt-4 h-12 w-full rounded-full">
+                  <Link to="/deep?from=relationship360"><Upload className="h-4 w-4" /> Add through Deep Read</Link>
+                </Button>
+              </section>
             )}
 
             {!optedIn && relationships.length > 0 && (

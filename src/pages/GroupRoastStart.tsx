@@ -27,6 +27,9 @@ import {
 import { setDeepReadHandoff } from "@/lib/ingest/handoff";
 import { useAuth } from "@/hooks/useAuth";
 import { SeeExample } from "@/components/examples/ExampleExperience";
+import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
+import { extractScreenshotConversation } from "@/lib/ingest/extract";
+import { parsedFromCanonical } from "@/lib/ingest/canonical";
 
 const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
 const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
@@ -57,10 +60,12 @@ const GroupRoastStart = () => {
 
   const [step, setStep] = useState<"input" | "confirm">("input");
   const [text, setText] = useState("");
+  const [sharedDraft, setSharedDraft] = useState<ConversationDraft>(emptyConversationDraft);
   const lastRaw = useRef("");
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [category, setCategory] = useState<GroupCategory>("friends");
   const [selfId, setSelfId] = useState<string | null>(null);
+  const [selfAbsent, setSelfAbsent] = useState(false);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -192,6 +197,10 @@ const GroupRoastStart = () => {
 
   const submit = async () => {
     if (!parsed || !payload) return;
+    if ((!selfId && !selfAbsent) || (selfId && selfAbsent) || (selfId && !selectedParticipants.some((person) => person.id === selfId))) {
+      setError("Confirm which selected participant is you, or confirm that you are not in this conversation.");
+      return;
+    }
     if (!user) {
       navigate(`/auth?return_to=${encodeURIComponent("/group-roast")}`);
       return;
@@ -220,6 +229,7 @@ const GroupRoastStart = () => {
       participants: selectedParticipants.map((p) => ({ id: p.id, display_name: p.display_name })),
       coverage: payload.coverage,
       source_format: parsed.format,
+      identity_confirmation: selfAbsent ? { absent: true } : { participant_id: selfId },
       messages: payload.messages.map((m) => ({
         participant_id: m.participant_id,
         content: m.content,
@@ -288,94 +298,30 @@ const GroupRoastStart = () => {
 
         {step === "input" && (
           <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-            <input
-              ref={fileRef}
-              type="file"
-              accept=".txt,.csv,text/plain,text/csv,.zip,application/zip,application/x-zip-compressed"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void onFile(f);
-                e.target.value = "";
+            <SharedConversationInput
+              value={sharedDraft}
+              onChange={(next) => {
+                setSharedDraft(next);
+                if (next.conversation && next.conversation.format !== "screenshots_pending") {
+                  const result = parsedFromCanonical(next.conversation);
+                  setParsed({
+                    ...result,
+                    format: result.format === "whatsapp_ios" || result.format === "whatsapp_android" ? "whatsapp" : result.format === "imessage_csv" || result.format === "imessage_txt" ? "imessage" : "attributed_text",
+                  });
+                  setText(next.conversation.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n"));
+                  setDayFirst(result.day_first);
+                  setExcluded(new Set(result.participants.filter((person) => person.looks_like_system).map((person) => person.id)));
+                  setSelfId(next.selfParticipantId);
+                  setSelfAbsent(next.selfAbsent);
+                  setFromDay("");
+                  setToDay("");
+                  setStep("confirm");
+                }
               }}
+              extractScreenshots={(screenshots, side) => extractScreenshotConversation(screenshots, side, "group")}
+              screenshotMode="group"
+              pastePlaceholder={SAMPLE}
             />
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              rows={12}
-              aria-label="Paste your group chat"
-              placeholder={SAMPLE}
-              className="w-full rounded-xl border border-border bg-background px-4 py-3 font-mono text-[14px] leading-relaxed text-foreground placeholder:text-muted-foreground focus:border-foreground focus:outline-none"
-            />
-            <div className="mt-3 flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                className="inline-flex items-center gap-2 rounded-full border border-border px-4 py-2 text-[14px] font-medium hover:bg-muted/50"
-              >
-                <Upload className="h-4 w-4" /> Upload an export
-              </button>
-              <button
-                type="button"
-                onClick={() => setText(SAMPLE)}
-                className="text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              >
-                Use an example
-              </button>
-            </div>
-            <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
-              Works with WhatsApp exports from iPhone and Android (.txt, or the .zip — photos inside
-              are ignored, never opened), and iMessage transcripts saved as .txt or .csv with
-              date, sender and message columns. We can't read Apple's chat.db file or app backups.
-            </p>
-
-            {notices.length > 0 && (
-              <ul className="mt-3 space-y-1 text-[13px] text-muted-foreground">
-                {notices.map((n) => (
-                  <li key={n}>{n}</li>
-                ))}
-              </ul>
-            )}
-
-            {candidates && (
-              <div className="mt-4 rounded-xl border border-border p-4">
-                <p className="text-[14px] font-medium">
-                  That archive has more than one chat in it
-                </p>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Pick the one you want — we won't join different chats together.
-                </p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {candidates.map((c) => (
-                    <button
-                      key={c.name}
-                      type="button"
-                      onClick={() => {
-                        const f = pendingZip.current;
-                        if (f) void onFile(f, c.name);
-                      }}
-                      className="rounded-full border border-border px-3 py-1.5 text-[13px] hover:bg-muted/50"
-                    >
-                      {c.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {error && (
-              <p className="mt-4 flex items-start gap-2 text-[14px] text-destructive">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
-              </p>
-            )}
-
-            <button
-              type="button"
-              onClick={() => doParse(text)}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90"
-            >
-              Find the people <ArrowRight className="h-4 w-4" />
-            </button>
           </section>
         )}
 
@@ -521,7 +467,7 @@ const GroupRoastStart = () => {
               </h2>
               <p className="mt-1 text-[14px] text-muted-foreground">
                  Merge duplicates, drop bots and system entries, and tell us which one is you
-                 (optional). {includedMessageCount.toLocaleString()} messages from {selectedParticipants.length}{" "}
+                  before analysis. {includedMessageCount.toLocaleString()} messages from {selectedParticipants.length}{" "}
                 people are selected.
               </p>
 
@@ -550,7 +496,7 @@ const GroupRoastStart = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setSelfId(selfId === p.id ? null : p.id)}
+                        onClick={() => { setSelfId(p.id); setSelfAbsent(false); }}
                         aria-pressed={selfId === p.id}
                         className={`rounded-full border px-3 py-1 text-[13px] ${
                           selfId === p.id
@@ -606,6 +552,7 @@ const GroupRoastStart = () => {
                   );
                 })}
               </ul>
+              <button type="button" onClick={() => { setSelfId(null); setSelfAbsent(true); }} aria-pressed={selfAbsent} className={`mt-3 min-h-11 rounded-full border px-4 text-[13px] ${selfAbsent ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground"}`}>I am not in this conversation</button>
 
               {parsed.participants.some((p) => p.looks_like_system) && (
                 <p className="mt-3 text-[13px] text-muted-foreground">
@@ -731,7 +678,7 @@ const GroupRoastStart = () => {
               <button
                 type="button"
                 onClick={submit}
-                disabled={submitting || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS}
+                disabled={submitting || (!selfId && !selfAbsent) || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}

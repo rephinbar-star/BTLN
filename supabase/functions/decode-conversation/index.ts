@@ -18,6 +18,27 @@ const json = (status: number, body: unknown) =>
   });
 
 const MAX_SCREENSHOTS = 10;
+const MAX_REVIEWED_MESSAGES = 1_000;
+const MODEL = "openai/gpt-6-astra";
+
+type ReviewedMessage = { id: string; participant_id?: string | null; raw_sender?: string | null; content: string; order: number };
+type ReviewedIngestion = { id: string; participants: Array<{ id: string; display_name?: string }>; messages: ReviewedMessage[] };
+
+const parseReviewedIngestion = (value: unknown): ReviewedIngestion | null => {
+  if (!value || typeof value !== "object") return null;
+  const candidate = value as Record<string, unknown>;
+  if (typeof candidate.id !== "string" || !candidate.id.startsWith("conv_") || !Array.isArray(candidate.participants) || !Array.isArray(candidate.messages)) return null;
+  if (candidate.messages.length < 1 || candidate.messages.length > MAX_REVIEWED_MESSAGES || candidate.participants.length > 15) return null;
+  const participants = candidate.participants.filter((person): person is { id: string; display_name?: string } => Boolean(person && typeof person === "object" && typeof (person as Record<string, unknown>).id === "string"));
+  if (participants.length !== candidate.participants.length) return null;
+  const participantIds = new Set(participants.map((person) => person.id));
+  const messages = candidate.messages.filter((message): message is ReviewedMessage => {
+    if (!message || typeof message !== "object") return false;
+    const item = message as Record<string, unknown>;
+    return typeof item.id === "string" && item.id.startsWith("msg_") && typeof item.content === "string" && item.content.trim().length > 0 && item.content.length <= 1_200 && Number.isInteger(item.order) && (!item.participant_id || participantIds.has(String(item.participant_id)));
+  });
+  return messages.length === candidate.messages.length ? { id: candidate.id, participants, messages } : null;
+};
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
@@ -55,11 +76,24 @@ Deno.serve(async (req) => {
     input?.screenshot_base64_array ?? payload?.screenshot_base64_array;
   const name1: string = input?.name1 ?? "You";
   const name2: string = input?.name2 ?? "Them";
+  const ingestionSupplied = input?.ingestion !== undefined && input?.ingestion !== null;
+  const ingestion = parseReviewedIngestion(input?.ingestion);
+  const identity = input?.identity_confirmation && typeof input.identity_confirmation === "object" ? input.identity_confirmation as Record<string, unknown> : null;
+  const confirmedAbsent = identity?.absent === true;
+  const confirmedParticipantId = typeof identity?.participant_id === "string" ? identity.participant_id : null;
+  const confirmedSide = identity?.self_side === "left" || identity?.self_side === "right" ? identity.self_side : null;
+
+  if (ingestionSupplied && !ingestion) return json(400, { error: "The reviewed conversation is invalid. Review the upload again." });
 
   if (!session_id) return json(400, { error: "Missing session_id" });
   const hasImages = !!screenshot_base64_array?.length;
-  if (!raw_text?.trim() && !hasImages) {
+  if (!raw_text?.trim() && !hasImages && !ingestion) {
     return json(400, { error: "input must include raw_text or screenshot_base64_array" });
+  }
+  if (ingestion) {
+    const participantIds = new Set(ingestion.participants.map((person) => person.id));
+    const validIdentity = confirmedAbsent || Boolean(confirmedSide) || Boolean(confirmedParticipantId && participantIds.has(confirmedParticipantId));
+    if (!validIdentity || (confirmedAbsent && (confirmedParticipantId || confirmedSide))) return json(400, { error: "Confirm your actual participant, screenshot side, or that you are absent." });
   }
 
   let row_id: string;
@@ -108,36 +142,38 @@ Deno.serve(async (req) => {
 
     await supabase.from("decodes").update({ status: "extracting" }).eq("id", row_id);
 
-    const extracted = await extractMessages({
-      input_method: hasImages ? "screenshot" : "paste",
-      name1,
-      name2,
-      raw_text,
-      imageUrls: screenshot_base64_array?.slice(0, MAX_SCREENSHOTS),
-      model_string: pv.model_string,
-      vision_model_string: pv.vision_model_string,
-      apiKey: OPENROUTER_API_KEY,
-      referer: OPENROUTER_HTTP_REFERER,
-      title: OPENROUTER_X_TITLE,
-    });
-    if ("error" in extracted) return fail(extracted.error);
-
-    const messages = extracted.messages
-      .filter((m) => m && m.content && (m.sender_role === "user" || m.sender_role === "partner"))
-      .sort((a, b) => (a.sequence_order ?? 0) - (b.sequence_order ?? 0));
-    if (messages.length === 0) return fail("No messages could be extracted from the input.");
-
-    const exchange = messages
-      .map((m) =>
-        `${m.sender_role === "user" ? `${name1} (the user)` : `${name2} (the other person)`}: ${m.content}`
-      )
-      .join("\n");
+    let exchange: string;
+    if (ingestion) {
+      const names = new Map(ingestion.participants.map((person) => [person.id, String(person.display_name ?? "Participant").slice(0, 80)]));
+      exchange = ingestion.messages.sort((a, b) => a.order - b.order).map((message) => {
+        const label = names.get(message.participant_id ?? "") ?? String(message.raw_sender ?? "Unknown participant").slice(0, 80);
+        const role = !confirmedAbsent && confirmedParticipantId === message.participant_id ? " (the user)" : "";
+        return `${label}${role}: ${message.content}`;
+      }).join("\n");
+    } else {
+      const extracted = await extractMessages({
+        input_method: hasImages ? "screenshot" : "paste",
+        name1,
+        name2,
+        raw_text,
+        imageUrls: screenshot_base64_array?.slice(0, MAX_SCREENSHOTS),
+        model_string: MODEL,
+        vision_model_string: MODEL,
+        apiKey: OPENROUTER_API_KEY,
+        referer: OPENROUTER_HTTP_REFERER,
+        title: OPENROUTER_X_TITLE,
+      });
+      if ("error" in extracted) return fail(extracted.error);
+      const messages = extracted.messages.filter((m) => m && m.content && (m.sender_role === "user" || m.sender_role === "partner")).sort((a, b) => (a.sequence_order ?? 0) - (b.sequence_order ?? 0));
+      if (messages.length === 0) return fail("No messages could be extracted from the input.");
+      exchange = messages.map((m) => `${m.sender_role === "user" ? `${name1} (the user)` : `${name2} (the other person)`}: ${m.content}`).join("\n");
+    }
 
     await supabase.from("decodes").update({ status: "analyzing" }).eq("id", row_id);
 
     const r = await callOpenRouter(
       {
-        model: pv.model_string,
+        model: MODEL,
         messages: [
           { role: "system", content: pv.prompt_text },
           { role: "user", content: exchange },

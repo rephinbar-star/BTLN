@@ -109,7 +109,7 @@ Observed behaviour, introspection questions, generated advice and self-reported 
 - [x] `/examples/relationship360` plus legacy `/examples/journey` and `/journey`.
 - [x] 360 / 390 / 430 / 1280 verification, typecheck, build.
 
-### Stage 2 — Identity, automatic inclusion and user control — IMPLEMENTED (browser-verified 2026-09-22)
+### Stage 2 — Identity, automatic inclusion and user control — PARTIALLY VERIFIED
 - [x] Activation consent (`journey_activate`, consent_version 2) supersedes report-by-report
       opt-in; profiles on an older consent version see a re-confirm card and are never silently
       widened.
@@ -129,19 +129,24 @@ Observed behaviour, introspection questions, generated advice and self-reported 
       conversation (`sourceState`, unit-tested in `src/lib/journey/__tests__/identity.test.ts`).
 - [x] Privacy, opt-out and delete controls render outside the opted-in branch, so they stay
       reachable after opt-out or Prime cancellation; linked sources stay listed and correctable.
-- Not yet: highlighted sample messages and screenshot side-choice inside the identity prompt
-  (the report record exposes participant names, not per-message sides) — Updating/Failed states
-  land with the Stage 4 job pipeline.
+- Shared ingestion now requires a participant, a confirmed screenshot side, or an explicit
+  "I am not in this conversation" choice before real analysis. Group Read and Group Roast repeat
+  validation server-side and reject a selected identity outside the submitted participant set.
+- Still pending: a two-account browser isolation proof and a real Quick Take source-participant
+  candidate contract. Updating/Failed states land with the Stage 4 job pipeline.
 
 
-### Stage 3 — Quick Take response and follow-up — PENDING
-- [ ] "What did you send?" with select-then-confirm, paste, or follow-up screenshot with
+### Stage 3 — Quick Take response and follow-up — IN PROGRESS
+- [x] "What did you send?" with paste, supported export, or follow-up screenshot with
       speaker/order confirmation; "I haven't replied" and "I chose not to reply".
-- [ ] "What happened next?" accepting the other person's response, an exchange screenshot or a
+- [x] "What happened next?" accepting the other person's response, an exchange screenshot or a
       reflection.
-- [ ] Suggestion / draft / confirmed sent reply / observed follow-up / self-report kept
+- [x] Suggestion / draft / confirmed sent reply / observed follow-up / self-report kept
       separate; provenance and versioning on the original conversation, no duplicates.
-- [ ] Existing upload and retention commitments preserved.
+- [x] Existing upload and retention commitments preserved: screenshot OCR runs once for preview;
+      continuation receives the reviewed transcript, while raw images are not persisted with events.
+- [ ] Provider-backed paid addon checkout remains unavailable because no verified addon price exists.
+      Server entitlement checks are implemented; external billing lifecycle verification remains blocked.
 
 ### Stage 4 — Grounded profile engine — PENDING
 - [ ] Server validation of ownership, mapped participant, activation consent, entitlement.
@@ -180,8 +185,9 @@ Observed behaviour, introspection questions, generated advice and self-reported 
 
 ## Status
 
-Stage 1 is implemented and verified. Stages 2–7 are not started; the preview is explicitly a
-fictional illustration and is never presented as the working feature.
+Stage 1 is implemented and verified. Stage 2 and Stage 3 have substantial implementation but retain
+the explicit verification gaps below. Stages 4–7 remain pending; the preview is explicitly a fictional
+illustration and is never presented as the working feature.
 
 The owner-approved Introspection revision is implemented in the Stage 1 shared pattern renderer and fictional
 fixture. It includes a source-grounded uncertainty example, a useful boundary/directness reflection, a sparse-data
@@ -189,6 +195,52 @@ state and an explicitly self-reported rejected alternative. All supported paths 
 reflection save control because real reflection persistence and synthesis remain pending.
 The Stage 4 contract and validation requirements above are recorded, but no real synthesis prompt or output validator
 exists yet and none is claimed complete.
+
+## Shared conversation ingestion — implemented foundation
+
+| Entry point | Before | Current shared path |
+|---|---|---|
+| Quick Take | Paste and screenshots through a mode-specific form | Screenshots, supported chat export, paste; preview and identity required |
+| Deep Read | Separate paste/file/screenshot controls | Same shared input and reviewed canonical transcript; existing relationship context retained |
+| Group Read | Paste/export only | Shared screenshots/export/paste; 3–15 participant editing and date controls retained |
+| Group Roast | Paste/export only | Shared screenshots/export/paste; 3–15 participant editing and date controls retained |
+| Interactive Mode | Separate paste/screenshot form | Shared screenshots/export/paste appended to the same gated thread |
+| Relationship360 | Existing owned reports only | New upload entry routes to Deep Read; only an eligible completed owned report can then be included |
+
+Supported and fixture-tested export variants: WhatsApp bracketed iOS TXT, WhatsApp Android-style
+dash TXT, the defined iMessage-style dated TXT, and CSV containing sender/message with optional
+timestamp/direction columns. Safe ZIP accepts one selected TXT/CSV transcript, ignores media, and
+rejects traversal, nested archives, excessive entry count, excessive declared size and suspicious
+expansion. PNG/JPEG/WebP screenshots are accepted; HEIC/HEIF is rejected with conversion guidance.
+There is no XML parser, so Android SMS XML and a universal native iMessage export are not claimed.
+
+Canonical ingestion assigns deterministic conversation/message IDs, source provenance, parsed or
+uncertain confidence, participant candidates, nullable timestamps, warnings and date coverage.
+Screenshot OCR honors the uploader-confirmed side. Group screenshot OCR keeps visible sender labels
+and uses "Unknown participant" instead of guessing. Users can reorder/remove screenshots and edit
+the extracted speaker/order transcript before analysis. Files remain in component memory only.
+
+Checks in this increment: TypeScript clean; 12 Vitest files / 99 tests pass, including distinct
+WhatsApp/iMessage variants, ambiguity, malformed and unsafe archive cases, canonical retry IDs,
+screenshot type rejection and deterministic 10,000-message parsing. Deployed `extract-chat-input`,
+`analyze-group`, and `analyze-group-roast`; malformed extraction returned 400, forged Group Read
+identity returned 400 before generation, invalid Group Roast auth returned 401, and one generated
+two-image pair screenshot test returned three ordered messages with the confirmed right side mapped
+to You. Quick Take now rejects malformed canonical participant IDs and contradictory absent-plus-
+participant claims with 400 before creating or running a report. Interactive Mode validates the same
+canonical membership after authentication and independently checks base-plus-addon or Prime entitlement.
+This proves these rejection boundaries and the extraction endpoint, not a full paid report or every
+phone UI variant.
+
+Deep Read now sends the already-reviewed canonical transcript only. Its prior screenshot-storage
+submission branch is no longer reachable, so screenshots are not uploaded and OCR'd a second time.
+Quick Take and Interactive Mode likewise consume validated canonical messages directly instead of
+paying for another extraction pass. Source kind and conversation/message provenance remain attached.
+
+Still unverified: a real group screenshot extraction sample, full screenshot-to-each-mode completion,
+10,000-message real model analysis through a Relationship360 adapter, mobile browser/file-picker and
+draft-return matrix, encrypted-ZIP behavior, and paid provider checkout. The database linter still
+reports 57 broader SECURITY DEFINER execution warnings; it is not clean.
 
 The concise editorial revision is also implemented in the shared Stage 1 components and preview. Overlapping fixture
 claims collapse by `semanticKey`; overview and monthly review link to canonical pattern/recommendation details; Insight
