@@ -10,6 +10,8 @@ import {
   applyExclusions,
 } from "./aggregate";
 import { LIMITS } from "./limits";
+import { canonicalizeParsedConversation, parsedFromCanonical } from "./canonical";
+import { prepareScreenshot, ScreenshotValidationError } from "./images";
 
 const enc = (s: string) => new TextEncoder().encode(s);
 
@@ -316,5 +318,28 @@ describe("system-notice detection", () => {
     expect(kinds[1]).not.toBe("system");
     expect(kinds[2]).toBe("system");
     expect(r.participants.map((p) => p.display_name).sort()).toEqual(["Maya", "Sam"]);
+  });
+});
+
+describe("canonical shared ingestion", () => {
+  it("creates stable conversation and message ids for retries", () => {
+    const parsed = parseTranscript("Sam: hello\nMaya: hi\nDev: morning");
+    const first = canonicalizeParsedConversation(parsed, "chat_export", "chat.txt");
+    const retry = canonicalizeParsedConversation(parsed, "chat_export", "chat.txt");
+    expect(retry.id).toBe(first.id);
+    expect(retry.messages.map((message) => message.id)).toEqual(first.messages.map((message) => message.id));
+    expect(parsedFromCanonical(first).messages).toEqual(parsed.messages);
+  });
+
+  it("preserves screenshot provenance after a reviewed text correction", () => {
+    const parsed = parseTranscript("You: corrected first\nThem: corrected second");
+    const conversation = canonicalizeParsedConversation(parsed, "screenshots", "one.png, two.png");
+    expect(conversation.sourceKind).toBe("screenshots");
+    expect(conversation.messages.every((message) => message.provenance.sourceKind === "screenshots")).toBe(true);
+  });
+
+  it("rejects HEIC and unsupported screenshot types before compression", async () => {
+    await expect(prepareScreenshot(new File(["x"], "photo.heic", { type: "image/heic" }))).rejects.toBeInstanceOf(ScreenshotValidationError);
+    await expect(prepareScreenshot(new File(["x"], "document.pdf", { type: "application/pdf" }))).rejects.toThrow("PNG, JPG or WebP");
   });
 });

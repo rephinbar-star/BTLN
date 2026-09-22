@@ -36,7 +36,7 @@ const stableHash = (value: string): string => {
 
 export function canonicalizeParsedConversation(
   parsed: IngestResult,
-  sourceKind: Exclude<CanonicalSourceKind, "screenshots">,
+  sourceKind: CanonicalSourceKind,
   sourceName: string | null,
 ): CanonicalConversation {
   const conversationId = `conv_${stableHash(
