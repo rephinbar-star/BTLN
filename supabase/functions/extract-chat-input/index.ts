@@ -21,10 +21,24 @@ const LIMITS = {
   ip: { requests: 12, images: 60 },
 };
 
+// Guest metering key.
+//
+// `x-forwarded-for` is a client-appendable list: the FIRST entry is whatever the
+// caller sent. Only the entry appended by the ingress closest to us is
+// server-controlled, so we read the LAST entry. Any caller-supplied prefix is
+// ignored, which means a hostile header can neither shard the bucket nor
+// impersonate another address. Verified with hostile-header requests (see
+// docs/security-triage.md).
+//
+// When no forwarded chain is present at all every signed-out caller falls into a
+// single shared bucket rather than an unbounded one — deliberately conservative.
 function clientIp(req: Request): string {
-  const forwarded = req.headers.get("x-forwarded-for") ?? "";
-  const first = forwarded.split(",")[0]?.trim();
-  return first || req.headers.get("cf-connecting-ip") || "unknown";
+  const chain = (req.headers.get("x-forwarded-for") ?? "")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const trusted = chain.length ? chain[chain.length - 1] : "";
+  return trusted || "shared-unattributed";
 }
 
 async function resolveUserId(authorization: string | null): Promise<string | null> {
@@ -94,15 +108,10 @@ Deno.serve(async (req) => {
   if ("error" in extracted) return json(502, { error: extracted.error });
   const messages = extracted.messages.slice(0, 1000).filter((message) => message.content?.trim());
   if (!messages.length) return json(422, { error: "No readable messages were found. Reorder clearer screenshots or use paste text." });
-  const seen = new Set<string>();
-  let overlaps = 0;
-  const lines: string[] = [];
-  for (const message of messages) {
-    const label = mode === "group" ? String(message.raw_sender ?? "Unknown participant").trim().slice(0, 80) : message.sender_role === "user" ? "You" : "Them";
-    const keyValue = `${label}|${message.timestamp_estimate ?? ""}|${message.content.trim()}`;
-    if (seen.has(keyValue)) { overlaps += 1; continue; }
-    seen.add(keyValue);
-    lines.push(`${label}: ${message.content.trim()}`);
-  }
-  return json(200, { transcript: lines.join("\n"), message_count: lines.length, warnings: overlaps ? [`${overlaps} exact overlapping message${overlaps === 1 ? " was" : "s were"} removed. Review the preview for uncertain overlap.`] : [] });
+  const deduped = dedupeTranscript(messages.map((message) => ({
+    label: mode === "group" ? String(message.raw_sender ?? "Unknown participant").trim().slice(0, 80) : message.sender_role === "user" ? "You" : "Them",
+    content: message.content,
+    timestamp: message.timestamp_estimate ?? null,
+  })));
+  return json(200, { transcript: deduped.lines.join("\n"), message_count: deduped.lines.length, warnings: deduped.warnings });
 });
