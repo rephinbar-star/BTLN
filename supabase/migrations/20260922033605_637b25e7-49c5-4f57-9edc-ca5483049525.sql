@@ -1,0 +1,14 @@
+ALTER FUNCTION public.journey_activate(boolean) SECURITY INVOKER;
+ALTER FUNCTION public.journey_auto_include() SECURITY INVOKER;
+ALTER FUNCTION public.journey_mark_absent(uuid) SECURITY INVOKER;
+ALTER FUNCTION public.journey_delete_all() SECURITY INVOKER;
+REVOKE ALL ON FUNCTION public.journey_activate(boolean) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.journey_activate(boolean) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.journey_auto_include() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.journey_auto_include() TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.journey_mark_absent(uuid) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.journey_mark_absent(uuid) TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.journey_delete_all() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.journey_delete_all() TO authenticated, service_role;
+REVOKE ALL ON FUNCTION public.journey_write_summary(uuid,text,uuid,jsonb,uuid[],jsonb,text,jsonb) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.journey_write_summary(uuid,text,uuid,jsonb,uuid[],jsonb,text,jsonb) TO service_role;
