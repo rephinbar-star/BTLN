@@ -178,7 +178,7 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
       )}
 
       {content && status?.summary && (
-        <FeedbackProvider sourceKind="journey_summary" sourceId={status.summary.id}>
+        <FeedbackProvider sourceKind="relationship360" sourceId={status.summary.id}>
           <div className="mt-6">
             <R360Overview
               headline={content.headline}
