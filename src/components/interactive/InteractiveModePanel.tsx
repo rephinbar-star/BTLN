@@ -78,8 +78,12 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
       });
       if (invokeError || data?.error) throw new Error(data?.error ?? invokeError?.message ?? "Could not update this conversation.");
       setResult((data?.result ?? null) as InteractiveResult | null);
+      setLastEventId((data?.event_id as string | undefined) ?? null);
+      setLastModel((data?.model as string | undefined) ?? null);
+      if (data?.thread_id) setThreadId(data.thread_id as string);
       const refreshed = await supabase.functions.invoke("interactive-mode", { body: { action: "list", decode_id: decodeId } });
       setHistory((refreshed.data?.events ?? []) as HistoryEvent[]);
+      if (refreshed.data?.thread_id) setThreadId(refreshed.data.thread_id as string);
       setDraft(emptyConversationDraft());
       setReflection("");
     } catch (cause) {
