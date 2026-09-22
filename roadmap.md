@@ -12,3 +12,5 @@
 - [ ] Saved reflections and periodic reviews (step 5).
 - [ ] Group Roast humour pass (step 7).
 - [ ] Release validation matrix (step 8).
+- [ ] Shared ingestion foundation across Quick Take, Deep Read, Group Read, Group Roast, Interactive Mode, and Relationship360.
+- [ ] Verify screenshots, WhatsApp TXT/ZIP, defined iMessage TXT/CSV, malformed archives, overlap, identity confirmation, mobile picker, and keyboard behavior.
