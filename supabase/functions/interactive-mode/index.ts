@@ -118,8 +118,19 @@ Deno.serve(async (req) => {
     return json(200, { thread_id: ownedThread.id, events: history ?? [] });
   }
 
-  const { data: existingEvent } = await admin.from("interactive_events").select("id,thread_id,status,result_json").eq("user_id", user.id).eq("client_request_id", requestId).maybeSingle();
-  if (existingEvent) return json(200, { event: existingEvent, duplicate: true });
+  const { data: existingEvent } = await admin.from("interactive_events").select("id,thread_id,status,result_json,model").eq("user_id", user.id).eq("client_request_id", requestId).maybeSingle();
+  // A retry of the same client_request_id returns the original outcome in the same
+  // shape as the first response: no second model call, no second event, no extra cost.
+  if (existingEvent) {
+    return json(200, {
+      event_id: existingEvent.id,
+      thread_id: existingEvent.thread_id,
+      status: existingEvent.status,
+      result: existingEvent.result_json ?? null,
+      model: existingEvent.model ?? null,
+      duplicate: true,
+    });
+  }
 
   const { data: thread, error: threadError } = await admin.from("interactive_threads").upsert({
     user_id: user.id,
