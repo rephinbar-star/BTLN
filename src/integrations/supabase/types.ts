@@ -422,6 +422,30 @@ export type Database = {
         }
         Relationships: []
       }
+      extraction_budget: {
+        Row: {
+          bucket_key: string
+          image_count: number
+          request_count: number
+          updated_at: string
+          window_start: string
+        }
+        Insert: {
+          bucket_key: string
+          image_count?: number
+          request_count?: number
+          updated_at?: string
+          window_start: string
+        }
+        Update: {
+          bucket_key?: string
+          image_count?: number
+          request_count?: number
+          updated_at?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       general_feedback: {
         Row: {
           created_at: string | null
@@ -1899,6 +1923,15 @@ export type Database = {
       claim_anonymous_analyses: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
+      }
+      claim_extraction_budget: {
+        Args: {
+          p_bucket: string
+          p_images: number
+          p_max_images: number
+          p_max_requests: number
+        }
+        Returns: Json
       }
       claim_webhook_event: {
         Args: {
