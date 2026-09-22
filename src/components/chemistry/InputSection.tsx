@@ -523,6 +523,10 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         session_id,
         context_data,
         input_method,
+        ingestion: sharedDraft.conversation,
+        identity_confirmation: sharedDraft.selfAbsent
+          ? { absent: true }
+          : { participant_id: sharedDraft.selfParticipantId, conversation_id: sharedDraft.conversation?.id },
       };
       // For pasted/loaded text, enforce the message cap right before
       // sending so users who paste >100 messages still get a useful run
