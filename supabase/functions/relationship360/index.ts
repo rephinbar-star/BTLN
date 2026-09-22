@@ -652,6 +652,7 @@ Deno.serve(async (req) => {
     observations: observations.length,
     omitted_observations: omitted,
     dated_observations: datedObservations,
+    comparison,
     single_read: distinctSources === 1,
     self_reported_notes: reflections.length,
     generated_for: scope,
