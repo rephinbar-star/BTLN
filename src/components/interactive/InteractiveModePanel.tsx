@@ -13,6 +13,8 @@ type InteractiveResult = {
   provenance_notes?: string;
 };
 
+type InteractiveEventType = "sent_reply" | "observed_followup" | "self_report" | "no_reply" | "chose_not_to_reply";
+
 export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const { loading, hasInteractiveMode } = useMembership();
   const [mode, setMode] = useState<"sent_reply" | "observed_followup" | "self_report">("sent_reply");
@@ -36,7 +38,7 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
     );
   }
 
-  const submit = async (eventType = mode) => {
+  const submit = async (eventType: InteractiveEventType = mode) => {
     setBusy(true);
     setError(null);
     try {
