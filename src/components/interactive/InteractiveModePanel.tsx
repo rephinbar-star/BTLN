@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useMembership } from "@/hooks/useMembership";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
+import { extractScreenshotConversation } from "@/lib/ingest/extract";
 
 type InteractiveResult = {
   verdict?: string;
@@ -106,14 +107,14 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
           </select>
         </label>
       )}
-      {mode === "self_report" ? <label className="mt-4 block text-[13px] font-medium">What happened, in your own words?<textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={24000} rows={5} className="mt-1 w-full rounded-md border border-input bg-background p-3 text-[15px] leading-relaxed" /></label> : <div className="mt-4"><SharedConversationInput value={draft} onChange={setDraft} maxScreenshots={3} compact requireSelf={mode === "observed_followup"} pastePlaceholder={mode === "sent_reply" ? "Paste the response you actually sent" : "Paste the later exchange"} /></div>}
+      {mode === "self_report" ? <label className="mt-4 block text-[13px] font-medium">What happened, in your own words?<textarea value={reflection} onChange={(event) => setReflection(event.target.value)} maxLength={24000} rows={5} className="mt-1 w-full rounded-md border border-input bg-background p-3 text-[15px] leading-relaxed" /></label> : <div className="mt-4"><SharedConversationInput value={draft} onChange={setDraft} maxScreenshots={3} compact requireSelf={mode === "observed_followup"} extractScreenshots={extractScreenshotConversation} pastePlaceholder={mode === "sent_reply" ? "Paste the response you actually sent" : "Paste the later exchange"} /></div>}
       {mode === "sent_reply" && (
         <div className="mt-3 flex flex-wrap gap-2">
           <Button type="button" variant="ghost" className="min-h-11" disabled={busy} onClick={() => void submit("no_reply")}>I haven&apos;t replied</Button>
           <Button type="button" variant="ghost" className="min-h-11" disabled={busy} onClick={() => void submit("chose_not_to_reply")}>I chose not to reply</Button>
         </div>
       )}
-      <Button type="button" className="mt-4 min-h-11 w-full" disabled={busy || (mode === "self_report" ? !reflection.trim() : draft.method === "screenshots" ? draft.screenshots.length === 0 || (mode === "observed_followup" && !draft.screenshotSelfSide) : !draft.conversation)} onClick={() => void submit()}>
+      <Button type="button" className="mt-4 min-h-11 w-full" disabled={busy || (mode === "self_report" ? !reflection.trim() : !draft.conversation || draft.conversation.format === "screenshots_pending" || (mode === "observed_followup" && !(draft.selfParticipantId || draft.screenshotSelfSide)))} onClick={() => void submit()}>
         {busy ? <><Loader2 className="animate-spin" /> Updating your take…</> : mode === "self_report" ? "Save private reflection" : "Get an updated take"}
       </Button>
       {error && <p role="alert" className="mt-3 text-[13px] text-destructive">{error}</p>}

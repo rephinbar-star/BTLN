@@ -6,6 +6,7 @@ import { SharedConversationInput, emptyConversationDraft, type ConversationDraft
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId, logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { extractScreenshotConversation } from "@/lib/ingest/extract";
 
 export const DecodeInput = () => {
   const [draft, setDraft] = useState<ConversationDraft>(emptyConversationDraft);
@@ -13,7 +14,7 @@ export const DecodeInput = () => {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const hasInput = draft.method === "screenshots" ? draft.screenshots.length > 0 : Boolean(draft.conversation);
+  const hasInput = Boolean(draft.conversation && draft.conversation.format !== "screenshots_pending");
   const identityConfirmed = draft.method === "screenshots" ? Boolean(draft.screenshotSelfSide) : Boolean(draft.selfParticipantId);
 
   const onSubmit = async () => {
@@ -50,7 +51,7 @@ export const DecodeInput = () => {
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 shadow-sm sm:p-6">
-      <SharedConversationInput value={draft} onChange={setDraft} maxScreenshots={10} />
+      <SharedConversationInput value={draft} onChange={setDraft} maxScreenshots={10} extractScreenshots={extractScreenshotConversation} />
       {!identityConfirmed && hasInput && <p className="mt-3 text-sm text-destructive">Confirm which participant or screenshot side is you before continuing.</p>}
       {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
       <Button type="button" onClick={() => void onSubmit()} disabled={!hasInput || !identityConfirmed || submitting} className="mt-5 min-h-11 w-full rounded-full">

@@ -78,3 +78,23 @@ export function canonicalScreenshotConversation(names: string[]): CanonicalConve
     dateRange: { start: null, end: null },
   };
 }
+
+export function parsedFromCanonical(conversation: CanonicalConversation): IngestResult {
+  const messages = conversation.messages.map(({ id: _id, provenance: _provenance, ...message }) => message);
+  return {
+    format: conversation.format === "screenshots_pending" ? "attributed_text" : conversation.format,
+    participants: conversation.participants,
+    messages,
+    unattributed_count: messages.filter((message) => !message.participant_id && message.kind !== "system").length,
+    system_count: messages.filter((message) => message.kind === "system").length,
+    attachment_count: messages.filter((message) => message.kind === "attachment").length,
+    deleted_count: messages.filter((message) => message.kind === "deleted").length,
+    ambiguous_dates: conversation.ambiguousDates,
+    day_first: true,
+    timezone_assumed: messages.some((message) => Boolean(message.ts)),
+    date_range: conversation.dateRange,
+    messages_with_time: messages.filter((message) => Boolean(message.ts)).length,
+    truncated_at_limit: false,
+    warnings: conversation.warnings,
+  };
+}
