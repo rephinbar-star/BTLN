@@ -1,0 +1,2 @@
+GRANT EXECUTE ON FUNCTION public.journey_write_summary(uuid, text, uuid, jsonb, uuid[], jsonb, text, jsonb) TO authenticated;
+REVOKE EXECUTE ON FUNCTION public.journey_write_summary(uuid, text, uuid, jsonb, uuid[], jsonb, text, jsonb) FROM anon;
