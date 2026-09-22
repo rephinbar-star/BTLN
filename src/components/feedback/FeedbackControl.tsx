@@ -136,7 +136,7 @@ export const FeedbackControl = ({
           />
           {!compact && (
             <span className="text-[13px] font-medium">
-              {state === "up" ? "Good response" : state === "down" ? "Bad response" : "Rate"}
+              {state === "up" ? "Helpful" : state === "down" ? "Don't Like It" : "Rate"}
             </span>
           )}
         </button>
@@ -156,7 +156,7 @@ export const FeedbackControl = ({
               aria-pressed={state === "up"}
               className="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-left text-[15px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <ThumbsUp className="h-4 w-4" aria-hidden /> Good response
+              <ThumbsUp className="h-4 w-4" aria-hidden /> Helpful
             </button>
             <button
               type="button"
@@ -164,7 +164,7 @@ export const FeedbackControl = ({
               aria-pressed={state === "down"}
               className="flex min-h-[44px] items-center gap-3 rounded-xl px-3 text-left text-[15px] transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              <ThumbsDown className="h-4 w-4" aria-hidden /> Bad response
+              <ThumbsDown className="h-4 w-4" aria-hidden /> Don't Like It
             </button>
             {state && (
               <button
