@@ -138,20 +138,14 @@ Deno.serve(async (req) => {
   const eligible = sources.filter((s) => s.identity_status === "confirmed" && s.subject_participant && !s.excluded_at);
 
   const scope = relationshipId ? "relationship" : "cross_relationship";
-  const { data: summary } = await admin
+  const summaryQuery = admin
     .from("journey_summaries")
     .select("id,scope,relationship_id,content,coverage,is_stale,generated_at,model,evidence_source_ids")
     .eq("user_id", user.id)
-    .eq("scope", scope)
-    .is("relationship_id", relationshipId ? undefined as never : null)
-    .maybeSingle()
-    .then((r) => r)
-    .catch(() => ({ data: null }));
-
-  const summaryRow = relationshipId
-    ? (await admin.from("journey_summaries").select("id,scope,relationship_id,content,coverage,is_stale,generated_at,model,evidence_source_ids")
-        .eq("user_id", user.id).eq("scope", "relationship").eq("relationship_id", relationshipId).maybeSingle()).data
-    : summary?.data ?? null;
+    .eq("scope", scope);
+  const { data: summaryRow } = await (relationshipId
+    ? summaryQuery.eq("relationship_id", relationshipId)
+    : summaryQuery.is("relationship_id", null)).maybeSingle();
 
   const { data: jobs } = await admin
     .from("journey_jobs")
