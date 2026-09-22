@@ -94,7 +94,7 @@ export const HelpMeChoose = () => {
   const finish = (key: keyof typeof REC) => {
     setResult(key);
     setStep("result");
-    track("pricing_guide_result", { source: "pricing_page", option: "monthly" });
+    track("pricing_guide_result", { source: "pricing_page", recommendation: key });
   };
 
   const choose1 = (value: string) => {
