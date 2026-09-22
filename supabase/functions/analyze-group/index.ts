@@ -130,6 +130,14 @@ Deno.serve(async (req) => {
   }
 
   const ids = new Set(participants.map((p) => p.id));
+  const identity = payload.identity_confirmation && typeof payload.identity_confirmation === "object"
+    ? payload.identity_confirmation as { participant_id?: unknown; absent?: unknown }
+    : {};
+  const confirmedId = typeof identity.participant_id === "string" ? identity.participant_id : null;
+  const absent = identity.absent === true;
+  if ((absent && confirmedId) || (!absent && (!confirmedId || !ids.has(confirmedId)))) {
+    return json(400, { error: "Confirm which selected participant is you, or confirm that you are not in this conversation." });
+  }
   let messages: GroupMessage[] = [];
   for (const m of rawMessages) {
     const content = String((m as { content?: string })?.content ?? "").slice(0, MAX_MESSAGE_CHARS);
@@ -508,6 +516,7 @@ Deno.serve(async (req) => {
         unavailable_metrics: stats.unavailable_metrics,
       },
       participants: participants.map((p) => ({ id: p.id, display_name: p.display_name })),
+      identity_confirmation: absent ? { absent: true } : { participant_id: confirmedId },
     };
 
     const { error: updErr } = await supabase

@@ -65,6 +65,7 @@ const GroupRoastStart = () => {
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [category, setCategory] = useState<GroupCategory>("friends");
   const [selfId, setSelfId] = useState<string | null>(null);
+  const [selfAbsent, setSelfAbsent] = useState(false);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   const [mergeSource, setMergeSource] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -196,6 +197,10 @@ const GroupRoastStart = () => {
 
   const submit = async () => {
     if (!parsed || !payload) return;
+    if ((!selfId && !selfAbsent) || (selfId && selfAbsent) || (selfId && !selectedParticipants.some((person) => person.id === selfId))) {
+      setError("Confirm which selected participant is you, or confirm that you are not in this conversation.");
+      return;
+    }
     if (!user) {
       navigate(`/auth?return_to=${encodeURIComponent("/group-roast")}`);
       return;
@@ -224,6 +229,7 @@ const GroupRoastStart = () => {
       participants: selectedParticipants.map((p) => ({ id: p.id, display_name: p.display_name })),
       coverage: payload.coverage,
       source_format: parsed.format,
+      identity_confirmation: selfAbsent ? { absent: true } : { participant_id: selfId },
       messages: payload.messages.map((m) => ({
         participant_id: m.participant_id,
         content: m.content,
@@ -306,6 +312,7 @@ const GroupRoastStart = () => {
                   setDayFirst(result.day_first);
                   setExcluded(new Set(result.participants.filter((person) => person.looks_like_system).map((person) => person.id)));
                   setSelfId(next.selfParticipantId);
+                  setSelfAbsent(next.selfAbsent);
                   setFromDay("");
                   setToDay("");
                   setStep("confirm");
@@ -459,7 +466,7 @@ const GroupRoastStart = () => {
               </h2>
               <p className="mt-1 text-[14px] text-muted-foreground">
                  Merge duplicates, drop bots and system entries, and tell us which one is you
-                 (optional). {includedMessageCount.toLocaleString()} messages from {selectedParticipants.length}{" "}
+                  before analysis. {includedMessageCount.toLocaleString()} messages from {selectedParticipants.length}{" "}
                 people are selected.
               </p>
 
@@ -488,7 +495,7 @@ const GroupRoastStart = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setSelfId(selfId === p.id ? null : p.id)}
+                        onClick={() => { setSelfId(p.id); setSelfAbsent(false); }}
                         aria-pressed={selfId === p.id}
                         className={`rounded-full border px-3 py-1 text-[13px] ${
                           selfId === p.id
@@ -544,6 +551,7 @@ const GroupRoastStart = () => {
                   );
                 })}
               </ul>
+              <button type="button" onClick={() => { setSelfId(null); setSelfAbsent(true); }} aria-pressed={selfAbsent} className={`mt-3 min-h-11 rounded-full border px-4 text-[13px] ${selfAbsent ? "border-foreground bg-foreground text-background" : "border-border text-muted-foreground"}`}>I am not in this conversation</button>
 
               {parsed.participants.some((p) => p.looks_like_system) && (
                 <p className="mt-3 text-[13px] text-muted-foreground">
@@ -669,7 +677,7 @@ const GroupRoastStart = () => {
               <button
                 type="button"
                 onClick={submit}
-                disabled={submitting || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS}
+                disabled={submitting || (!selfId && !selfAbsent) || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
