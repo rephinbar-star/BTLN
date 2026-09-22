@@ -226,7 +226,16 @@ screenshot type rejection and deterministic 10,000-message parsing. Deployed `ex
 `analyze-group`, and `analyze-group-roast`; malformed extraction returned 400, forged Group Read
 identity returned 400 before generation, invalid Group Roast auth returned 401, and one generated
 two-image pair screenshot test returned three ordered messages with the confirmed right side mapped
-to You. This proves the extraction endpoint, not a full paid report or every phone UI variant.
+to You. Quick Take now rejects malformed canonical participant IDs and contradictory absent-plus-
+participant claims with 400 before creating or running a report. Interactive Mode validates the same
+canonical membership after authentication and independently checks base-plus-addon or Prime entitlement.
+This proves these rejection boundaries and the extraction endpoint, not a full paid report or every
+phone UI variant.
+
+Deep Read now sends the already-reviewed canonical transcript only. Its prior screenshot-storage
+submission branch is no longer reachable, so screenshots are not uploaded and OCR'd a second time.
+Quick Take and Interactive Mode likewise consume validated canonical messages directly instead of
+paying for another extraction pass. Source kind and conversation/message provenance remain attached.
 
 Still unverified: a real group screenshot extraction sample, full screenshot-to-each-mode completion,
 10,000-message real model analysis through a Relationship360 adapter, mobile browser/file-picker and
