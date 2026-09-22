@@ -439,16 +439,20 @@ export default function Pricing() {
 
       <Header />
 
-      <main className="mx-auto max-w-6xl px-5 py-16 sm:px-8">
+      <main className="mx-auto max-w-5xl px-5 py-16 sm:px-8">
         <div className="text-center">
           <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[12px] font-medium text-muted-foreground">
             <Sparkles className="h-3.5 w-3.5" aria-hidden />
             Simple, transparent pricing
           </span>
-          <h1 className="mt-4 text-[32px] font-medium tracking-tight sm:text-[42px]">Choose your plan</h1>
+          <h1 className="mt-4 text-[32px] font-medium tracking-tight sm:text-[42px]">
+            First choose what you need
+          </h1>
           <p className="mx-auto mt-3 max-w-xl text-[16px] leading-relaxed text-muted-foreground">
-            Every plan says exactly which reads it covers. No hidden fees, cancel anytime.
+            Pick the mode that matches your situation, then choose how often you want it. Every
+            card names the modes it covers.
           </p>
+          <HelpMeChoose />
         </div>
 
         {intended && !isMember && (
@@ -458,22 +462,27 @@ export default function Pricing() {
         )}
 
         <section className="mt-12" aria-labelledby="sec-quick">
-          <h2 id="sec-quick" className="text-[20px] font-medium">
-            Quick Take
+          <h2 id="sec-quick" className="text-center text-[20px] font-medium">
+            Quick Take — one message at a time
           </h2>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <p className="mx-auto mt-1 max-w-xl text-center text-[14px] text-muted-foreground">
+            Quick Take reads one message and suggests three replies. Interactive Mode keeps the same
+            conversation going.
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-6">
             <TierCard tier={QUICK_TIER} />
+            <TierCard tier={INTERACTIVE_TIER} />
           </div>
         </section>
 
         <section className="mt-12" aria-labelledby="sec-reports">
-          <h2 id="sec-reports" className="text-[20px] font-medium">
-            Deep Read &amp; Group reads
+          <h2 id="sec-reports" className="text-center text-[20px] font-medium">
+            Full reports — Deep Read, Group Read, Group Roast
           </h2>
-          <p className="mt-1 text-[14px] text-muted-foreground">
-            Covers Deep Read, Group Read and Group Roast.
+          <p className="mx-auto mt-1 max-w-xl text-center text-[14px] text-muted-foreground">
+            One report when you need it, or a plan that covers all three.
           </p>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 flex flex-wrap justify-center gap-6">
             {REPORT_TIERS.map((tier) => (
               <TierCard key={tier.key} tier={tier} />
             ))}
@@ -481,21 +490,23 @@ export default function Pricing() {
         </section>
 
         <section className="mt-12" aria-labelledby="sec-prime">
-          <h2 id="sec-prime" className="text-[20px] font-medium">
-            Prime — all modes
+          <h2 id="sec-prime" className="text-center text-[20px] font-medium">
+            Prime — every mode, plus your Relationship360
           </h2>
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-4 flex justify-center">
             <TierCard tier={PRIME_TIER} />
           </div>
         </section>
 
         <section className="mt-16" aria-labelledby="sec-compare">
-          <h2 id="sec-compare" className="text-[20px] font-medium">
+          <h2 id="sec-compare" className="text-center text-[20px] font-medium">
             Which plan covers what?
           </h2>
-          <p className="mt-1 text-[14px] text-muted-foreground">
-            Taken from the access rules the server actually applies.
+          <p className="mx-auto mt-1 max-w-xl text-center text-[14px] text-muted-foreground">
+            Taken from the access rules the server actually applies. Interactive Mode,
+            Relationship360 and Prime are in development and cannot be purchased yet.
           </p>
+
 
           {/* Wide screens: one table. */}
           <div className="mt-4 hidden overflow-x-auto md:block">
