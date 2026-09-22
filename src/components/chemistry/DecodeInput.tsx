@@ -43,7 +43,7 @@ export const DecodeInput = () => {
     input.raw_text = draft.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? draft.text;
 
     logEvent("decode_started", { has_images: draft.method === "screenshots", image_count: draft.screenshots.length });
-    track("decode_started", { input_method: draft.method });
+    track("decode_started", { input_method: draft.method === "screenshots" ? "screenshot" : "paste" });
     navigate(`/decode/${decode_id}`);
     void supabase.functions.invoke("decode-conversation", { body: { decode_id, session_id, source: "quick_decode", input } });
   };

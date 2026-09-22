@@ -27,6 +27,8 @@ import {
 } from "@/lib/group/types";
 import { GROUP_POLL_MS, pollAction, showsFailureScreen } from "@/lib/group/poll";
 import { GroupOverallCard, GroupRoleShareCard } from "@/components/group/GroupShareCard";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
+import { FeedbackControl } from "@/components/feedback/FeedbackControl";
 
 const POLL_MS = GROUP_POLL_MS;
 
@@ -256,6 +258,7 @@ const GroupResult = () => {
   const coverage = result.coverage;
 
   return (
+    <FeedbackProvider sourceKind="group_read" sourceId={groupId}>
     <div className="min-h-screen bg-background text-foreground">
       <Helmet>
         <title>Your Group Read | BetweenTheLines</title>
@@ -551,6 +554,9 @@ const GroupResult = () => {
         <p className="mt-8 text-center text-[13px] text-muted-foreground">
           Raw messages were processed for this read and are not stored as a reusable transcript. The structured report, including selected evidence, is stored.
         </p>
+        <div className="mt-10 flex justify-end">
+          <FeedbackControl label="this Group Read" target={{ targetKind: "overall" }} />
+        </div>
       </main>
 
       {/* Off-screen export nodes */}
@@ -581,6 +587,7 @@ const GroupResult = () => {
 
       <NextSteps mode="group" />
     </div>
+    </FeedbackProvider>
   );
 };
 

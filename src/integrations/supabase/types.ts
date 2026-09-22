@@ -14,6 +14,75 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_feedback: {
+        Row: {
+          comment: string | null
+          created_at: string
+          generation_id: string | null
+          id: string
+          model: string | null
+          outcome: string | null
+          outcome_note: string | null
+          owner_key: string | null
+          personalization_consent: boolean
+          product_improvement_consent: boolean
+          prompt_version: string | null
+          rating: string
+          reason_codes: string[]
+          session_id: string | null
+          source_id: string
+          source_kind: string
+          target_key: string
+          target_kind: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          generation_id?: string | null
+          id?: string
+          model?: string | null
+          outcome?: string | null
+          outcome_note?: string | null
+          owner_key?: string | null
+          personalization_consent?: boolean
+          product_improvement_consent?: boolean
+          prompt_version?: string | null
+          rating: string
+          reason_codes?: string[]
+          session_id?: string | null
+          source_id: string
+          source_kind: string
+          target_key?: string
+          target_kind: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          generation_id?: string | null
+          id?: string
+          model?: string | null
+          outcome?: string | null
+          outcome_note?: string | null
+          owner_key?: string | null
+          personalization_consent?: boolean
+          product_improvement_consent?: boolean
+          prompt_version?: string | null
+          rating?: string
+          reason_codes?: string[]
+          session_id?: string | null
+          source_id?: string
+          source_kind?: string
+          target_key?: string
+          target_kind?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       analyses: {
         Row: {
           completed_at: string | null
@@ -1792,6 +1861,27 @@ export type Database = {
       }
     }
     Functions: {
+      admin_ai_feedback_aggregate: {
+        Args: { p_days?: number }
+        Returns: {
+          down_count: number
+          model: string
+          prompt_version: string
+          reason_code: string
+          sample_size: number
+          source_kind: string
+          target_kind: string
+          up_count: number
+        }[]
+      }
+      ai_feedback_owns_source: {
+        Args: {
+          p_session_id: string
+          p_source_id: string
+          p_source_kind: string
+        }
+        Returns: boolean
+      }
       capture_email: {
         Args: {
           p_analysis_id: string
@@ -1818,6 +1908,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      clear_ai_feedback: {
+        Args: {
+          p_session_id?: string
+          p_source_id: string
+          p_source_kind: string
+          p_target_key: string
+          p_target_kind: string
+        }
+        Returns: boolean
+      }
       count_completed_decodes: {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
@@ -1826,6 +1926,7 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
+      delete_my_ai_feedback: { Args: never; Returns: number }
       get_analysis_for_session: {
         Args: { p_id: string; p_session_id: string }
         Returns: {
@@ -1852,6 +1953,10 @@ export type Database = {
           revoked_at: string
           visit_count: number
         }[]
+      }
+      get_coaching_feedback_context: {
+        Args: { p_limit?: number }
+        Returns: Json
       }
       get_decode_for_session: {
         Args: { p_id: string; p_session_id: string }
@@ -2012,6 +2117,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      list_ai_feedback_for_source: {
+        Args: {
+          p_session_id?: string
+          p_source_id: string
+          p_source_kind: string
+        }
+        Returns: {
+          comment: string
+          outcome: string
+          rating: string
+          reason_codes: string[]
+          target_key: string
+          target_kind: string
+        }[]
+      }
       list_approved_testimonials: {
         Args: never
         Returns: {
@@ -2051,6 +2171,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      reset_coaching_personalization: { Args: never; Returns: number }
       resolve_analysis_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_group_roast_share: {
         Args: { p_token_hash: string }
@@ -2081,6 +2202,26 @@ export type Database = {
           p_type_id: number
         }
         Returns: undefined
+      }
+      submit_ai_feedback: {
+        Args: {
+          p_comment?: string
+          p_generation_id?: string
+          p_model?: string
+          p_outcome?: string
+          p_outcome_note?: string
+          p_personalization_consent?: boolean
+          p_product_improvement_consent?: boolean
+          p_prompt_version?: string
+          p_rating: string
+          p_reason_codes?: string[]
+          p_session_id?: string
+          p_source_id: string
+          p_source_kind: string
+          p_target_key: string
+          p_target_kind: string
+        }
+        Returns: string
       }
       submit_feedback: {
         Args: {

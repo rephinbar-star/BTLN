@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMembership } from "@/hooks/useMembership";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 import { extractScreenshotConversation } from "@/lib/ingest/extract";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
+import { FeedbackControl } from "@/components/feedback/FeedbackControl";
 
 type InteractiveResult = {
   verdict?: string;
@@ -15,7 +17,7 @@ type InteractiveResult = {
 };
 
 type InteractiveEventType = "sent_reply" | "observed_followup" | "self_report" | "no_reply" | "chose_not_to_reply";
-type HistoryEvent = { id: string; event_type: InteractiveEventType; status: string; result_json?: InteractiveResult | null; created_at: string };
+type HistoryEvent = { id: string; event_type: InteractiveEventType; status: string; result_json?: InteractiveResult | null; created_at: string; model?: string | null };
 
 export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const { loading, hasInteractiveMode } = useMembership();
@@ -27,12 +29,19 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InteractiveResult | null>(null);
   const [history, setHistory] = useState<HistoryEvent[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [lastEventId, setLastEventId] = useState<string | null>(null);
+  const [lastModel, setLastModel] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hasInteractiveMode) return;
     void supabase.functions.invoke("interactive-mode", { body: { action: "list", decode_id: decodeId } })
-      .then(({ data }) => setHistory((data?.events ?? []) as HistoryEvent[]));
+      .then(({ data }) => {
+        setHistory((data?.events ?? []) as HistoryEvent[]);
+        setThreadId((data?.thread_id as string | undefined) ?? null);
+      });
   }, [decodeId, hasInteractiveMode]);
+
 
   if (loading) return null;
   if (!hasInteractiveMode) {
@@ -69,8 +78,12 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
       });
       if (invokeError || data?.error) throw new Error(data?.error ?? invokeError?.message ?? "Could not update this conversation.");
       setResult((data?.result ?? null) as InteractiveResult | null);
+      setLastEventId((data?.event_id as string | undefined) ?? null);
+      setLastModel((data?.model as string | undefined) ?? null);
+      if (data?.thread_id) setThreadId(data.thread_id as string);
       const refreshed = await supabase.functions.invoke("interactive-mode", { body: { action: "list", decode_id: decodeId } });
       setHistory((refreshed.data?.events ?? []) as HistoryEvent[]);
+      if (refreshed.data?.thread_id) setThreadId(refreshed.data.thread_id as string);
       setDraft(emptyConversationDraft());
       setReflection("");
     } catch (cause) {
@@ -81,6 +94,7 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   };
 
   return (
+    <FeedbackProvider sourceKind="interactive" sourceId={threadId}>
     <section className="mt-10 rounded-xl border border-border bg-card p-5" aria-labelledby="interactive-heading">
       <div className="flex items-start gap-3">
         <MessageCircleMore className="mt-0.5 h-5 w-5" />
@@ -123,6 +137,20 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
           {result.read && <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{result.read}</p>}
           {!!result.reply_options?.length && <div className="mt-4 space-y-2">{result.reply_options.map((reply, index) => <div key={`${reply.tone}-${index}`} className="rounded-md border border-border p-3"><p className="text-[12px] font-semibold uppercase text-muted-foreground">{reply.tone}</p><p className="mt-1 text-[15px]">{reply.text}</p></div>)}</div>}
           {result.provenance_notes && <p className="mt-3 text-[12px] text-muted-foreground">{result.provenance_notes}</p>}
+          {threadId && lastEventId && (
+            <div className="mt-3 flex justify-end">
+              <FeedbackControl
+                label="this updated take"
+                target={{
+                  sourceKind: "interactive",
+                  sourceId: threadId,
+                  targetKind: "turn",
+                  targetKey: lastEventId,
+                  model: lastModel,
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
       {history.length > 0 && (
@@ -134,11 +162,27 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
                 <p className="font-medium">{item.event_type === "sent_reply" ? "Confirmed sent response" : item.event_type === "observed_followup" ? "Observed follow-up" : item.event_type === "self_report" ? "Private self-report" : item.event_type === "no_reply" ? "No reply yet" : "Chose not to reply"}</p>
                 <p className="mt-1 text-muted-foreground">{new Date(item.created_at).toLocaleString()} · {item.status}</p>
                 {item.result_json?.read && <p className="mt-2 leading-relaxed">{item.result_json.read}</p>}
+                {threadId && item.result_json?.read && (
+                  <div className="mt-2 flex justify-end">
+                    <FeedbackControl
+                      compact
+                      label="this update"
+                      target={{
+                        sourceKind: "interactive",
+                        sourceId: threadId,
+                        targetKind: "turn",
+                        targetKey: item.id,
+                        model: item.model ?? null,
+                      }}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ol>
         </div>
       )}
     </section>
+    </FeedbackProvider>
   );
 }

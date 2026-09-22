@@ -15,6 +15,7 @@ import { RelationshipMap } from "@/components/relationship360/RelationshipMap";
 import { computeR360View, distinctByMeaning, QUESTION_LABELS, resolveEvidence } from "@/lib/relationship360/select";
 import { relationship360Preview as data } from "@/lib/relationship360/preview";
 import { track } from "@/lib/analytics";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 
 export const R360_HEADLINE =
   "Understand who you are in your relationships—and get insights and coaching for self improvement.";
@@ -108,6 +109,7 @@ export const Relationship360Preview = () => {
     demoState !== "initial";
 
   return (
+    <FeedbackProvider sourceKind="relationship360" sourceId="example-preview" demo>
     <div className="min-w-0">
       <R360Overview
         headline={R360_HEADLINE}
@@ -352,5 +354,6 @@ export const Relationship360Preview = () => {
         saved to an account and no analysis runs from this preview.
       </p>
     </div>
+    </FeedbackProvider>
   );
 };

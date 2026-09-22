@@ -384,3 +384,51 @@ One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, 
 | 6 | Prime/add-on billing + entitlement reconciliation | pending | no Interactive Mode price exists with the payment provider; BYOK `STRIPE_SECRET_KEY` mode unverified in this sandbox |
 | 7 | Group Roast humour pass, Playful/Spicy, share cards | pending | not started |
 | 8 | Release validation matrix (isolation, injection, 10k-message ingestion, linter triage) | pending | not started |
+
+## Feedback-to-improvement loop (2026-09-22)
+
+Two separate loops, both built as working code rather than a ratings UI on top of a table.
+
+**Collection.** A shared `FeedbackControl` (outline thumbs-up / thumbs-down trigger opening a
+white rounded popover with "Good response" / "Bad response") rates one target at a time. One tap
+records the rating; reason chips, an optional "What should we understand differently?" note and the
+correction hand-off are all optional and come after. Escape closes, focus returns to the trigger,
+targets are 44px+. Placements today: Quick Take overall and each of the three reply options,
+each Interactive Mode turn (current and history), every Deep Read section, the Group Read result,
+the Group Roast result (humour chips), and Relationship360 insight / introspection / next-step
+cards. Fictional examples render inside a `demo` provider, so example ratings never reach the
+product loop.
+
+**Storage.** `public.ai_feedback`, keyed by `owner_key` (`user:<uuid>` or `session:<uuid>`) plus
+source kind/id and target kind/key, with the generation id, model and prompt version captured at
+rating time. A unique index makes a changed rating an update, never a second count. Ownership is
+checked server-side per source kind (`ai_feedback_owns_source`), so a public share viewer cannot
+rate someone else's report; an hourly cap bounds abuse. Owner-only reads; the admin aggregate is
+role-checked and returns counts only — no message text, names or written feedback.
+
+**Loop A — personal adaptation.** `get_coaching_feedback_context` returns a bounded private summary
+(liked/disliked reason codes plus a few short notes). `supabase/functions/_shared/coachingPreferences.ts`
+turns it into a fenced style block appended to the Quick Take and Interactive Mode system prompts.
+The block is treated as untrusted preference data, not instructions, and it adjusts style only —
+it can't override evidence, the rubric or speaker mapping. Account → "How your reads are
+personalised" shows what is stored and offers reset and delete; both work without a membership.
+
+**Loop B — product improvement.** `/admin/feedback` (operator-only) shows negative hotspots by
+mode, section, model and prompt version with sample sizes, plus the reasons given; negative results
+are never filtered out and small samples are labelled. `src/lib/eval/` holds the working evaluation
+pipeline: a frozen Deep Read rubric (`rubric.ts`) checking groundedness, evidence accuracy, speaker
+attribution, uncertainty, absence of diagnosis/mind-reading, refusal to adopt an unsupported user
+premise, coaching specificity and repetition; a bounded comparison harness (`harness.ts`) scoring a
+candidate against the baseline on held-out synthetic cases; `proposeCandidates` which only surfaces
+issues with at least 20 ratings and a 25%+ negative share; and `versions.ts`, an immutable ledger
+where promotion needs a named reviewer *and* a passing report, rejections are recorded, and
+rollback restores the previous active version.
+
+**Honest status.** Feedback does not retrain a model; the UI says so. Fine-tuning is out of scope.
+Automatic production promotion is off — nothing in the app promotes a prompt. Verified:
+`bunx tsgo --noEmit` clean and 109 tests passing (13 files), including 10 new evaluation tests that
+prove a rater-pleasing candidate fails the frozen rubric while a grounded improvement passes and can
+be promoted and rolled back. Not yet verified: multi-account rating isolation in a live browser
+session, the personalisation block changing a real generation end to end, and the operator
+dashboard against real aggregated volume. Relationship360 controls render against fixtures today
+because the real synthesis engine is still pending.

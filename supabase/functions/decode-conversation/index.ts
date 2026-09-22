@@ -4,6 +4,7 @@ import {
   extractMessages,
 } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
+import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shared/coachingPreferences.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -59,6 +60,15 @@ Deno.serve(async (req) => {
   }
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  // Optional: identify the signed-in owner, for personal coaching style only.
+  // This grants no privileges; all authorization stays session/ownership based.
+  let personalizationUserId: string | null = null;
+  const authHeader = req.headers.get("Authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    const { data: userData } = await supabase.auth.getUser(authHeader.slice(7));
+    personalizationUserId = userData?.user?.id ?? null;
+  }
 
   let payload: any;
   try {
@@ -171,11 +181,14 @@ Deno.serve(async (req) => {
 
     await supabase.from("decodes").update({ status: "analyzing" }).eq("id", row_id);
 
+    const coachingPrefs = await loadCoachingPreferences(supabase as never, personalizationUserId);
+    const styleBlock = coachingPreferenceInstruction(coachingPrefs);
+
     const r = await callOpenRouter(
       {
         model: MODEL,
         messages: [
-          { role: "system", content: pv.prompt_text },
+          { role: "system", content: pv.prompt_text + (styleBlock ? `\n\n${styleBlock}` : "") },
           { role: "user", content: exchange },
         ],
         response_format: { type: "json_object" },

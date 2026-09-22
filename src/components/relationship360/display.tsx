@@ -14,6 +14,7 @@ import {
 } from "@/lib/relationship360/types";
 
 import type { ResolvedEvidence } from "@/lib/relationship360/select";
+import { FeedbackControl } from "@/components/feedback/FeedbackControl";
 
 const CONTEXT_LABEL: Record<R360Relationship["context"], string> = {
   romantic: "Romantic",
@@ -181,6 +182,9 @@ export const R360PatternDetail = ({
       <section className="mt-4 border-t border-btln-line pt-4" aria-labelledby={`${id}-insight-heading`}>
       <h4 id={`${id}-insight-heading`} className="text-[15px] font-medium underline decoration-btln-sage underline-offset-4">Insight</h4>
       <p className="mt-2 text-[15px] leading-relaxed"><strong className="font-medium">What we observed:</strong> {pattern.statement}</p>
+      <div className="mt-2 flex justify-end">
+        <FeedbackControl compact label={`the insight "${pattern.title}"`} target={{ targetKind: "insight", targetKey: pattern.id }} />
+      </div>
       <section className="mt-4" aria-labelledby={`${id}-introspection-heading`}>
         <h5 id={`${id}-introspection-heading`} className="text-[15px] font-medium">Introspection</h5>
         {introspection ? (
@@ -202,6 +206,9 @@ export const R360PatternDetail = ({
               </div>
             )}
             <p className="mt-3 text-[14px] leading-relaxed">{introspection.closingQuestion}</p>
+            <div className="mt-2 flex justify-end">
+              <FeedbackControl compact label={`the introspection for "${pattern.title}"`} target={{ targetKind: "introspection", targetKey: pattern.id }} />
+            </div>
             {introspection.selfReportedReflection && (
               <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
                 <strong className="font-medium text-foreground">Self-reported reflection:</strong>{" "}
@@ -418,6 +425,9 @@ export const R360RecommendationCard = ({
     {recommendation.selfReport && (
       <p className="mt-3 text-[13px] text-muted-foreground">{recommendation.selfReport.note}</p>
     )}
+    <div className="mt-3 flex justify-end">
+      <FeedbackControl compact label={`the next step "${recommendation.action}"`} target={{ targetKind: "recommendation", targetKey: recommendation.id }} />
+    </div>
     </article>
   </R360Card>
 );

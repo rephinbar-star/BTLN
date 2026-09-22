@@ -33,6 +33,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
+import { FeedbackControl } from "@/components/feedback/FeedbackControl";
 
 type Row = {
   id: string;
@@ -1526,6 +1528,15 @@ const Section = ({
     >
       {children}
     </div>
+    {!locked && (
+      <div className="mt-3 flex justify-end">
+        <FeedbackControl
+          compact
+          label={`the "${title}" section`}
+          target={{ targetKind: "section", targetKey: title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") }}
+        />
+      </div>
+    )}
   </section>
 );
 
@@ -1656,11 +1667,16 @@ const EvidenceQuotes = ({
   );
 };
 
-const Report = () => (
-  <ReportErrorBoundary>
-    <ReportContent />
-  </ReportErrorBoundary>
-);
+const Report = () => {
+  const { analysisId } = useParams<{ analysisId: string }>();
+  return (
+    <ReportErrorBoundary>
+      <FeedbackProvider sourceKind="deep_read" sourceId={analysisId}>
+        <ReportContent />
+      </FeedbackProvider>
+    </ReportErrorBoundary>
+  );
+};
 
 export default Report;
 
