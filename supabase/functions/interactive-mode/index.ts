@@ -11,6 +11,7 @@ const MODEL = "openai/gpt-6-astra";
 const MAX_SCREENSHOTS = 3;
 const MAX_TEXT_CHARS = 24_000;
 const MAX_CONTEXT_EVENTS = 12;
+const MAX_EVENTS_PER_THREAD = 100;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 type EventType = "sent_reply" | "no_reply" | "chose_not_to_reply" | "observed_followup" | "self_report";
 
@@ -49,11 +50,12 @@ Deno.serve(async (req) => {
   const decodeId = payload?.decode_id;
   const requestId = payload?.client_request_id;
   const eventType = payload?.event_type as EventType;
+  const action = payload?.action === "list" ? "list" : "continue";
   const rawText = typeof payload?.raw_text === "string" ? payload.raw_text.trim() : "";
   const screenshots = Array.isArray(payload?.screenshot_base64_array) ? payload.screenshot_base64_array : [];
   const speakerOrder = Array.isArray(payload?.speaker_order) ? payload.speaker_order : [];
   const allowedEvents: EventType[] = ["sent_reply", "no_reply", "chose_not_to_reply", "observed_followup", "self_report"];
-  if (!UUID_RE.test(String(decodeId)) || !UUID_RE.test(String(requestId)) || !allowedEvents.includes(eventType)) {
+  if (!UUID_RE.test(String(decodeId)) || (action === "continue" && (!UUID_RE.test(String(requestId)) || !allowedEvents.includes(eventType)))) {
     return json(400, { error: "Invalid Interactive Mode request" });
   }
   if (rawText.length > MAX_TEXT_CHARS || screenshots.length > MAX_SCREENSHOTS) {
@@ -64,13 +66,27 @@ Deno.serve(async (req) => {
   if (eventType === "observed_followup" && speakerOrder.length === 0) return json(400, { error: "Confirm who spoke first." });
 
   const [{ data: entitlementRows }, { data: subscriptionRows }, { data: decode }] = await Promise.all([
-    admin.from("subscription_entitlements").select("status,current_period_end,entitlement").eq("user_id", user.id).in("entitlement", ["interactive_mode", "prime"]),
-    admin.from("user_subscriptions").select("status,current_period_end,tier").eq("user_id", user.id).in("tier", ["interactive_addon", "prime"]),
+    admin.from("subscription_entitlements").select("status,current_period_end,entitlement").eq("user_id", user.id).in("entitlement", ["quick_take", "interactive_mode", "prime"]),
+    admin.from("user_subscriptions").select("status,current_period_end,tier").eq("user_id", user.id).in("tier", ["decode_monthly", "interactive_addon", "prime"]),
     admin.from("decodes").select("id,user_id,status,result_json,created_at").eq("id", decodeId).maybeSingle(),
   ]);
-  const entitled = [...(entitlementRows ?? []), ...(subscriptionRows ?? [])].some(active);
-  if (!entitled) return json(402, { error: "Interactive Mode requires the add-on or Prime." });
+  const activeEntitlements = (entitlementRows ?? []).filter(active).map((row) => row.entitlement);
+  const activeTiers = (subscriptionRows ?? []).filter(active).map((row) => row.tier);
+  const prime = activeEntitlements.includes("prime") || activeTiers.includes("prime");
+  const hasAddon = activeEntitlements.includes("interactive_mode") || activeTiers.includes("interactive_addon");
+  const hasBase = activeEntitlements.includes("quick_take") || activeTiers.includes("decode_monthly");
+  if (!prime && !(hasAddon && hasBase)) return json(402, { error: "Interactive Mode requires both an active Quick Take plan and add-on, or Prime." });
   if (!decode || decode.user_id !== user.id || decode.status !== "complete") return json(403, { error: "That Quick Take is not available to this account." });
+
+  const { data: ownedThread } = await admin.from("interactive_threads").select("id,context_version,structured_context").eq("user_id", user.id).eq("decode_id", decodeId).maybeSingle();
+  if (action === "list") {
+    if (!ownedThread) return json(200, { events: [] });
+    const { data: history, error: historyError } = await admin.from("interactive_events")
+      .select("id,event_type,input_method,provenance,status,result_json,created_at,completed_at")
+      .eq("user_id", user.id).eq("thread_id", ownedThread.id).order("created_at", { ascending: true }).limit(MAX_EVENTS_PER_THREAD);
+    if (historyError) return json(500, { error: "Could not load this continuation." });
+    return json(200, { thread_id: ownedThread.id, events: history ?? [] });
+  }
 
   const { data: existingEvent } = await admin.from("interactive_events").select("id,thread_id,status,result_json").eq("user_id", user.id).eq("client_request_id", requestId).maybeSingle();
   if (existingEvent) return json(200, { event: existingEvent, duplicate: true });
@@ -81,6 +97,8 @@ Deno.serve(async (req) => {
     status: "active",
   }, { onConflict: "user_id,decode_id" }).select("id,context_version,structured_context").single();
   if (threadError || !thread) return json(500, { error: "Could not open this continuation." });
+  const { count: eventCount } = await admin.from("interactive_events").select("id", { count: "exact", head: true }).eq("thread_id", thread.id);
+  if ((eventCount ?? 0) >= MAX_EVENTS_PER_THREAD) return json(409, { error: "This continuation has reached its supported update limit. Start a new Quick Take to continue." });
 
   const contentFingerprint = rawText || screenshots.join("|");
   const { data: event, error: eventError } = await admin.from("interactive_events").insert({

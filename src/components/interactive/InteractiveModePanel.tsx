@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, Loader2, MessageCircleMore } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +14,7 @@ type InteractiveResult = {
 };
 
 type InteractiveEventType = "sent_reply" | "observed_followup" | "self_report" | "no_reply" | "chose_not_to_reply";
+type HistoryEvent = { id: string; event_type: InteractiveEventType; status: string; result_json?: InteractiveResult | null; created_at: string };
 
 export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const { loading, hasInteractiveMode } = useMembership();
@@ -24,7 +25,14 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InteractiveResult | null>(null);
+  const [history, setHistory] = useState<HistoryEvent[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!hasInteractiveMode) return;
+    void supabase.functions.invoke("interactive-mode", { body: { action: "list", decode_id: decodeId } })
+      .then(({ data }) => setHistory((data?.events ?? []) as HistoryEvent[]));
+  }, [decodeId, hasInteractiveMode]);
 
   if (loading) return null;
   if (!hasInteractiveMode) {
@@ -54,6 +62,8 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
       });
       if (invokeError || data?.error) throw new Error(data?.error ?? invokeError?.message ?? "Could not update this conversation.");
       setResult((data?.result ?? null) as InteractiveResult | null);
+      const refreshed = await supabase.functions.invoke("interactive-mode", { body: { action: "list", decode_id: decodeId } });
+      setHistory((refreshed.data?.events ?? []) as HistoryEvent[]);
       setText("");
       setImages([]);
     } catch (cause) {
@@ -122,6 +132,20 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
           {result.read && <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{result.read}</p>}
           {!!result.reply_options?.length && <div className="mt-4 space-y-2">{result.reply_options.map((reply, index) => <div key={`${reply.tone}-${index}`} className="rounded-md border border-border p-3"><p className="text-[12px] font-semibold uppercase text-muted-foreground">{reply.tone}</p><p className="mt-1 text-[15px]">{reply.text}</p></div>)}</div>}
           {result.provenance_notes && <p className="mt-3 text-[12px] text-muted-foreground">{result.provenance_notes}</p>}
+        </div>
+      )}
+      {history.length > 0 && (
+        <div className="mt-5 border-t border-border pt-5">
+          <h3 className="text-[15px] font-semibold">This conversation’s updates</h3>
+          <ol className="mt-2 space-y-2">
+            {history.map((item) => (
+              <li key={item.id} className="rounded-md border border-border p-3 text-[13px]">
+                <p className="font-medium">{item.event_type === "sent_reply" ? "Confirmed sent response" : item.event_type === "observed_followup" ? "Observed follow-up" : item.event_type === "self_report" ? "Private self-report" : item.event_type === "no_reply" ? "No reply yet" : "Chose not to reply"}</p>
+                <p className="mt-1 text-muted-foreground">{new Date(item.created_at).toLocaleString()} · {item.status}</p>
+                {item.result_json?.read && <p className="mt-2 leading-relaxed">{item.result_json.read}</p>}
+              </li>
+            ))}
+          </ol>
         </div>
       )}
     </section>
