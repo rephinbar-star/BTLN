@@ -1,3 +1,4 @@
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter, extractMessages } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
 
