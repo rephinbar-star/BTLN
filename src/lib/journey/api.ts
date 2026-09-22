@@ -161,6 +161,20 @@ export async function splitSource(sourceId: string, label: string): Promise<void
   if (error) throw error;
 }
 
+/**
+ * Supply or correct when a conversation actually happened. Stored as
+ * self-reported, never presented as verified, and it marks affected profiles
+ * out of date so nothing old keeps showing.
+ */
+export async function setSourcePeriod(sourceId: string, start: string | null, end: string | null): Promise<void> {
+  const { error } = await supabase.rpc("journey_set_source_period", {
+    p_source_id: sourceId,
+    p_start: start,
+    p_end: end ?? start,
+  });
+  if (error) throw error;
+}
+
 export async function mergeRelationships(fromId: string, intoId: string): Promise<void> {
   const { error } = await supabase.rpc("journey_merge_relationships", { p_from: fromId, p_into: intoId });
   if (error) throw error;
@@ -170,7 +184,7 @@ export async function listSources(relationshipId: string): Promise<JourneySource
   const { data, error } = await supabase
     .from("journey_sources")
     .select(
-      "id, relationship_id, source_kind, source_id, subject_participant, identity_status, observed_period_start, observed_period_end, uploaded_at, consent_at, excluded_at",
+      "id, relationship_id, source_kind, source_id, subject_participant, identity_status, observed_period_start, observed_period_end, date_precision, date_provenance, dated_count, undated_count, date_note, uploaded_at, consent_at, excluded_at",
     )
     .eq("relationship_id", relationshipId)
     .order("uploaded_at", { ascending: false });
