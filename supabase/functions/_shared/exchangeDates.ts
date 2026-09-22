@@ -150,7 +150,9 @@ export const recordIngestMeta = async (
     participantFingerprint?: string | null;
   },
 ): Promise<void> => {
-  if (!input.userId) return; // Anonymous reports never join a profile.
+  // user_id may be null: a report can be finished before it is claimed. The row
+  // is keyed by source, so staging still finds it, and RLS keeps it unreadable
+  // until an owner exists.
   const { error } = await admin.from("report_ingest_meta").upsert({
     user_id: input.userId,
     source_kind: input.sourceKind,
