@@ -11,6 +11,32 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 const MODEL = "openai/gpt-6-astra";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_IMAGES = 10;
+const MAX_TOTAL_BYTES = 12_000_000;
+
+// Server-authoritative hourly budgets. Signed-in callers get a per-account
+// budget; every caller is additionally metered by network address so a
+// signed-out client cannot mint fresh "sessions" to buy more model calls.
+const LIMITS = {
+  user: { requests: 30, images: 120 },
+  ip: { requests: 12, images: 60 },
+};
+
+function clientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for") ?? "";
+  const first = forwarded.split(",")[0]?.trim();
+  return first || req.headers.get("cf-connecting-ip") || "unknown";
+}
+
+async function resolveUserId(authorization: string | null): Promise<string | null> {
+  if (!authorization?.toLowerCase().startsWith("bearer ")) return null;
+  const url = Deno.env.get("SUPABASE_URL");
+  const anon = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!url || !anon) return null;
+  const client = createClient(url, anon, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false } });
+  const { data } = await client.auth.getUser();
+  return data?.user?.id ?? null;
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
