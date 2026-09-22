@@ -8,7 +8,9 @@
 - [x] Verify homepage actions, expansion controls, and responsive layouts.
 - [ ] Interactive Mode add-on: entitlement, purchase prerequisite, lifecycle (step 6 then 3).
 - [x] Relationship360 real adapters + synthesis engine (step 4) — built, deployed and verified live on 2026-09-22 with two synthetic accounts and two real model-backed Deep Reads (see docs/relationship360-build.md).
-- [ ] Relationship360 follow-ups: merge/relabel auto-created relationships, reflections feeding the next synthesis with provenance.
+- [x] Automatic relationship grouping: reuse of a confirmed relationship by stable conversation key, suggestions with one-tap confirmation, assign/separate with rejection memory (2026-09-22).
+- [x] Conversation dates preserved end to end (ingest metadata → staged source → observations) and a real Then/Now from two dated periods (2026-09-22).
+- [ ] Relationship360 follow-ups: structured actor attribution for Deep Read so Then/Now can describe each person.
 - [x] Participant confirmation and inclusion consent (step 2).
 - [ ] Saved reflections and periodic reviews (step 5).
 - [ ] Group Roast humour pass (step 7).
@@ -24,5 +26,5 @@
 - [x] Screenshot overlap no longer deletes legitimate repeated messages; only demonstrated seam overlap or same-timestamp duplicates are merged, ambiguity is surfaced.
 - [x] Two synthetic accounts: cross-account read/rate/undo/export/exclude/identity all refused; two real defects found and fixed (browser-id read of an owned report; deleted reports leaving Relationship360 state behind).
 - [x] Interactive Mode proven live end to end on an entitled synthetic account, including same-thread continuation, retry idempotency and refusal without entitlement.
-- [ ] Priority B: real Relationship360 adapters and synthesis engine.
+- [x] Priority B: real Relationship360 adapters, synthesis engine, grouping and dated Then/Now.
 - [ ] Priority C: billing lifecycle (blocked on provider test credentials) and persistent operator-authorised evaluation store.
