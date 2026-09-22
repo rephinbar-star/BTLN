@@ -21,6 +21,7 @@ import {
   type LiveStatus,
 } from "@/lib/relationship360/live";
 import type { JourneyRelationship } from "@/lib/journey/types";
+import type { LiveComparison } from "@/lib/relationship360/live";
 import type { R360Pattern, R360Recommendation, R360Working } from "@/lib/relationship360/types";
 
 /**
@@ -125,6 +126,7 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
   }
 
   const coverage = status?.summary?.coverage ?? null;
+  const comparison = coverage?.comparison ?? null;
 
   return (
     <section className="mt-10 min-w-0" aria-labelledby="r360-live">
@@ -197,6 +199,8 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
             <p className="mt-3 text-[12px] text-muted-foreground">
               Built {new Date(status.summary.generated_at).toLocaleString()} from {coverage?.observations ?? 0} stored observations. No raw messages are kept.
             </p>
+
+            <ThenNow comparison={comparison} />
 
             {patterns.map((pattern) => (
               <R360PatternDetail
@@ -281,6 +285,52 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
           </div>
         </FeedbackProvider>
       )}
+    </section>
+  );
+};
+
+type ComparisonReason = Extract<LiveComparison, { available: false }>["reason"];
+
+const COMPARISON_REASON: Record<ComparisonReason, string> = {
+  not_enough_dated_evidence:
+    "Then and Now needs conversations that carry their own dates. Nothing included does yet, so no time comparison is shown.",
+  single_period: "Everything included falls in one period, so there is nothing to compare it against.",
+  same_conversation_only:
+    "The dated evidence comes from the same conversation, and one conversation cannot stand on both sides of a comparison.",
+  overlapping_periods: "The dated conversations overlap in time, so they are not two separate periods.",
+};
+
+/** Two dated periods side by side. Nothing here claims anything improved. */
+const ThenNow = ({ comparison }: { comparison: LiveComparison | null | undefined }) => {
+  if (!comparison) return null;
+  if (comparison.available === false) {
+    return (
+      <section className="mt-6 min-w-0" aria-labelledby="r360-thennow">
+        <h3 id="r360-thennow" className="text-[18px] font-medium">Then and Now</h3>
+        <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">{COMPARISON_REASON[comparison.reason]}</p>
+      </section>
+    );
+  }
+  return (
+    <section className="mt-6 min-w-0" aria-labelledby="r360-thennow">
+      <h3 id="r360-thennow" className="text-[18px] font-medium">Then and Now</h3>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        {([["Then", comparison.then], ["Now", comparison.now]] as const).map(([title, period]) => (
+          <div key={title} className="rounded-xl border border-btln-line p-3">
+            <p className="text-[14px] font-medium">{title}</p>
+            <p className="mt-1 text-[13px] text-muted-foreground">
+              {period.start}{period.end !== period.start ? ` – ${period.end}` : ""}
+            </p>
+            <p className="mt-2 text-[13px] leading-relaxed">
+              {period.observations} dated observation{period.observations === 1 ? "" : "s"} from {period.sources} conversation{period.sources === 1 ? "" : "s"}
+              {period.about_you + period.about_them > 0
+                ? `: ${period.about_you} about you, ${period.about_them} about the other person.`
+                : ". None of them could be attributed to a named person, so they describe the exchange rather than either of you."}
+            </p>
+          </div>
+        ))}
+      </div>
+      <p className="mt-2 text-[12px] text-muted-foreground">{comparison.note}</p>
     </section>
   );
 };

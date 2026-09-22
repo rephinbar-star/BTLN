@@ -937,6 +937,30 @@ export type Database = {
           },
         ]
       }
+      journey_mapping_rejections: {
+        Row: {
+          conversation_key: string
+          created_at: string
+          id: string
+          relationship_id: string
+          user_id: string
+        }
+        Insert: {
+          conversation_key: string
+          created_at?: string
+          id?: string
+          relationship_id: string
+          user_id: string
+        }
+        Update: {
+          conversation_key?: string
+          created_at?: string
+          id?: string
+          relationship_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       journey_observations: {
         Row: {
           alternatives: Json
@@ -1150,6 +1174,10 @@ export type Database = {
           consent_at: string
           conversation_key: string | null
           created_at: string
+          date_note: string | null
+          date_precision: string
+          date_provenance: string
+          dated_count: number
           excluded_at: string | null
           id: string
           identity_status: string
@@ -1160,6 +1188,7 @@ export type Database = {
           source_id: string
           source_kind: string
           subject_participant: string | null
+          undated_count: number
           updated_at: string
           uploaded_at: string
           user_id: string
@@ -1169,6 +1198,10 @@ export type Database = {
           consent_at?: string
           conversation_key?: string | null
           created_at?: string
+          date_note?: string | null
+          date_precision?: string
+          date_provenance?: string
+          dated_count?: number
           excluded_at?: string | null
           id?: string
           identity_status?: string
@@ -1179,6 +1212,7 @@ export type Database = {
           source_id: string
           source_kind: string
           subject_participant?: string | null
+          undated_count?: number
           updated_at?: string
           uploaded_at?: string
           user_id: string
@@ -1188,6 +1222,10 @@ export type Database = {
           consent_at?: string
           conversation_key?: string | null
           created_at?: string
+          date_note?: string | null
+          date_precision?: string
+          date_provenance?: string
+          dated_count?: number
           excluded_at?: string | null
           id?: string
           identity_status?: string
@@ -1198,6 +1236,7 @@ export type Database = {
           source_id?: string
           source_kind?: string
           subject_participant?: string | null
+          undated_count?: number
           updated_at?: string
           uploaded_at?: string
           user_id?: string
@@ -1479,6 +1518,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      report_ingest_meta: {
+        Row: {
+          conversation_key: string | null
+          created_at: string
+          date_note: string | null
+          date_precision: string
+          date_provenance: string
+          dated_count: number
+          id: string
+          observed_end: string | null
+          observed_start: string | null
+          participant_fingerprint: string | null
+          source_id: string
+          source_kind: string
+          timezone_ambiguous: boolean
+          undated_count: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          conversation_key?: string | null
+          created_at?: string
+          date_note?: string | null
+          date_precision?: string
+          date_provenance?: string
+          dated_count?: number
+          id?: string
+          observed_end?: string | null
+          observed_start?: string | null
+          participant_fingerprint?: string | null
+          source_id: string
+          source_kind: string
+          timezone_ambiguous?: boolean
+          undated_count?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          conversation_key?: string | null
+          created_at?: string
+          date_note?: string | null
+          date_precision?: string
+          date_provenance?: string
+          dated_count?: number
+          id?: string
+          observed_end?: string | null
+          observed_start?: string | null
+          participant_fingerprint?: string | null
+          source_id?: string
+          source_kind?: string
+          timezone_ambiguous?: boolean
+          undated_count?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       roast_share_links: {
         Row: {
@@ -2156,6 +2252,10 @@ export type Database = {
       }
       journey_set_source_excluded: {
         Args: { p_excluded: boolean; p_source_id: string }
+        Returns: boolean
+      }
+      journey_set_source_period: {
+        Args: { p_end: string; p_source_id: string; p_start: string }
         Returns: boolean
       }
       journey_source_participants: {

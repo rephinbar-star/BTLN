@@ -1,0 +1,2 @@
+REVOKE ALL ON FUNCTION public.journey_set_source_period(uuid, date, date) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.journey_set_source_period(uuid, date, date) TO authenticated, service_role;

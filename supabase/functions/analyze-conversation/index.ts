@@ -7,6 +7,7 @@ import {
 import { extractJsonObject } from "../_shared/extractJson.ts";
 import { digestChunks, planChunks } from "../_shared/chunkedAnalysis.ts";
 import { mapToRoles, parseTwoPersonTranscript } from "../_shared/deterministicParse.ts";
+import { conversationKey, deriveDateMetaFromText, recordIngestMeta } from "../_shared/exchangeDates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -130,6 +131,21 @@ Deno.serve(async (req) => {
   ) {
     return json(400, { error: "screenshot_storage_paths or screenshot_base64_array is required for screenshot" });
   }
+
+    // Verified exchange dates, read from the transcript on the server and stored
+  // before the temporary messages are deleted. No raw text is retained.
+  const recordDeepReadDates = async () => {
+    if (!raw_text?.trim()) return;
+    await recordIngestMeta(supabase as never, {
+      userId: null,
+      sourceKind: "deep_read",
+      sourceId: analysis_id,
+      meta: deriveDateMetaFromText(raw_text),
+      conversationKey: await conversationKey(
+        raw_text.split(/\r?\n/).filter((line) => line.trim()).map((line, order) => ({ order, content: line })),
+      ),
+    });
+  };
 
   const raw_text_for_analysis = raw_text
     ? truncateConversation(raw_text, MAX_TOTAL_MESSAGES)
@@ -385,6 +401,8 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
       full_history_read: digest.failedChunks === 0,
     };
 
+    await recordDeepReadDates();
+
     const { error: updErr } = await supabase
       .from("analyses")
       .update({
@@ -586,6 +604,8 @@ ${messagesBlock}`;
   const couple_type_id = assignCoupleType(resultJson, relationshipType, analysis_id);
 
   // 6. Finalize
+  await recordDeepReadDates();
+
   const { error: updErr } = await supabase
     .from("analyses")
     .update({

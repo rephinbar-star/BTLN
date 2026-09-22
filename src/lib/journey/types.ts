@@ -49,6 +49,12 @@ export type JourneySource = {
   identity_status: IdentityStatus;
   observed_period_start: string | null;
   observed_period_end: string | null;
+  /** How exact the dates are, and where they came from. Unknown stays unknown. */
+  date_precision: "unknown" | "date" | "minute";
+  date_provenance: "unknown" | "parsed" | "ocr_confirmed" | "user_supplied";
+  dated_count: number;
+  undated_count: number;
+  date_note: string | null;
   uploaded_at: string;
   consent_at: string;
   excluded_at: string | null;
