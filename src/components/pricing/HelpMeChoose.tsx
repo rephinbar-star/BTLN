@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { PRICING_BTN } from "@/lib/pricing/button";
 import { track } from "@/lib/analytics";
@@ -275,7 +275,7 @@ export const HelpMeChoose = ({ source = "pricing_page", variant = "link", suppor
         )}
         <button
           type="button"
-          onClick={() => setOpen(false)}
+          onClick={close}
           className="underline underline-offset-4"
         >
           {step === "result" ? "Close" : "Skip — show me all plans"}
