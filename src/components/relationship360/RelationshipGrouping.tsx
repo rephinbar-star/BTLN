@@ -5,6 +5,7 @@ import { toast } from "@/hooks/use-toast";
 import {
   assignSource,
   confirmRelationship,
+  setSourcePeriod,
   splitSource,
   suggestRelationships,
   type RelationshipSuggestion,
@@ -131,6 +132,90 @@ export function RelationshipGrouping({
           onClick={() => run(() => confirmRelationship(relationship.id, label.trim(), relationship.kind), "Could not save that name")}
         >
           New relationship
+        </Button>
+      </div>
+      {periods}
+    </div>
+  );
+}
+
+/**
+ * When a conversation happened. Dates read from the export are shown as they
+ * were read. When none could be read, the person can say when it was — that is
+ * kept as their own account, labelled self-reported, never as a verified date.
+ */
+function SourcePeriod({
+  source,
+  busy,
+  onChanged,
+}: {
+  source: JourneySource;
+  busy: boolean;
+  onChanged: () => void;
+}) {
+  const [start, setStart] = useState(source.observed_period_start?.slice(0, 10) ?? "");
+  const [end, setEnd] = useState(source.observed_period_end?.slice(0, 10) ?? "");
+  const [saving, setSaving] = useState(false);
+  const kind = source.source_kind.replace("_", " ");
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await setSourcePeriod(source.id, start || null, end || start || null);
+      onChanged();
+      toast({ title: "Saved as your own account of when this happened" });
+    } catch (error) {
+      toast({
+        title: "Could not save that period",
+        description: error instanceof Error ? error.message : undefined,
+        variant: "destructive",
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (source.date_provenance === "parsed" || source.date_provenance === "ocr_confirmed") {
+    return (
+      <p className="text-[12px] text-muted-foreground">
+        This {kind} covers {source.observed_period_start?.slice(0, 10)}
+        {source.observed_period_end && source.observed_period_end !== source.observed_period_start
+          ? ` – ${source.observed_period_end.slice(0, 10)}`
+          : ""}
+        , read from the conversation itself.
+        {source.undated_count > 0 ? ` ${source.undated_count} message(s) carried no date.` : ""}
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      <p className="text-[12px] text-muted-foreground">
+        {source.date_provenance === "user_supplied"
+          ? `You said this ${kind} happened ${source.observed_period_start ?? ""}${source.observed_period_end && source.observed_period_end !== source.observed_period_start ? ` – ${source.observed_period_end}` : ""}. Self-reported, not verified.`
+          : `No dates could be read from this ${kind}, so it cannot be placed in time. You can say when it was.`}
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <label className="text-[12px] text-muted-foreground" htmlFor={`start-${source.id}`}>From</label>
+        <Input
+          id={`start-${source.id}`}
+          type="date"
+          value={start}
+          max={new Date().toISOString().slice(0, 10)}
+          onChange={(event) => setStart(event.target.value)}
+          className="h-11 w-[150px]"
+        />
+        <label className="text-[12px] text-muted-foreground" htmlFor={`end-${source.id}`}>To</label>
+        <Input
+          id={`end-${source.id}`}
+          type="date"
+          value={end}
+          max={new Date().toISOString().slice(0, 10)}
+          onChange={(event) => setEnd(event.target.value)}
+          className="h-11 w-[150px]"
+        />
+        <Button size="sm" className="min-h-[44px]" disabled={busy || saving || !start} onClick={() => void save()}>
+          Save period
         </Button>
       </div>
     </div>
