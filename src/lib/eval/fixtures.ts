@@ -47,7 +47,7 @@ export const BASELINE_OUTPUTS: Record<string, EvalOutput> = {
   "case-repair-attempt": {
     claims: [
       {
-        statement: "Nadia opens a repair attempt and Tom explains his silence",
+        statement: "Nadia asks to restart after a sharper remark and Tom explains he went quiet",
         evidenceIds: ["n1", "n2"],
       },
     ],
@@ -80,7 +80,7 @@ export const GOOD_CANDIDATE_OUTPUTS: Record<string, EvalOutput> = {
   "case-repair-attempt": {
     claims: [
       {
-        statement: "Nadia opens a repair attempt and Tom explains his silence",
+        statement: "Nadia asks to restart after a sharper remark and Tom explains he went quiet",
         evidenceIds: ["n1", "n2"],
       },
     ],
