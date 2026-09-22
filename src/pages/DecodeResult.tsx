@@ -11,6 +11,7 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { Header } from "@/components/chemistry/Header";
 import { NextSteps } from "@/components/results/NextSteps";
 import { PrimeOffer } from "@/components/prime/PrimeOffer";
+import { InteractiveModePanel } from "@/components/interactive/InteractiveModePanel";
 
 const DECODE_PLAN_PRICE_ID = "BTLN_decode_monthly";
 
@@ -379,6 +380,8 @@ const DecodeResult = () => {
                 </div>
               </div>
             )}
+
+            {user && decodeId && <InteractiveModePanel decodeId={decodeId} />}
 
             <div className="mt-12 rounded-xl border border-border bg-muted/30 p-5">
               <p className="text-[15px] font-medium">

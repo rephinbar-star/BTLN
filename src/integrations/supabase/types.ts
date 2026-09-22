@@ -558,6 +558,7 @@ export type Database = {
           coverage_json: Json
           created_at: string
           error_message: string | null
+          humor_intensity: string
           id: string
           input_fingerprint: string
           message_count: number
@@ -581,6 +582,7 @@ export type Database = {
           coverage_json?: Json
           created_at?: string
           error_message?: string | null
+          humor_intensity?: string
           id?: string
           input_fingerprint: string
           message_count: number
@@ -604,6 +606,7 @@ export type Database = {
           coverage_json?: Json
           created_at?: string
           error_message?: string | null
+          humor_intensity?: string
           id?: string
           input_fingerprint?: string
           message_count?: number
@@ -670,8 +673,125 @@ export type Database = {
           },
         ]
       }
+      interactive_events: {
+        Row: {
+          client_request_id: string
+          completed_at: string | null
+          content_hash: string | null
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          input_method: string
+          model: string | null
+          provenance: Json
+          result_json: Json | null
+          speaker_order: Json
+          started_from_version: number
+          status: string
+          thread_id: string
+          updated_at: string
+          usage_json: Json
+          user_id: string
+        }
+        Insert: {
+          client_request_id: string
+          completed_at?: string | null
+          content_hash?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          input_method: string
+          model?: string | null
+          provenance?: Json
+          result_json?: Json | null
+          speaker_order?: Json
+          started_from_version: number
+          status?: string
+          thread_id: string
+          updated_at?: string
+          usage_json?: Json
+          user_id: string
+        }
+        Update: {
+          client_request_id?: string
+          completed_at?: string | null
+          content_hash?: string | null
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          input_method?: string
+          model?: string | null
+          provenance?: Json
+          result_json?: Json | null
+          speaker_order?: Json
+          started_from_version?: number
+          status?: string
+          thread_id?: string
+          updated_at?: string
+          usage_json?: Json
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactive_events_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "interactive_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interactive_threads: {
+        Row: {
+          context_version: number
+          created_at: string
+          decode_id: string
+          id: string
+          last_event_at: string | null
+          status: string
+          structured_context: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          context_version?: number
+          created_at?: string
+          decode_id: string
+          id?: string
+          last_event_at?: string | null
+          status?: string
+          structured_context?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          context_version?: number
+          created_at?: string
+          decode_id?: string
+          id?: string
+          last_event_at?: string | null
+          status?: string
+          structured_context?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interactive_threads_decode_id_fkey"
+            columns: ["decode_id"]
+            isOneToOne: false
+            referencedRelation: "decodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       journey_jobs: {
         Row: {
+          attempt_count: number
+          completed_at: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -685,6 +805,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempt_count?: number
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -698,6 +820,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempt_count?: number
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -830,6 +954,66 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      journey_reflections: {
+        Row: {
+          created_at: string
+          excluded_at: string | null
+          id: string
+          journey_summary_id: string | null
+          outcome: string | null
+          recommendation_id: string | null
+          reflection_kind: string
+          relationship_id: string | null
+          response_text: string
+          self_reported_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          excluded_at?: string | null
+          id?: string
+          journey_summary_id?: string | null
+          outcome?: string | null
+          recommendation_id?: string | null
+          reflection_kind: string
+          relationship_id?: string | null
+          response_text: string
+          self_reported_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          excluded_at?: string | null
+          id?: string
+          journey_summary_id?: string | null
+          outcome?: string | null
+          recommendation_id?: string | null
+          reflection_kind?: string
+          relationship_id?: string | null
+          response_text?: string
+          self_reported_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_reflections_journey_summary_id_fkey"
+            columns: ["journey_summary_id"]
+            isOneToOne: false
+            referencedRelation: "journey_summaries"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_reflections_relationship_id_fkey"
+            columns: ["relationship_id"]
+            isOneToOne: false
+            referencedRelation: "journey_relationships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       journey_relationships: {
         Row: {
@@ -1318,6 +1502,54 @@ export type Database = {
           },
         ]
       }
+      subscription_entitlements: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          current_period_start: string | null
+          entitlement: string
+          id: string
+          metadata: Json
+          parent_provider_subscription_id: string | null
+          provider: string
+          provider_subscription_id: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          entitlement: string
+          id?: string
+          metadata?: Json
+          parent_provider_subscription_id?: string | null
+          provider?: string
+          provider_subscription_id?: string | null
+          status: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          current_period_start?: string | null
+          entitlement?: string
+          id?: string
+          metadata?: Json
+          parent_provider_subscription_id?: string | null
+          provider?: string
+          provider_subscription_id?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       survey_responses: {
         Row: {
           accuracy_rating: number
@@ -1730,6 +1962,7 @@ export type Database = {
           user_id: string
         }[]
       }
+      has_entitlement: { Args: { p_entitlement: string }; Returns: boolean }
       has_group_read_unlock: {
         Args: { p_group_read_id: string }
         Returns: boolean
@@ -1755,7 +1988,13 @@ export type Database = {
         Returns: boolean
       }
       journey_delete_all: { Args: never; Returns: undefined }
+      journey_export: { Args: never; Returns: Json }
       journey_mark_absent: { Args: { p_source_id: string }; Returns: boolean }
+      journey_opt_out: { Args: never; Returns: undefined }
+      journey_set_source_excluded: {
+        Args: { p_excluded: boolean; p_source_id: string }
+        Returns: boolean
+      }
       journey_source_participants: {
         Args: { p_source_id: string; p_source_kind: string }
         Returns: string[]

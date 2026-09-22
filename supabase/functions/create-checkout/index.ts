@@ -17,6 +17,7 @@ const MANAGED_PAYMENTS_COUNTRIES = new Set([
   "GI","BH","GE","KZ","BD","PK","LK","MM","KH","LA",
   "RS","BA","ME","MK","AL","MD","AM",
 ]);
+const APPROVED_LOOKUP_KEYS = new Set(["BTLN_annual", "duo_annual", "BTLN_monthly", "duo_monthly", "BTLN_decode_monthly", "decode_monthly", "BTLN_report_unlock"]);
 
 function shouldUseComplianceHandling(country?: string): boolean {
   if (!country) return false;
@@ -98,6 +99,9 @@ Deno.serve(async (req) => {
 
     if (!priceId || typeof priceId !== "string" || !/^[a-zA-Z0-9_-]+$/.test(priceId)) {
       return new Response(JSON.stringify({ error: "Invalid priceId" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+    if (!APPROVED_LOOKUP_KEYS.has(priceId)) {
+      return new Response(JSON.stringify({ error: "This product is not available for checkout." }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
     if (!returnUrl || typeof returnUrl !== "string") {
       return new Response(JSON.stringify({ error: "Missing returnUrl" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });

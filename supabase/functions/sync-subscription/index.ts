@@ -19,6 +19,14 @@ function resolveTier(lookupKey?: string | null): string {
   return "unknown";
 }
 
+function entitlementsForTier(tier: string): string[] {
+  if (tier === "decode_monthly") return ["quick_take"];
+  if (tier === "monthly" || tier === "annual") return ["quick_take", "full_reports"];
+  if (tier === "interactive_addon") return ["interactive_mode"];
+  if (tier === "prime") return ["prime", "quick_take", "interactive_mode", "full_reports", "relationship360"];
+  return [];
+}
+
 function isAccessGrantingStatus(status?: string | null): boolean {
   return status === "active" || status === "trialing" || status === "past_due";
 }
@@ -36,12 +44,13 @@ async function syncSubscription(subscription: any, analysisId?: string | null, f
   const periodStart = item?.current_period_start ?? subscription.current_period_start;
   const periodEnd = item?.current_period_end ?? subscription.current_period_end;
 
+  const tier = resolveTier(lookupKey);
   const { error } = await supabase.from("user_subscriptions").upsert(
     {
       user_id: userId,
       stripe_subscription_id: subscription.id,
       stripe_customer_id: typeof subscription.customer === "string" ? subscription.customer : subscription.customer?.id,
-      tier: resolveTier(lookupKey),
+      tier,
       status: subscription.status,
       current_period_start: isoFromUnix(periodStart),
       current_period_end: isoFromUnix(periodEnd),
@@ -51,6 +60,16 @@ async function syncSubscription(subscription: any, analysisId?: string | null, f
     { onConflict: "stripe_subscription_id" },
   );
   if (error) throw new Error(error.message);
+  for (const entitlement of entitlementsForTier(tier)) {
+    const { error: entitlementError } = await supabase.from("subscription_entitlements").upsert({
+      user_id: userId, entitlement, status: subscription.status, provider: "stripe",
+      provider_subscription_id: subscription.id,
+      parent_provider_subscription_id: tier === "interactive_addon" ? subscription.metadata?.baseSubscriptionId ?? null : null,
+      current_period_start: isoFromUnix(periodStart), current_period_end: isoFromUnix(periodEnd),
+      cancel_at_period_end: subscription.cancel_at_period_end ?? false, metadata: { tier },
+    }, { onConflict: "user_id,entitlement,provider,provider_subscription_id" });
+    if (entitlementError) throw new Error(entitlementError.message);
+  }
 
   const reportId = analysisId ?? subscription.metadata?.analysisId;
   if (reportId && isAccessGrantingStatus(subscription.status)) {

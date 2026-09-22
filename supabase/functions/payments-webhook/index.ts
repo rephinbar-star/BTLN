@@ -16,6 +16,30 @@ function resolveTier(lookupKey?: string | null): string {
   return "unknown";
 }
 
+function entitlementsForTier(tier: string): string[] {
+  if (tier === "decode_monthly") return ["quick_take"];
+  if (tier === "monthly" || tier === "annual") return ["quick_take", "full_reports"];
+  if (tier === "interactive_addon") return ["interactive_mode"];
+  if (tier === "prime") return ["prime", "quick_take", "interactive_mode", "full_reports", "relationship360"];
+  return [];
+}
+
+async function reconcileEntitlements(userId: string, subscription: any, tier: string, periodStart: any, periodEnd: any) {
+  const wanted = entitlementsForTier(tier);
+  for (const entitlement of wanted) {
+    const { error } = await getSupabase().from("subscription_entitlements").upsert({
+      user_id: userId, entitlement, status: subscription.status, provider: "stripe",
+      provider_subscription_id: subscription.id,
+      parent_provider_subscription_id: tier === "interactive_addon" ? subscription.metadata?.baseSubscriptionId ?? null : null,
+      current_period_start: periodStart ? new Date(periodStart * 1000).toISOString() : null,
+      current_period_end: periodEnd ? new Date(periodEnd * 1000).toISOString() : null,
+      cancel_at_period_end: subscription.cancel_at_period_end ?? false,
+      metadata: { tier },
+    }, { onConflict: "user_id,entitlement,provider,provider_subscription_id" });
+    if (error) throw new Error(`subscription_entitlements upsert failed: ${error.message}`);
+  }
+}
+
 function isAccessGrantingStatus(status?: string | null): boolean {
   return status === "active" || status === "trialing" || status === "past_due";
 }
@@ -330,6 +354,7 @@ async function handleSubscriptionUpsert(subscription: any, env: StripeEnv, event
     { onConflict: "stripe_subscription_id" },
   );
   if (error) throw new Error(`user_subscriptions upsert failed: ${error.message}`);
+  await reconcileEntitlements(userId, subscription, tier, periodStart, periodEnd);
   if (!error && isAccessGrantingStatus(subscription.status)) {
     await unlockAnalysisForUser(analysisId, userId);
   }
@@ -364,6 +389,10 @@ async function handleSubscriptionDeleted(subscription: any, env: StripeEnv, even
     .update({ status: "canceled", updated_at: new Date().toISOString() })
     .eq("stripe_subscription_id", subscription.id);
   if (error) throw new Error(`user_subscriptions cancel failed: ${error.message}`);
+  const { error: entitlementError } = await getSupabase().from("subscription_entitlements")
+    .update({ status: "canceled", cancel_at_period_end: false, updated_at: new Date().toISOString() })
+    .eq("provider", "stripe").eq("provider_subscription_id", subscription.id);
+  if (entitlementError) throw new Error(`subscription_entitlements cancel failed: ${entitlementError.message}`);
   await recordAudit({
     environment: env,
     event_id: eventId,
