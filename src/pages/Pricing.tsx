@@ -1,24 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
-import { Check, Loader2, MessageCircle, Users, BookOpen, Laugh, Sparkles } from "lucide-react";
+import { Check, Loader2, MessageCircle, MessagesSquare, Users, BookOpen, Laugh, Sparkles, Compass } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
+import { HelpMeChoose } from "@/components/pricing/HelpMeChoose";
 import { useAuth } from "@/hooks/useAuth";
 import { useMembership } from "@/hooks/useMembership";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import { PRICING_BTN } from "@/lib/pricing/button";
 import { OPERATOR } from "@/config/operator";
 
 type ProductKey = "BTLN_decode_monthly" | "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
 
-/** The three entry modes, used for the chips on every card. */
+/** The named modes, used for the chips on every card. */
 const MODES = {
   quick: { label: "Quick Take", Icon: MessageCircle },
+  interactive: { label: "Interactive Mode", Icon: MessagesSquare },
   deep: { label: "Deep Read", Icon: BookOpen },
   groupRead: { label: "Group Read", Icon: Users },
   groupRoast: { label: "Group Roast", Icon: Laugh },
+  r360: { label: "Relationship360", Icon: Compass },
 } as const;
 
 type ModeKey = keyof typeof MODES;
@@ -40,20 +44,10 @@ const ModeChips = ({ modes }: { modes: ModeKey[] }) => (
   </ul>
 );
 
-/**
- * One shared button style for every first-party control on this page:
- * logo dark green background (#183B35, btln-ink) with white (#FFFFFF)
- * text/icons, a subtle shadow and a small hover lift on hover-capable
- * fine-pointer devices only. Owner styling decisions that supersede an
- * earlier light-green text instruction. Logo colors elsewhere are untouched.
- * prefers-reduced-motion disables the movement/transition; disabled buttons
- * keep no shadow so they never look clickable.
- */
-export const PRICING_BTN =
-  "inline-flex min-h-11 w-full items-center justify-center rounded-full bg-btln-ink px-5 py-2.5 text-[15px] font-medium text-white shadow-[0_2px_5px_rgba(24,59,53,0.15)] transition-[transform,box-shadow] [transition-duration:160ms] ease-out [@media(hover:hover)_and_(pointer:fine)]:hover:-translate-y-px [@media(hover:hover)_and_(pointer:fine)]:hover:shadow-[0_5px_12px_rgba(24,59,53,0.22)] active:!translate-y-0 active:!shadow-[0_1px_3px_rgba(24,59,53,0.15)] motion-reduce:transition-none motion-reduce:[@media(hover:hover)_and_(pointer:fine)]:hover:!translate-y-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-btln-ink focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 disabled:shadow-none [&_svg]:text-white";
+export { PRICING_BTN };
 
 type Tier = {
-  key: ProductKey | "prime";
+  key: ProductKey | "prime" | "interactive_addon";
   name: string;
   price: string;
   period: string;
@@ -62,6 +56,8 @@ type Tier = {
   features: string[];
   cta: string;
   mint?: boolean;
+  /** Shown under the price on add-on style cards. */
+  priceNote?: string;
 };
 
 const QUICK_TIER: Tier = {
@@ -71,164 +67,37 @@ const QUICK_TIER: Tier = {
   period: "month",
   modes: ["quick"],
   description:
-    "Quick Takes without the free-read limit: what a message might mean, and three ways to reply.",
+    "One read of a message each time: what it may mean, and three suggested replies.",
   features: [
     "Quick Takes without the one-free-read limit",
-    "Interpretation, signals and three reply options each time",
+    "Each read: interpretation, signals and three suggested replies",
+    "One session per read — ongoing exchanges need Interactive Mode",
     "Does not unlock Deep Read, Group Read or Group Roast",
     "Cancel anytime",
   ],
   cta: "Subscribe to Quick Take",
 };
 
-const REPORT_TIERS: Tier[] = [
-  {
-    key: "BTLN_report_unlock",
-    name: "Single report",
-    price: "$4.99",
-    period: "one-time",
-    modes: ["deep", "groupRead", "groupRoast"],
-    description:
-      "1 selected report. The payment is attached to the report you start, so choose the read first.",
-    features: [
-      "1 selected report: a Deep Read, a Group Read or a Group Roast",
-      "Every section of that report",
-      "Share and download that report",
-      "No subscription",
-    ],
-    cta: "Choose a report to start",
-  },
-  {
-    key: "BTLN_monthly",
-    name: "Monthly full-report plan",
-    price: "$9.99",
-    period: "month",
-    modes: ["quick", "deep", "groupRead", "groupRoast"],
-    description:
-      "Full reports across Deep Read, Group Read and Group Roast, plus Quick Takes, while the plan is active.",
-    features: [
-      "Deep Reads, Group Reads and Group Roasts while active",
-      "Quick Takes without the free-read limit",
-      "All report sections unlocked",
-      "Cancel anytime",
-    ],
-    cta: "Subscribe monthly",
-  },
-  {
-    key: "BTLN_annual",
-    name: "Annual full-report plan",
-    price: "$49.99",
-    period: "year",
-    modes: ["quick", "deep", "groupRead", "groupRoast"],
-    description: "The same full-report access, billed once a year.",
-    features: [
-      "Deep Reads, Group Reads and Group Roasts while active",
-      "Quick Takes without the free-read limit",
-      "All report sections unlocked",
-      "Billed yearly",
-    ],
-    cta: "Subscribe annually",
-  },
-];
-
-const PRIME_TIER: Tier = {
-  key: "prime",
-  name: "Prime",
-  price: "$19.99",
+const INTERACTIVE_TIER: Tier = {
+  key: "interactive_addon",
+  name: "Interactive Mode add-on",
+  price: "+ $2.99",
   period: "month",
-  modes: ["quick", "deep", "groupRead", "groupRoast"],
+  priceNote: "Requires Quick Take · $6.99/month — $9.98/month combined",
+  modes: ["quick", "interactive"],
   description:
-    "Understand who you are in your relationships—and get insights and coaching for self improvement.",
+    "Keep the same conversation going: tell us what you actually sent, add what came back, and get an updated read with new suggested replies.",
   features: [
-    "Everything in the full-report plan",
-    "Your Relationship360 across the conversations you include",
-    "Practical coaching that develops as you add more conversations",
-    "Relationship360 is in development and not available to buy yet",
+    "Continue the same conversation instead of starting over",
+    "Add the reply you actually sent, or a later screenshot",
+    "Updated read and fresh suggested replies as it develops",
+    "Requires an active Quick Take plan — not sold on its own",
+    "Included in Prime at $19.99/month",
   ],
-  cta: "See what's in Prime",
-  mint: true,
+  cta: "Interactive Mode",
 };
 
-const PRODUCT_TO_OPTION: Record<ProductKey, "monthly" | "annual" | "one_time" | "decode_monthly"> = {
-  BTLN_decode_monthly: "decode_monthly",
-  BTLN_monthly: "monthly",
-  BTLN_annual: "annual",
-  BTLN_report_unlock: "one_time",
-};
-
-/**
- * Coverage matrix. Every cell is taken from the server rules that actually
- * decide access, not from marketing copy:
- *  - Quick Take: useDecodeAccess / count_completed_decodes — any active
- *    subscription lifts the free-read limit.
- *  - Deep Read: user_has_paid_access (monthly/annual tiers, or a one-time
- *    unlock bound to that analysis).
- *  - Group Read: analyze-group FULL_PLAN_TIERS = monthly, annual, or a
- *    group_read_unlocks row.
- *  - Group Roast: group-roast-data — monthly/annual, or a group_roast_unlocks
- *    row. Group Read access does not grant it.
- *  - Relationship360: no entitlement exists yet; the engine is in development.
- */
-const COVERAGE: { row: string; cells: Record<string, string> }[] = [
-  {
-    row: "Quick Take",
-    cells: {
-      quick: "Included",
-      single: "Not included",
-      monthly: "Included",
-      annual: "Included",
-      prime: "Not available yet",
-    },
-  },
-  {
-    row: "Deep Read",
-    cells: {
-      quick: "Not included",
-      single: "1 selected report",
-      monthly: "Included",
-      annual: "Included",
-      prime: "Not available yet",
-    },
-  },
-  {
-    row: "Group Read",
-    cells: {
-      quick: "Not included",
-      single: "1 selected report",
-      monthly: "Included",
-      annual: "Included",
-      prime: "Not available yet",
-    },
-  },
-  {
-    row: "Group Roast",
-    cells: {
-      quick: "Not included",
-      single: "1 selected report",
-      monthly: "Included",
-      annual: "Included",
-      prime: "Not available yet",
-    },
-  },
-  {
-    row: "Relationship360",
-    cells: {
-      quick: "In development",
-      single: "In development",
-      monthly: "In development",
-      annual: "In development",
-      prime: "In development",
-    },
-  },
-];
-
-const COLUMNS = [
-  { id: "quick", label: "Quick Take plan · $6.99/mo" },
-  { id: "single", label: "Single report · $4.99" },
-  { id: "monthly", label: "Monthly · $9.99/mo" },
-  { id: "annual", label: "Annual · $49.99/yr" },
-  { id: "prime", label: "Prime · $19.99/mo" },
-];
+const REPORT_TIERS: Tier[] = [
 
 export default function Pricing() {
   const navigate = useNavigate();
