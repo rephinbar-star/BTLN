@@ -390,7 +390,7 @@ One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, 
 Two separate loops, both built as working code rather than a ratings UI on top of a table.
 
 **Collection.** A shared `FeedbackControl` (outline thumbs-up / thumbs-down trigger opening a
-white rounded popover with "Good response" / "Bad response") rates one target at a time. One tap
+white rounded popover with "Helpful" / "Don't Like It") rates one target at a time. One tap
 records the rating; reason chips, an optional "What should we understand differently?" note and the
 correction hand-off are all optional and come after. Escape closes, focus returns to the trigger,
 targets are 44px+. Placements today: Quick Take overall and each of the three reply options,
