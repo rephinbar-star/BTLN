@@ -78,6 +78,13 @@ Deno.serve(async (req) => {
   const confirmedAbsent = payload?.confirmed_self_absent === true;
   if (ingestionSupplied && !ingestion) return json(400, { error: "The reviewed conversation is invalid. Review the upload again." });
   const screenshots = Array.isArray(payload?.screenshot_base64_array) ? payload.screenshot_base64_array : [];
+  // A later exchange carries its own date or none at all. When the person tells
+  // us when it happened it is kept as self-reported, never as a verified date,
+  // and it is never inherited from the original conversation.
+  const suppliedDay = typeof payload?.exchange_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(payload.exchange_date)
+    ? payload.exchange_date
+    : null;
+  const exchangeDay = suppliedDay && Date.parse(`${suppliedDay}T00:00:00Z`) <= Date.now() + 86_400_000 ? suppliedDay : null;
   const speakerOrder = Array.isArray(payload?.speaker_order) ? payload.speaker_order : [];
   const allowedEvents: EventType[] = ["sent_reply", "no_reply", "chose_not_to_reply", "observed_followup", "self_report"];
   if (!UUID_RE.test(String(decodeId)) || (action === "continue" && (!UUID_RE.test(String(requestId)) || !allowedEvents.includes(eventType)))) {
@@ -158,6 +165,8 @@ Deno.serve(async (req) => {
       confirmed_self_participant_id: confirmedParticipantId,
       confirmed_self_side: confirmedSelfSide,
       confirmed_self_absent: confirmedAbsent,
+      exchange_date: exchangeDay,
+      exchange_date_provenance: exchangeDay ? "user_supplied" : "unknown",
     },
     status: "pending",
     started_from_version: thread.context_version,
