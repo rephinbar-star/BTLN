@@ -800,6 +800,9 @@ export type Database = {
       }
       journey_profiles: {
         Row: {
+          activation_consent_at: string | null
+          auto_include_enabled: boolean
+          consent_version: number
           created_at: string
           data_version: number
           opted_in_at: string | null
@@ -807,6 +810,9 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          activation_consent_at?: string | null
+          auto_include_enabled?: boolean
+          consent_version?: number
           created_at?: string
           data_version?: number
           opted_in_at?: string | null
@@ -814,6 +820,9 @@ export type Database = {
           user_id: string
         }
         Update: {
+          activation_consent_at?: string | null
+          auto_include_enabled?: boolean
+          consent_version?: number
           created_at?: string
           data_version?: number
           opted_in_at?: string | null
@@ -829,6 +838,7 @@ export type Database = {
           id: string
           kind: string
           label: string
+          scope: string
           updated_at: string
           user_id: string
         }
@@ -838,6 +848,7 @@ export type Database = {
           id?: string
           kind: string
           label: string
+          scope?: string
           updated_at?: string
           user_id: string
         }
@@ -847,6 +858,7 @@ export type Database = {
           id?: string
           kind?: string
           label?: string
+          scope?: string
           updated_at?: string
           user_id?: string
         }
@@ -859,6 +871,7 @@ export type Database = {
           created_at: string
           excluded_at: string | null
           id: string
+          identity_status: string
           notes: string | null
           observed_period_end: string | null
           observed_period_start: string | null
@@ -876,6 +889,7 @@ export type Database = {
           created_at?: string
           excluded_at?: string | null
           id?: string
+          identity_status?: string
           notes?: string | null
           observed_period_end?: string | null
           observed_period_start?: string | null
@@ -893,6 +907,7 @@ export type Database = {
           created_at?: string
           excluded_at?: string | null
           id?: string
+          identity_status?: string
           notes?: string | null
           observed_period_end?: string | null
           observed_period_start?: string | null
@@ -1730,7 +1745,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      journey_activate: {
+        Args: { p_auto_include: boolean }
+        Returns: undefined
+      }
+      journey_auto_include: { Args: never; Returns: number }
+      journey_confirm_identity: {
+        Args: { p_participant: string; p_source_id: string }
+        Returns: boolean
+      }
       journey_delete_all: { Args: never; Returns: undefined }
+      journey_mark_absent: { Args: { p_source_id: string }; Returns: boolean }
+      journey_source_participants: {
+        Args: { p_source_id: string; p_source_kind: string }
+        Returns: string[]
+      }
       journey_write_summary: {
         Args: {
           p_content: Json
