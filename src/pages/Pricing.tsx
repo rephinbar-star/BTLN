@@ -98,6 +98,179 @@ const INTERACTIVE_TIER: Tier = {
 };
 
 const REPORT_TIERS: Tier[] = [
+  {
+    key: "BTLN_report_unlock",
+    name: "Single report",
+    price: "$4.99",
+    period: "one-time",
+    modes: ["deep", "groupRead", "groupRoast"],
+    description:
+      "1 selected report. The payment is attached to the report you start, so choose the read first.",
+    features: [
+      "1 selected report: a Deep Read, a Group Read or a Group Roast",
+      "Every section of that report",
+      "Share and download that report",
+      "Does not cover Quick Take sessions",
+      "No subscription",
+    ],
+    cta: "Choose a report to start",
+  },
+  {
+    key: "BTLN_monthly",
+    name: "Monthly full-report plan",
+    price: "$9.99",
+    period: "month",
+    modes: ["quick", "deep", "groupRead", "groupRoast"],
+    description:
+      "Full reports across Deep Read, Group Read and Group Roast, plus Quick Takes, while the plan is active.",
+    features: [
+      "Deep Reads, Group Reads and Group Roasts while active",
+      "Quick Takes without the free-read limit",
+      "All report sections unlocked",
+      "Interactive Mode and Relationship360 are not included",
+      "Cancel anytime",
+    ],
+    cta: "Subscribe monthly",
+  },
+  {
+    key: "BTLN_annual",
+    name: "Annual full-report plan",
+    price: "$49.99",
+    period: "year",
+    modes: ["quick", "deep", "groupRead", "groupRoast"],
+    description: "The same full-report access, billed once a year.",
+    features: [
+      "Deep Reads, Group Reads and Group Roasts while active",
+      "Quick Takes without the free-read limit",
+      "All report sections unlocked",
+      "Interactive Mode and Relationship360 are not included",
+      "Billed yearly",
+    ],
+    cta: "Subscribe annually",
+  },
+];
+
+const PRIME_TIER: Tier = {
+  key: "prime",
+  name: "Prime",
+  price: "$19.99",
+  period: "month",
+  modes: ["quick", "interactive", "deep", "groupRead", "groupRoast", "r360"],
+  description:
+    "Understand who you are in your relationships—and get insights and coaching for self improvement.",
+  features: [
+    "Every mode: Quick Take, Deep Read, Group Read and Group Roast",
+    "Interactive Mode included — no separate add-on",
+    "Your Relationship360 across the conversations you include",
+    "Practical coaching that develops as you add more conversations",
+    "Relationship360 is in development and Prime is not available to buy yet",
+  ],
+  cta: "See what's in Prime",
+  mint: true,
+};
+
+const PRODUCT_TO_OPTION: Record<ProductKey, "monthly" | "annual" | "one_time" | "decode_monthly"> = {
+  BTLN_decode_monthly: "decode_monthly",
+  BTLN_monthly: "monthly",
+  BTLN_annual: "annual",
+  BTLN_report_unlock: "one_time",
+};
+
+/**
+ * Coverage matrix. Every cell is taken from the server rules that actually
+ * decide access, not from marketing copy:
+ *  - Quick Take: useDecodeAccess / count_completed_decodes — the first read is
+ *    free per session/user; any active subscription lifts that limit. The
+ *    $4.99 single-report unlock is bound to a report row and grants no Quick
+ *    Take session, so that cell states the real free-session status instead.
+ *  - Interactive Mode: no entitlement exists yet; the add-on is in development.
+ *  - Deep Read: user_has_paid_access (monthly/annual tiers, or a one-time
+ *    unlock bound to that analysis).
+ *  - Group Read: analyze-group FULL_PLAN_TIERS = monthly, annual, or a
+ *    group_read_unlocks row.
+ *  - Group Roast: group-roast-data — monthly/annual, or a group_roast_unlocks
+ *    row. Group Read access does not grant it.
+ *  - Relationship360: no entitlement exists on any plan; it belongs to Prime's
+ *    intended coverage and the engine is in development.
+ */
+const COVERAGE: { row: string; cells: Record<string, string> }[] = [
+  {
+    row: "Quick Take",
+    cells: {
+      quick: "Included",
+      interactive: "Requires Quick Take",
+      single: "Not included — first session free",
+      monthly: "Included",
+      annual: "Included",
+      prime: "Included in Prime",
+    },
+  },
+  {
+    row: "Interactive Mode",
+    cells: {
+      quick: "Not included",
+      interactive: "Included · + $2.99/mo",
+      single: "Not included",
+      monthly: "Not included",
+      annual: "Not included",
+      prime: "Included in Prime",
+    },
+  },
+  {
+    row: "Deep Read",
+    cells: {
+      quick: "Not included",
+      interactive: "Not included",
+      single: "1 selected report",
+      monthly: "Included",
+      annual: "Included",
+      prime: "Included in Prime",
+    },
+  },
+  {
+    row: "Group Read",
+    cells: {
+      quick: "Not included",
+      interactive: "Not included",
+      single: "1 selected report",
+      monthly: "Included",
+      annual: "Included",
+      prime: "Included in Prime",
+    },
+  },
+  {
+    row: "Group Roast",
+    cells: {
+      quick: "Not included",
+      interactive: "Not included",
+      single: "1 selected report",
+      monthly: "Included",
+      annual: "Included",
+      prime: "Included in Prime",
+    },
+  },
+  {
+    row: "Relationship360",
+    cells: {
+      quick: "Not Included",
+      interactive: "Not Included",
+      single: "Not Included",
+      monthly: "Not Included",
+      annual: "Not Included",
+      prime: "Included in Prime · In development",
+    },
+  },
+];
+
+const COLUMNS = [
+  { id: "quick", label: "Quick Take plan · $6.99/mo" },
+  { id: "interactive", label: "Interactive Mode add-on · + $2.99/mo" },
+  { id: "single", label: "Single report · $4.99" },
+  { id: "monthly", label: "Monthly · $9.99/mo" },
+  { id: "annual", label: "Annual · $49.99/yr" },
+  { id: "prime", label: "Prime · $19.99/mo" },
+];
+
 
 export default function Pricing() {
   const navigate = useNavigate();
