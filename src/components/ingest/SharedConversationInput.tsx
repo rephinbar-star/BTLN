@@ -23,6 +23,7 @@ type Props = {
   compact?: boolean;
   requireSelf?: boolean;
   pastePlaceholder?: string;
+  extractScreenshots?: (screenshots: PreparedScreenshot[], selfSide: "left" | "right") => Promise<CanonicalConversation>;
 };
 
 const ACCEPT_EXPORT = ".txt,.csv,text/plain,text/csv,.zip,application/zip,application/x-zip-compressed";
@@ -41,7 +42,7 @@ export const emptyConversationDraft = (): ConversationDraft => ({
   screenshotSelfSide: null,
 });
 
-export function SharedConversationInput({ value, onChange, maxScreenshots = SCREENSHOT_LIMITS.maxCount, compact = false, requireSelf = true, pastePlaceholder = "You: Are we still on for Friday?\nThem: Yes — sorry, today got away from me." }: Props) {
+export function SharedConversationInput({ value, onChange, maxScreenshots = SCREENSHOT_LIMITS.maxCount, compact = false, requireSelf = true, pastePlaceholder = "You: Are we still on for Friday?\nThem: Yes — sorry, today got away from me.", extractScreenshots }: Props) {
   const imageInput = useRef<HTMLInputElement>(null);
   const exportInput = useRef<HTMLInputElement>(null);
   const archive = useRef<File | null>(null);
@@ -50,6 +51,7 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
   const [candidates, setCandidates] = useState<TranscriptCandidate[]>([]);
   const [processing, setProcessing] = useState(false);
   const [failedFiles, setFailedFiles] = useState<File[]>([]);
+  const [extracting, setExtracting] = useState(false);
 
   useEffect(() => () => { archive.current = null; }, []);
 
@@ -170,6 +172,7 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
       </section>}
 
       {value.method === "screenshots" && value.screenshots.length > 0 && requireSelf && <fieldset className="rounded-lg border border-border p-4"><legend className="px-1 text-sm font-semibold">Which side is you?</legend><p className="mb-2 text-xs text-muted-foreground">We will show the extracted messages for correction before analysis. This confirms the starting layout only.</p><div className="grid grid-cols-2 gap-2">{(["left", "right"] as const).map((side) => <Button key={side} type="button" variant={value.screenshotSelfSide === side ? "default" : "outline"} className="min-h-11" aria-pressed={value.screenshotSelfSide === side} onClick={() => patch({ screenshotSelfSide: side })}>{side === "left" ? "I am on the left" : "I am on the right"}</Button>)}</div></fieldset>}
+      {value.method === "screenshots" && value.screenshots.length > 0 && value.screenshotSelfSide && extractScreenshots && <Button type="button" variant="outline" className="min-h-11 w-full" disabled={extracting} onClick={async () => { setExtracting(true); setError(null); try { const conversation = await extractScreenshots(value.screenshots, value.screenshotSelfSide); patch({ conversation, selfParticipantId: conversation.participants.find((person) => person.is_self)?.id ?? null }); } catch (cause) { setError(cause instanceof Error ? cause.message : "We couldn't preview those screenshots."); } finally { setExtracting(false); } }}>{extracting ? <><Loader2 className="h-4 w-4 animate-spin" /> Reading screenshots…</> : "Preview extracted messages"}</Button>}
     </div>
   );
 }
