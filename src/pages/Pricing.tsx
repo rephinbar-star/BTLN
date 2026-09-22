@@ -186,7 +186,6 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
   {
     row: "Interactive Mode",
     cells: {
-      quick: "Not included",
       quick: "Optional +$2.99/mo · In development",
       single: "Not included",
       monthly: "Not included",
