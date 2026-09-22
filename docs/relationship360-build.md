@@ -418,14 +418,20 @@ personalised" shows what is stored and offers reset and delete; both work withou
 
 **Loop B — product improvement.** `/admin/feedback` (operator-only) shows negative hotspots by
 mode, section, model and prompt version with sample sizes, plus the reasons given; negative results
-are never filtered out and small samples are labelled. `src/lib/eval/` holds the working evaluation
-pipeline: a frozen Deep Read rubric (`rubric.ts`) checking groundedness, evidence accuracy, speaker
-attribution, uncertainty, absence of diagnosis/mind-reading, refusal to adopt an unsupported user
-premise, coaching specificity and repetition; a bounded comparison harness (`harness.ts`) scoring a
-candidate against the baseline on held-out synthetic cases; `proposeCandidates` which only surfaces
-issues with at least 20 ratings and a 25%+ negative share; and `versions.ts`, an immutable ledger
-where promotion needs a named reviewer *and* a passing report, rejections are recorded, and
-rollback restores the previous active version.
+are never filtered out and small samples are labelled. `src/lib/eval/` holds **prototype** tooling,
+not a production learning workflow, and must not be described as one: a frozen Deep Read rubric
+(`rubric.ts`) checking groundedness, evidence accuracy, speaker attribution, uncertainty, absence of
+diagnosis/mind-reading, refusal to adopt an unsupported user premise, coaching specificity and
+repetition; `harness.ts`, which **compares outputs supplied to it** — it does not itself generate
+baseline or candidate outputs from a model; `proposeCandidates`, which only surfaces issues with at
+least 20 ratings and a 25%+ negative share; and `versions.ts`, an **in-memory** class holding a
+version ledger for the lifetime of the process — there is no persistent, server-authorised
+candidate/evaluation/audit store yet, reviewer identity is a caller-supplied string rather than an
+authenticated operator, and promotion is not bound to a stored evaluated version. Building that
+persistent, operator-authenticated store with immutable prompt/model/dataset hashes is open work
+under Priority C. Deterministic word checks in the rubric are automated screens only; they do not
+establish coaching correctness, which needs human adjudication.
+
 
 **Honest status.** Feedback does not retrain a model; the UI says so. Fine-tuning is out of scope.
 Automatic production promotion is off — nothing in the app promotes a prompt. Verified:
