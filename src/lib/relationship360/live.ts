@@ -39,12 +39,35 @@ export type LiveContent = {
   recommendations: (Omit<R360Recommendation, "evidence"> & { evidence: string[] })[];
 };
 
+export type LivePeriodSide = {
+  start: string;
+  end: string;
+  observations: number;
+  sources: number;
+  about_you: number;
+  about_them: number;
+};
+
+/** Two dated periods described side by side. Never an improvement claim. */
+export type LiveComparison =
+  | { available: true; then: LivePeriodSide; now: LivePeriodSide; note: string }
+  | { available: false; reason: "not_enough_dated_evidence" | "single_period" | "same_conversation_only" | "overlapping_periods" };
+
 export type LiveSummary = {
   id: string;
   scope: "relationship" | "cross_relationship";
   relationship_id: string | null;
   content: LiveContent | null;
-  coverage: { sources?: number; relationships?: number; observations?: number; single_read?: boolean } | null;
+  coverage:
+    | {
+        sources?: number;
+        relationships?: number;
+        observations?: number;
+        single_read?: boolean;
+        dated_observations?: number;
+        comparison?: LiveComparison;
+      }
+    | null;
   is_stale: boolean;
   generated_at: string;
   model: string | null;
