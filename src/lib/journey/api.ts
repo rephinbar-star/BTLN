@@ -84,7 +84,7 @@ export async function optOut(userId: string): Promise<void> {
 export async function listRelationships(): Promise<JourneyRelationship[]> {
   const { data, error } = await supabase
     .from("journey_relationships")
-    .select("id, kind, label, data_version, created_at")
+    .select("id, kind, scope, label, data_version, created_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as JourneyRelationship[];
@@ -94,11 +94,12 @@ export async function createRelationship(
   userId: string,
   kind: RelationshipKind,
   label: string,
+  scope: RelationshipScope,
 ): Promise<JourneyRelationship> {
   const { data, error } = await supabase
     .from("journey_relationships")
-    .insert({ user_id: userId, kind, label: label.trim() })
-    .select("id, kind, label, data_version, created_at")
+    .insert({ user_id: userId, kind, label: label.trim(), scope })
+    .select("id, kind, scope, label, data_version, created_at")
     .single();
   if (error) throw error;
   return data as JourneyRelationship;
@@ -113,7 +114,7 @@ export async function listSources(relationshipId: string): Promise<JourneySource
   const { data, error } = await supabase
     .from("journey_sources")
     .select(
-      "id, relationship_id, source_kind, source_id, subject_participant, observed_period_start, observed_period_end, uploaded_at, consent_at, excluded_at",
+      "id, relationship_id, source_kind, source_id, subject_participant, identity_status, observed_period_start, observed_period_end, uploaded_at, consent_at, excluded_at",
     )
     .eq("relationship_id", relationshipId)
     .order("uploaded_at", { ascending: false });
@@ -126,17 +127,21 @@ export async function linkSource(params: {
   relationshipId: string;
   kind: JourneySourceKind;
   sourceId: string;
+  /** Empty means "I will identify myself later" — the row stays pending, never guessed. */
   subjectParticipant: string;
 }): Promise<void> {
+  const participant = params.subjectParticipant.trim();
+  const identity: IdentityStatus = participant ? "confirmed" : "pending";
   const { data, error } = await supabase.from("journey_sources").insert({
     user_id: params.userId,
     relationship_id: params.relationshipId,
     source_kind: params.kind,
     source_id: params.sourceId,
-    subject_participant: params.subjectParticipant.trim() || null,
+    subject_participant: participant || null,
+    identity_status: identity,
   }).select("id").single();
   if (error) throw error;
-  if (params.kind === "group_roast" && data?.id) {
+  if (params.kind === "group_roast" && data?.id && identity === "confirmed") {
     const { error: adapterError } = await supabase.functions.invoke("group-roast-data", {
       body: { action: "adapt_journey", group_roast_id: params.sourceId, journey_source_id: data.id },
     });
@@ -146,6 +151,7 @@ export async function linkSource(params: {
     }
   }
 }
+
 
 export async function setSourceExcluded(id: string, excluded: boolean): Promise<void> {
   const { error } = await supabase
