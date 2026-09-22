@@ -5,6 +5,7 @@ import {
 } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
 import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shared/coachingPreferences.ts";
+import { conversationKey, deriveDateMeta, participantFingerprint, recordIngestMeta } from "../_shared/exchangeDates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,7 @@ const MAX_SCREENSHOTS = 10;
 const MAX_REVIEWED_MESSAGES = 1_000;
 const MODEL = "openai/gpt-6-astra";
 
-type ReviewedMessage = { id: string; participant_id?: string | null; raw_sender?: string | null; content: string; order: number };
+type ReviewedMessage = { id: string; participant_id?: string | null; raw_sender?: string | null; content: string; order: number; ts?: string | null };
 type ReviewedIngestion = { id: string; participants: Array<{ id: string; display_name?: string }>; messages: ReviewedMessage[] };
 
 const parseReviewedIngestion = (value: unknown): ReviewedIngestion | null => {
@@ -205,6 +206,27 @@ Deno.serve(async (req) => {
       result = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value;
     } catch (e) {
       return fail(`Decode response was not valid JSON: ${e instanceof Error ? e.message : e}`);
+    }
+
+    // Keep the verified exchange dates and conversation identity BEFORE the
+    // report is marked complete (staging reads them) and before any raw text is
+    // discarded. Only counts, a range and one-way hashes are stored.
+    if (ingestion) {
+      const owner = personalizationUserId;
+      const meta = deriveDateMeta(
+        ingestion.messages,
+        ingestion.id.startsWith("conv_") && hasImages ? "ocr_confirmed" : "parsed",
+      );
+      await recordIngestMeta(supabase as never, {
+        userId: owner,
+        sourceKind: "quick_take",
+        sourceId: row_id,
+        meta,
+        conversationKey: await conversationKey(ingestion.messages),
+        participantFingerprint: await participantFingerprint(
+          ingestion.participants.map((person) => String(person.display_name ?? "")),
+        ),
+      });
     }
 
     const { error: updErr } = await supabase
