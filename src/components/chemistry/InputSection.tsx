@@ -437,8 +437,11 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     setSubmitting(true);
     try {
       const session_id = getSessionId();
-      const input_method: "paste" | "chat_file" | "screenshot" =
-        mode === "paste" ? "paste" : mode === "file" ? "chat_file" : "screenshot";
+      // The shared input has already read and reviewed screenshots. Submit only
+      // the reviewed transcript so the analysis function cannot OCR or retain
+      // the same images a second time. `ingestion.sourceKind` preserves origin.
+      const input_method: "paste" | "chat_file" =
+        sharedDraft.conversation?.sourceKind === "chat_export" ? "chat_file" : "paste";
 
       const context_data = {
         name1: form.yourName.trim(),
@@ -450,26 +453,11 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         free_text: form.context.trim(),
       };
 
-      // Pre-flight payload check for screenshot uploads — better to fail
-      // here with a clear message than to ship a too-large request that
-      // mobile networks will silently drop.
-      if (input_method === "screenshot") {
-        const totalBytes = screenshots.reduce(
-          (acc, s) => acc + dataUrlByteSize(s.dataUrl),
-          0,
-        );
-        if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
-          setSubmitting(false);
-          setSubmitError("Too many or too large images. Please remove some and try again.");
-          return;
-        }
-      }
-
       logEvent("analysis_started", {
         input_method,
         has_free_text: context_data.free_text.length > 0,
         message_estimate_chars:
-          input_method === "screenshot" ? 0 : form.conversation.length,
+          form.conversation.length,
         low_message_count: lowMessageCount,
       });
       // PostHog: PII-free — only the coarse relationship type enum.
@@ -532,58 +520,14 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       // sending so users who paste >100 messages still get a useful run
       // (and a clear note about what we trimmed).
       let conversationToSend = form.conversation;
-      if (input_method !== "screenshot") {
-        const t = truncateConversation(form.conversation, MAX_MESSAGES);
-        if (t.truncated) {
-          conversationToSend = t.text;
-          setTruncationNotice(
-            `Your conversation has about ${t.total} messages. Only the first ${t.kept} were analyzed.`,
-          );
-        }
+      const t = truncateConversation(form.conversation, MAX_MESSAGES);
+      if (t.truncated) {
+        conversationToSend = t.text;
+        setTruncationNotice(
+          `Your conversation has about ${t.total} messages. Only the first ${t.kept} were analyzed.`,
+        );
       }
-
-      if (input_method === "screenshot") {
-        // Upload each compressed screenshot to private Storage and pass
-        // storage paths to the Edge Function instead of embedding base64
-        // in the JSON body. Keeps the request small enough for flaky
-        // mobile connections even at 30 images.
-        try {
-          const uploads = await Promise.all(
-            screenshots.map(async (s, idx) => {
-              // s.dataUrl is a JPEG data URL from compressImage
-              const commaIdx = s.dataUrl.indexOf(",");
-              const b64 = s.dataUrl.slice(commaIdx + 1);
-              const bin = atob(b64);
-              const bytes = new Uint8Array(bin.length);
-              for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-              const blob = new Blob([bytes], { type: "image/jpeg" });
-              const path = `${analysis_id}/${String(idx).padStart(3, "0")}.jpg`;
-              const { error: upErr } = await supabase.storage
-                .from("analysis-uploads")
-                .upload(path, blob, {
-                  contentType: "image/jpeg",
-                  upsert: true,
-                });
-              if (upErr) throw upErr;
-              return path;
-            }),
-          );
-          payload.screenshot_storage_paths = uploads;
-        } catch (upErr) {
-          const msg = upErr instanceof Error ? upErr.message : "Upload failed.";
-          await supabase.rpc("mark_analysis_failed", {
-            p_id: analysis_id,
-            p_session_id: session_id,
-            p_error_message: `We couldn't upload your screenshots: ${msg}`,
-          });
-          track("analysis_failed", { reason_code: "upload_failed" });
-          setSubmitError("We couldn't upload your screenshots. Please check your connection and try again.");
-          setSubmitting(false);
-          return;
-        }
-      } else {
-        payload.raw_text = conversationToSend;
-      }
+      payload.raw_text = conversationToSend;
 
       // Navigate to the processing page right away so the user sees
       // progress, then dispatch the request in the background. If the
@@ -600,9 +544,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               p_id: analysis_id,
               p_session_id: session_id,
               p_error_message:
-                input_method === "screenshot"
-                  ? "We couldn't send your screenshots to our analyzer. This usually means the upload was too large for your connection — try fewer images."
-                  : "We couldn't send your messages to our analyzer. Please try again with a shorter conversation sample.",
+                "We couldn't send your messages to our analyzer. Please try again with a shorter conversation sample.",
             });
             track("analysis_failed", { reason_code: "upload_failed" });
           }
