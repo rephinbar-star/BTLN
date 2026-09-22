@@ -94,7 +94,7 @@ export async function exportEverything(): Promise<void> {
 export async function listRelationships(): Promise<JourneyRelationship[]> {
   const { data, error } = await supabase
     .from("journey_relationships")
-    .select("id, kind, scope, label, data_version, created_at")
+    .select("id, kind, scope, label, is_confirmed, data_version, created_at")
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as JourneyRelationship[];
@@ -108,8 +108,8 @@ export async function createRelationship(
 ): Promise<JourneyRelationship> {
   const { data, error } = await supabase
     .from("journey_relationships")
-    .insert({ user_id: userId, kind, label: label.trim(), scope })
-    .select("id, kind, scope, label, data_version, created_at")
+    .insert({ user_id: userId, kind, label: label.trim(), scope, is_confirmed: true })
+    .select("id, kind, scope, label, is_confirmed, data_version, created_at")
     .single();
   if (error) throw error;
   return data as JourneyRelationship;
@@ -117,6 +117,52 @@ export async function createRelationship(
 
 export async function deleteRelationship(id: string): Promise<void> {
   const { error } = await supabase.from("journey_relationships").delete().eq("id", id);
+  if (error) throw error;
+}
+
+/**
+ * Grouping. Conversations are never merged on the strength of a name, similar
+ * wording or a model's guess: the person confirms, and every change marks the
+ * affected Relationship360 summaries out of date.
+ */
+export type RelationshipSuggestion = {
+  id: string;
+  label: string;
+  kind: string;
+  scope: string;
+  is_confirmed: boolean;
+  source_count: number;
+  reason: "same_conversation" | "same_kind_of_conversation";
+};
+
+export async function suggestRelationships(sourceId: string): Promise<RelationshipSuggestion[]> {
+  const { data, error } = await supabase.rpc("journey_suggest_relationships", { p_source_id: sourceId });
+  if (error) throw error;
+  return (data ?? []) as RelationshipSuggestion[];
+}
+
+export async function confirmRelationship(relationshipId: string, label: string, kind: string): Promise<void> {
+  const { error } = await supabase.rpc("journey_confirm_relationship", {
+    p_relationship_id: relationshipId,
+    p_label: label,
+    p_kind: kind,
+  });
+  if (error) throw error;
+}
+
+export async function assignSource(sourceId: string, relationshipId: string): Promise<void> {
+  const { error } = await supabase.rpc("journey_assign_source", { p_source_id: sourceId, p_relationship_id: relationshipId });
+  if (error) throw error;
+}
+
+/** Undo for a wrong grouping: pull one conversation back out on its own. */
+export async function splitSource(sourceId: string, label: string): Promise<void> {
+  const { error } = await supabase.rpc("journey_split_source", { p_source_id: sourceId, p_label: label });
+  if (error) throw error;
+}
+
+export async function mergeRelationships(fromId: string, intoId: string): Promise<void> {
+  const { error } = await supabase.rpc("journey_merge_relationships", { p_from: fromId, p_into: intoId });
   if (error) throw error;
 }
 

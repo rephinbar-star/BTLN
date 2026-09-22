@@ -1,0 +1,13 @@
+REVOKE ALL ON FUNCTION public.journey_touch_relationship(uuid, uuid) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION public.journey_suggest_relationships(uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.journey_confirm_relationship(uuid, text, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.journey_assign_source(uuid, uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.journey_split_source(uuid, text) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.journey_merge_relationships(uuid, uuid) FROM anon;
+REVOKE EXECUTE ON FUNCTION public.journey_set_reflection_excluded(uuid, boolean) FROM anon;
+GRANT EXECUTE ON FUNCTION public.journey_suggest_relationships(uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.journey_confirm_relationship(uuid, text, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.journey_assign_source(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.journey_split_source(uuid, text) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.journey_merge_relationships(uuid, uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.journey_set_reflection_excluded(uuid, boolean) TO authenticated;

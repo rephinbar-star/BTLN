@@ -477,5 +477,49 @@ Automatic production promotion is off — nothing in the app promotes a prompt. 
 prove a rater-pleasing candidate fails the frozen rubric while a grounded improvement passes and can
 be promoted and rolled back. Not yet verified: multi-account rating isolation in a live browser
 session, the personalisation block changing a real generation end to end, and the operator
-dashboard against real aggregated volume. Relationship360 controls render against fixtures today
-because the real synthesis engine is still pending.
+dashboard against real aggregated volume. Relationship360 controls now render against the real
+engine for an opted-in Prime account; the public preview remains fictional and labelled.
+
+
+## Ledger — 22 Sep 2026 (grouping, attribution, dates, safeguards)
+
+**Implemented.**
+- Automatic grouping without guessing: `journey_stage_completed_source` / `journey_auto_include`
+  create an *unconfirmed* relationship carrying `conversation_key`; `journey_suggest_relationships`
+  offers same-conversation and same-kind candidates; `journey_confirm_relationship`,
+  `journey_assign_source`, `journey_split_source` and `journey_merge_relationships` are owner-scoped
+  and mark affected summaries stale. UI: `src/components/relationship360/RelationshipGrouping.tsx`
+  in `src/pages/Journey.tsx`. Unconfirmed relationships are excluded from cross-relationship claims.
+- Attribution: `r360Adapters.ts` classifies by structured actor fields only. Name-inside-a-sentence
+  claims become `relationship_context` with a null subject label. Quick Take reads are
+  `generated_interpretation`; suggested replies are `ai_advice`; Group Roast yields no observations.
+- Dates: only verified exchange dates are used; submission/analysis timestamps never stand in.
+- Generation safeguards: one running job per owner/scope (unique partial index), input-fingerprint
+  cache, representative (not oldest-first) selection with `omitted_observations` disclosed, consent
+  and ownership rechecked at commit, evidence ids validated, recurrence claims validated against
+  distinct sources / confirmed relationships / distinct dates, reflections validated against the
+  caller's own summaries.
+
+**Actually verified** (two synthetic accounts, real model calls, 22 Sep 2026):
+- Grouping: suggestion offered, cross-account `journey_suggest_relationships` returned empty and
+  `journey_assign_source` returned false; owner assignment merged two auto-created relationships
+  into one confirmed relationship and marked the summary stale.
+- Real build: `complete`, coverage `sources 2 / confirmed_relationships 1 / observations 15`,
+  narrative 59 words, total visible copy 187 words, one pattern, no padded recommendations.
+- Concurrency: two simultaneous builds → one `complete`, one `updating`. Third build served from
+  cache (`cached: true`) with no model call.
+- Updated synthesis after a later exchange: a third genuine Deep Read (analysis
+  `8f30bd4d-…`) staged as *pending* in an unconfirmed relationship; a forged participant was
+  refused ("choose a participant from this conversation"), "Taylor" accepted, assignment to the
+  confirmed relationship accepted, `review.due` became true with `new_sources 1`, rebuild produced
+  a genuinely different summary (3 sources, 23 observations, 57-word narrative) that still refused
+  to claim a change.
+- Reflections: saved for the owner, invisible to the second account, exclusion refused for the
+  second account and accepted for the owner, forged relationship reference rejected.
+
+**Pending / blocked.**
+- `dated_observations` is 0 for Deep Read sources: staging does not carry verified message dates
+  from the analysis, so Then/Now comparisons stay unavailable rather than being faked.
+- Billing lifecycle remains blocked on provider test credentials (no Interactive Mode price).
+- Persistent operator-authorised evaluation store, Group Roast humour pass, 10,000-message
+  end-to-end run and the mobile matrix are still open.

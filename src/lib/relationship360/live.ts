@@ -8,10 +8,18 @@ import type { R360Pattern, R360Recommendation, R360Working } from "@/lib/relatio
  * the server re-checks ownership, identity and Prime on every call.
  */
 
+export type LiveSubjectKind =
+  | "user_behavior"
+  | "other_behavior"
+  | "ai_advice"
+  | "self_report"
+  | "relationship_context"
+  | "generated_interpretation";
+
 export type LiveObservation = {
   id: string;
   journey_source_id: string;
-  subject_kind: "user_behavior" | "other_behavior" | "ai_advice" | "self_report";
+  subject_kind: LiveSubjectKind;
   subject_label: string | null;
   observation_type: string;
   statement: string;
@@ -63,7 +71,10 @@ export type LiveReflection = {
 export type LiveStatus = {
   prime: boolean;
   opted_in: boolean;
-  counts: { linked: number; eligible: number; pending: number };
+  consent_current?: boolean;
+  counts: { linked: number; eligible: number; pending: number; unresolved_relationships?: number };
+  /** A review is offered only when new eligible evidence arrived since the last build. */
+  review?: { due: boolean; new_sources: number };
   summary: LiveSummary | null;
   job: LiveJob | null;
   observations: LiveObservation[];
@@ -103,11 +114,19 @@ export const saveReflection = (input: {
     outcome: input.outcome ?? null,
   });
 
+/** Withdraw (or restore) a private note without deleting the account. */
+export const setReflectionExcluded = async (id: string, excluded: boolean) => {
+  const { error } = await supabase.rpc("journey_set_reflection_excluded", { p_reflection_id: id, p_excluded: excluded });
+  if (error) throw new Error(error.message);
+};
+
 const SUBJECT_LABEL: Record<LiveObservation["subject_kind"], string> = {
   user_behavior: "You",
   other_behavior: "The other person",
   ai_advice: "Suggested, not known to be used",
   self_report: "Self-reported by you",
+  relationship_context: "About the exchange, actor unclear",
+  generated_interpretation: "Our reading, not a recorded action",
 };
 
 /**

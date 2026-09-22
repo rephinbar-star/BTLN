@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
 import { SeeExample } from "@/components/examples/ExampleExperience";
 import { Relationship360Live } from "@/components/relationship360/Relationship360Live";
+import { RelationshipGrouping } from "@/components/relationship360/RelationshipGrouping";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -365,6 +366,7 @@ const Journey = () => {
                           </h3>
                           <p className="text-[13px] text-muted-foreground">
                             {scopeLabel} · {kindLabel} · {linked.length} linked
+                            {rel.is_confirmed ? "" : " · not yet identified"}
                           </p>
                         </div>
                         <button
@@ -386,6 +388,12 @@ const Journey = () => {
                           <Trash2 className="mx-auto h-4 w-4" />
                         </button>
                       </div>
+
+                      <RelationshipGrouping
+                        relationship={rel}
+                        sources={linked}
+                        onChanged={() => void refresh()}
+                      />
 
                       {linked.length > 0 && (
                         <ul className="mt-4 space-y-2">
