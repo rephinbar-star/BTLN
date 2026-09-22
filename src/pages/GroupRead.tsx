@@ -337,7 +337,8 @@ const GroupRead = () => {
                   setStep("confirm");
                 }
               }}
-              extractScreenshots={extractScreenshotConversation}
+              extractScreenshots={(screenshots, side) => extractScreenshotConversation(screenshots, side, "group")}
+              screenshotMode="group"
               pastePlaceholder={SAMPLE}
             />
           </section>

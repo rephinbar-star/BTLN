@@ -6,6 +6,7 @@ import type { PreparedScreenshot } from "./images";
 export async function extractScreenshotConversation(
   screenshots: PreparedScreenshot[],
   selfSide: "left" | "right",
+  mode: "pair" | "group" = "pair",
 ): Promise<CanonicalConversation> {
   const requestId = crypto.randomUUID();
   const { data, error } = await supabase.functions.invoke("extract-chat-input", {
@@ -13,6 +14,7 @@ export async function extractScreenshotConversation(
       request_id: requestId,
       screenshot_base64_array: screenshots.map((item) => item.dataUrl),
       self_side: selfSide,
+      mode,
     },
   });
   if (error || !data?.transcript) throw new Error(data?.error ?? error?.message ?? "We couldn't read those screenshots.");
