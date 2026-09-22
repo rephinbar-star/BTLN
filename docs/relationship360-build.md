@@ -109,19 +109,30 @@ Observed behaviour, introspection questions, generated advice and self-reported 
 - [x] `/examples/relationship360` plus legacy `/examples/journey` and `/journey`.
 - [x] 360 / 390 / 430 / 1280 verification, typecheck, build.
 
-### Stage 2 — Identity, automatic inclusion and user control — PENDING
-- [ ] Activation consent that supersedes report-by-report opt-in; existing narrow consent is
-      re-confirmed, never silently expanded.
-- [ ] Mandatory "Which person are you?" per real conversation, with detected participants,
-      highlighted messages, screenshot side choice, ambiguity confirmation, stable mapping.
-- [ ] Users absent from a conversation cannot contribute it; never force false identification.
-- [ ] Legacy reports without identity show "Identify yourself to include".
-- [ ] Relationship scope (pair/group) separate from context (romantic/friend/family/work).
-- [ ] Canonical source identity = source type + source id; duplicate/overlap detection; no
-      auto person matching by display name.
-- [ ] Source states Included / Excluded / Identify yourself to include / Updating / Failed.
-- [ ] Privacy, deletion and export controls remain reachable after opt-out or Prime
-      cancellation (current `Journey.tsx` hides them in the opted-in branch — fix).
+### Stage 2 — Identity, automatic inclusion and user control — IMPLEMENTED (browser-verified 2026-09-22)
+- [x] Activation consent (`journey_activate`, consent_version 2) supersedes report-by-report
+      opt-in; profiles on an older consent version see a re-confirm card and are never silently
+      widened.
+- [x] Mandatory "Which person are you?" per conversation, offering participants detected
+      server-side (`journey_source_participants`: Deep Read name1/name2, Group Roast labels) plus
+      a free-text option; nothing is matched automatically by display name.
+- [x] "I am not in this conversation" (`journey_mark_absent`) keeps the conversation out
+      permanently; the validate trigger also rejects inserting an absent source.
+- [x] Legacy and auto-included sources sit at `identity_status = 'pending'` and read
+      "Identify yourself to include"; they contribute nothing until confirmed. The Group Roast
+      journey adapter only runs once identity is confirmed.
+- [x] `journey_relationships.scope` (pair/group) is stored and shown separately from `kind`
+      (romantic/friend/family/work_group/unspecified).
+- [x] Canonical source identity enforced by `journey_sources_canonical_idx`
+      UNIQUE (user_id, source_kind, source_id) — duplicates cannot be linked twice.
+- [x] Source states: Included / Excluded / Identify yourself to include / You are not in this
+      conversation (`sourceState`, unit-tested in `src/lib/journey/__tests__/identity.test.ts`).
+- [x] Privacy, opt-out and delete controls render outside the opted-in branch, so they stay
+      reachable after opt-out or Prime cancellation; linked sources stay listed and correctable.
+- Not yet: highlighted sample messages and screenshot side-choice inside the identity prompt
+  (the report record exposes participant names, not per-message sides) — Updating/Failed states
+  land with the Stage 4 job pipeline.
+
 
 ### Stage 3 — Quick Take response and follow-up — PENDING
 - [ ] "What did you send?" with select-then-confirm, paste, or follow-up screenshot with
