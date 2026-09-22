@@ -7,6 +7,7 @@ import {
 import { extractJsonObject } from "../_shared/extractJson.ts";
 import { digestChunks, planChunks } from "../_shared/chunkedAnalysis.ts";
 import { mapToRoles, parseTwoPersonTranscript } from "../_shared/deterministicParse.ts";
+import { conversationKey, deriveDateMetaFromText, recordIngestMeta } from "../_shared/exchangeDates.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
