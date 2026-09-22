@@ -317,8 +317,9 @@ One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, 
 ### Eight-step completion ledger
 | # | Step | Status | Evidence / blocker |
 |---|------|--------|--------------------|
-| 1 | Close browser verification (inline Insight/Introspection, pricing corrections, guide, menus) | in progress | Menus already exclude Roast Us/Wrapped (Header.tsx filter); pricing rebuilt this pass; Playwright run pending in this stage |
-| 2 | Participant confirmation, inclusion consent, identity pending state | pending | not started |
+| 1 | Close browser verification (inline Insight/Introspection, pricing corrections, guide, menus) | done | Playwright 360/390/430/1280/1440: inline Insight + Introspection with no toggles, pricing centred with Interactive Mode card, Help me choose on home + pricing with focus restore, menus exclude Roast Us/Wrapped; tsgo clean, build OK |
+| 2 | Participant confirmation, inclusion consent, identity pending state | done | Migration (consent fields, scope, identity_status, canonical unique index, rewritten validate trigger, 5 RPCs); `src/lib/journey/{api,types}.ts`, `src/pages/Journey.tsx`; 6 new unit tests (96 total); signed-in Playwright run: activation brought in 9 owned reports as pending, real participants "Maya/Jonas" offered, confirm → Included (9→8 pending), "I am not in this conversation" → excluded (→7); test rows removed afterwards |
+
 | 3 | Paid Interactive Mode (sent replies, ongoing exchanges, provenance) | pending | requires step 6 entitlement first |
 | 4 | Real Relationship360 adapters + synthesis engine | pending | fixtures only today |
 | 5 | Private saved reflections and periodic reviews | pending | not started |
