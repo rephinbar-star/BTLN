@@ -23,6 +23,7 @@ import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { getStripeEnvironment } from "@/lib/stripe";
 import type { AnalysisResult } from "@/lib/analysis-types";
+import { CoachingPersonalization } from "@/components/feedback/CoachingPersonalization";
 
 type AnalysisRow = {
   id: string;
@@ -547,6 +548,8 @@ const Account = () => {
           </ul>
         )}
         </section>
+
+        <CoachingPersonalization />
 
         <section className="flex flex-col gap-4 border-t border-border pt-8">
           <h2 className="text-[18px] font-medium tracking-tight">Account</h2>
