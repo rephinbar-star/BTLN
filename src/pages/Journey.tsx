@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Helmet } from "react-helmet-async";
-import { Loader2, Plus, Trash2, EyeOff, Eye, UserCheck } from "lucide-react";
+import { Download, Loader2, Plus, Trash2, EyeOff, Eye, UserCheck } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import {
   deleteEverything,
   deleteRelationship,
   detectParticipants,
+  exportEverything,
   getProfileState,
   linkSource,
   listOwnedReports,
@@ -40,8 +41,6 @@ import {
   type RelationshipScope,
 } from "@/lib/journey/types";
 
-const OTHER = "__other__";
-
 const Journey = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -61,12 +60,9 @@ const Journey = () => {
 
   const [linkTarget, setLinkTarget] = useState<string | null>(null);
   const [linkReport, setLinkReport] = useState("");
-  const [linkMe, setLinkMe] = useState("");
-
   const [identityTarget, setIdentityTarget] = useState<string | null>(null);
   const [detected, setDetected] = useState<string[]>([]);
   const [identityChoice, setIdentityChoice] = useState("");
-  const [identityCustom, setIdentityCustom] = useState("");
 
   const optedIn = Boolean(profile?.optedInAt);
   const needsReconsent =
@@ -88,6 +84,7 @@ const Journey = () => {
     setLoading(true);
     try {
       const state = await getProfileState();
+      if (state?.optedInAt && state.autoInclude) await autoInclude();
       setProfile(state);
       // Relationships and their controls stay readable after opting out or cancelling,
       // so correction, exclusion and deletion are never locked away.
@@ -154,7 +151,6 @@ const Journey = () => {
   const openIdentity = async (source: JourneySource) => {
     setIdentityTarget(source.id);
     setIdentityChoice("");
-    setIdentityCustom("");
     setDetected([]);
     try {
       const names = await detectParticipants(source.source_kind, source.source_id);
@@ -468,48 +464,20 @@ const Journey = () => {
                                             {name}
                                           </label>
                                         ))}
-                                        <label className="flex min-h-[44px] items-center gap-2 text-[14px] text-foreground">
-                                          <input
-                                            type="radio"
-                                            name={`who-${s.id}`}
-                                            value={OTHER}
-                                            checked={identityChoice === OTHER}
-                                            onChange={() => setIdentityChoice(OTHER)}
-                                            className="h-4 w-4"
-                                          />
-                                          Someone else in the chat
-                                        </label>
                                       </div>
                                     ) : (
                                       <p className="mt-1 text-[13px] text-muted-foreground">
-                                        We could not read participant names from this report. Type
-                                        your name exactly as it appears in the chat.
+                                        We could not verify participant choices from this report, so
+                                        it cannot contribute yet. You can exclude or remove it.
                                       </p>
-                                    )}
-                                    {(detected.length === 0 || identityChoice === OTHER) && (
-                                      <input
-                                        value={identityCustom}
-                                        onChange={(e) => setIdentityCustom(e.target.value)}
-                                        aria-label="Your name in this conversation"
-                                        className="mt-2 h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px]"
-                                      />
                                     )}
                                     <div className="mt-3 flex flex-col gap-2">
                                       <Button
                                         className="h-12 rounded-full"
-                                        disabled={
-                                          busy ||
-                                          !(identityChoice && identityChoice !== OTHER
-                                            ? identityChoice
-                                            : identityCustom.trim())
-                                        }
+                                        disabled={busy || !identityChoice}
                                         onClick={() =>
                                           run(async () => {
-                                            const value =
-                                              identityChoice && identityChoice !== OTHER
-                                                ? identityChoice
-                                                : identityCustom.trim();
-                                            await confirmIdentity(s.id, value);
+                                            await confirmIdentity(s.id, identityChoice);
                                             setIdentityTarget(null);
                                           }, "Could not save who you are")
                                         }
@@ -568,21 +536,9 @@ const Journey = () => {
                                 </option>
                               ))}
                             </select>
-                            <label
-                              className="mt-3 block text-[13px] text-muted-foreground"
-                              htmlFor={`me-${rel.id}`}
-                            >
-                              Which participant is you? (exactly as they appear in the chat)
-                            </label>
-                            <input
-                              id={`me-${rel.id}`}
-                              value={linkMe}
-                              onChange={(e) => setLinkMe(e.target.value)}
-                              className="mt-1 h-12 w-full rounded-xl border border-border bg-background px-3 text-[15px]"
-                            />
                             <Button
                               className="mt-3 h-12 w-full rounded-full"
-                              disabled={busy || !linkReport || !linkMe.trim()}
+                              disabled={busy || !linkReport}
                               onClick={() =>
                                 run(async () => {
                                   const [kind, id] = linkReport.split(":");
@@ -591,19 +547,17 @@ const Journey = () => {
                                     relationshipId: rel.id,
                                     kind: kind as LinkableReport["kind"],
                                     sourceId: id,
-                                    subjectParticipant: linkMe,
                                   });
                                   setLinkTarget(null);
                                   setLinkReport("");
-                                  setLinkMe("");
                                 }, "Could not link this report")
                               }
                             >
                               Include this report
                             </Button>
                             <p className="mt-2 text-[12px] text-muted-foreground">
-                              Only reports saved to your account can be included, and only your own.
-                              A conversation can sit in one relationship only.
+                              Only reports saved to your account can be included. After adding one,
+                              choose a verified participant before it contributes.
                             </p>
                           </div>
                         ) : (
@@ -614,7 +568,6 @@ const Journey = () => {
                             onClick={() => {
                               setLinkTarget(rel.id);
                               setLinkReport("");
-                              setLinkMe("");
                             }}
                           >
                             Include a report
@@ -646,6 +599,14 @@ const Journey = () => {
               removes everything Relationship360 holds. Your original reports are not deleted by this.
             </p>
             <div className="mt-4 flex flex-col gap-2">
+              <Button
+                variant="outline"
+                className="h-12 rounded-full"
+                disabled={busy}
+                onClick={() => run(exportEverything, "Could not export your Relationship360 data")}
+              >
+                <Download className="h-4 w-4" /> Export my Relationship360 data
+              </Button>
               {optedIn && (
                 <Button
                   variant="outline"

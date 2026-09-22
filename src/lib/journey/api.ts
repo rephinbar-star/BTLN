@@ -73,11 +73,21 @@ export async function markNotMe(sourceId: string): Promise<void> {
 }
 
 export async function optOut(userId: string): Promise<void> {
-  const { error } = await supabase
-    .from("journey_profiles")
-    .update({ opted_in_at: null, auto_include_enabled: false })
-    .eq("user_id", userId);
+  void userId;
+  const { error } = await supabase.rpc("journey_opt_out");
   if (error) throw error;
+}
+
+export async function exportEverything(): Promise<void> {
+  const { data, error } = await supabase.rpc("journey_export");
+  if (error) throw error;
+  const blob = new Blob([JSON.stringify(data ?? {}, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `relationship360-export-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }
 
 
@@ -127,37 +137,25 @@ export async function linkSource(params: {
   relationshipId: string;
   kind: JourneySourceKind;
   sourceId: string;
-  /** Empty means "I will identify myself later" — the row stays pending, never guessed. */
-  subjectParticipant: string;
 }): Promise<void> {
-  const participant = params.subjectParticipant.trim();
-  const identity: IdentityStatus = participant ? "confirmed" : "pending";
   const { data, error } = await supabase.from("journey_sources").insert({
     user_id: params.userId,
     relationship_id: params.relationshipId,
     source_kind: params.kind,
     source_id: params.sourceId,
-    subject_participant: participant || null,
-    identity_status: identity,
+    subject_participant: null,
+    identity_status: "pending" satisfies IdentityStatus,
   }).select("id").single();
   if (error) throw error;
-  if (params.kind === "group_roast" && data?.id && identity === "confirmed") {
-    const { error: adapterError } = await supabase.functions.invoke("group-roast-data", {
-      body: { action: "adapt_journey", group_roast_id: params.sourceId, journey_source_id: data.id },
-    });
-    if (adapterError) {
-      await supabase.from("journey_sources").delete().eq("id", data.id);
-      throw adapterError;
-    }
-  }
+  void data;
 }
 
 
 export async function setSourceExcluded(id: string, excluded: boolean): Promise<void> {
-  const { error } = await supabase
-    .from("journey_sources")
-    .update({ excluded_at: excluded ? new Date().toISOString() : null })
-    .eq("id", id);
+  const { error } = await supabase.rpc("journey_set_source_excluded", {
+    p_source_id: id,
+    p_excluded: excluded,
+  });
   if (error) throw error;
 }
 
