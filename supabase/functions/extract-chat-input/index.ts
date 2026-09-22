@@ -14,32 +14,31 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const MAX_IMAGES = 10;
 const MAX_TOTAL_BYTES = 12_000_000;
 
-// Server-authoritative hourly budgets. Signed-in callers get a per-account
-// budget; every caller is additionally metered by network address so a
-// signed-out client cannot mint fresh "sessions" to buy more model calls.
+// Server-authoritative hourly budgets.
+//
+// Signed-in callers are metered per account id, which the caller cannot forge:
+// it comes from verifying the bearer token server-side.
+//
+// Signed-out callers CANNOT be metered by network address here. Measured
+// 2026-09-22: this runtime passes `x-forwarded-for` through as sent, so a caller
+// can shard a per-address bucket at will (16 requests with distinct spoofed
+// values all passed a 12/hour per-address limit). The per-address bucket is
+// therefore kept only as a best-effort nuisance limit, and the spend ceiling
+// that actually holds is a single global signed-out budget that no header can
+// split. Guests keep working; total guest spend per hour is bounded.
 const LIMITS = {
   user: { requests: 30, images: 120 },
   ip: { requests: 12, images: 60 },
+  anonGlobal: { requests: 60, images: 240 },
 };
 
-// Guest metering key.
-//
-// `x-forwarded-for` is a client-appendable list: the FIRST entry is whatever the
-// caller sent. Only the entry appended by the ingress closest to us is
-// server-controlled, so we read the LAST entry. Any caller-supplied prefix is
-// ignored, which means a hostile header can neither shard the bucket nor
-// impersonate another address. Verified with hostile-header requests (see
-// docs/security-triage.md).
-//
-// When no forwarded chain is present at all every signed-out caller falls into a
-// single shared bucket rather than an unbounded one — deliberately conservative.
-function clientIp(req: Request): string {
+// Best-effort only — see above. Never treated as an identity.
+function clientIpHint(req: Request): string {
   const chain = (req.headers.get("x-forwarded-for") ?? "")
     .split(",")
     .map((part) => part.trim())
     .filter(Boolean);
-  const trusted = chain.length ? chain[chain.length - 1] : "";
-  return trusted || "shared-unattributed";
+  return (chain.length ? chain[chain.length - 1] : "") || "unattributed";
 }
 
 async function resolveUserId(authorization: string | null): Promise<string | null> {
