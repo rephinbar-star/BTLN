@@ -313,11 +313,17 @@ One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, 
 - **Relationship360 coverage:** exactly "Not Included" on every non-Prime plan; Prime shows
   "Included in Prime · In development" until the real engine ships.
 - No live billing, no publication, no silent migration of existing subscriptions.
+- **Pricing UX revision (2026-09-22):** Interactive Mode is not a standalone pricing card or
+  comparison-plan column. It appears inside the Quick Take card as an optional, unchecked
+  checkbox. Selecting it shows the explicit $6.99 base + $2.99 add-on = $9.98/month intent and
+  preserves that intent through the guide/auth URL; because no verified test add-on price exists,
+  the combined purchase stays disabled while base Quick Take remains separately purchasable.
+  Prime/current add-on states render as included/current and cannot be double-selected.
 
 ### Eight-step completion ledger
 | # | Step | Status | Evidence / blocker |
 |---|------|--------|--------------------|
-| 1 | Close browser verification (inline Insight/Introspection, pricing corrections, guide, menus) | done | Playwright 360/390/430/1280/1440: inline Insight + Introspection with no toggles, pricing centred with Interactive Mode card, Help me choose on home + pricing with focus restore, menus exclude Roast Us/Wrapped; tsgo clean, build OK |
+| 1 | Close browser verification (inline Insight/Introspection, pricing corrections, guide, menus) | done | Playwright 360/390/430/1280/1440: inline Insight + Introspection with no toggles, pricing centred; Help me choose on home + pricing with focus restore; menus exclude Roast Us/Wrapped; later pricing revision folds Interactive Mode into Quick Take instead of a separate card; tsgo clean, build OK |
 | 2 | Participant confirmation, inclusion consent, identity pending state | done | Migration (consent fields, scope, identity_status, canonical unique index, rewritten validate trigger, 5 RPCs); `src/lib/journey/{api,types}.ts`, `src/pages/Journey.tsx`; 6 new unit tests (96 total); signed-in Playwright run: activation brought in 9 owned reports as pending, real participants "Maya/Jonas" offered, confirm → Included (9→8 pending), "I am not in this conversation" → excluded (→7); test rows removed afterwards |
 
 | 3 | Paid Interactive Mode (sent replies, ongoing exchanges, provenance) | pending | requires step 6 entitlement first |
