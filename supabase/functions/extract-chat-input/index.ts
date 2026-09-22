@@ -1,3 +1,4 @@
+import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter, extractMessages } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
 
@@ -10,6 +11,32 @@ const json = (status: number, body: unknown) => new Response(JSON.stringify(body
 const MODEL = "openai/gpt-6-astra";
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_IMAGES = 10;
+const MAX_TOTAL_BYTES = 12_000_000;
+
+// Server-authoritative hourly budgets. Signed-in callers get a per-account
+// budget; every caller is additionally metered by network address so a
+// signed-out client cannot mint fresh "sessions" to buy more model calls.
+const LIMITS = {
+  user: { requests: 30, images: 120 },
+  ip: { requests: 12, images: 60 },
+};
+
+function clientIp(req: Request): string {
+  const forwarded = req.headers.get("x-forwarded-for") ?? "";
+  const first = forwarded.split(",")[0]?.trim();
+  return first || req.headers.get("cf-connecting-ip") || "unknown";
+}
+
+async function resolveUserId(authorization: string | null): Promise<string | null> {
+  if (!authorization?.toLowerCase().startsWith("bearer ")) return null;
+  const url = Deno.env.get("SUPABASE_URL");
+  const anon = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!url || !anon) return null;
+  const client = createClient(url, anon, { global: { headers: { Authorization: authorization } }, auth: { persistSession: false } });
+  const { data } = await client.auth.getUser();
+  return data?.user?.id ?? null;
+}
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -21,8 +48,35 @@ Deno.serve(async (req) => {
   const mode = body?.mode === "group" ? "group" : "pair";
   if (!UUID_RE.test(requestId) || !side || images.length < 1 || images.length > MAX_IMAGES) return json(400, { error: "Add up to 10 screenshots and confirm which side is you." });
   if (images.some((image: unknown) => typeof image !== "string" || !/^data:image\/(png|jpeg|webp);base64,/.test(image) || image.length > 3_000_000)) return json(413, { error: "One screenshot is too large or unreadable. Use PNG, JPG or WebP." });
+  const totalBytes = images.reduce((sum: number, image: string) => sum + image.length, 0);
+  if (totalBytes > MAX_TOTAL_BYTES) return json(413, { error: "These screenshots are too large together. Send fewer at a time." });
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) return json(503, { error: "Screenshot reading is not configured." });
+
+  // Charge the budget BEFORE any model call, using server-side counters.
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceKey) return json(503, { error: "Screenshot reading is not configured." });
+  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+  const userId = await resolveUserId(req.headers.get("Authorization"));
+  // Signed-in callers are metered per account (not spoofable); signed-out
+  // callers are metered per network address, never by a client-supplied id.
+  const buckets: Array<{ key: string; limits: { requests: number; images: number } }> = userId
+    ? [{ key: `user:${userId}`, limits: LIMITS.user }]
+    : [{ key: `ip:${clientIp(req)}`, limits: LIMITS.ip }];
+  for (const bucket of buckets) {
+    const { data, error } = await admin.rpc("claim_extraction_budget", {
+      p_bucket: bucket.key,
+      p_images: images.length,
+      p_max_requests: bucket.limits.requests,
+      p_max_images: bucket.limits.images,
+    });
+    if (error) return json(503, { error: "Screenshot reading is temporarily unavailable." });
+    if (!data?.allowed) {
+      return json(429, { error: "You have reached the screenshot reading limit for this hour. Try again later or paste the text instead." });
+    }
+  }
+
   let extracted: { messages: Array<{ sender_role?: string; raw_sender?: string; content: string; timestamp_estimate?: string | null }> } | { error: string };
   if (mode === "group") {
     const result = await callOpenRouter({
