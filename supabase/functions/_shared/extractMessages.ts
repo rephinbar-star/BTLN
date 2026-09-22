@@ -91,6 +91,8 @@ export type ExtractParams = {
   raw_text?: string;
   /** Signed URLs or data: URLs for screenshot input. */
   imageUrls?: string[];
+  /** Confirmed by the uploader for this screenshot set; never inferred from account identity. */
+  self_side?: "left" | "right";
   model_string: string;
   vision_model_string: string;
   apiKey: string;
@@ -109,9 +111,10 @@ Handle WhatsApp export format ([DD/MM/YY, HH:MM:SS] Name: text), iMessage paste 
 
 Return ONLY a JSON object: { "messages": [...] }. No preamble, no code fences.`;
 
+  const confirmedSide = p.self_side ?? "right";
   const visionSystem = `You are a vision parser for messaging app screenshots. Extract the conversation into structured JSON. Each message: sender_role ("user" or "partner"), content (verbatim including emojis), timestamp_estimate (extract if visible), sequence_order.
 
-Determining sender: in iMessage, WhatsApp, and most apps, messages aligned to the right side are typically the user's; messages aligned to the left are the partner's. Use this convention. If multiple screenshots, maintain sequential ordering across them based on visual order.
+Determining sender: the uploader explicitly confirmed that their messages are on the ${confirmedSide}. Treat that side as sender_role "user" and the opposite side as "partner". Do not override this choice using app conventions. If multiple screenshots, maintain sequential ordering across them based on visual order.
 
 The user's name is ${name1}. The partner's name is ${name2}.
 

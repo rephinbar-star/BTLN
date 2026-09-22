@@ -1,9 +1,13 @@
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
-import { callOpenRouter, extractMessages } from "../_shared/extractMessages.ts";
+import { extractMessages } from "../_shared/extractMessages.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 const MODEL = "openai/gpt-6-astra";
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f-]{27}$/i;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MAX_IMAGES = 10;
 
 Deno.serve(async (req) => {
@@ -17,7 +21,7 @@ Deno.serve(async (req) => {
   if (images.some((image: unknown) => typeof image !== "string" || !/^data:image\/(png|jpeg|webp);base64,/.test(image) || image.length > 3_000_000)) return json(413, { error: "One screenshot is too large or unreadable. Use PNG, JPG or WebP." });
   const key = Deno.env.get("OPENROUTER_API_KEY");
   if (!key) return json(503, { error: "Screenshot reading is not configured." });
-  const extracted = await extractMessages({ input_method: "screenshot", name1: "You", name2: "Them", imageUrls: images, model_string: MODEL, vision_model_string: MODEL, apiKey: key, referer: Deno.env.get("OPENROUTER_HTTP_REFERER") ?? "https://betweenthelines.app", title: "BetweenTheLines" });
+  const extracted = await extractMessages({ input_method: "screenshot", name1: "You", name2: "Them", imageUrls: images, self_side: side, model_string: MODEL, vision_model_string: MODEL, apiKey: key, referer: Deno.env.get("OPENROUTER_HTTP_REFERER") ?? "https://betweenthelines.app", title: "BetweenTheLines" });
   if ("error" in extracted) return json(502, { error: extracted.error });
   const messages = extracted.messages.slice(0, 1000).filter((message) => message.content?.trim());
   if (!messages.length) return json(422, { error: "No readable messages were found. Reorder clearer screenshots or use paste text." });
