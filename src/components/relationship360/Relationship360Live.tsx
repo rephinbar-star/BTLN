@@ -322,7 +322,10 @@ const ThenNow = ({ comparison }: { comparison: LiveComparison | null | undefined
               {period.start}{period.end !== period.start ? ` – ${period.end}` : ""}
             </p>
             <p className="mt-2 text-[13px] leading-relaxed">
-              {period.observations} dated observation{period.observations === 1 ? "" : "s"} from {period.sources} conversation{period.sources === 1 ? "" : "s"}: {period.about_you} about you, {period.about_them} about the other person.
+              {period.observations} dated observation{period.observations === 1 ? "" : "s"} from {period.sources} conversation{period.sources === 1 ? "" : "s"}
+              {period.about_you + period.about_them > 0
+                ? `: ${period.about_you} about you, ${period.about_them} about the other person.`
+                : ". None of them could be attributed to a named person, so they describe the exchange rather than either of you."}
             </p>
           </div>
         ))}
