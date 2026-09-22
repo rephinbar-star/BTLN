@@ -318,8 +318,8 @@ const Journey = () => {
             {optedIn && pendingCount > 0 && (
               <p className="mt-6 rounded-xl border border-border bg-muted/40 px-4 py-3 text-[14px] leading-relaxed text-foreground">
                 {pendingCount} conversation{pendingCount === 1 ? "" : "s"} need you to say which
-                participant is you. Until then {pendingCount === 1 ? "it contributes" : "they
-                contribute"} nothing.
+                participant is you. Until then they contribute nothing.
+
               </p>
             )}
 
