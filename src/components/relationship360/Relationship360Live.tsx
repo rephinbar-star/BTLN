@@ -289,7 +289,9 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
   );
 };
 
-const COMPARISON_REASON: Record<Exclude<LiveComparison, { available: true }>["reason"], string> = {
+type ComparisonReason = Extract<LiveComparison, { available: false }>["reason"];
+
+const COMPARISON_REASON: Record<ComparisonReason, string> = {
   not_enough_dated_evidence:
     "Then and Now needs conversations that carry their own dates. Nothing included does yet, so no time comparison is shown.",
   single_period: "Everything included falls in one period, so there is nothing to compare it against.",
@@ -309,8 +311,6 @@ const ThenNow = ({ comparison }: { comparison: LiveComparison | null | undefined
       </section>
     );
   }
-  const side = (title: string, period: LiveComparison extends { available: true } ? never : never) => period;
-  void side;
   return (
     <section className="mt-6 min-w-0" aria-labelledby="r360-thennow">
       <h3 id="r360-thennow" className="text-[18px] font-medium">Then and Now</h3>
