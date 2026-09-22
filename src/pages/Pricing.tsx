@@ -539,7 +539,9 @@ export default function Pricing() {
 
         {intended && !isMember && (
           <p className="mx-auto mt-6 max-w-xl rounded-2xl border border-border bg-muted/40 p-4 text-center text-[14px]">
-            Your plan choice is still selected below. Nothing has been charged — open checkout when you're ready.
+            {selectedByGuide
+              ? "Your Quick Take + Interactive Mode choice is selected below. Nothing has been charged. The combined purchase is not available yet, but you can continue with base Quick Take only."
+              : "Your plan choice is still selected below. Nothing has been charged — open checkout when you're ready."}
           </p>
         )}
 
