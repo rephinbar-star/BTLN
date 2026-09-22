@@ -5,6 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMembership } from "@/hooks/useMembership";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 import { extractScreenshotConversation } from "@/lib/ingest/extract";
+import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
+import { FeedbackControl } from "@/components/feedback/FeedbackControl";
 
 type InteractiveResult = {
   verdict?: string;
@@ -15,7 +17,7 @@ type InteractiveResult = {
 };
 
 type InteractiveEventType = "sent_reply" | "observed_followup" | "self_report" | "no_reply" | "chose_not_to_reply";
-type HistoryEvent = { id: string; event_type: InteractiveEventType; status: string; result_json?: InteractiveResult | null; created_at: string };
+type HistoryEvent = { id: string; event_type: InteractiveEventType; status: string; result_json?: InteractiveResult | null; created_at: string; model?: string | null };
 
 export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const { loading, hasInteractiveMode } = useMembership();
@@ -27,12 +29,19 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<InteractiveResult | null>(null);
   const [history, setHistory] = useState<HistoryEvent[]>([]);
+  const [threadId, setThreadId] = useState<string | null>(null);
+  const [lastEventId, setLastEventId] = useState<string | null>(null);
+  const [lastModel, setLastModel] = useState<string | null>(null);
 
   useEffect(() => {
     if (!hasInteractiveMode) return;
     void supabase.functions.invoke("interactive-mode", { body: { action: "list", decode_id: decodeId } })
-      .then(({ data }) => setHistory((data?.events ?? []) as HistoryEvent[]));
+      .then(({ data }) => {
+        setHistory((data?.events ?? []) as HistoryEvent[]);
+        setThreadId((data?.thread_id as string | undefined) ?? null);
+      });
   }, [decodeId, hasInteractiveMode]);
+
 
   if (loading) return null;
   if (!hasInteractiveMode) {
