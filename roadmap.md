@@ -14,3 +14,6 @@
 - [ ] Release validation matrix (step 8).
 - [x] Shared ingestion foundation across Quick Take, Deep Read, Group Read, Group Roast, Interactive Mode, and Relationship360.
 - [ ] Finish browser and real-pipeline verification for shared ingestion (parser/unit coverage and pair OCR verified; full mode matrix pending).
+- [x] Feedback-to-improvement loop: shared rating control, owner-scoped storage, personal coaching adaptation in Quick Take/Interactive prompts, operator aggregate view, frozen-rubric evaluation harness with manual promotion and rollback.
+- [ ] Verify the feedback loop end to end in a browser (two-account isolation, personalisation changing a real generation, operator view with real volume).
+
