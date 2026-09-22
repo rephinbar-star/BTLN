@@ -303,7 +303,7 @@ const COMPARISON_REASON: Record<ComparisonReason, string> = {
 /** Two dated periods side by side. Nothing here claims anything improved. */
 const ThenNow = ({ comparison }: { comparison: LiveComparison | null | undefined }) => {
   if (!comparison) return null;
-  if (!comparison.available) {
+  if (comparison.available === false) {
     return (
       <section className="mt-6 min-w-0" aria-labelledby="r360-thennow">
         <h3 id="r360-thennow" className="text-[18px] font-medium">Then and Now</h3>
