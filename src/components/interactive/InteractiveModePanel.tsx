@@ -94,6 +94,7 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
   };
 
   return (
+    <FeedbackProvider sourceKind="interactive" sourceId={threadId}>
     <section className="mt-10 rounded-xl border border-border bg-card p-5" aria-labelledby="interactive-heading">
       <div className="flex items-start gap-3">
         <MessageCircleMore className="mt-0.5 h-5 w-5" />
@@ -136,6 +137,20 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
           {result.read && <p className="mt-2 text-[15px] leading-relaxed text-muted-foreground">{result.read}</p>}
           {!!result.reply_options?.length && <div className="mt-4 space-y-2">{result.reply_options.map((reply, index) => <div key={`${reply.tone}-${index}`} className="rounded-md border border-border p-3"><p className="text-[12px] font-semibold uppercase text-muted-foreground">{reply.tone}</p><p className="mt-1 text-[15px]">{reply.text}</p></div>)}</div>}
           {result.provenance_notes && <p className="mt-3 text-[12px] text-muted-foreground">{result.provenance_notes}</p>}
+          {threadId && lastEventId && (
+            <div className="mt-3 flex justify-end">
+              <FeedbackControl
+                label="this updated take"
+                target={{
+                  sourceKind: "interactive",
+                  sourceId: threadId,
+                  targetKind: "turn",
+                  targetKey: lastEventId,
+                  model: lastModel,
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
       {history.length > 0 && (
@@ -147,11 +162,27 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
                 <p className="font-medium">{item.event_type === "sent_reply" ? "Confirmed sent response" : item.event_type === "observed_followup" ? "Observed follow-up" : item.event_type === "self_report" ? "Private self-report" : item.event_type === "no_reply" ? "No reply yet" : "Chose not to reply"}</p>
                 <p className="mt-1 text-muted-foreground">{new Date(item.created_at).toLocaleString()} · {item.status}</p>
                 {item.result_json?.read && <p className="mt-2 leading-relaxed">{item.result_json.read}</p>}
+                {threadId && item.result_json?.read && (
+                  <div className="mt-2 flex justify-end">
+                    <FeedbackControl
+                      compact
+                      label="this update"
+                      target={{
+                        sourceKind: "interactive",
+                        sourceId: threadId,
+                        targetKind: "turn",
+                        targetKey: item.id,
+                        model: item.model ?? null,
+                      }}
+                    />
+                  </div>
+                )}
               </li>
             ))}
           </ol>
         </div>
       )}
     </section>
+    </FeedbackProvider>
   );
 }
