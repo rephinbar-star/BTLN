@@ -591,13 +591,7 @@ const Journey = () => {
                   );
                 })}
 
-            {optedIn && (
-              <p className="mt-8 text-[13px] leading-relaxed text-muted-foreground">
-                Patterns and coaching across these conversations are still being built. Until they
-                are ready, this page shows only what you have chosen to include — no trends are
-                claimed from it.
-              </p>
-            )}
+            {optedIn && !needsReconsent && <Relationship360Live relationships={relationships} />}
           </>
         )}
 
