@@ -9,8 +9,12 @@ import {
   type FeedbackTarget,
 } from "@/lib/feedback/types";
 
+/** Source is inherited from the surrounding FeedbackProvider unless overridden. */
+export type FeedbackTargetInput = Omit<FeedbackTarget, "sourceKind" | "sourceId"> &
+  Partial<Pick<FeedbackTarget, "sourceKind" | "sourceId">>;
+
 type Props = {
-  target: FeedbackTarget;
+  target: FeedbackTargetInput;
   /** Compact renders icons only (used next to reply options and inline items). */
   compact?: boolean;
   /** Accessible description of what is being rated, e.g. "reply option 2". */
@@ -24,13 +28,18 @@ const CHIP =
   "rounded-full border border-border px-3 py-1.5 text-[13px] leading-none transition-colors min-h-[36px] inline-flex items-center";
 
 export const FeedbackControl = ({
-  target,
+  target: targetInput,
   compact = false,
   label,
   onCorrectionRequested,
   className,
 }: Props) => {
   const store = useFeedbackStore();
+  const target: FeedbackTarget = {
+    ...targetInput,
+    sourceKind: targetInput.sourceKind ?? store?.sourceKind ?? "quick_take",
+    sourceId: targetInput.sourceId ?? store?.sourceId ?? "",
+  };
   const existing = store?.get(target.targetKind, target.targetKey ?? "main");
   const [open, setOpen] = useState(false);
   const [stage, setStage] = useState<"rate" | "details">("rate");
@@ -56,7 +65,7 @@ export const FeedbackControl = ({
   const showCorrection =
     !!onCorrectionRequested && reasons.some((code) => CORRECTION_REASON_CODES.has(code));
 
-  if (!store) return null;
+  if (!store || !target.sourceId) return null;
 
   const closeAndReturnFocus = () => {
     setOpen(false);

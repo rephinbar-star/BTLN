@@ -23,6 +23,8 @@ import type {
 type Ctx = {
   /** True for fictional examples: feedback stays local and never reaches the product loop. */
   demo: boolean;
+  sourceKind: FeedbackSourceKind;
+  sourceId: string | null;
   get: (targetKind: string, targetKey: string) => FeedbackRecord | undefined;
   save: (input: SubmitFeedbackInput) => Promise<{ ok: boolean; error?: string }>;
   clear: (target: FeedbackTarget) => Promise<{ ok: boolean; error?: string }>;
@@ -100,11 +102,13 @@ export const FeedbackProvider = ({
   const value = useMemo<Ctx>(
     () => ({
       demo,
+      sourceKind,
+      sourceId: sourceId ?? null,
       get: (kind, key) => records[keyOf(kind, key)],
       save,
       clear,
     }),
-    [demo, records, save, clear],
+    [demo, sourceKind, sourceId, records, save, clear],
   );
 
   return <FeedbackContext.Provider value={value}>{children}</FeedbackContext.Provider>;
