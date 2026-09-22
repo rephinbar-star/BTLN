@@ -19,6 +19,8 @@ import { HowToHelp } from "./HowToHelp";
 import { readChatFile, UnsupportedFileError } from "@/lib/ingest/file";
 import type { TranscriptCandidate } from "@/lib/ingest/archive";
 import { takeDeepReadHandoff } from "@/lib/ingest/handoff";
+import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
+import { extractScreenshotConversation } from "@/lib/ingest/extract";
 
 type FormState = {
   conversation: string;
@@ -149,6 +151,7 @@ type InputSectionProps = {
 
 export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const [form, setForm] = useState<FormState>(initialState);
+  const [sharedDraft, setSharedDraft] = useState<ConversationDraft>(emptyConversationDraft);
   const [mode, setMode] = useState<InputMode>("screenshots");
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [pendingMode, setPendingMode] = useState<InputMode | null>(null);
@@ -666,208 +669,26 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           <HowToHelp />
         </div>
 
-        {/* Tabs */}
-        <div className="mt-5 flex gap-1 rounded-xl bg-muted p-1">
-          {tabs.map((t) => {
-            const Icon = t.icon;
-            const active = mode === t.id;
-            return (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => requestModeChange(t.id)}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-[12px] font-medium transition-colors sm:text-[13px] ${
-                  active
-                    ? "bg-background text-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{t.label}</span>
-                <span className="whitespace-nowrap sm:hidden">{t.shortLabel}</span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Tab content */}
-        <div className="mt-4">
-          {mode === "paste" && (
-            <>
-              <textarea
-                value={form.conversation}
-                onChange={(e) => {
-                  update("conversation", e.target.value);
-                  fireInputStarted();
-                }}
-                placeholder="Paste a chunk of your conversation here. Both sides - at least 30 messages work best. We'll figure out who said what."
-                className={`${fieldClass} h-[200px] resize-none leading-relaxed`}
-              />
-              {fieldErrors.conversation && (
-                <p className="mt-2 text-[12px] text-destructive">{fieldErrors.conversation}</p>
-              )}
-              {loadedFileName && (
-                <p className="mt-2 text-[12px] text-muted-foreground">
-                  Loaded from <span className="font-medium text-foreground">{loadedFileName}</span>
-                </p>
-              )}
-              {truncationNotice && (
-                <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-[12px] text-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
-                  {truncationNotice}
-                </p>
-              )}
-              {fileNotices.length > 0 && (
-                <ul className="mt-2 space-y-1 text-[12px] text-muted-foreground">
-                  {fileNotices.map((n) => (
-                    <li key={n}>{n}</li>
-                  ))}
-                </ul>
-              )}
-            </>
-          )}
-
-          {mode === "file" && (
-            <div>
-              <input
-                ref={txtInputRef}
-                type="file"
-                accept=".txt,.csv,text/plain,text/csv,.zip,application/zip,application/x-zip-compressed"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleTxtFile(f);
-                  e.target.value = "";
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => txtInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  const f = e.dataTransfer.files?.[0];
-                  if (f) handleTxtFile(f);
-                }}
-                className="flex h-[200px] w-full flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-border bg-background px-6 text-center transition-colors hover:border-foreground/40 hover:bg-muted/40"
-              >
-                <Upload className="h-6 w-6 text-muted-foreground" />
-                <div>
-                  <p className="text-[14px] font-medium text-foreground">
-                    Drop a .txt, .csv or .zip export, or click to browse
-                  </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">
-                    WhatsApp exports from iPhone or Android, or an iMessage transcript with date,
-                    sender and message columns. Photos inside a .zip are ignored.
-                  </p>
-                </div>
-              </button>
-              {zipCandidates && (
-                <div className="mt-3 rounded-xl border border-border p-3">
-                  <p className="text-[13px] font-medium">That archive has more than one chat</p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">
-                    Pick one — we won't join different chats together.
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {zipCandidates.map((c) => (
-                      <button
-                        key={c.name}
-                        type="button"
-                        onClick={() => {
-                          const f = pendingArchive.current;
-                          if (f) void handleTxtFile(f, c.name);
-                        }}
-                        className="rounded-full border border-border px-3 py-1.5 text-[12px] hover:bg-muted/50"
-                      >
-                        {c.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {fileError && <p className="mt-2 text-[12px] text-destructive">{fileError}</p>}
-            </div>
-          )}
-
-          {mode === "screenshots" && (
-            <div>
-              <input
-                ref={imgInputRef}
-                type="file"
-                accept="image/png,image/jpeg"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files) handleImageFiles(e.target.files);
-                  e.target.value = "";
-                }}
-              />
-              <button
-                type="button"
-                disabled={screenshots.length >= MAX_SCREENSHOTS}
-                onClick={() => imgInputRef.current?.click()}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                }}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (e.dataTransfer.files) handleImageFiles(e.dataTransfer.files);
-                }}
-                className="flex h-[140px] w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-background px-6 text-center transition-colors hover:border-foreground/40 hover:bg-muted/40 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                <div>
-                  <p className="text-[14px] font-medium text-foreground">
-                    {screenshots.length >= MAX_SCREENSHOTS
-                      ? `Maximum of ${MAX_SCREENSHOTS} images reached`
-                      : "Drop screenshots or click to browse"}
-                  </p>
-                  <p className="mt-1 text-[12px] text-muted-foreground">For best results have at least 30 messages. PNG or JPG, up to {MAX_SCREENSHOTS} images, 2 MB each. Extras beyond {MAX_SCREENSHOTS} will be skipped.</p>
-                </div>
-              </button>
-
-              {screenshots.length > 0 && (
-                <>
-                  <div className="mt-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
-                    {screenshots.map((s) => (
-                      <div
-                        key={s.id}
-                        className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
-                      >
-                        {s.status === "ready" ? (
-                         <img src={s.dataUrl} alt={`Uploaded screenshot: ${s.name}`} className="h-full w-full object-cover" />
-                        ) : (
-                          <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] text-muted-foreground">
-                            Compressing…
-                          </div>
-                        )}
-                        {s.status === "ready" && (
-                          <div className="absolute bottom-1 left-1 rounded bg-foreground/80 px-1.5 py-0.5 text-[10px] font-medium text-background">
-                            {formatBytes(s.size)} · Compressed
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => removeScreenshot(s.id)}
-                          className="absolute right-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-foreground/80 text-background opacity-0 transition-opacity group-hover:opacity-100 focus:opacity-100"
-                          aria-label={`Remove ${s.name}`}
-                        >
-                          <X className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <p className="mt-3 text-[12px] text-muted-foreground">
-                    {screenshots.length} of {MAX_SCREENSHOTS} images · {formatBytes(totalImageBytes)} total compressed
-                    {screenshots.some((s) => s.status === "compressing") && " · compressing…"}
-                  </p>
-                </>
-              )}
-
-              {imageError && <p className="mt-2 text-[12px] text-destructive">{imageError}</p>}
-            </div>
-          )}
+        <div className="mt-5">
+          <SharedConversationInput
+            value={sharedDraft}
+            onChange={(next) => {
+              setSharedDraft(next);
+              if (next.conversation && next.conversation.format !== "screenshots_pending") {
+                const names = next.conversation.participants;
+                const self = names.find((person) => person.id === next.selfParticipantId);
+                const other = names.find((person) => person.id !== next.selfParticipantId);
+                setForm((prev) => ({
+                  ...prev,
+                  conversation: next.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? "",
+                  yourName: self?.display_name ?? prev.yourName,
+                  theirName: other?.display_name ?? prev.theirName,
+                }));
+                setMode("paste");
+              }
+            }}
+            extractScreenshots={extractScreenshotConversation}
+          />
         </div>
 
         <p className="mt-4 text-[12px] text-muted-foreground">
