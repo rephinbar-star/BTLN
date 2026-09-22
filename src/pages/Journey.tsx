@@ -6,6 +6,7 @@ import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
 import { SeeExample } from "@/components/examples/ExampleExperience";
+import { Relationship360Live } from "@/components/relationship360/Relationship360Live";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -591,13 +592,7 @@ const Journey = () => {
                   );
                 })}
 
-            {optedIn && (
-              <p className="mt-8 text-[13px] leading-relaxed text-muted-foreground">
-                Patterns and coaching across these conversations are still being built. Until they
-                are ready, this page shows only what you have chosen to include — no trends are
-                claimed from it.
-              </p>
-            )}
+            {optedIn && !needsReconsent && <Relationship360Live relationships={relationships} />}
           </>
         )}
 

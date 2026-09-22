@@ -7,7 +7,8 @@
 - [x] Replace homepage modes with situation-led choices and an honest Prime preview.
 - [x] Verify homepage actions, expansion controls, and responsive layouts.
 - [ ] Interactive Mode add-on: entitlement, purchase prerequisite, lifecycle (step 6 then 3).
-- [ ] Relationship360 real adapters + synthesis engine (step 4).
+- [x] Relationship360 real adapters + synthesis engine (step 4) — built, deployed and verified live on 2026-09-22 with two synthetic accounts and two real model-backed Deep Reads (see docs/relationship360-build.md).
+- [ ] Relationship360 follow-ups: merge/relabel auto-created relationships, reflections feeding the next synthesis with provenance.
 - [x] Participant confirmation and inclusion consent (step 2).
 - [ ] Saved reflections and periodic reviews (step 5).
 - [ ] Group Roast humour pass (step 7).

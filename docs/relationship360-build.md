@@ -381,11 +381,49 @@ One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, 
 | 2 | Participant confirmation, inclusion consent, identity pending state | done | Migration (consent fields, scope, identity_status, canonical unique index, rewritten validate trigger, 5 RPCs); `src/lib/journey/{api,types}.ts`, `src/pages/Journey.tsx`; 6 new unit tests (96 total); signed-in Playwright run: activation brought in 9 owned reports as pending, real participants "Maya/Jonas" offered, confirm → Included (9→8 pending), "I am not in this conversation" → excluded (→7); test rows removed afterwards |
 
 | 3 | Paid Interactive Mode (sent replies, ongoing exchanges, provenance) | done, except purchase | Live run 2026-09-22 against the deployed `interactive-mode` function with a synthetic entitled account: confirmed sent reply → observed follow-up (speaker order confirmed) → real contextual model response (`openai/gpt-6-astra`) that referenced the earlier read ("They suggested Thursday, which shifts the picture away from avoiding a plan") plus three fresh reply options; one thread across all events; retry with the same `client_request_id` returns the same event with no second model call (response shape normalised this run); a second account is refused with 402 and cannot list the thread. Entitlement came from a `test_fixture` provider row, NOT a purchase — checkout remains step 6. |
-| 4 | Real Relationship360 adapters + synthesis engine | pending | fixtures only today; staging, identity confirmation, exclusion and deletion cleanup are real (see step 2 evidence), the synthesis engine is not |
+| 4 | Real Relationship360 adapters + synthesis engine | built and verified live (see below) | `supabase/functions/_shared/r360Adapters.ts`, `supabase/functions/relationship360/index.ts` (deployed), `src/lib/relationship360/live.ts`, `src/components/relationship360/Relationship360Live.tsx`, wired into `src/pages/Journey.tsx`; two migrations (grant `journey_write_summary` to authenticated; drop the observation-level version bump that made every build cancel itself). Live run 2026-09-22 below. |
 | 5 | Private saved reflections and periodic reviews | pending | not started |
 | 6 | Prime/add-on billing + entitlement reconciliation | pending | no Interactive Mode price exists with the payment provider; BYOK `STRIPE_SECRET_KEY` mode unverified in this sandbox |
 | 7 | Group Roast humour pass, Playful/Spicy, share cards | pending | not started |
 | 8 | Release validation matrix (isolation, injection, 10k-message ingestion, linter triage) | part done | Two-account isolation, forged-participant rejection, deletion invalidating derived state, guest-path preservation and hostile-header rate-limit bypass all run as real authenticated HTTP requests on 2026-09-22 — see `docs/security-triage.md`, which also records the two defects those runs found and fixed. Still to run: prompt injection, 10k-message upload → model analysis → adapter, mobile matrix |
+
+
+## Step 4 — real engine, live verification (2026-09-22)
+
+Run against the deployed `relationship360` function with two synthetic accounts
+(`r360-a/b-1790055777@btln-test.dev`). Account A's Prime came from a `test_fixture`
+entitlement row, **not a purchase**.
+
+What actually ran:
+- Two **real** Deep Reads through `analyze-conversation` (real model calls, `analyses`
+  `92a90023…` and `f6eb038f…`, both `complete`), claimed to account A.
+- Activation with automatic inclusion staged both as `pending`; a duplicate manual link was
+  rejected by the canonical unique index.
+- `journey_confirm_identity` refused an invented participant ("choose a participant from this
+  conversation") and accepted "Taylor"; account B confirming A's source returned `false`.
+- `build` → `complete`, coverage `{sources:2, relationships:2, observations:15}`, grounded
+  narrative that explicitly refuses to over-read ("does not establish that you always do more"),
+  evidence ids validated against stored observations.
+- Excluding one source removed its observations (15 → 8) and marked the summary stale; the rebuild
+  reported `single_read: true` with one source. Re-including and rebuilding returned to 2/15.
+- `reflect` saved a private note (`{"saved":true}`).
+- Denials: account B `build` → 402 "Relationship360 is part of Prime"; signed-out → 401; B reading
+  A's `journey_summaries` / `journey_observations` over REST → `[]`.
+- UI: `/journey` at 390px signed in as A renders the real profile — relationship chips, "Built from
+  2 included conversations across 2 relationships and 1 period", underlined Insight open,
+  Introspection inline, no fixture content. Only pre-existing React ref warnings in console.
+
+Known rough edge, not hidden: automatic inclusion creates one relationship per staged report, so the
+same person can appear as two relationships until the user merges or relabels them. The synthesis
+says so rather than inventing a cross-relationship pattern.
+
+Unit coverage: `src/lib/relationship360/adapters.test.ts` (6 tests) pins the attribution rules —
+behaviour is the person's only when their confirmed participant is named, suggested replies stay
+`ai_advice` ("not known to be sent"), self-reports stay `self_report`, Group Roast yields no
+observations, group role cards map by confirmed name only. 119 tests total, `tsgo` clean.
+
+Still pending in steps 4/5: periodic reviews driven by new evidence, and reflections feeding the
+next synthesis with explicit provenance.
 
 
 ## Feedback-to-improvement loop (2026-09-22)
