@@ -5,6 +5,7 @@ import { ArrowRight, MessageSquare, Sparkles, Users, UsersRound, type LucideIcon
 import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
 import { SeeExample } from "@/components/examples/ExampleExperience";
+import { HelpMeChoose } from "@/components/pricing/HelpMeChoose";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -230,20 +231,19 @@ const Index = () => {
           Find the read that fits your situation.
         </p>
 
+        {/* Optional guide, prominent but never required — the situation cards
+            below stay the direct path. Same guide as on Pricing. */}
+        <HelpMeChoose
+          source="home_page"
+          variant="button"
+          supportLine="Answer a few quick questions to find the right option."
+        />
+
         <div className="mt-7 space-y-4">
           {MODES.map((mode) => (
             <SituationCard key={mode.to} mode={mode} />
           ))}
         </div>
-
-        {/* Optional and never in the way: the situation cards above stay the
-            direct path. */}
-        <p className="mt-6 text-[15px]">
-          Not sure which one?{" "}
-          <Link to="/pricing#sec-quick" className="underline underline-offset-4">
-            Help me choose
-          </Link>
-        </p>
 
         <section className="mt-9 border-y border-btln-line py-7" aria-labelledby="prime-heading">
           <div className="flex items-center gap-3">
