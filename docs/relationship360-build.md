@@ -380,12 +380,13 @@ One-time $4.99 stays report-bound: the pricing CTA opens a mode chooser (/deep, 
 | 1 | Close browser verification (inline Insight/Introspection, pricing corrections, guide, menus) | done | Playwright 360/390/430/1280/1440: inline Insight + Introspection with no toggles, pricing centred; Help me choose on home + pricing with focus restore; menus exclude Roast Us/Wrapped; later pricing revision folds Interactive Mode into Quick Take instead of a separate card; tsgo clean, build OK |
 | 2 | Participant confirmation, inclusion consent, identity pending state | done | Migration (consent fields, scope, identity_status, canonical unique index, rewritten validate trigger, 5 RPCs); `src/lib/journey/{api,types}.ts`, `src/pages/Journey.tsx`; 6 new unit tests (96 total); signed-in Playwright run: activation brought in 9 owned reports as pending, real participants "Maya/Jonas" offered, confirm → Included (9→8 pending), "I am not in this conversation" → excluded (→7); test rows removed afterwards |
 
-| 3 | Paid Interactive Mode (sent replies, ongoing exchanges, provenance) | pending | requires step 6 entitlement first |
-| 4 | Real Relationship360 adapters + synthesis engine | pending | fixtures only today |
+| 3 | Paid Interactive Mode (sent replies, ongoing exchanges, provenance) | done, except purchase | Live run 2026-09-22 against the deployed `interactive-mode` function with a synthetic entitled account: confirmed sent reply → observed follow-up (speaker order confirmed) → real contextual model response (`openai/gpt-6-astra`) that referenced the earlier read ("They suggested Thursday, which shifts the picture away from avoiding a plan") plus three fresh reply options; one thread across all events; retry with the same `client_request_id` returns the same event with no second model call (response shape normalised this run); a second account is refused with 402 and cannot list the thread. Entitlement came from a `test_fixture` provider row, NOT a purchase — checkout remains step 6. |
+| 4 | Real Relationship360 adapters + synthesis engine | pending | fixtures only today; staging, identity confirmation, exclusion and deletion cleanup are real (see step 2 evidence), the synthesis engine is not |
 | 5 | Private saved reflections and periodic reviews | pending | not started |
 | 6 | Prime/add-on billing + entitlement reconciliation | pending | no Interactive Mode price exists with the payment provider; BYOK `STRIPE_SECRET_KEY` mode unverified in this sandbox |
 | 7 | Group Roast humour pass, Playful/Spicy, share cards | pending | not started |
-| 8 | Release validation matrix (isolation, injection, 10k-message ingestion, linter triage) | pending | not started |
+| 8 | Release validation matrix (isolation, injection, 10k-message ingestion, linter triage) | part done | Two-account isolation, forged-participant rejection, deletion invalidating derived state, guest-path preservation and hostile-header rate-limit bypass all run as real authenticated HTTP requests on 2026-09-22 — see `docs/security-triage.md`, which also records the two defects those runs found and fixed. Still to run: prompt injection, 10k-message upload → model analysis → adapter, mobile matrix |
+
 
 ## Feedback-to-improvement loop (2026-09-22)
 
