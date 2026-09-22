@@ -558,6 +558,7 @@ export type Database = {
           coverage_json: Json
           created_at: string
           error_message: string | null
+          humor_intensity: string
           id: string
           input_fingerprint: string
           message_count: number
@@ -581,6 +582,7 @@ export type Database = {
           coverage_json?: Json
           created_at?: string
           error_message?: string | null
+          humor_intensity?: string
           id?: string
           input_fingerprint: string
           message_count: number
@@ -604,6 +606,7 @@ export type Database = {
           coverage_json?: Json
           created_at?: string
           error_message?: string | null
+          humor_intensity?: string
           id?: string
           input_fingerprint?: string
           message_count?: number
@@ -787,6 +790,8 @@ export type Database = {
       }
       journey_jobs: {
         Row: {
+          attempt_count: number
+          completed_at: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -800,6 +805,8 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          attempt_count?: number
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -813,6 +820,8 @@ export type Database = {
           user_id: string
         }
         Update: {
+          attempt_count?: number
+          completed_at?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
