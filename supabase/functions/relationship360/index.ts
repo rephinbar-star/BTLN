@@ -462,6 +462,50 @@ Deno.serve(async (req) => {
   const distinctRelationships = new Set(observations.map((o) => relOf(o.journey_source_id))).size;
   const datedObservations = observations.filter((o) => o.observed_period_start).length;
 
+  /**
+   * Then / Now. Computed here, deterministically, never by the model.
+   * It exists only when dated evidence from genuinely different, non-overlapping
+   * periods and DIFFERENT sources supports a comparison. More evidence later is
+   * not the same as changed behaviour, so the result says what it is: two
+   * periods described side by side, with no improvement claimed.
+   */
+  const buildComparison = () => {
+    const dated = observations
+      .filter((o) => o.observed_period_start)
+      .map((o) => ({ ...o, start: o.observed_period_start!.slice(0, 10), end: (o.observed_period_end ?? o.observed_period_start!).slice(0, 10) }))
+      .sort((a, b) => (a.start < b.start ? -1 : 1));
+    if (dated.length < 2) return { available: false, reason: "not_enough_dated_evidence" as const };
+    const days = [...new Set(dated.map((o) => o.start))];
+    if (days.length < 2) return { available: false, reason: "single_period" as const };
+    const cut = days[Math.floor(days.length / 2)];
+    const then = dated.filter((o) => o.start < cut);
+    const now = dated.filter((o) => o.start >= cut);
+    if (then.length === 0 || now.length === 0) return { available: false, reason: "single_period" as const };
+    const thenSources = new Set(then.map((o) => o.journey_source_id));
+    const nowSources = new Set(now.map((o) => o.journey_source_id));
+    // The same upload appearing on both sides is not two periods of evidence.
+    const independent = [...nowSources].some((id) => !thenSources.has(id));
+    if (!independent) return { available: false, reason: "same_conversation_only" as const };
+    const thenEnd = then.reduce((max, o) => (o.end > max ? o.end : max), then[0].end);
+    const nowStart = now.reduce((min, o) => (o.start < min ? o.start : min), now[0].start);
+    if (thenEnd >= nowStart) return { available: false, reason: "overlapping_periods" as const };
+    const side = (rows: typeof dated, sources: Set<string>) => ({
+      start: rows.reduce((min, o) => (o.start < min ? o.start : min), rows[0].start),
+      end: rows.reduce((max, o) => (o.end > max ? o.end : max), rows[0].end),
+      observations: rows.length,
+      sources: sources.size,
+      about_you: rows.filter((o) => o.subject_kind === "user_behavior").length,
+      about_them: rows.filter((o) => o.subject_kind === "other_behavior").length,
+    });
+    return {
+      available: true as const,
+      then: side(then, thenSources),
+      now: side(now, nowSources),
+      note: "Two periods described side by side from dated evidence. More evidence later is not proof anything changed.",
+    };
+  };
+  const comparison = buildComparison();
+
   const system = [
     "You write BetweenTheLines Relationship360: a private, evidence-grounded look at how one person shows up in their relationships.",
     "You are given normalised OBSERVATIONS derived from reports this person already owns. You have no access to raw messages.",
