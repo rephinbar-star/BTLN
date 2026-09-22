@@ -7,10 +7,28 @@ That file remains valid for the RLS/deny-all history.
 
 ## Counts
 
-| Pass | 0028 anon-executable | 0029 authenticated-executable | Total |
+Single dated snapshot, all figures re-read from the advisor on 2026-09-22 UTC.
+
+| Pass (2026-09-22) | 0028 anon-executable | 0029 authenticated-executable | Total |
 |---|---|---|---|
 | Before this pass | 31 | 42 | 73 |
 | After this pass | 27 | 42 | 69 |
+
+Reconciliation with the older **57** in `docs/linter-disposition.md` (2026-09-16) and the same
+number quoted in `docs/relationship360-build.md`: 57 → 73 is **not** a regression and 73 → 69 is
+**not** "fixed". The increase is (a) functions added since that date for feedback, entitlements and
+Relationship360, and (b) four objects that had always been anon-executable but were recorded as
+authenticated-only, corrected below. Both older documents now point here. Counts are a bookkeeping
+figure only: an elevated-privilege function is not an exploit, and a low count is not safety.
+
+Residual risk accepted after this pass: every remaining object is reachable by its stated role, so
+the authorization predicate inside the function body is the only boundary. A bug in any one of those
+predicates is a direct data-exposure path; they are listed individually below precisely so each can
+be re-read. Write-capable public functions are bounded by an owner/session predicate, which caps
+*who* a row can be attributed to but does not by itself cap *volume*; only `submit_ai_feedback`
+(300/hour/owner) and `claim_extraction_budget` carry an explicit rate limit today. Unmetered public
+write volume on `log_event`, `record_share_click`, `capture_email`, `record_paywall_intent`,
+`submit_feedback` and `submit_survey` is an open item, not a closed one.
 
 A lower count is not a security claim. The number that matters is that every remaining
 object below was read in full and has a named authorization predicate.
@@ -139,24 +157,56 @@ to `SECURITY INVOKER` would break the RLS model they implement.
 Previously documented gap: the endpoint was fully public with no metering. Any caller
 could POST 10 images and trigger a vision-model call.
 
-Implemented:
+### Correction: network-address metering is NOT bypass-resistant here
 
-- Budgets are charged **before** the model call, from a server-side table, not a
-  client counter. Signed-in callers are metered per account (`user:<uuid>`, 30
-  requests / 120 images per rolling hour); signed-out callers are metered per network
-  address (`ip:<addr>`, 12 requests / 60 images per hour). A client-supplied session id
-  is never used as a budget key, so minting new sessions buys nothing.
-- Per-image cap 3 MB, per-request cap 10 images, new total-payload cap 12 MB.
-- Counters live in `public.extraction_budget`, unreachable through the Data API;
-  `claim_extraction_budget` is `service_role` only.
+The first fix metered signed-out callers per network address, read from
+`x-forwarded-for`. **Hostile-header test, 2026-09-22:** 16 consecutive anonymous requests,
+each sending a different `X-Forwarded-For: 203.0.113.N`, all returned `422` (reached the
+model) against a 12/hour per-address limit. The runtime passes the caller's header through
+rather than overwriting it, and reading the last chain element does not help because the
+whole chain is caller-supplied. A rate-limit test that only shows "the 13th request is
+rejected" proves nothing about bypass resistance. No non-spoofable per-guest network
+identity is available to this function.
 
-Runtime evidence (2026-09-22, anonymous, single source address):
-requests 1–12 → `422` (reached the model, no readable text in the 1×1 test pixel);
-requests 13, 14, 15 → `429 "You have reached the screenshot reading limit for this
-hour."` Budget is therefore enforced ahead of model spend.
+### What is enforced now
 
-Residual: the per-address bucket is shared by callers behind one NAT. Accepted for a
-signed-out free path; signing in raises the ceiling.
+- **Signed in:** metered per account id resolved by verifying the bearer token
+  server-side (`user:<uuid>`, 30 requests / 120 images per hour). Not forgeable.
+- **Signed out:** charged first against a single global guest budget
+  (`anon:global`, 60 requests / 240 images per hour) that no header can split, then
+  against a best-effort per-address bucket (12 / 60) kept only as a nuisance limit and
+  explicitly documented as spoofable. Guests are not blocked from the intended flow;
+  total guest model spend per hour is bounded.
+- Budgets are charged **before** the model call from `public.extraction_budget`, which is
+  unreachable through the Data API; `claim_extraction_budget` is `service_role` only.
+- Per-image cap 3 MB, per-request cap 10 images, total-payload cap 12 MB.
+
+**Runtime evidence (2026-09-22, anonymous, 70 requests with 70 distinct spoofed
+addresses):** requests proceeded until the global hourly budget was exhausted, after which
+every further request returned `429` regardless of the spoofed address. Spoofing shards the
+best-effort bucket and does not raise the ceiling that matters.
+
+Residual: the global bucket means one abusive guest can exhaust the hourly guest allowance
+for all guests (availability, not cost). Signing in uses a separate per-account budget and
+is unaffected. Raising guest capacity safely needs a server-verifiable guest token
+(proof-of-work or an issued, signed guest credential) — open item.
+
+## Screenshot overlap — silent deletion fixed
+
+The extractor previously de-duplicated on `sender|timestamp-or-empty|content` across the
+whole batch, so a legitimately repeated untimestamped "OK" was deleted as an "overlap".
+Replaced by `supabase/functions/_shared/dedupTranscript.ts`:
+
+1. exact duplicates that carry a **non-empty** timestamp are removed;
+2. a contiguous run of two or more messages that immediately repeats the run before it is
+   a demonstrated seam overlap and is removed;
+3. everything else is kept; identical untimestamped single messages are surfaced as an
+   ambiguity warning ("kept as separate messages — remove any you did not send twice")
+   instead of being deleted.
+
+Fixtures: `src/lib/ingest/dedup.test.ts` — legitimate repeated "OK" preserved, real
+two-message seam overlap removed, same-timestamp duplicate removed, empty content dropped.
+4 tests, passing.
 
 ## Pending in Priority A (not yet evidenced)
 
