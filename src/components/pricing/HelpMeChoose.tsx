@@ -79,11 +79,20 @@ const REC: Record<string, Rec> = {
 
 type Step = 1 | 2 | 3 | "result";
 
-export const HelpMeChoose = () => {
+type Props = {
+  /** Analytics source label only — never free text. */
+  source?: string;
+  /** "button" = prominent dark-green call-to-action (homepage). */
+  variant?: "link" | "button";
+  supportLine?: string;
+};
+
+export const HelpMeChoose = ({ source = "pricing_page", variant = "link", supportLine }: Props) => {
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState<Step>(1);
   const [q1, setQ1] = useState<string | null>(null);
   const [result, setResult] = useState<keyof typeof REC | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const restart = () => {
     setStep(1);
@@ -91,10 +100,16 @@ export const HelpMeChoose = () => {
     setResult(null);
   };
 
+  const close = () => {
+    setOpen(false);
+    // Restore keyboard focus to the button that opened the guide.
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
+
   const finish = (key: keyof typeof REC) => {
     setResult(key);
     setStep("result");
-    track("pricing_guide_result", { source: "pricing_page", recommendation: key });
+    track("pricing_guide_result", { source, recommendation: key });
   };
 
   const choose1 = (value: string) => {
@@ -104,9 +119,30 @@ export const HelpMeChoose = () => {
   };
 
   if (!open) {
+    if (variant === "button") {
+      return (
+        <div className="mt-6">
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => {
+              setOpen(true);
+              restart();
+            }}
+            className={`${PRICING_BTN} w-full sm:w-auto`}
+          >
+            Help me choose
+          </button>
+          {supportLine && (
+            <p className="mt-2 text-[14px] text-muted-foreground">{supportLine}</p>
+          )}
+        </div>
+      );
+    }
     return (
       <div className="mt-6 text-center">
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => {
             setOpen(true);
