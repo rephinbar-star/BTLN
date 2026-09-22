@@ -79,7 +79,9 @@ describe("Relationship360 attribution", () => {
   it("never uses the submission date as the date of the exchange", () => {
     const noDate = adaptInteractiveEvent({ event_type: "sent_reply", created_at: "2026-09-10T10:00:00Z", result_json: {} }, ctx);
     // Falls back to the source's verified period, not the day it was recorded.
-    expect(noDate[0].observed_period_start).toBe("2026-08-01");
+    // A later exchange with no known date stays undated: it never inherits the
+    // period of the original conversation.
+    expect(noDate[0].observed_period_start).toBeNull();
     const unknown = adaptInteractiveEvent(
       { event_type: "sent_reply", created_at: "2026-09-10T10:00:00Z", result_json: {} },
       { ...ctx, observedStart: null, observedEnd: null },

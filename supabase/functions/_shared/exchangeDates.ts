@@ -187,8 +187,9 @@ export const deriveDateMetaFromText = (text: string): DateMeta => {
     parts.push({ a: Number(match[1]), b: Number(match[2]), year });
   }
   if (parts.length === 0) return { ...EMPTY_DATE_META, undated_count: undated };
-  // Day-first unless a value above 12 in the first position proves month-first.
-  const monthFirst = parts.some((p) => p.a > 12) && !parts.some((p) => p.b > 12);
+  // A value above 12 in the SECOND position proves the second field is the day,
+  // so the first is the month. Otherwise day-first (the WhatsApp default here).
+  const monthFirst = parts.some((p) => p.b > 12) && !parts.some((p) => p.a > 12);
   const ambiguous = !parts.some((p) => p.a > 12) && !parts.some((p) => p.b > 12);
   const days: string[] = [];
   for (const part of parts) {
