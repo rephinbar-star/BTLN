@@ -70,6 +70,8 @@ export type Ctx = {
   /** Verified period of the exchange itself. Null when the messages carried no dates. */
   observedStart: string | null;
   observedEnd: string | null;
+  /** Canonical participant id the person confirmed (e.g. "p1"), independent of display names. */
+  subjectId?: string | null;
 };
 
 /**
@@ -144,9 +146,82 @@ const attributed = (
   return make(ctx, kind, label, observationType, statement, evidence, confidence);
 };
 
+/**
+ * Resolves the confirmed self to a canonical participant id. Prefers the stored
+ * id; otherwise accepts a display-name match only when exactly one participant
+ * carries that name. Identical display names never resolve by name.
+ */
+export const resolveSelfId = (
+  participants: { id: string; label: string }[],
+  ctx: Ctx,
+): string | null => {
+  const ids = new Set(participants.map((p) => p.id));
+  if (ctx.subjectId && ids.has(ctx.subjectId)) return ctx.subjectId;
+  const subject = (ctx.subject ?? "").trim().toLowerCase();
+  if (!subject) return null;
+  const matches = participants.filter((p) => p.label.trim().toLowerCase() === subject);
+  return matches.length === 1 ? matches[0].id : null;
+};
+
+/** Schema v1: server-validated structured attribution. */
+// deno-lint-ignore no-explicit-any
+export const adaptAttributedDeepRead = (evidence: any, ctx: Ctx): ObservationDraft[] => {
+  const root = obj(evidence);
+  const participants = (Array.isArray(root.participants) ? root.participants : [])
+    .map((p: unknown) => ({ id: text(obj(p).id), label: text(obj(p).label) }))
+    .filter((p: { id: string; label: string }) => p.id);
+  const labelOf = new Map<string, string>(participants.map((p: { id: string; label: string }) => [p.id, p.label]));
+  const selfId = resolveSelfId(participants, ctx);
+  const out: (ObservationDraft | null)[] = [];
+  for (const raw of Array.isArray(root.observations) ? root.observations : []) {
+    const o = obj(raw);
+    const actor = text(o.actor);
+    const statement = text(o.statement);
+    const ev = (Array.isArray(o.evidence) ? o.evidence : []).map((e: unknown) => ({
+      quote: clip(text(obj(e).quote), MAX_QUOTE),
+      speaker: labelOf.get(text(obj(e).speaker_id)) ?? null,
+      label: ctx.label,
+    })).filter((e: { quote: string }) => e.quote);
+    const period = obj(o.period);
+    const local: Ctx = { ...ctx, observedStart: text(period.start) || null, observedEnd: text(period.end) || null };
+    const conf = o.origin === "deterministic" ? "high" : "medium";
+    if (text(o.kind) !== "observed_behavior") {
+      out.push(make(local, "generated_interpretation", null, "deep_read.interpretation", statement, ev, "low"));
+      continue;
+    }
+    if (!labelOf.has(actor)) {
+      // joint or unknown: never anyone's personal behaviour.
+      out.push(make(local, "relationship_context", null, actor === "joint" ? "deep_read.joint" : "deep_read.context", statement, ev, conf));
+      continue;
+    }
+    if (!selfId) {
+      // The person's own side is not resolved for this source: describe the
+      // participant by name without deciding whether it is "you".
+      out.push(make(local, "relationship_context", null, "deep_read.unresolved_self", statement, ev, conf));
+      continue;
+    }
+    const kind: SubjectKind = actor === selfId ? "user_behavior" : "other_behavior";
+    const draft = make(local, kind, labelOf.get(actor) ?? null, "deep_read.behavior", statement, ev, conf);
+    if (draft && Array.isArray(o.alternatives)) draft.alternatives = o.alternatives.map(text).filter(Boolean).slice(0, 2);
+    out.push(draft);
+  }
+  return out.filter((item): item is ObservationDraft => Boolean(item)).slice(0, MAX_PER_SOURCE);
+};
+
 // deno-lint-ignore no-explicit-any
 export const adaptDeepRead = (result: any, ctx: Ctx): ObservationDraft[] => {
   const root = obj(result);
+  const attributed = obj(root.attributed_evidence);
+  if (attributed.schema_version === 1) {
+    const structured = adaptAttributedDeepRead(attributed, ctx);
+    const advice = (Array.isArray(root.communication_suggestions) ? root.communication_suggestions.slice(0, 2) : [])
+      .map((item: unknown) => text(typeof item === "string" ? item : obj(item).suggestion ?? obj(item).text))
+      .filter(Boolean)
+      .map((s: string) => make(ctx, "ai_advice", null, "suggestion.not_sent", s, [], "low"))
+      .filter((item: ObservationDraft | null): item is ObservationDraft => Boolean(item));
+    return [...structured, ...advice].slice(0, MAX_PER_SOURCE);
+  }
+  // Legacy reports (no structured attribution) stay unattributed unless a field names a speaker.
   const out: (ObservationDraft | null)[] = [];
   const diagnostic = obj(root.communication_diagnostic);
   for (const key of ["key_observation", "initiator_balance", "question_ratio", "response_time_asymmetry"]) {
