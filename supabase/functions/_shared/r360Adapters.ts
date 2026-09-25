@@ -176,7 +176,8 @@ export const adaptAttributedDeepRead = (evidence: any, ctx: Ctx): ObservationDra
   for (const raw of Array.isArray(root.observations) ? root.observations : []) {
     const o = obj(raw);
     const actor = text(o.actor);
-    const statement = text(o.statement);
+    // Canonical ids in model prose are rendered as the participant's current label.
+    const statement = text(o.statement).replace(/\bp([12])\b/g, (m) => labelOf.get(m) ?? "a participant");
     const ev = (Array.isArray(o.evidence) ? o.evidence : []).map((e: unknown) => ({
       quote: clip(text(obj(e).quote), MAX_QUOTE),
       speaker: labelOf.get(text(obj(e).speaker_id)) ?? null,
