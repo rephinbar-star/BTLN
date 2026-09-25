@@ -8,6 +8,7 @@ import { extractJsonObject } from "../_shared/extractJson.ts";
 import { digestChunks, planChunks } from "../_shared/chunkedAnalysis.ts";
 import { mapToRoles, parseTwoPersonTranscript } from "../_shared/deterministicParse.ts";
 import { conversationKey, deriveDateMetaFromText, recordIngestMeta } from "../_shared/exchangeDates.ts";
+import { buildAttributedEvidence, toEvidenceMessages } from "../_shared/attributedEvidence.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -145,6 +146,46 @@ Deno.serve(async (req) => {
         raw_text.split(/\r?\n/).filter((line) => line.trim()).map((line, order) => ({ order, content: line })),
       ),
     });
+  };
+
+  // Structured, speaker-verified attribution (schema v1), built before the
+  // temporary messages are deleted. Dates come only from the server-parsed
+  // export; model-extracted rows (e.g. screenshots) stay undated.
+  const attachAttribution = async (
+    // deno-lint-ignore no-explicit-any
+    resultJson: any,
+    fallback: { sender_role: "user" | "partner"; content: string }[],
+    model: string,
+  ) => {
+    try {
+      const { name1, name2 } = context_data!;
+      let rows: { sender_role: "user" | "partner"; content: string; stamp: string | null }[] =
+        fallback.map((m) => ({ sender_role: m.sender_role, content: m.content, stamp: null }));
+      if (raw_text?.trim() && name1.trim().toLowerCase() !== name2.trim().toLowerCase()) {
+        const parsed = parseTwoPersonTranscript(truncateConversation(raw_text, MAX_TOTAL_MESSAGES));
+        const n = (s: string) => s.trim().toLowerCase();
+        const exact = parsed.messages.filter((m) => n(m.sender) === n(name1) || n(m.sender) === n(name2));
+        if (exact.length >= 4 && exact.length / Math.max(1, parsed.messages.length) >= 0.9) {
+          rows = exact.map((m) => ({
+            sender_role: n(m.sender) === n(name1) ? "user" : "partner",
+            content: m.content,
+            stamp: m.timestamp_estimate,
+          }));
+        }
+      }
+      resultJson.attributed_evidence = await buildAttributedEvidence({
+        name1,
+        name2,
+        messages: toEvidenceMessages(rows),
+        model,
+        call: async (body) => {
+          const r = await callOpenRouter(body, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE);
+          return { ok: r.ok, content: String(r.data?.choices?.[0]?.message?.content ?? "") };
+        },
+      });
+    } catch (_e) {
+      console.warn("[analyze-conversation] attribution skipped");
+    }
   };
 
   const raw_text_for_analysis = raw_text
@@ -401,6 +442,7 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
       full_history_read: digest.failedChunks === 0,
     };
 
+    await attachAttribution(resultJson, capped, pv.model_string);
     await recordDeepReadDates();
 
     const { error: updErr } = await supabase
@@ -604,6 +646,11 @@ ${messagesBlock}`;
   const couple_type_id = assignCoupleType(resultJson, relationshipType, analysis_id);
 
   // 6. Finalize
+  await attachAttribution(
+    resultJson,
+    messages.sort((a, b) => a.sequence_order - b.sequence_order).map((m) => ({ sender_role: m.sender_role as "user" | "partner", content: m.content })),
+    pv.model_string,
+  );
   await recordDeepReadDates();
 
   const { error: updErr } = await supabase
