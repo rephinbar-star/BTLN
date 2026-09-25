@@ -1188,6 +1188,7 @@ export type Database = {
           source_id: string
           source_kind: string
           subject_participant: string | null
+          subject_participant_id: string | null
           undated_count: number
           updated_at: string
           uploaded_at: string
@@ -1212,6 +1213,7 @@ export type Database = {
           source_id: string
           source_kind: string
           subject_participant?: string | null
+          subject_participant_id?: string | null
           undated_count?: number
           updated_at?: string
           uploaded_at?: string
@@ -1236,6 +1238,7 @@ export type Database = {
           source_id?: string
           source_kind?: string
           subject_participant?: string | null
+          subject_participant_id?: string | null
           undated_count?: number
           updated_at?: string
           uploaded_at?: string
