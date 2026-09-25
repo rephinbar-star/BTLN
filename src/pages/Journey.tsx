@@ -470,22 +470,30 @@ const Journey = () => {
                                     </p>
                                     {detected.length > 0 ? (
                                       <div className="mt-2 space-y-1">
-                                        {detected.map((name) => (
+                                        {detected.map((name, index) => {
+                                          // Deep Read participants are confirmed by stable position, so two
+                                          // people with the same display name stay distinct.
+                                          const byPosition = s.source_kind === "deep_read" && detected.length === 2;
+                                          const value = byPosition ? `id:p${index + 1}` : name;
+                                          const duplicate = detected.filter((d) => d.trim().toLowerCase() === name.trim().toLowerCase()).length > 1;
+                                          const shown = byPosition && duplicate ? `${name} (${index === 0 ? "first" : "second"} person)` : name;
+                                          return (
                                           <label
-                                            key={name}
+                                            key={value}
                                             className="flex min-h-[44px] items-center gap-2 text-[14px] text-foreground"
                                           >
                                             <input
                                               type="radio"
                                               name={`who-${s.id}`}
-                                              value={name}
-                                              checked={identityChoice === name}
-                                              onChange={() => setIdentityChoice(name)}
+                                              value={value}
+                                              checked={identityChoice === value}
+                                              onChange={() => setIdentityChoice(value)}
                                               className="h-4 w-4"
                                             />
-                                            {name}
+                                            {shown}
                                           </label>
-                                        ))}
+                                          );
+                                        })}
                                       </div>
                                     ) : (
                                       <p className="mt-1 text-[13px] text-muted-foreground">
