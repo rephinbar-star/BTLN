@@ -211,9 +211,9 @@ export const adaptAttributedDeepRead = (evidence: any, ctx: Ctx): ObservationDra
 // deno-lint-ignore no-explicit-any
 export const adaptDeepRead = (result: any, ctx: Ctx): ObservationDraft[] => {
   const root = obj(result);
-  const attributed = obj(root.attributed_evidence);
-  if (attributed.schema_version === 1) {
-    const structured = adaptAttributedDeepRead(attributed, ctx);
+  const structuredRoot = obj(root.attributed_evidence);
+  if (structuredRoot.schema_version === 1) {
+    const structured = adaptAttributedDeepRead(structuredRoot, ctx);
     const advice = (Array.isArray(root.communication_suggestions) ? root.communication_suggestions.slice(0, 2) : [])
       .map((item: unknown) => text(typeof item === "string" ? item : obj(item).suggestion ?? obj(item).text))
       .filter(Boolean)
