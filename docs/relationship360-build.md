@@ -555,8 +555,45 @@ Actually verified (test account A, real model calls)
   under the relationship filter.
 
 Pending / blocked
-- Deep Read observations still carry no structured actor, so Then/Now sides report
-  0 about you / 0 about them and say so plainly.
+- RESOLVED 2026-09-25 for NEW Deep Reads (see "Person-specific attribution" below).
+  Legacy Deep Reads without structured attribution still report no named actor.
 - Concurrency-during-correction and cross-account forged-date rejection re-checks
   for this increment not re-run.
 - Add-on billing still blocked: no provider test price.
+
+
+## Person-specific attribution — ledger 2026-09-25
+
+Implemented (code):
+- `supabase/functions/_shared/attributedEvidence.ts` — schema v1 `result_json.attributed_evidence`: canonical
+  participant ids p1/p2 (independent of names), message ids m<n>, per-message days only from the server-parsed
+  export (screenshots/model-extracted rows stay undated). Deterministic, speaker-verified counts plus one bounded
+  model pass (≤400 messages, ≤8 items, 1,500 tokens). Validator: unknown message ids dropped, no valid evidence →
+  rejected; actor must be a supplied id AND the sender of ≥1 supporting message (otherwise downgraded to unknown);
+  joint needs evidence from both speakers; interpretations stay interpretations; a claim is dated only when all
+  its evidence is dated. Only ≤2 clipped (160 char) evidence lines per item are retained.
+- `analyze-conversation` attaches it before temporary messages are deleted (both normal and long-history paths).
+- `journey_sources.subject_participant_id`; `journey_confirm_identity` accepts `id:p1|id:p2` for Deep Read and
+  refuses name-only confirmation when both people share a display name. Journey picker confirms by position.
+- `r360Adapters.adaptAttributedDeepRead`: user_behavior only via the confirmed participant id (or a unique name
+  match), other_behavior to the actual participant, joint/unknown/unresolved self → relationship_context,
+  interpretation → generated_interpretation, suggestions → ai_advice. Legacy reports unchanged (unattributed).
+- Synthesis prompt: person-specific insights must rest on user_behavior; other_behavior is context only.
+  Fingerprint includes the participant id, so a correction invalidates caches (source update also bumps version).
+
+Actually verified (live, synthetic account r360-a, Prime via test_fixture — not a purchase):
+- Two real model-backed dated Deep Reads (12 Jan 2026 / 20 May 2026, deliberately opposite behaviours):
+  7 attributed items each, 0 rejected/downgraded; "Alex … comment about a third party (Taylor)" stayed Alex's.
+- Confirmed as p1 (Taylor) → Then 3 about you / 3 about them, Now 2 / 4; synthesis described Taylor's questions
+  and one-word replies. Corrected to p2 (Alex) → every observation flipped, Now 4 / 2, new synthesis about Alex's
+  non-committal answers with no Taylor conclusions carried over. Account B confirm → false; forged `id:p9` refused.
+- 390px Journey view renders Then/Now counts, underlined Insight and inline Introspection.
+- Unit tests: `src/lib/relationship360/attribution.test.ts` (11) — named object, quoted speech, forged ids,
+  joint, interpretation, undated, same display names, absent user, advice, legacy. Suite 143 passing; typecheck clean.
+
+Not tested this increment: correction DURING a running build (existing version guard, not re-run), screenshot Deep
+Read attribution live, Interactive copied-vs-sent (covered by earlier adapter tests only). Share snapshots are built
+from named fields and do not include `attributed_evidence`.
+
+Still pending: persistent evaluated improvement workflow, test-only billing (blocked: no provider test price),
+Group Roast humour/sharing, 10,000-message release matrix.

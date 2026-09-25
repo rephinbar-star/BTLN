@@ -10,7 +10,7 @@
 - [x] Relationship360 real adapters + synthesis engine (step 4) — built, deployed and verified live on 2026-09-22 with two synthetic accounts and two real model-backed Deep Reads (see docs/relationship360-build.md).
 - [x] Automatic relationship grouping: reuse of a confirmed relationship by stable conversation key, suggestions with one-tap confirmation, assign/separate with rejection memory (2026-09-22).
 - [x] Conversation dates preserved end to end (ingest metadata → staged source → observations) and a real Then/Now from two dated periods (2026-09-22).
-- [ ] Relationship360 follow-ups: structured actor attribution for Deep Read so Then/Now can describe each person.
+- [x] Deep Read structured actor attribution (2026-09-25, verified live; legacy reports stay unattributed).
 - [x] Participant confirmation and inclusion consent (step 2).
 - [ ] Saved reflections and periodic reviews (step 5).
 - [ ] Group Roast humour pass (step 7).
