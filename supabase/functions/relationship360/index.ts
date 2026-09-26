@@ -342,7 +342,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   ]);
 
   // Unchanged evidence: return what is stored rather than paying for the same answer.
-  if (!payload?.force && summaryRow && !summaryRow.is_stale && summaryRow.input_fingerprint === inputFingerprint && summaryRow.content) {
+  if (!payload?.force && evalScope === null && summaryRow && !summaryRow.is_stale && summaryRow.input_fingerprint === inputFingerprint && summaryRow.content) {
     return json(200, { state: "complete", cached: true, coverage: summaryRow.coverage, content: summaryRow.content });
   }
 
@@ -687,6 +687,14 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   if ((commitSources ?? []).length === 0) {
     await admin.from("journey_jobs").update({ status: "cancelled", completed_at: new Date().toISOString() }).eq("id", job.id);
     return json(200, { state: "cancelled", message: "The conversations behind this changed while it was building, so nothing was saved." });
+  }
+
+  // Evaluation-scope builds are never saved as the account's Relationship360:
+  // the result goes back to the metered test harness only, so test output can
+  // never replace, feed the cache of, or be displayed as an ordinary summary.
+  if (evalScope !== null) {
+    await admin.from("journey_jobs").update({ status: "complete", completed_at: new Date().toISOString() }).eq("id", job.id);
+    return json(200, { state: "complete", job_id: job.id, persisted: false, evaluation_scope: evalScope, coverage, content: validated });
   }
 
   // The write is authorised as the person and refuses if anything they own
