@@ -24,8 +24,8 @@ import {
 } from "../_shared/modeEval.ts";
 import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF, withPayloadToken } from "../_shared/pipelineCases.ts";
 import { payloadToken } from "../_shared/injectionDisclosure.ts";
-import { applySemanticVerdicts, SEMANTIC_MODEL, semanticRequest } from "../_shared/adviceRecipients.ts";
-import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2 } from "../_shared/adviceSemanticFixtures.ts";
+import { ADVICE_SEMANTIC_VERSION, applySemanticVerdicts, SEMANTIC_MODEL, semanticRequest } from "../_shared/adviceRecipients.ts";
+import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3 } from "../_shared/adviceSemanticFixtures.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -880,7 +880,7 @@ Deno.serve(async (req) => {
     if (!aiKey) return json(503, { error: "Model key unavailable." });
     const jobId = crypto.randomUUID();
     const rows: Admin[] = [];
-    const sets = body.set === 1 ? SEMANTIC_FIXTURES : body.set === 2 ? SEMANTIC_FIXTURES_2 : [...SEMANTIC_FIXTURES, ...SEMANTIC_FIXTURES_2];
+    const sets = body.set === 1 ? SEMANTIC_FIXTURES : body.set === 2 ? SEMANTIC_FIXTURES_2 : body.set === 3 ? SEMANTIC_FIXTURES_3 : [...SEMANTIC_FIXTURES, ...SEMANTIC_FIXTURES_2, ...SEMANTIC_FIXTURES_3];
     for (const fx of sets) {
       const req = semanticRequest(fx.items, fx.parts, fx.msgs);
       const r = await meteredCall(deps, { scope: SCOPE, jobId, kind: "judge", timeoutMs: 60_000, body: {
@@ -889,7 +889,7 @@ Deno.serve(async (req) => {
       let parsed: unknown = null;
       try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value; } catch { parsed = null; }
       const v = applySemanticVerdicts(fx.items, parsed, req);
-      for (const i of fx.items) { const x = v.get(i.id)!; rows.push({ fixture: fx.id, id: i.id, expect: i.expect, got: x.ok ? "keep" : "withhold", reasons: x.reasons, evidence: x.evidence, note: i.note }); }
+      for (const i of fx.items) { const x = v.get(i.id)!; rows.push({ fixture: fx.id, id: i.id, expect: i.expect, got: x.ok ? "keep" : "withhold", reasons: x.reasons, evidence: x.evidence, behavior_lines: x.behavior_lines, note: i.note }); }
       if (!r.ok) rows.push({ fixture: fx.id, call_failed: r.stage === "budget" ? `budget:${r.reason}` : r.reason });
     }
     const items = rows.filter((r) => r.expect);
@@ -902,7 +902,7 @@ Deno.serve(async (req) => {
     };
     const { data: ledger } = await admin.from("prompt_spend_ledger").select("reserved_usd,actual_usd,status").eq("job_id", jobId);
     await audit(admin, user.id, "advice_semantic_eval", "prompt_spend_ledger", null, { job_id: jobId, summary });
-    return json(200, { job_id: jobId, model: SEMANTIC_MODEL, summary, rows, ledger });
+    return json(200, { job_id: jobId, model: SEMANTIC_MODEL, version: ADVICE_SEMANTIC_VERSION, summary, rows, ledger });
   }
 
   if (action === "budget_selftest") {
@@ -930,6 +930,75 @@ Deno.serve(async (req) => {
     };
     await audit(admin, user.id, "budget_selftest", "prompt_spend_ledger", null, result);
     return json(200, result);
+  }
+
+  if (action === "stage_selftest") {
+    // Truly concurrent, no-model test of the 10-arg stage reservation RPC. Every
+    // reserve is a separate HTTP request (its own PostgREST transaction), fired together.
+    const F = "selftest-fixture";
+    const mkRun = async (maxCalls: number) => {
+      const { data, error } = await admin.from("prompt_test_runs").insert({ secret_hash: `selftest-${crypto.randomUUID()}`, target_user_id: user.id, operator_id: user.id,
+        function_name: "analyze-conversation", mode: "selftest", variant: "baseline", purpose: "stage_selftest_fixture", max_calls: maxCalls, expires_at: new Date(Date.now() + 600_000).toISOString() }).select("id").single();
+      if (error) throw new Error(error.message);
+      await admin.from("prompt_test_run_claims").insert({ run_id: data.id, function_name: F, seq: 1 });
+      return data.id as string;
+    };
+    const R = (job: string, stage: string, kind = "generation", retryOf: string | null = null, fn = F) =>
+      admin.rpc("reserve_prompt_spend", { p_scope: "selftest", p_job: job, p_kind: kind, p_model: "fixture", p_in: 1, p_out: 1, p_amount: 0.001, p_stage: stage, p_function: fn, p_retry_of: retryOf });
+    const count = async (job: string, stage?: string) => { let q = admin.from("prompt_spend_ledger").select("id", { count: "exact", head: true }).eq("job_id", job); if (stage) q = q.eq("stage", stage); return (await q).count ?? 0; };
+    const tally = (rs: Admin[]) => { const t: Record<string, number> = {}; for (const r of rs) { const k = r.data?.ok ? "ok" : (r.data?.reason ?? r.error?.message ?? "error"); t[k] = (t[k] ?? 0) + 1; } return t; };
+    await admin.from("prompt_spend_ledger").delete().eq("scope", "selftest");
+    const runs: string[] = [];
+    try {
+      // 1) One slot left, 10 simultaneous requests.
+      const a = await mkRun(3); runs.push(a);
+      await R(a, "beta"); await R(a, "beta");
+      const one = await Promise.all(Array.from({ length: 10 }, () => R(a, "beta")));
+      const oneSlot = { attempted: 10, results: tally(one), ledger_rows: await count(a), cap: 3 };
+      // 2) Per-stage ceiling (alpha = 2) with a large run ceiling.
+      const b = await mkRun(40); runs.push(b);
+      const st = await Promise.all(Array.from({ length: 12 }, () => R(b, "alpha")));
+      const stage = { attempted: 12, results: tally(st), alpha_rows: await count(b, "alpha"), stage_cap: 2 };
+      // 3) Total run ceiling across stages, mixed concurrent requests.
+      const c = await mkRun(5); runs.push(c);
+      const tot = await Promise.all([...Array.from({ length: 8 }, () => R(c, "beta")), ...Array.from({ length: 4 }, () => R(c, "alpha"))]);
+      const total = { attempted: 12, results: tally(tot), ledger_rows: await count(c), run_cap: 5, alpha_rows: await count(c, "alpha") };
+      // 4) Retry/function binding.
+      const d = await mkRun(20); runs.push(d);
+      const base = (await R(d, "beta")).data?.id;
+      const other = await mkRun(20); runs.push(other);
+      const otherId = (await R(other, "beta")).data?.id;
+      const binding = {
+        good_retry: (await R(d, "beta", "retry", base)).data?.ok === true,
+        retry_wrong_stage: (await R(d, "alpha", "retry", base)).data?.reason,
+        retry_other_run: (await R(d, "beta", "retry", otherId)).data?.reason,
+        retry_missing_link: (await R(d, "beta", "retry", null)).data?.reason,
+        generation_with_link: (await R(d, "beta", "generation", base)).data?.reason,
+        unclaimed_function: (await R(d, "primary", "generation", null, "decode-conversation")).data?.reason,
+        unplanned_stage: (await R(d, "not_a_stage")).data?.reason,
+        ledger_rows: await count(d),
+      };
+      // 5) Unrelated jobs are independent under simultaneous load.
+      const e1 = await mkRun(2); const e2 = await mkRun(2); runs.push(e1, e2);
+      const ind = await Promise.all([...Array.from({ length: 6 }, () => R(e1, "beta")), ...Array.from({ length: 6 }, () => R(e2, "beta"))]);
+      const independent = { attempted: 12, results: tally(ind), e1_rows: await count(e1), e2_rows: await count(e2), cap_each: 2 };
+      const invariants = {
+        one_slot_exactly_one_accepted: oneSlot.results.ok === 1 && oneSlot.ledger_rows === 3,
+        stage_cap_held: stage.alpha_rows === 2 && stage.results.ok === 2,
+        run_cap_held: total.ledger_rows === 5 && total.alpha_rows <= 2,
+        rejected_left_no_rows: oneSlot.ledger_rows === 3 && stage.alpha_rows === 2 && total.ledger_rows === 5,
+        binding_held: binding.good_retry && binding.ledger_rows === 2,
+        jobs_independent: independent.e1_rows === 2 && independent.e2_rows === 2,
+      };
+      const result = { one_slot: oneSlot, stage, total, binding, independent, invariants, all_pass: Object.values(invariants).every(Boolean) };
+      await audit(admin, user.id, "stage_selftest", "prompt_spend_ledger", null, result);
+      return json(200, result);
+    } catch (e) {
+      return json(500, { error: String((e as Error)?.message ?? e) });
+    } finally {
+      await admin.from("prompt_spend_ledger").delete().eq("scope", "selftest");
+      if (runs.length) { await admin.from("prompt_test_run_claims").delete().in("run_id", runs); await admin.from("prompt_test_runs").delete().in("id", runs); }
+    }
   }
 
   return json(400, { error: "Unknown action." });

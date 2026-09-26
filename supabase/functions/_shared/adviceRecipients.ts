@@ -181,9 +181,12 @@ export const removeItems = (result: any, parts: Participant[], bad: Set<string>)
 // controls, and is supported by cited message indices keeps the item. Anything
 // else — unclear, malformed, missing, timeout — withholds it with a note.
 // This is a second opinion from a model, not proof of meaning.
-export const ADVICE_SEMANTIC_VERSION = "advice-semantic-2";
+export const ADVICE_SEMANTIC_VERSION = "advice-semantic-3";
 // Round 1 (gemini-3-flash, advice-semantic-1) on held-out set 1: 1/4 false accepts, 1/7 false rejects.
-// Round 2 uses the Deep Read model family and two general rules (behaviour ownership; joint plans).
+// Round 2 (advice-semantic-2): 1 false accept on 18 items (t1-pronoun-noquote/cs.p2.0). Cause: the
+// verdict's evidence was never checked against WHO wrote the cited lines, and nothing asked whether the
+// behaviour was mainly the other person's. Round 3 asks for the lines where the targeted behaviour
+// occurs and verifies their authors server-side, and asks whose lines show that behaviour most.
 export const SEMANTIC_MODEL = "anthropic/claude-sonnet-4.6";
 export const SEMANTIC_MAX_MESSAGES = 400;
 export const SEMANTIC_MAX_CHARS = 60_000;
@@ -205,44 +208,57 @@ People: ${people}. Transcript lines are "[index] person_id: text". Two people ma
 For each advice item decide:
 - addressed_to: "recipient" if it asks the item's recipient to do something, "counterpart" if it really asks the other person, "both" for a joint action, "unclear" otherwise.
 - behavior_actor: whose behaviour it asks to change or build on: "recipient", "counterpart", "both", "none" (general, no specific behaviour), or "unclear".
+- behavior_lines: up to 3 transcript indices where the specific behaviour the advice targets (the thing to stop, replace, repair or keep doing) actually occurs. Empty only when behavior_actor is "none" or the item is a joint forward-looking plan.
+- mostly_shown_by: whose lines show that targeted behaviour most clearly and most often: "recipient", "counterpart", "equal", or "n/a" (joint plan or no specific behaviour). Count every line, not just the last one.
 - supported: "yes" only if transcript lines show the behaviour or situation it responds to, "no" if contradicted or absent, "unclear" otherwise.
 - evidence: up to 3 transcript indices that support your answer (empty if none).
 Judge meaning, not names: pronouns such as "you" refer to the recipient. Quoting a third party is fine.
-- A behaviour the advice asks the recipient to stop, soften, replace or repair must appear in the RECIPIENT's own lines. If it appears only in the other person's lines, behavior_actor is "counterpart" even when the advice says "you".
+- A behaviour the advice asks the recipient to stop, soften, replace or repair must appear in the RECIPIENT's own lines. If it appears only or mainly in the other person's lines, behavior_actor is "counterpart" even when the advice says "you".
 - A joint or forward-looking suggestion (a plan, agreement or signal) is supported "yes" when the lines show the situation it addresses; it need not have happened already.
-Return only JSON: {"verdicts":[{"id":"...","addressed_to":"...","behavior_actor":"...","supported":"...","evidence":[0]}]} with every id exactly once.`;
+Return only JSON: {"verdicts":[{"id":"...","addressed_to":"...","behavior_actor":"...","behavior_lines":[0],"mostly_shown_by":"...","supported":"...","evidence":[0]}]} with every id exactly once.`;
   const advice = items.map((it) => ({ id: it.id, recipient: it.recipient_id, counterpart: it.counterpart_ids, ...(it.context ? { replaces_pattern: it.context } : {}), text: it.text }));
   const user = `<transcript first_index="${msgs.length - lines.length}" total_messages="${msgs.length}">\n${lines.join("\n")}\n</transcript>\n<advice>${JSON.stringify(advice)}</advice>`;
   const firstIndex = msgs.length - lines.length;
-  return { system, user, firstIndex, lastIndex: msgs.length - 1 };
+  // Server-side author of every transcript index (person id), used to verify cited behaviour lines.
+  const senders = msgs.map((m) => byRole(m.sender_role).id);
+  return { system, user, firstIndex, lastIndex: msgs.length - 1, senders };
 };
 
-export type SemanticVerdict = { ok: boolean; reasons: string[]; evidence: number[] };
+export type SemanticVerdict = { ok: boolean; reasons: string[]; evidence: number[]; behavior_lines?: number[] };
 
-export const applySemanticVerdicts = (items: AdviceItem[], response: unknown, range: { firstIndex: number; lastIndex: number }): Map<string, SemanticVerdict> => {
+export const applySemanticVerdicts = (items: AdviceItem[], response: unknown, range: { firstIndex: number; lastIndex: number; senders?: string[] }): Map<string, SemanticVerdict> => {
   const out = new Map<string, SemanticVerdict>();
   const rows = Array.isArray((response as any)?.verdicts) ? (response as any).verdicts : null;
   const seen = new Map<string, any>();
   if (rows) for (const r of rows) { const id = String(r?.id ?? ""); if (!seen.has(id)) seen.set(id, r); else seen.set(id, null); }
+  const inRange = (xs: unknown) => (Array.isArray(xs) ? xs : []).filter((n: unknown) => Number.isInteger(n) && (n as number) >= range.firstIndex && (n as number) <= range.lastIndex).slice(0, 3) as number[];
   for (const it of items) {
     const r = rows ? seen.get(it.id) : undefined;
     if (!rows) { out.set(it.id, { ok: false, reasons: ["semantic_unavailable"], evidence: [] }); continue; }
     if (r === undefined) { out.set(it.id, { ok: false, reasons: ["semantic_missing"], evidence: [] }); continue; }
     if (r === null) { out.set(it.id, { ok: false, reasons: ["semantic_duplicate"], evidence: [] }); continue; }
     const reasons: string[] = [];
-    const A = ["recipient", "counterpart", "both", "unclear"], B = ["recipient", "counterpart", "both", "none", "unclear"], S = ["yes", "no", "unclear"];
-    if (!A.includes(r.addressed_to) || !B.includes(r.behavior_actor) || !S.includes(r.supported)) reasons.push("semantic_malformed");
+    const A = ["recipient", "counterpart", "both", "unclear"], B = ["recipient", "counterpart", "both", "none", "unclear"], S = ["yes", "no", "unclear"], M = ["recipient", "counterpart", "equal", "n/a"];
+    if (!A.includes(r.addressed_to) || !B.includes(r.behavior_actor) || !S.includes(r.supported) || !M.includes(r.mostly_shown_by) || !Array.isArray(r.behavior_lines)) reasons.push("semantic_malformed");
     else {
       if (r.addressed_to === "counterpart") reasons.push("semantic_addressed_to_counterpart");
       else if (r.addressed_to === "unclear") reasons.push("semantic_recipient_unclear");
       if (r.behavior_actor === "counterpart") reasons.push("semantic_behavior_is_counterparts");
       else if (r.behavior_actor === "unclear") reasons.push("semantic_behavior_unclear");
       if (r.supported !== "yes") reasons.push(`semantic_support_${r.supported}`);
+      if (r.mostly_shown_by === "counterpart") reasons.push("semantic_behavior_mainly_counterparts");
+      // Verify, server-side, who actually wrote the lines the targeted behaviour is cited from.
+      if (r.behavior_actor === "recipient") {
+        const bl = inRange(r.behavior_lines);
+        const authors = range.senders ? bl.map((i) => range.senders![i]) : null;
+        if (!authors) reasons.push("semantic_authors_unavailable");
+        else if (bl.length === 0) reasons.push("semantic_no_behavior_lines");
+        else if (authors.some((a) => a !== it.recipient_id)) reasons.push("semantic_behavior_lines_not_recipients");
+      }
     }
-    const ev = Array.isArray(r.evidence) ? r.evidence : [];
-    const valid = ev.filter((n: unknown) => Number.isInteger(n) && (n as number) >= range.firstIndex && (n as number) <= range.lastIndex).slice(0, 3) as number[];
+    const valid = inRange(r.evidence);
     if (!reasons.length && valid.length === 0) reasons.push("semantic_no_valid_evidence");
-    out.set(it.id, { ok: reasons.length === 0, reasons, evidence: valid });
+    out.set(it.id, { ok: reasons.length === 0, reasons, evidence: valid, behavior_lines: inRange(r.behavior_lines) });
   }
   return out;
 };

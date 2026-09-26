@@ -947,6 +947,7 @@ export type Database = {
           completed_at: string | null
           created_at: string
           error_message: string | null
+          evaluation_run_id: string | null
           id: string
           input_fingerprint: string | null
           kind: string
@@ -962,6 +963,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
+          evaluation_run_id?: string | null
           id?: string
           input_fingerprint?: string | null
           kind: string
@@ -977,6 +979,7 @@ export type Database = {
           completed_at?: string | null
           created_at?: string
           error_message?: string | null
+          evaluation_run_id?: string | null
           id?: string
           input_fingerprint?: string | null
           kind?: string
@@ -1384,6 +1387,27 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      journey_summary_quarantine: {
+        Row: {
+          id: string
+          original: Json
+          quarantined_at: string
+          reason: string
+        }
+        Insert: {
+          id: string
+          original: Json
+          quarantined_at?: string
+          reason: string
+        }
+        Update: {
+          id?: string
+          original?: Json
+          quarantined_at?: string
+          reason?: string
+        }
+        Relationships: []
       }
       messages_temp: {
         Row: {
@@ -2176,14 +2200,17 @@ export type Database = {
       prompt_stage_plan: {
         Row: {
           function_name: string
+          max_calls_per_run: number | null
           stage: string
         }
         Insert: {
           function_name: string
+          max_calls_per_run?: number | null
           stage: string
         }
         Update: {
           function_name?: string
+          max_calls_per_run?: number | null
           stage?: string
         }
         Relationships: []
