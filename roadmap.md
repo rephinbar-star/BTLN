@@ -11,6 +11,8 @@
 - [x] Automatic relationship grouping: reuse of a confirmed relationship by stable conversation key, suggestions with one-tap confirmation, assign/separate with rejection memory (2026-09-22).
 - [x] Conversation dates preserved end to end (ingest metadata → staged source → observations) and a real Then/Now from two dated periods (2026-09-22).
 - [x] Deep Read structured actor attribution (2026-09-25, verified live; legacy reports stay unattributed).
+- [x] Attribution review fixes: shared date rule, actor-preserving evidence, long-history scope, mid-build correction + screenshot acceptance (2026-09-26, verified live).
+- [ ] #2 Persistent evaluated improvement workflow (owner-authorised; next).
 - [x] Participant confirmation and inclusion consent (step 2).
 - [ ] Saved reflections and periodic reviews (step 5).
 - [ ] Group Roast humour pass (step 7).
