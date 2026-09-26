@@ -149,7 +149,7 @@ const runEvaluation = async (admin: Admin, aiKey: string, jobId: string, candida
         if (!res.ok) { res = await generate(aiKey, version.prompt_text, tc); calls += 1; add(res.usage); attempts = 2; }
         if (!res.ok) failed += 1;
         const output = res.ok ? res.output : null;
-        const checks = screenOutput(tc, output);
+        const checks = screenOutput(tc, output, version.prompt_text);
         outs[variant] = { output, checks, pass: res.ok && hardPass(checks), attempts, error: res.ok ? null : res.error, usage: res.usage };
       }
       let judgeValue: Admin = null;
@@ -424,7 +424,7 @@ Deno.serve(async (req) => {
     if (!res.ok) return json(502, { error: "Sandbox generation failed.", metadata: { version_id: version.id, fallback } });
     return json(200, {
       output: res.output,
-      checks: screenOutput(tc, res.output),
+      checks: screenOutput(tc, res.output, version.prompt_text),
       metadata: { environment: "sandbox", version_id: version.id, label: version.label, content_hash: version.content_hash, fallback, reason, model: EVAL_MODEL, case_id: tc.id },
     });
   }
