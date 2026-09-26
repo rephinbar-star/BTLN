@@ -39,3 +39,10 @@
 - [ ] 4 Investigate Group Read canary repetition, Quick Take two-reply outputs, candidate regressions.
 - [ ] 5 Successor review packet linked to 0e97aa05-80a2-49a6-a113-afb1ac5339d9.
 - [ ] 6 Consolidated ledger + closeout checks.
+
+## #2 remaining (2026-09-26 evening)
+- [ ] R1 Advice role swap trace + ID-bound rewrite + fixtures + paired live test
+- [ ] R2 Group Read injection disclosure (generic warning, randomized canary, leak vs adoption)
+- [ ] R3 Atomic stage accounting RPC
+- [ ] R4 Long-history / 10k parity (within caps)
+- [ ] R5 Verification, successor packet, ledger
