@@ -168,7 +168,7 @@ const runEvaluation = async (admin: Admin, deps: Deps, jobId: string, b: Admin) 
       if (!output) failed += 1;
     }));
     let judge: Admin = { status: "not_run" };
-    let order: "baseline_first" | "candidate_first" = crypto.getRandomValues(new Uint8Array(1))[0] % 2 ? "baseline_first" : "candidate_first";
+    const order: "baseline_first" | "candidate_first" = crypto.getRandomValues(new Uint8Array(1))[0] % 2 ? "baseline_first" : "candidate_first";
     if (outs.baseline.output && outs.candidate.output && !stop) {
       const [x, y] = order === "baseline_first" ? [outs.baseline.output, outs.candidate.output] : [outs.candidate.output, outs.baseline.output];
       const clip = (v: unknown) => JSON.stringify(v).slice(0, 7000);
@@ -190,7 +190,7 @@ const runEvaluation = async (admin: Admin, deps: Deps, jobId: string, b: Admin) 
           judge = { status: "complete", order, preferred_blind: v.preferred, preferred: unblind(order, v.preferred), scores: { baseline: base, candidate: cand }, reason: v.reason };
         }
       }
-    } else if (!stop) order = order;
+    }
     // Disagreement: the judge prefers the side that failed a hard screen while the other passed,
     // or its grounding score contradicts the deterministic screen.
     const pref = judge.preferred;
