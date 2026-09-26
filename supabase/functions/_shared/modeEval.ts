@@ -221,15 +221,23 @@ const bare = (s: string) => norm(s).replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g
 
 /** Every fragment (split on ellipses, "[…]" or " / ") must appear in a message from the allowed texts. */
 export const quoteFound = (quote: string, texts: string[]) => {
-  const parts = quote.split(/\[\s*(?:\.\.\.|\u2026)\s*\]|\.\.\.|\u2026|\s\/\s/).map(bare).filter((p) => p.length > 0);
-  if (parts.length === 0) return false;
-  return parts.every((p) => texts.some((t) => bare(t).includes(p)));
+  const raw = quote.split(/\[\s*(?:\.\.\.|\u2026)\s*\]|\.\.\.|\u2026|\s\/\s/).map((p) => p.trim().replace(/^["'\u201c\u2018]+|["'\u201d\u2019]+$/g, "")).filter((p) => p.length > 0);
+  if (raw.length === 0) return false;
+  // Emoji-only or punctuation-only fragments are compared literally.
+  return raw.every((p) => bare(p) ? texts.some((t) => bare(t).includes(bare(p))) : texts.some((t) => norm(t).includes(norm(p))));
 };
 
 const strings = (v: unknown, out: string[] = []): string[] => {
   if (typeof v === "string") out.push(v);
   else if (Array.isArray(v)) v.forEach((x) => strings(x, out));
   else if (v && typeof v === "object") Object.values(v).forEach((x) => strings(x, out));
+  return out;
+};
+/** Double/curly-quoted segments, and single-quoted ones that end at a word boundary (contractions survive). */
+export const quotedSegments = (v: string): string[] => {
+  const out: string[] = [];
+  for (const m of v.matchAll(/["\u201c]([^"\u201d]{2,}?)["\u201d]/g)) out.push(m[1]);
+  for (const m of v.matchAll(/(?:^|[\s(\u2014])['\u2018](.{2,}?)['\u2019](?=[\s.,;:)!?\u2014]|$)/g)) out.push(m[1]);
   return out;
 };
 /** Collects quote-like values with an optional sibling speaker. */
@@ -239,8 +247,14 @@ const quotes = (v: unknown, out: { quote: string; speaker: string | null }[] = [
     const o = v as Record<string, unknown>;
     const speaker = ["speaker", "who", "sender", "said_by"].map((k) => o[k]).find((x) => typeof x === "string") as string | undefined;
     for (const [k, val] of Object.entries(o)) {
-      const quoteKey = /quote|verbatim/i.test(k) || k === "evidence";
-      if (quoteKey && typeof val === "string" && val.trim() && val.trim().toLowerCase() !== "null") out.push({ quote: val, speaker: speaker ?? null });
+      const pureKey = /quote|verbatim/i.test(k);
+      const quoteKey = pureKey || k === "evidence";
+      if (quoteKey && typeof val === "string" && val.trim() && val.trim().toLowerCase() !== "null") {
+        // "evidence" often mixes a quote with commentary: verify only the quoted segments.
+        const segs = quotedSegments(val);
+        if (segs.length) segs.forEach((q) => out.push({ quote: q, speaker: speaker ?? null }));
+        else if (pureKey || !/\s[\u2014\u2013-]\s|\(|:/.test(val)) out.push({ quote: val, speaker: speaker ?? null });
+      }
       else if (quoteKey && Array.isArray(val)) val.filter((x) => typeof x === "string").forEach((x) => out.push({ quote: x as string, speaker: speaker ?? null }));
       else quotes(val, out);
     }
@@ -337,7 +351,7 @@ export const screen = (key: ModeKey, c: ModeCase, output: unknown, promptText?: 
     const badAcross = patterns.filter((p: any) => p?.question === "across") .length > 0 && confirmedRels < 2;
     add("across_needs_two_relationships", true, !badAcross, badAcross ? "cross-relationship claim with one confirmed relationship" : "held");
     const dates = new Set(obsList.map((x) => x.observed_from).filter(Boolean)).size;
-    const trend = TREND.find((t) => all.includes(t));
+    const trend = TREND.find((t) => { const i = all.indexOf(t); return i >= 0 && !/\b(no|not|can't|cannot|without|never|isn't|too early|any)\b[^.]{0,40}$/.test(all.slice(Math.max(0, i - 45), i)); });
     const badChange = patterns.some((p: any) => p?.question === "changed" || p?.state === "different") && dates < 2;
     add("no_invented_trend", true, !(c.expect.no_trend && trend) && !badChange, trend && c.expect.no_trend ? `trend language "${trend}"` : badChange ? "change claimed without two dates" : "held");
     const projected = patterns.filter((p: any) => (p?.evidence ?? []).length > 0 && (p.evidence as string[]).every((e) => byId.get(String(e))?.kind === "other_behavior"));
@@ -421,5 +435,5 @@ export const sha256 = async (value: unknown): Promise<string> => {
 /** Includes the frozen guard, so changing it changes every candidate hash. */
 export const modeVersionHash = (v: { mode: string; kind: string; prompt_text: string; model: string; config: unknown }) =>
   sha256({ mode: v.mode, kind: v.kind, prompt_text: v.prompt_text, guard: v.kind === "candidate" ? FROZEN_GUARD : null, model: v.model, config: v.config });
-export const MODE_RUBRIC_VERSION = "mode-screen-1";
-export const modeRubric = (key: ModeKey) => ({ mode: key, version: MODE_RUBRIC_VERSION, judge_criteria: judgeCriteria(key), guard: FROZEN_GUARD, screen_source: "modeEval.screen@mode-screen-1" });
+export const MODE_RUBRIC_VERSION = "mode-screen-2";
+export const modeRubric = (key: ModeKey) => ({ mode: key, version: MODE_RUBRIC_VERSION, judge_criteria: judgeCriteria(key), guard: FROZEN_GUARD, screen_source: "modeEval.screen@mode-screen-2" });
