@@ -36,7 +36,7 @@ export const EXPECTED_STAGES: Record<ModeKey, string[]> = {
   deep_read_full: ["primary", "attribution"],
   group_read: ["primary"],
   relationship360: ["synthesis"],
-  group_roast: ["primary"],
+  group_roast: ["digest", "primary"],
 };
 
 const PAD: [string, string][] = [
