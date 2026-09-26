@@ -39,11 +39,42 @@ const C4B_SWAPPED = {
   },
 };
 
+describe("actor references (advice-recipient-2)", () => {
+  const forAlex = { id: "cs.p2.0", path: [], recipient_id: "p2", counterpart_ids: ["p1"], kind: "suggestion" as const, text: "" };
+  const forTaylor = { ...forAlex, id: "cs.p1.0", recipient_id: "p1", counterpart_ids: ["p2"] };
+  it("known escaped item: pronoun-only advice about accepting your own word is rejected", () => {
+    expect(checkRecipient(forAlex, "You accepted 'Whatever' and moved straight to dinner plans.", P, M).ok).toBe(false);
+    expect(checkRecipient(forTaylor, "You accepted 'Whatever' and moved straight to dinner plans.", P, M).ok).toBe(true);
+  });
+  it("possessive own words must be the recipient's", () => {
+    expect(checkRecipient(forAlex, "Your counter-example ('I replied within the hour yesterday') reads as deflection.", P, M).ok).toBe(false);
+    expect(checkRecipient(forTaylor, "Your counter-example ('I replied within the hour yesterday') reads as deflection.", P, M).ok).toBe(true);
+  });
+  it("counterpart possessive must be the counterpart's words", () => {
+    expect(checkRecipient(forTaylor, "Alex's 'I replied within the hour yesterday' was fair.", P, M).ok).toBe(false);
+    expect(checkRecipient(forTaylor, "Alex's 'Whatever' shut the talk down; name it gently.", P, M).ok).toBe(true);
+  });
+  it("reversed participant order keeps the same judgement", () => {
+    const R: Participant[] = [{ id: "p1", label: "Alex", role: "user" }, { id: "p2", label: "Taylor", role: "partner" }];
+    const RM: Msg[] = M.map((m) => ({ ...m, sender_role: m.sender_role === "user" ? "partner" : "user" }));
+    expect(checkRecipient({ ...forTaylor }, "You accepted 'Whatever' and moved on.", R, RM).ok).toBe(false); // p1 is Alex here
+  });
+  it("same display names fall back to speaker roles, not names", () => {
+    const S: Participant[] = [{ id: "p1", label: "Sam", role: "user" }, { id: "p2", label: "Sam", role: "partner" }];
+    expect(checkRecipient(forAlex, "You accepted 'Whatever' and moved on.", S, M).ok).toBe(false);
+  });
+  it("joint advice and quoted third parties with no ownership claim pass", () => {
+    expect(checkRecipient(forTaylor, "Together, agree a time to talk before Friday.", P, M).ok).toBe(true);
+    expect(checkRecipient(forTaylor, "As your friend Jo put it, 'pick one thing'.", P, M).ok).toBe(true);
+  });
+});
+
 describe("advice recipient integrity", () => {
   it("c4b22897: a fully swapped person1/person2 generation is withheld, not shown or name-swapped", () => {
     const r = JSON.parse(JSON.stringify(C4B_SWAPPED));
     const { statuses } = withholdMisattributed(r, P, M);
-    expect(statuses.filter((s) => s.status === "withheld").map((s) => s.id).sort()).toEqual(["cs.p1.0", "cs.p1.1", "cs.p2.0"]);
+    // advice-recipient-2: the previously escaped "You accepted 'Whatever'" (cs.p2.1) is now caught.
+    expect(statuses.filter((s) => s.status === "withheld").map((s) => s.id).sort()).toEqual(["cs.p1.0", "cs.p1.1", "cs.p2.0", "cs.p2.1"]);
     expect(r.communication_suggestions.person1).toEqual([]);
   });
 

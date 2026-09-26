@@ -18,7 +18,7 @@
 // shown silently. Deterministic checks catch ownership of quoted behaviour and
 // misaddressing; they do not prove full semantic correctness.
 
-export const ADVICE_RECIPIENT_VERSION = "advice-recipient-1";
+export const ADVICE_RECIPIENT_VERSION = "advice-recipient-2";
 
 export type Participant = { id: string; label: string; role: "user" | "partner" };
 export type AdviceItem = {
@@ -61,6 +61,13 @@ const QUOTED = new RegExp(`${OPEN}([^"\u201C\u201D]{2,80}?)${CLOSE}`, "g");
 // Phrases the advice asks the RECIPIENT to stop/replace: they must be the recipient's own words.
 const CHANGE = new RegExp(`\\b(instead of|rather than|replace|replacing|stop (?:saying|using|writing)|avoid (?:saying|using)|swap|drop)\\b[^.]*?${OPEN}([^"\u201C\u201D]{2,80}?)${CLOSE}`, "gi");
 
+// Actor references around a quoted phrase. OWN: the phrase is presented as the
+// recipient's own words ("you said 'x'", "your 'x'", "your reply ('x')").
+// RECEIVED: the phrase is presented as something said TO the recipient
+// ("you accepted 'x'", "when they say 'x'", "Alex's 'x'").
+const OWN = new RegExp(`\\b(?:you (?:said|wrote|used|typed|replied|answered|sent|opened with|led with|went with)|your(?:\\s+[a-z-]+){0,3}?\\s*\\(?)\\s*(?:with\\s+)?${OPEN}([^"\u201C\u201D]{2,80}?)${CLOSE}`, "gi");
+const RECEIVED = new RegExp(`\\b(?:you (?:accepted|received|heard|got|absorbed|took|let|answered|responded to|replied to|met)|(?:they|he|she) (?:said|says|wrote|writes|sent)|when (?:they|he|she) (?:say|says|write|writes))(?:\\s+[a-z-]+){0,2}?\\s*${OPEN}([^"\u201C\u201D]{2,80}?)${CLOSE}`, "gi");
+
 const saidBy = (phrase: string, msgs: Msg[], role: "user" | "partner") => {
   const p = norm(phrase).replace(/[.,!?]+$/, "");
   if (p.length < 2) return false;
@@ -90,6 +97,23 @@ export const checkRecipient = (item: AdviceItem, text: string, parts: Participan
     const mine = saidBy(phrase, msgs, me.role);
     const theirs = others.some((o) => saidBy(phrase, msgs, o.role));
     if (!mine && theirs) reasons.push(`behavior_owner_mismatch:${norm(phrase).slice(0, 40)}`);
+  }
+  // Actor references: pronoun-only advice for the wrong person is caught here.
+  const others0 = others;
+  for (const m of text.matchAll(OWN)) {
+    const ph = m[1];
+    if (!saidBy(ph, msgs, me.role) && others0.some((o) => saidBy(ph, msgs, o.role))) reasons.push(`own_words_belong_to_counterpart:${norm(ph).slice(0, 40)}`);
+  }
+  for (const m of text.matchAll(RECEIVED)) {
+    const ph = m[1];
+    if (saidBy(ph, msgs, me.role) && !others0.some((o) => saidBy(ph, msgs, o.role))) reasons.push(`received_words_are_recipients_own:${norm(ph).slice(0, 40)}`);
+  }
+  for (const o of others0) {
+    const oRe = o.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    if (sameNames) break;
+    for (const m of text.matchAll(new RegExp(`\\b${oRe}'s(?:\\s+[a-z-]+){0,2}?\\s*\\(?${OPEN}([^"\u201C\u201D]{2,80}?)${CLOSE}`, "gi"))) {
+      if (saidBy(m[1], msgs, me.role) && !saidBy(m[1], msgs, o.role)) reasons.push(`counterpart_words_are_recipients_own:${norm(m[1]).slice(0, 40)}`);
+    }
   }
   if (item.kind === "script" && item.context) {
     // The pattern being replaced must be the recipient's own quoted words.
