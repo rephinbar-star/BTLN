@@ -51,7 +51,7 @@ const isoDay = (value: string): string | null => {
   const day = value.slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
   const time = Date.parse(`${day}T00:00:00Z`);
-  if (Number.isNaN(time)) return null;
+  if (Number.isNaN(time) || new Date(time).toISOString().slice(0, 10) !== day) return null;
   // A conversation cannot have happened in the future, and dates before the
   // first mobile chat exports are treated as parse noise rather than history.
   const now = Date.now();
@@ -249,7 +249,7 @@ export const deriveDateMetaFromText = (text: string): DateMeta => {
     observed_end: days[days.length - 1],
     dated_count: days.length,
     undated_count: undated,
-    date_precision: "day",
+    date_precision: "date",
     date_provenance: "parsed",
     timezone_ambiguous: true,
     date_note: notes.join(" ").slice(0, 400),
