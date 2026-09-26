@@ -531,9 +531,15 @@ Deno.serve(async (req) => {
       if (it.result_id) {
         // Full-pipeline result item (immutable prompt_pipeline_results row).
         if (!UUID_RE.test(String(it.result_id))) return json(400, { error: "bad result_id" });
-        const { data: pr } = await admin.from("prompt_pipeline_results").select("id,mode,binding").eq("id", it.result_id).maybeSingle();
+        const { data: pr } = await admin.from("prompt_pipeline_results").select("id,mode,binding,stage_coverage,pipeline_parity,output").eq("id", it.result_id).maybeSingle();
         if (!pr) return json(404, { error: `result ${it.result_id} not found` });
-        items2.push({ result_id: pr.id, mode: pr.mode, binding_hash: pr.binding?.binding_hash, highlight: String(it.highlight ?? "").slice(0, 400), group: String(it.group ?? "").slice(0, 80) });
+        // Parity is derived from the stages that actually ran, never from the caller.
+        const cov = Object.entries((pr.stage_coverage ?? {}) as Record<string, string>);
+        const ran = cov.filter(([, v]) => v === "exercised");
+        const parity = cov.length === 0 ? "unrecorded" : (ran.length === 0 || pr.output == null) ? "blocked"
+          : (ran.length === cov.length && pr.pipeline_parity === "full_pipeline") ? "full_pipeline"
+          : (ran.length === 1 && ran[0][0] === "primary") ? "final_call_only" : "partial";
+        items2.push({ result_id: pr.id, mode: pr.mode, binding_hash: pr.binding?.binding_hash, parity, highlight: String(it.highlight ?? "").slice(0, 400), group: String(it.group ?? "").slice(0, 80) });
         continue;
       }
       if (!UUID_RE.test(String(it.job_id ?? ""))) return json(400, { error: "each item needs a job_id or result_id" });
