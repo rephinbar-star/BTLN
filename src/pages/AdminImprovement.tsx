@@ -70,6 +70,8 @@ const AdminImprovement = () => {
   const [reviewNote, setReviewNote] = useState("");
   const [caseNotes, setCaseNotes] = useState<Record<string, string>>({});
   const [sandboxOut, setSandboxOut] = useState<any>(null);
+  const [pipe, setPipe] = useState<any[]>([]);
+  const openRun = params.get("run");
 
   const load = useCallback(async () => {
     setError(null);
@@ -91,6 +93,11 @@ const AdminImprovement = () => {
     if (!openJob || !isAdmin) { setResults([]); return; }
     call({ action: "results", job_id: openJob }).then((r) => setResults(r.results)).catch((e) => setError((e as Error).message));
   }, [openJob, isAdmin]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    call({ action: "pipeline_results", mode }).then((r) => setPipe(r.results ?? [])).catch(() => setPipe([]));
+  }, [isAdmin, mode]);
 
   const versionById = useMemo(() => new Map((dash?.versions ?? []).map((v) => [v.id, v])), [dash]);
   const modeInfo = dash?.modes.find((m) => m.key === mode);
@@ -137,7 +144,16 @@ const AdminImprovement = () => {
             <p className="font-medium">{p.title}</p>
             <p className="text-[12px] text-muted-foreground">Packet {p.id}</p>
             <ul className="mt-2 space-y-2">
-              {(p.items ?? []).map((it: any) => {
+              {(p.items ?? []).map((it: any, idx: number) => {
+                if (it.supersedes_packet) return <li key={`s${idx}`} className="text-[13px] text-muted-foreground">Successor to packet {it.supersedes_packet} (earlier results kept unchanged).</li>;
+                if (it.result_id) return (
+                  <li key={it.result_id}>
+                    <button type="button" className="min-h-11 text-left underline underline-offset-4" onClick={() => { setMode(it.mode); setParams({ mode: it.mode, run: it.result_id }); }}>
+                      {dash!.modes.find((m) => m.key === it.mode)?.label ?? it.mode}{it.group ? ` — ${it.group}` : ""} — full-pipeline result, awaiting owner review
+                    </button>
+                    <p className="text-[13px] text-muted-foreground">{it.highlight}</p>
+                  </li>
+                );
                 const j = dash!.jobs.find((x) => x.id === it.job_id);
                 return (
                   <li key={it.job_id}>
@@ -296,6 +312,39 @@ const AdminImprovement = () => {
           </div>
         </Section>
       )}
+
+      <Section title="Full-pipeline test runs (metered, synthetic accounts)">
+        <p className="mb-3 text-[13px] text-muted-foreground">
+          These runs go through the deployed pipeline for this mode (reading, validation, analysis, attribution, storage) as a synthetic account,
+          with every model call reserved against the spending limit. "Partial" means a stage was not exercised (for example long-history digests),
+          so the mode is not full-pipeline ready. Automated checks are screening aids, not human approval.
+        </p>
+        {pipe.length === 0 ? <Muted>No full-pipeline runs for this mode yet.</Muted> : (
+          <ul className="space-y-3">
+            {pipe.map((r) => {
+              const rs = (r.prompt_pipeline_rescreens ?? []).slice().sort((a: any, b: any) => String(b.created_at).localeCompare(String(a.created_at)))[0];
+              const checks = rs?.checks ?? r.checks ?? [];
+              const passed = rs ? rs.screen_passed : r.screen_passed;
+              const failed = checks.filter((c: any) => c.passed !== true);
+              const open = openRun === r.id;
+              return (
+                <li key={r.id} className="rounded-lg border border-btln-line p-3 text-[14px]">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <p className="font-medium">{r.case_id} · {r.variant}{r.binding?.personalization ? " · style" : ""}</p>
+                    <p className="text-[12px] text-muted-foreground">{r.pipeline_parity === "full_pipeline" ? "Full pipeline" : "Partial pipeline"} · checks {passed ? "passed" : "failed"}{rs ? ` (re-screened ${rs.rubric_version})` : ""} · {usd(r.spend?.actual_usd)} ({r.spend?.calls} calls, {r.spend?.unknown_cost_calls} unknown)</p>
+                  </div>
+                  <p className="text-[12px] text-muted-foreground break-all">Result {r.id} · binding {short(r.binding?.binding_hash)} · {r.binding?.pipeline_code} · {r.binding?.rubric}</p>
+                  <p className="mt-1 text-[13px]">Stages: {Object.entries(r.stage_coverage ?? {}).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>
+                  {failed.length > 0 && <ul className="mt-1 list-disc pl-5 text-[13px] text-destructive">{failed.map((c: any) => <li key={c.id}>{c.id}{c.hard ? "" : " (advisory)"}: {c.detail}</li>)}</ul>}
+                  {r.notes && <p className="mt-1 text-[12px] text-muted-foreground">{r.notes}</p>}
+                  <Button size="sm" variant="outline" className="mt-2 min-h-11 rounded-full" onClick={() => setParams(open ? { mode } : { mode, run: r.id })}>{open ? "Hide output" : "Show full output"}</Button>
+                  {open && <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 p-2 text-[12px]">{JSON.stringify(r.output, null, 2)}</pre>}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </Section>
 
       <Section title="Sandbox runtime">
         <div className="flex flex-wrap gap-2">

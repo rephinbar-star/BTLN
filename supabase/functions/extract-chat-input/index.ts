@@ -1,3 +1,5 @@
+import { withTestRun } from "../_shared/testRun.ts";
+import { inStage, systemFor } from "../_shared/testRunCore.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter, extractMessages } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
@@ -5,7 +7,7 @@ import { dedupeTranscript } from "../_shared/dedupTranscript.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-btln-test-run",
 };
 
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -52,7 +54,7 @@ async function resolveUserId(authorization: string | null): Promise<string | nul
 }
 
 
-Deno.serve(async (req) => {
+Deno.serve(withTestRun("extract-chat-input", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
   const body = await req.json().catch(() => null);
@@ -119,4 +121,4 @@ Deno.serve(async (req) => {
     timestamp: message.timestamp_estimate ?? null,
   })));
   return json(200, { transcript: deduped.lines.join("\n"), message_count: deduped.lines.length, warnings: deduped.warnings });
-});
+}));

@@ -1,3 +1,5 @@
+import { withTestRun } from "../_shared/testRun.ts";
+import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import {
   callOpenRouter,
@@ -44,7 +46,7 @@ const parseReviewedIngestion = (value: unknown): ReviewedIngestion | null => {
 
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
-Deno.serve(async (req) => {
+Deno.serve(withTestRun("decode-conversation", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -62,8 +64,8 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
 
-  // Optional: identify the signed-in owner, for personal coaching style only.
-  // This grants no privileges; all authorization stays session/ownership based.
+  // Optional: identify the signed-in owner. Used for personal coaching style and to
+  // record ownership of a new decode (so Interactive Mode can verify it). Grants no privileges.
   let personalizationUserId: string | null = null;
   const authHeader = req.headers.get("Authorization");
   if (authHeader?.startsWith("Bearer ")) {
@@ -111,7 +113,7 @@ Deno.serve(async (req) => {
   if (decode_id) {
     const { data: existing } = await supabase
       .from("decodes")
-      .select("id, session_id")
+      .select("id, session_id, user_id")
       .eq("id", decode_id)
       .maybeSingle();
     if (!existing) return json(404, { error: "Decode not found" });
@@ -121,12 +123,16 @@ Deno.serve(async (req) => {
     row_id = existing.id as string;
     await supabase
       .from("decodes")
-      .update({ status: "pending", error_message: null, source: source ?? null })
+      .update({
+        status: "pending", error_message: null, source: source ?? null,
+        // Record the verified signed-in owner once (never reassign an owned decode).
+        ...(personalizationUserId && !existing.user_id ? { user_id: personalizationUserId } : {}),
+      })
       .eq("id", row_id);
   } else {
     const { data: created, error: createErr } = await supabase
       .from("decodes")
-      .insert({ session_id, source: source ?? null, status: "pending" })
+      .insert({ session_id, source: source ?? null, status: "pending", user_id: personalizationUserId })
       .select("id")
       .single();
     if (createErr || !created) {
@@ -185,11 +191,12 @@ Deno.serve(async (req) => {
     const coachingPrefs = await loadCoachingPreferences(supabase as never, personalizationUserId);
     const styleBlock = coachingPreferenceInstruction(coachingPrefs);
 
+    markStage("primary");
     const r = await callOpenRouter(
       {
         model: MODEL,
         messages: [
-          { role: "system", content: pv.prompt_text + (styleBlock ? `\n\n${styleBlock}` : "") },
+          { role: "system", content: (await systemFor("quick_take", pv.prompt_text)) + (styleBlock ? `\n\n${styleBlock}` : "") },
           { role: "user", content: exchange },
         ],
         response_format: { type: "json_object" },
@@ -251,4 +258,4 @@ Deno.serve(async (req) => {
   }
 
   return json(202, { decode_id: row_id, status: "accepted" });
-});
+}));

@@ -1,3 +1,5 @@
+import { withTestRun } from "../_shared/testRun.ts";
+import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { INTERACTIVE_SYSTEM } from "../_shared/modePrompts.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter, extractMessages } from "../_shared/extractMessages.ts";
@@ -6,7 +8,7 @@ import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shar
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-btln-test-run",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const MODEL = "openai/gpt-6-astra";
@@ -50,7 +52,7 @@ const reviewedIngestion = (value: unknown): ReviewedIngestion | null => {
   return messages.length === candidate.messages.length ? { id: candidate.id, participants, messages } : null;
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withTestRun("interactive-mode", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
@@ -220,10 +222,12 @@ Deno.serve(async (req) => {
     const coachingPrefs = await loadCoachingPreferences(admin as never, user.id);
     const { data: priorRows } = await admin.from("interactive_events").select("event_type,result_json,created_at").eq("thread_id", thread.id).eq("status", "complete").order("created_at", { ascending: true }).limit(MAX_CONTEXT_EVENTS);
     await admin.from("interactive_events").update({ status: "analyzing" }).eq("id", event.id);
+    markStage("primary");
+    const interactiveSystem = await systemFor("interactive", INTERACTIVE_SYSTEM);
     const response = await callOpenRouter({
       model: MODEL,
       messages: [
-        { role: "system", content: INTERACTIVE_SYSTEM + (coachingPreferenceInstruction(coachingPrefs) ? "\n\n" + coachingPreferenceInstruction(coachingPrefs) : "") },
+        { role: "system", content: interactiveSystem + (coachingPreferenceInstruction(coachingPrefs) ? "\n\n" + coachingPreferenceInstruction(coachingPrefs) : "") },
         { role: "user", content: JSON.stringify({ original_take: decode.result_json, prior_updates: priorRows ?? [], current_event: eventType, confirmed_speaker_order: speakerOrder, messages }) },
       ],
       response_format: { type: "json_object" },
@@ -258,4 +262,4 @@ Deno.serve(async (req) => {
     await admin.from("interactive_events").update({ status: "failed", error_message: message }).eq("id", event.id);
     return json(500, { error: message });
   }
-});
+}));

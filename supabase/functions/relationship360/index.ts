@@ -16,6 +16,9 @@
 //    cross-relationship claim against distinct CONFIRMED relationships.
 //  - Observation text is fenced as untrusted data in the prompt.
 
+import { withTestRun } from "../_shared/testRun.ts";
+import { codeBaseline } from "../_shared/modeEval.ts";
+import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { relationship360System } from "../_shared/modePrompts.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
@@ -32,7 +35,7 @@ import {
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-btln-test-run",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -129,7 +132,7 @@ const selectRepresentative = (rows: ObservationRow[], cap: number) => {
   return { kept, omitted: rows.length - kept.length };
 };
 
-Deno.serve(async (req) => {
+Deno.serve(withTestRun("relationship360", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
@@ -523,7 +526,8 @@ Deno.serve(async (req) => {
   };
   const comparison = buildComparison();
 
-  const system = relationship360System({ distinctSources, confirmedRelationships: confirmedRelationshipIds.size, datedObservations });
+  markStage("synthesis");
+  const system = await systemFor("relationship360", relationship360System({ distinctSources, confirmedRelationships: confirmedRelationshipIds.size, datedObservations }), codeBaseline("relationship360")!);
 
   // Loop A: private style signals (consented only) loaded above. Style, never evidence.
   const response = await callOpenRouter({
@@ -698,4 +702,4 @@ Deno.serve(async (req) => {
   await admin.from("journey_jobs").update({ completed_at: new Date().toISOString() }).eq("id", job.id);
 
   return json(200, { state: "complete", job_id: job.id, coverage, content: validated });
-});
+}));

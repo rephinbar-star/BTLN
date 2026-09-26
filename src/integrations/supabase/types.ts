@@ -1713,6 +1713,115 @@ export type Database = {
           },
         ]
       }
+      prompt_pipeline_rescreens: {
+        Row: {
+          checks: Json
+          created_at: string
+          created_by: string
+          id: string
+          reason: string
+          result_id: string
+          rubric_version: string
+          screen_passed: boolean
+        }
+        Insert: {
+          checks: Json
+          created_at?: string
+          created_by: string
+          id?: string
+          reason: string
+          result_id: string
+          rubric_version: string
+          screen_passed: boolean
+        }
+        Update: {
+          checks?: Json
+          created_at?: string
+          created_by?: string
+          id?: string
+          reason?: string
+          result_id?: string
+          rubric_version?: string
+          screen_passed?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_pipeline_rescreens_result_id_fkey"
+            columns: ["result_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_pipeline_results"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_pipeline_results: {
+        Row: {
+          binding: Json
+          candidate_id: string | null
+          case_id: string | null
+          checks: Json | null
+          created_at: string
+          created_by: string
+          id: string
+          is_test_record: boolean
+          mode: string
+          notes: string | null
+          output: Json | null
+          pipeline_parity: string
+          screen_passed: boolean | null
+          spend: Json
+          stage_coverage: Json
+          test_run_id: string
+          variant: string
+        }
+        Insert: {
+          binding: Json
+          candidate_id?: string | null
+          case_id?: string | null
+          checks?: Json | null
+          created_at?: string
+          created_by: string
+          id?: string
+          is_test_record?: boolean
+          mode: string
+          notes?: string | null
+          output?: Json | null
+          pipeline_parity: string
+          screen_passed?: boolean | null
+          spend: Json
+          stage_coverage: Json
+          test_run_id: string
+          variant: string
+        }
+        Update: {
+          binding?: Json
+          candidate_id?: string | null
+          case_id?: string | null
+          checks?: Json | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_test_record?: boolean
+          mode?: string
+          notes?: string | null
+          output?: Json | null
+          pipeline_parity?: string
+          screen_passed?: boolean | null
+          spend?: Json
+          stage_coverage?: Json
+          test_run_id?: string
+          variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_pipeline_results_test_run_id_fkey"
+            columns: ["test_run_id"]
+            isOneToOne: true
+            referencedRelation: "prompt_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_review_notes: {
         Row: {
           author_id: string
@@ -1930,7 +2039,9 @@ export type Database = {
           reconciled_at: string | null
           reserved_usd: number
           scope: string
+          stage: string | null
           status: string
+          test_run_id: string | null
         }
         Insert: {
           actual_usd?: number | null
@@ -1947,7 +2058,9 @@ export type Database = {
           reconciled_at?: string | null
           reserved_usd: number
           scope: string
+          stage?: string | null
           status?: string
+          test_run_id?: string | null
         }
         Update: {
           actual_usd?: number | null
@@ -1964,7 +2077,9 @@ export type Database = {
           reconciled_at?: string | null
           reserved_usd?: number
           scope?: string
+          stage?: string | null
           status?: string
+          test_run_id?: string | null
         }
         Relationships: [
           {
@@ -1975,6 +2090,69 @@ export type Database = {
             referencedColumns: ["scope"]
           },
         ]
+      }
+      prompt_test_runs: {
+        Row: {
+          baseline_text_hash: string | null
+          candidate_addendum: string | null
+          candidate_id: string | null
+          case_id: string | null
+          created_at: string
+          expires_at: string
+          finalized_at: string | null
+          function_name: string
+          id: string
+          max_calls: number
+          mode: string
+          operator_id: string
+          purpose: string
+          secret_hash: string
+          state: Json
+          status: string
+          target_user_id: string
+          variant: string
+        }
+        Insert: {
+          baseline_text_hash?: string | null
+          candidate_addendum?: string | null
+          candidate_id?: string | null
+          case_id?: string | null
+          created_at?: string
+          expires_at: string
+          finalized_at?: string | null
+          function_name: string
+          id?: string
+          max_calls?: number
+          mode: string
+          operator_id: string
+          purpose?: string
+          secret_hash: string
+          state?: Json
+          status?: string
+          target_user_id: string
+          variant: string
+        }
+        Update: {
+          baseline_text_hash?: string | null
+          candidate_addendum?: string | null
+          candidate_id?: string | null
+          case_id?: string | null
+          created_at?: string
+          expires_at?: string
+          finalized_at?: string | null
+          function_name?: string
+          id?: string
+          max_calls?: number
+          mode?: string
+          operator_id?: string
+          purpose?: string
+          secret_hash?: string
+          state?: Json
+          status?: string
+          target_user_id?: string
+          variant?: string
+        }
+        Relationships: []
       }
       prompt_versions: {
         Row: {
@@ -2625,6 +2803,15 @@ export type Database = {
           p_images: number
           p_max_images: number
           p_max_requests: number
+        }
+        Returns: Json
+      }
+      claim_prompt_test_run: {
+        Args: {
+          p_function: string
+          p_id: string
+          p_secret_hash: string
+          p_user: string
         }
         Returns: Json
       }

@@ -1,3 +1,5 @@
+import { withTestRun } from "../_shared/testRun.ts";
+import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { GROUP_ROAST_SYSTEM } from "../_shared/modePrompts.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
@@ -27,7 +29,7 @@ const sumUsage = (items: Usage[]) => items.reduce((a, u) => ({
 
 const SYSTEM = GROUP_ROAST_SYSTEM;
 
-Deno.serve(async (req) => {
+Deno.serve(withTestRun("analyze-group-roast", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
@@ -120,7 +122,7 @@ Deno.serve(async (req) => {
     const render = (list: GroupMessage[]) => list.map((m) => `#${m.order} [${nameById.get(String(m.participant_id))}]${m.ts ? ` (${m.ts})` : ""}: ${m.content}`).join("\n");
     const usage: Usage[] = [];
     const chunks = planChunks(messages, (m) => m.content.length + 40);
-    const digestResult = await digestChunks({
+    const digestResult = await inStage("digest", () => digestChunks({
       chunks,
       render: (chunk, index, total) => `PARTICIPANTS: ${JSON.stringify(activeParticipants)}\nTRANSCRIPT ${index + 1}/${total} BEGIN\n<<<TRANSCRIPT\n${render(chunk)}\nTRANSCRIPT>>>`,
       model,
@@ -128,11 +130,13 @@ Deno.serve(async (req) => {
       referer: Deno.env.get("OPENROUTER_HTTP_REFERER") ?? "https://betweenthelines.app",
       title: Deno.env.get("OPENROUTER_X_TITLE") ?? "BetweenTheLines",
       concurrency: 2,
-    });
+    }));
     const { digests, failedChunks, digestedMessages } = digestResult;
     if (!digests.length) return fail("We couldn't read this history. Please retry.");
     const tail = messages.slice(-400);
-    const final = await callOpenRouter({ model, messages: [{ role: "system", content: SYSTEM }, { role: "user", content: [`CATEGORY: ${category}`, `PARTICIPANTS: ${JSON.stringify(activeParticipants)}`, `AUTHORITATIVE_STATS: ${JSON.stringify(stats)}`, `GROUNDING DIGESTS BEGIN\n<<<DIGESTS\n${digests.join("\n")}\nDIGESTS>>>`, `VERBATIM TAIL BEGIN\n<<<TRANSCRIPT\n${render(tail)}\nTRANSCRIPT>>>`].join("\n\n") }], response_format: { type: "json_object" }, temperature: 0.75, max_tokens: 3600 }, key, Deno.env.get("OPENROUTER_HTTP_REFERER") ?? "https://betweenthelines.app", Deno.env.get("OPENROUTER_X_TITLE") ?? "BetweenTheLines");
+    markStage("primary");
+    const roastSystem = await systemFor("group_roast", SYSTEM);
+    const final = await callOpenRouter({ model, messages: [{ role: "system", content: roastSystem }, { role: "user", content: [`CATEGORY: ${category}`, `PARTICIPANTS: ${JSON.stringify(activeParticipants)}`, `AUTHORITATIVE_STATS: ${JSON.stringify(stats)}`, `GROUNDING DIGESTS BEGIN\n<<<DIGESTS\n${digests.join("\n")}\nDIGESTS>>>`, `VERBATIM TAIL BEGIN\n<<<TRANSCRIPT\n${render(tail)}\nTRANSCRIPT>>>`].join("\n\n") }], response_format: { type: "json_object" }, temperature: 0.75, max_tokens: 3600 }, key, Deno.env.get("OPENROUTER_HTTP_REFERER") ?? "https://betweenthelines.app", Deno.env.get("OPENROUTER_X_TITLE") ?? "BetweenTheLines");
     if (final.data?.usage) usage.push(final.data.usage as Usage);
     if (!final.ok) return fail(`The Group Roast couldn't be generated (${final.status}).`);
     let parsed: Record<string, unknown>;
@@ -162,4 +166,4 @@ Deno.serve(async (req) => {
   const pipeline = async () => { try { await run(); } catch { await fail("Something went wrong generating your Group Roast."); } finally { messages = []; } };
   if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(pipeline()); else void pipeline();
   return json(202, { group_roast_id: rowId, status: "accepted" });
-});
+}));

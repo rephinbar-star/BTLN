@@ -22,13 +22,14 @@ import {
   buildMessages, CASES, candidateSystem, codeBaseline, hardPass, judgeSystem, MODE_KEYS, MODE_RUBRIC_VERSION, modeRubric, MODES,
   modeVersionHash, promptConflicts, screen, sha256, unblind, validateJudge, type ModeCase, type ModeKey,
 } from "../_shared/modeEval.ts";
+import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF } from "../_shared/pipelineCases.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 const SCOPE = "improvement";
-const DATASET_REVISION = 1;
+const DATASET_REVISION = 2; // 2: grp-injection bait reclassified as invented_event_terms (mode-screen-4)
 const JUDGE_MODEL = "openai/gpt-6-astra";
 const JUDGE_MAX_TOKENS = 800;
 const PROPOSAL_MAX_TOKENS = 700;
@@ -513,18 +514,264 @@ Deno.serve(async (req) => {
   }
 
   if (action === "create_packet") {
-    const items = Array.isArray(body.items) ? body.items.slice(0, 12) : [];
+    const items = Array.isArray(body.items) ? body.items.slice(0, 40) : [];
     if (!items.length || !body.title) return json(400, { error: "title and items required" });
+    const items2: Admin[] = [];
     for (const it of items) {
-      if (!UUID_RE.test(String(it.job_id ?? ""))) return json(400, { error: "each item needs a job_id" });
+      if (it.result_id) {
+        // Full-pipeline result item (immutable prompt_pipeline_results row).
+        if (!UUID_RE.test(String(it.result_id))) return json(400, { error: "bad result_id" });
+        const { data: pr } = await admin.from("prompt_pipeline_results").select("id,mode,binding").eq("id", it.result_id).maybeSingle();
+        if (!pr) return json(404, { error: `result ${it.result_id} not found` });
+        items2.push({ result_id: pr.id, mode: pr.mode, binding_hash: pr.binding?.binding_hash, highlight: String(it.highlight ?? "").slice(0, 400), group: String(it.group ?? "").slice(0, 80) });
+        continue;
+      }
+      if (!UUID_RE.test(String(it.job_id ?? ""))) return json(400, { error: "each item needs a job_id or result_id" });
       const { data: j } = await admin.from("prompt_eval_jobs").select("id,mode,binding_hash").eq("id", it.job_id).maybeSingle();
       if (!j) return json(404, { error: `job ${it.job_id} not found` });
       it.mode = j.mode; it.binding_hash = j.binding_hash; it.highlight = String(it.highlight ?? "").slice(0, 400);
+      items2.push(it);
     }
-    const { data, error } = await admin.from("prompt_review_packets").insert({ title: String(body.title).slice(0, 160), items, created_by: user.id }).select("id").single();
+    if (body.supersedes && !UUID_RE.test(String(body.supersedes))) return json(400, { error: "bad supersedes id" });
+    const { data, error } = await admin.from("prompt_review_packets").insert({ title: String(body.title).slice(0, 160), items: body.supersedes ? [{ supersedes_packet: body.supersedes }, ...items2] : items2, created_by: user.id }).select("id").single();
     if (error) return json(500, { error: "Could not save packet." });
     await audit(admin, user.id, "review_packet_created", "prompt_review_packets", data.id, { items: items.length });
     return json(200, { packet_id: data.id });
+  }
+
+
+  // ---------------- Full-pipeline test runs (metered, synthetic accounts only) ----------------
+  // pipeline_start: issues a short-lived server-side test run bound to one synthetic
+  // account, one pipeline function, mode, case and version, then calls the DEPLOYED
+  // function as that account. Every model call inside it reserves spend first.
+  // pipeline_finalize: advances multi-step runs, reads the persisted result, checks
+  // stage coverage from the spend ledger and stores an immutable result row.
+  if (action === "pipeline_start" || action === "pipeline_finalize") {
+    const supaUrl = Deno.env.get("SUPABASE_URL")!;
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    // Synthetic accounts only. The password is derived server-side from the
+    // service key and never stored or returned; magic links are rate-limited per
+    // email, so concurrent runs used to fail.
+    const sessionFor = async (userId: string): Promise<string | null> => {
+      const { data: u } = await admin.auth.admin.getUserById(userId);
+      const email = u?.user?.email ?? "";
+      if (!TEST_EMAIL.test(email)) return null;
+      const password = (await sha256(`btln-synthetic:${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}:${userId}`)).slice(0, 40);
+      const anon = createClient(supaUrl, anonKey, { auth: { persistSession: false } });
+      let { data: v } = await anon.auth.signInWithPassword({ email, password });
+      if (!v?.session) {
+        await admin.auth.admin.updateUserById(userId, { password });
+        ({ data: v } = await anon.auth.signInWithPassword({ email, password }));
+      }
+      return v?.session?.access_token ?? null;
+    };
+    const callFn = async (fn: string, access: string, header: string, payload: unknown) => {
+      const r = await fetch(`${supaUrl}/functions/v1/${fn}`, { method: "POST", headers: { Authorization: `Bearer ${access}`, apikey: anonKey, "Content-Type": "application/json", "x-btln-test-run": header }, body: JSON.stringify(payload) });
+      const t = await r.text();
+      let j: Admin = null; try { j = JSON.parse(t); } catch { j = { raw: t.slice(0, 300) }; }
+      return { status: r.status, body: j };
+    };
+
+    if (action === "pipeline_start") {
+      const key = body.mode;
+      if (!isMode(key)) return json(400, { error: "Unknown mode." });
+      const c = PIPELINE_CASES[key].find((x) => x.id === body.case_id);
+      if (!c) return json(400, { error: "Unknown pipeline case for this mode." });
+      const variant = body.variant === "candidate" ? "candidate" : body.variant === "personalization" ? "personalization" : "baseline";
+      const target = String(body.target_user_id ?? "");
+      if (!UUID_RE.test(target)) return json(400, { error: "target_user_id required" });
+      let cand: Admin = null; let baselineHash: string | null = null; let binding: Admin = null;
+      const dep = await deployedBaseline(admin, key);
+      if (!dep) return json(409, { error: "No deployed baseline for this mode." });
+      if (variant === "candidate") {
+        if (!UUID_RE.test(String(body.candidate_id ?? ""))) return json(400, { error: "candidate_id required" });
+        const b = await loadBinding(admin, body.candidate_id);
+        if ("error" in b) return json(409, { error: b.error });
+        if (b.key !== key) return json(409, { error: "Candidate is for another mode." });
+        if (b.stale) return json(409, { error: "Deployed baseline changed since this candidate was bound; re-evaluate." });
+        cand = b.candidate; baselineHash = await sha256(b.baseline.prompt_text);
+        binding = { binding_hash: b.binding, candidate: b.candidate.content_hash, baseline: b.baseline.content_hash, dataset: b.dataset.content_hash, rubric: b.rubric.content_hash };
+      }
+      const access = await sessionFor(target);
+      if (!access) return json(403, { error: "Target must be a synthetic @btln-test.dev account." });
+      const secret = Array.from(crypto.getRandomValues(new Uint8Array(32))).map((x) => x.toString(16).padStart(2, "0")).join("");
+      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? 10 : 6;
+      const { data: run, error: runErr } = await admin.from("prompt_test_runs").insert({
+        secret_hash: await sha256(secret), target_user_id: target, operator_id: user.id, function_name: FUNCTION_FOR[key], mode: key, variant,
+        candidate_id: cand?.id ?? null, candidate_addendum: cand?.prompt_text ?? null, baseline_text_hash: baselineHash, case_id: c.id,
+        purpose: String(body.purpose ?? "").slice(0, 300), max_calls: maxCalls, expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+        state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null },
+      }).select("id").single();
+      if (runErr || !run) return json(500, { error: "Could not create test run." });
+      const header = `${run.id}.${secret}`;
+      if (key === "group_roast") {
+        // Group Roast reuses a finished roast for identical input. Remove earlier
+        // pipeline-test roasts of this synthetic account so this run really generates.
+        const { data: prior } = await admin.from("prompt_test_runs").select("state").eq("mode", "group_roast").eq("target_user_id", target).neq("id", run.id);
+        const ids = (prior ?? []).map((x: Admin) => x.state?.first?.body?.group_roast_id).filter((x: unknown) => typeof x === "string");
+        if (ids.length) await admin.from("group_roasts").delete().eq("user_id", target).in("id", ids);
+      }
+      await audit(admin, user.id, "pipeline_run_started", "prompt_test_runs", run.id, { mode: key, case_id: c.id, variant, target_is_synthetic: true });
+      // Interactive: the source Quick Take is created inside the same run (baseline Quick Take prompt).
+      const firstKey: ModeKey = key === "interactive" ? "quick_take" : key;
+      const firstCase = key === "interactive" ? { ...c, speakers: ["You", "Them"], messages: [{ id: "s1", speaker: "Them", text: String(c.interactive?.original_take?.read ?? "") }, { id: "s2", speaker: "You", text: String(c.interactive?.prior_updates?.[0]?.result_json?.context_summary ?? "See you soon") }, ...c.messages.slice(0, 1).map((m) => ({ ...m, speaker: "Them" }))] } : c;
+      const payload = pipelineRequest(firstKey, firstCase as ModeCase);
+      if (key === "deep_read_full" && body.personalization?.free_text !== undefined) (payload.context_data as Admin).free_text = String(body.personalization.free_text).slice(0, 500);
+      const r = await callFn(FUNCTION_FOR[firstKey], access, header, payload);
+      await admin.from("prompt_test_runs").update({ state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, secret, first: { status: r.status, body: r.body, session_id: payload.session_id ?? null } } }).eq("id", run.id);
+      return json(r.status < 300 ? 200 : 502, { run_id: run.id, status: r.status, response: r.body });
+    }
+
+    // pipeline_finalize
+    const runId = String(body.run_id ?? "");
+    if (!UUID_RE.test(runId)) return json(400, { error: "run_id required" });
+    const { data: run } = await admin.from("prompt_test_runs").select("*").eq("id", runId).maybeSingle();
+    if (!run) return json(404, { error: "Unknown run." });
+    const { data: existing } = await admin.from("prompt_pipeline_results").select("*").eq("test_run_id", runId).maybeSingle();
+    if (existing) return json(200, { result: existing, already: true });
+    const key = run.mode as ModeKey;
+    const c = PIPELINE_CASES[key].find((x) => x.id === run.case_id)!;
+    const st = run.state ?? {};
+    const header = `${run.id}.${st.secret}`;
+    let output: Admin = null; let pending = false; let extraNotes: string[] = [];
+    const nonModelStages: Record<string, string> = {};
+    const readRow = async (table: string, id: string, col: string) => {
+      const { data } = await admin.from(table).select(`status,${col},error_message`).eq("id", id).maybeSingle();
+      return data;
+    };
+    if (key === "relationship360") {
+      output = st.first?.body?.content ?? null;
+      if (st.first?.body?.state !== "complete") extraNotes.push(`build state: ${st.first?.body?.state ?? st.first?.status}`);
+    } else if (key === "interactive") {
+      const decodeId = st.first?.body?.decode_id;
+      const d = decodeId ? await readRow("decodes", decodeId, "result_json") : null;
+      if (!d) extraNotes.push("source Quick Take was not created");
+      else if (d.status !== "complete" && d.status !== "failed") pending = true;
+      else if (d.status === "failed") extraNotes.push(`source Quick Take failed: ${d.error_message ?? ""}`);
+      else if (!st.followup) {
+        const access = await sessionFor(run.target_user_id);
+        if (!access) return json(403, { error: "Synthetic session unavailable." });
+        const sentText = String(c.interactive?.prior_updates?.[0]?.result_json?.context_summary ?? "").match(/'([^']+)'/)?.[1] ?? "See you then!";
+        const sent = c.interactive?.prior_updates?.length
+          ? await callFn("interactive-mode", access, header, { decode_id: decodeId, client_request_id: crypto.randomUUID(), event_type: "sent_reply", action: "continue", raw_text: sentText, speaker_order: ["you"] })
+          : null;
+        const follow = await callFn("interactive-mode", access, header, pipelineRequest("interactive", c, { decodeId }));
+        const { data: evs } = await admin.from("interactive_events").select("id,event_type,provenance,status").eq("user_id", run.target_user_id).in("id", [sent?.body?.event_id, follow.body?.event_id].filter(Boolean));
+        await admin.from("prompt_test_runs").update({ state: { ...st, followup: { sent: sent ? { status: sent.status, event_id: sent.body?.event_id, thread_id: sent.body?.thread_id } : null, follow: { status: follow.status, event_id: follow.body?.event_id, thread_id: follow.body?.thread_id }, events: evs ?? [] } } }).eq("id", run.id);
+        output = follow.body?.result ?? null;
+        nonModelStages.same_thread = sent ? (sent.body?.thread_id && sent.body.thread_id === follow.body?.thread_id ? "verified" : "failed") : "not_applicable";
+        nonModelStages.sent_provenance = (evs ?? []).some((e: Admin) => e.event_type === "sent_reply" && e.provenance?.source === "confirmed_sent") || !sent ? "verified" : "failed";
+        if (follow.status >= 300) extraNotes.push(`follow-up returned ${follow.status}: ${JSON.stringify(follow.body).slice(0, 200)}`);
+      }
+    } else {
+      const ref = RESULT_REF[key]!;
+      const id = st.first?.body?.[ref.idField];
+      const row = id ? await readRow(ref.table, id, ref.column) : null;
+      if (!row) extraNotes.push(`no ${ref.table} row: first response ${st.first?.status} ${JSON.stringify(st.first?.body ?? {}).slice(0, 200)}`);
+      else if (!["complete", "completed", "failed", "error"].includes(String(row.status))) pending = true;
+      else { output = row[ref.column] ?? null; if (row.status !== "complete") extraNotes.push(`pipeline status ${row.status}: ${row.error_message ?? ""}`); }
+      if (key === "deep_read_full" && id && !pending) {
+        const { count } = await admin.from("messages_temp").select("id", { count: "exact", head: true }).eq("analysis_id", id);
+        nonModelStages.raw_message_deletion = count === 0 ? "verified" : `failed (${count} temporary rows remain)`;
+        nonModelStages.attributed_evidence = output?.attributed_evidence ? "present" : "missing";
+        nonModelStages.style_rewrite = output?.personalization ? `report: ${output.personalization.rewrite}, ${output.personalization.fields_applied}/${output.personalization.fields_total} fields` : "not_requested";
+      }
+    }
+    if (pending) return json(202, { state: "pending" });
+
+    const { data: ledger } = await admin.from("prompt_spend_ledger").select("id,stage,kind,model,reserved_usd,actual_usd,status,outcome").eq("job_id", run.id).order("created_at");
+    const rows = ledger ?? [];
+    const stagesSeen = [...new Set(rows.map((x: Admin) => x.stage ?? "unlabelled"))];
+    const expected = EXPECTED_STAGES[key];
+    const coverage: Record<string, string> = {};
+    for (const s of expected) coverage[s] = rows.some((x: Admin) => x.stage === s && String(x.outcome ?? "").startsWith("ok")) ? "exercised" : rows.some((x: Admin) => x.stage === s) ? "failed" : "missing";
+    for (const s of stagesSeen) if (!(s in coverage)) coverage[s] = "exercised";
+    if (["deep_read_full", "group_read", "group_roast"].includes(key) && !("digest" in coverage)) coverage.digest = "not_exercised (short input; long-history digest queued with 10k release checks)";
+    Object.assign(coverage, nonModelStages);
+    const coreOk = expected.every((s) => coverage[s] === "exercised") && Object.values(nonModelStages).every((v) => !String(v).startsWith("failed") && v !== "missing") && output !== null;
+    const parity = !coreOk ? "partial_pipeline" : String(coverage.digest ?? "").startsWith("not_exercised") ? "partial_pipeline" : "full_pipeline";
+    let caseForScreen: ModeCase = c;
+    if (key === "relationship360") {
+      const { data: obsRows } = await admin.from("journey_observations").select("id,journey_source_id,relationship_id,subject_kind,observed_period_start").eq("user_id", run.target_user_id).is("excluded_at", null).limit(500);
+      caseForScreen = { ...c, r360: { observations: (obsRows ?? []).map((o: Admin) => ({ observation_id: o.id, source_id: o.journey_source_id, relationship_id: o.relationship_id, relationship_confirmed: true, kind: o.subject_kind, observed_from: o.observed_period_start })) } } as Admin;
+    }
+    if (key === "interactive") caseForScreen = c;
+    const checks: Admin[] = output ? screen(key, caseForScreen, output, run.variant === "candidate" ? run.candidate_addendum : undefined) : [{ id: "json_valid", hard: true, passed: false, detail: "no pipeline output" }];
+    // An output not produced by this run's own model stages (e.g. a cached result) never counts as a pass.
+    const missingStages = expected.filter((x) => coverage[x] !== "exercised");
+    checks.push({ id: "pipeline_stages_exercised", hard: true, passed: missingStages.length === 0, detail: missingStages.length ? `not exercised in this run: ${missingStages.join(", ")}` : "all expected model stages ran in this run" });
+    const reserved = rows.reduce((n: number, x: Admin) => n + Number(x.reserved_usd ?? 0), 0);
+    const actual = rows.filter((x: Admin) => x.actual_usd !== null).reduce((n: number, x: Admin) => n + Number(x.actual_usd), 0);
+    const unknown = rows.filter((x: Admin) => x.actual_usd === null).length;
+    const bindingRec = {
+      mode: key, pipeline_cases: PIPELINE_REVISION, pipeline_code: PIPELINE_CODE_VERSIONS[key], rubric: MODE_RUBRIC_VERSION,
+      deployed_source: st.deployed_source, models: [...new Set(rows.map((x: Admin) => x.model))], candidate: st.binding ?? null,
+      case_hash: await sha256(c), variant: run.variant, personalization: st.personalization ?? null,
+    };
+    const { data: saved, error: saveErr } = await admin.from("prompt_pipeline_results").insert({
+      test_run_id: run.id, mode: key, case_id: c.id, variant: run.variant, candidate_id: run.candidate_id,
+      binding: { ...bindingRec, binding_hash: await sha256(bindingRec) }, stage_coverage: coverage, pipeline_parity: parity,
+      output, checks, screen_passed: output ? hardPass(checks) : false,
+      spend: { calls: rows.length, reserved_usd: reserved, actual_usd: actual, unknown_cost_calls: unknown, ledger: rows.map((x: Admin) => ({ stage: x.stage, kind: x.kind, model: x.model, reserved: x.reserved_usd, actual: x.actual_usd, outcome: x.outcome })) },
+      notes: [...extraNotes, key === "interactive" ? "source Quick Take created inside the run with the deployed Quick Take prompt" : ""].filter(Boolean).join("; ") || null,
+      created_by: user.id,
+    }).select("*").single();
+    if (saveErr) return json(500, { error: "Could not store pipeline result." });
+    await admin.from("prompt_test_runs").update({ status: "finalized", finalized_at: new Date().toISOString(), state: { ...st, secret: null } }).eq("id", run.id);
+    await audit(admin, user.id, "pipeline_run_finalized", "prompt_pipeline_results", saved.id, { mode: key, parity, screen_passed: saved.screen_passed });
+    return json(200, { result: saved });
+  }
+
+
+  if (action === "pipeline_results") {
+    const q = admin.from("prompt_pipeline_results").select("*, prompt_pipeline_rescreens(rubric_version,checks,screen_passed,reason,created_at)").order("created_at", { ascending: false }).limit(200);
+    const { data } = isMode(body.mode) ? await q.eq("mode", body.mode) : await q;
+    return json(200, { results: data ?? [], rubric_version: MODE_RUBRIC_VERSION });
+  }
+
+  // Re-applies the CURRENT versioned rubric to stored outputs (no model call).
+  // The original result row is immutable; the re-screen is a separate record.
+  if (action === "pipeline_rescreen") {
+    const reason = String(body.reason ?? "").slice(0, 300);
+    if (!reason) return json(400, { error: "reason required" });
+    const { data: rows } = await admin.from("prompt_pipeline_results").select("*, prompt_test_runs!inner(target_user_id, candidate_addendum)").neq("binding->>rubric", MODE_RUBRIC_VERSION).limit(200);
+    let n = 0;
+    for (const r of rows ?? []) {
+      const key = r.mode as ModeKey;
+      let c: Admin = PIPELINE_CASES[key]?.find((x) => x.id === r.case_id);
+      if (!c) continue;
+      if (key === "relationship360") {
+        const { data: obsRows } = await admin.from("journey_observations").select("id,journey_source_id,relationship_id,subject_kind,observed_period_start").eq("user_id", r.prompt_test_runs.target_user_id).is("excluded_at", null).limit(500);
+        c = { ...c, r360: { observations: (obsRows ?? []).map((o: Admin) => ({ observation_id: o.id, source_id: o.journey_source_id, relationship_id: o.relationship_id, relationship_confirmed: true, kind: o.subject_kind, observed_from: o.observed_period_start })) } };
+      }
+      const checks: Admin[] = r.output ? screen(key, c, r.output, r.variant === "candidate" ? r.prompt_test_runs.candidate_addendum : undefined) : [{ id: "json_valid", hard: true, passed: false, detail: "no pipeline output" }];
+      const stageCheck = (r.checks ?? []).find((x: Admin) => x.id === "pipeline_stages_exercised")
+        ?? { id: "pipeline_stages_exercised", hard: true, passed: Object.entries(r.stage_coverage ?? {}).every(([k, v]) => !["primary", "synthesis", "attribution"].includes(k) || v === "exercised"), detail: "derived from stored stage coverage" };
+      checks.push(stageCheck);
+      const { error } = await admin.from("prompt_pipeline_rescreens").insert({ result_id: r.id, rubric_version: MODE_RUBRIC_VERSION, checks, screen_passed: r.output ? hardPass(checks) : false, reason, created_by: user.id });
+      if (!error) n++;
+    }
+    await audit(admin, user.id, "pipeline_rescreen", "prompt_pipeline_rescreens", null, { rubric: MODE_RUBRIC_VERSION, count: n });
+    return json(200, { rescreened: n, rubric_version: MODE_RUBRIC_VERSION });
+  }
+
+  // Test fixture for personalization runs: sets or clears the consented style
+  // feedback of a SYNTHETIC account only (the same rows the product's
+  // "Helpful / Don't Like It" control writes). Never usable on a real account.
+  if (action === "synthetic_preferences") {
+    const target = String(body.target_user_id ?? "");
+    const { data: u } = UUID_RE.test(target) ? await admin.auth.admin.getUserById(target) : { data: null };
+    if (!TEST_EMAIL.test(u?.user?.email ?? "")) return json(403, { error: "Synthetic accounts only." });
+    const tag = "pipeline-eval-fixture";
+    // Synthetic account: start every fixture from a clean slate so "off" really is off.
+    await admin.from("ai_feedback").delete().eq("user_id", target);
+    if (body.op === "set") {
+      const note = String(body.note ?? "").slice(0, 240);
+      const { error } = await admin.from("ai_feedback").insert({ user_id: target, source_kind: "deep_read", source_id: crypto.randomUUID(), target_kind: "recommendation", target_key: tag, rating: body.rating === "down" ? "down" : "up", reason_codes: Array.isArray(body.reason_codes) ? body.reason_codes.slice(0, 5).map(String) : [], comment: note, personalization_consent: body.consent !== false, product_improvement_consent: false });
+      if (error) return json(500, { error: `Could not set fixture: ${error.message}` });
+    }
+    await audit(admin, user.id, "synthetic_preferences", "ai_feedback", target, { op: body.op });
+    return json(200, { ok: true });
   }
 
   if (action === "budget_selftest") {
