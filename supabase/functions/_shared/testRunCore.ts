@@ -53,9 +53,8 @@ export const defaultMaxOut = (model: string) => (model.startsWith("anthropic/") 
 
 /**
  * Metered replacement for the provider call. Keeps callOpenRouter's
- * semantics (one retry after a 5xx), but each attempt is its own reservation.
- * A repeated call in the same stage (a pipeline's own JSON retry) is recorded
- * with kind "retry".
+ * semantics (one retry after a 5xx), but each attempt is its own reservation;
+ * the retry is linked (retry_of) to the reservation it repeats.
  */
 export const meteredOpenRouter = async (ctx: TestCtx, body: Record<string, unknown>): Promise<ProviderResult> => {
   if (ctx.kind === "blocked") return { ok: false, status: 403, errorText: ctx.reason };
