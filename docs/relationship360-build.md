@@ -678,3 +678,21 @@ Status: engineering gates below pass **except** the soft quality checks noted; t
 
 ### Open
 Deterministic-only advice validation; the review page's parity label; Relationship360 long-history screen check; owner review. Separately queued: billing, 77 older security warnings, Group Roast expansion.
+
+## #2 closeout update — 2026-09-26 21:50 UTC (packet 9e6534ba-9d8f-4829-8c69-3bf0b3826143, successor to 57e4fe36…; human review PENDING)
+
+Budget (improvement scope, rolling 24h): $9.951 used (unknown-cost calls counted at full reservation), $5.049 left of $15. Caps unchanged: $3.50/job, $0.60/call.
+Deployment: shared backend functions (`analyze-conversation`, `analyze-group`, `relationship360`, `prompt-improvement`) and database migrations are live on the shared backend used by preview and published site. The app itself (the preview front end) was NOT published.
+
+| Gate | Implemented | Verified | Status |
+|---|---|---|---|
+| C1 Advice meaning | Deterministic v2 + metered semantic second check (`advice_check`, advice-semantic-2, 30 s timeout, fail-closed → withhold with note) | 18 held-out fixtures: 1 false accept (`t1-pronoun-noquote / cs.p2.0`), 0 false rejects; ~$0.046 | OPEN — one known false accept; not proof of meaning; live style on/off + in-flight correction not re-run with semantic stage |
+| C2 Isolation | Server-set `is_evaluation` on events/analyses; test accounts + evaluation output excluded from feedback aggregate; admin dashboard shows excluded counts | Rolled-back DB fixture: candidate quarantined, forged unquarantine kept, late observation refused (`source_quarantined`), baseline tag cannot be removed, ordinary source untagged, forged event flags overwritten both ways, feedback aggregate counted 1 of 3 (only the ordinary row) | DONE for these paths. Limit: historical anonymous events cannot be attributed; no backfill. Any candidate (incl. sandbox-approved) is quarantined by variant |
+| C2b Eval-scope R360 persistence | Eval-scope builds now return results to the harness only (`persisted:false`), never write or read the account's summary/cache | Code + deploy; wrongly saved cross-relationship summary 2550d5f9 on synthetic A removed (result kept as 2e62d202). Relationship-level test summary 79b4e4fd (pre-fix 10k build) kept on synthetic A only, now shows a "Test build" notice | Not re-run live after fix |
+| C3 Group Read brevity | Group-size bounds (headline≤16, why≤40, note≤45, total ≤ min(900, 220+130·n)), dedup checks | Run 579f43a8 / result c86ef097: digest ×3 + primary, 616/740 words, 4/4 participants, injection not adopted or repeated, $0.208 | DONE |
+| C4 Whole-account R360 | Compact evidence context with server-side ID expansion, $0.58 planning ceiling | Ordinary bc1083d2 (8 sources/73 obs, est $0.40); eval-scope 2e62d202 (9 sources incl. 10k, 85 obs, no omissions, est $0.42) | DONE; 10k source attribution remains recent 400 messages only |
+| C5 Review labels | Parity derived from stages actually run (full / final call only / partial / blocked), stored server-side on packet items | Admin page at 1280 and 390: no overflow, labels shown | DONE |
+| C5 Concurrency | `budget_selftest` (14 simultaneous → 10 accepted at $1 cap; 8 simultaneous per job → 5 at $0.50; missing cost kept; per-call cap refused) | Run 2026-09-26 21:45 | DONE (reservation races; test-run stage-call race covered only by the single-RPC design, not a parallel run) |
+| C5 R360 long-history screen | "Test build" notice, omitted-coverage note | NOT inspected: signing the preview in as synthetic account A needs owner approval that isn't available here | OPEN |
+
+Open: advice semantic false accept; live re-run of advice style/correction with semantic stage; eval-scope R360 live re-run after no-save fix; R360 long-history screen check at 1280/390; parallel test-run stage-call race; human quality review; billing, 77 older security warnings, Group Roast expansion (separately queued).
