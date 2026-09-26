@@ -49,6 +49,7 @@ export const withTestRun = (fnName: string, handler: (req: Request) => Promise<R
   const ctx: TestCtx = {
     kind: "metered",
     runId: String(data.id),
+    fn: fnName,
     scope: "improvement",
     deps: { ...dbBudget(admin), provider: openRouterProvider(apiKey, "BetweenTheLines metered test run") },
     stage: "unlabelled",
@@ -58,7 +59,6 @@ export const withTestRun = (fnName: string, handler: (req: Request) => Promise<R
       : null,
     timeoutMs: 150_000,
     shared: { calls: [], seen: new Map(), candidateUsed: [] },
-    annotate: async (id, stage) => { await admin.from("prompt_spend_ledger").update({ stage, test_run_id: String(data.id) }).eq("id", id); },
   };
   return testRunStore.run(ctx, () => handler(req));
 };

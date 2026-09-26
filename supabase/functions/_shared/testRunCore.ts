@@ -25,14 +25,15 @@ export type StageCall = { stage: string; kind: "generation" | "retry"; ok: boole
 export type MeteredCtx = {
   kind: "metered";
   runId: string;
+  /** Server-side function name (from the wrapper, never the client). */
+  fn: string;
   scope: string;
   deps: BudgetDeps;
   stage: string;
   maxCalls: number;
   candidate: Candidate;
   timeoutMs: number;
-  shared: { calls: StageCall[]; seen: Map<string, number>; candidateUsed: string[] };
-  annotate?: (reservationId: string, stage: string) => Promise<void>;
+  shared: { calls: StageCall[]; seen: Map<string, number>; candidateUsed: string[]; lastByStage?: Map<string, string> };
 };
 export type BlockedCtx = { kind: "blocked"; reason: string };
 export type TestCtx = MeteredCtx | BlockedCtx;
@@ -70,12 +71,15 @@ export const meteredOpenRouter = async (ctx: TestCtx, body: Record<string, unkno
     ctx.shared.seen.set(ctx.stage, n + 1);
     const kind = n === 0 && attempt === 0 ? "generation" : "retry";
     // deno-lint-ignore no-explicit-any
-    const r: any = await meteredCall(ctx.deps, { scope: ctx.scope, jobId: ctx.runId, kind, body: b, timeoutMs: ctx.timeoutMs });
+    // Stage, function, call count and dollars are reserved in one atomic RPC;
+    // a retry is its own reservation linked to the previous call of the stage.
+    const last = (ctx.shared.lastByStage ??= new Map()).get(ctx.stage) ?? null;
+    const r: any = await meteredCall(ctx.deps, { scope: ctx.scope, jobId: ctx.runId, kind, stage: ctx.stage, fn: ctx.fn, retryOf: kind === "retry" ? last : null, body: b, timeoutMs: ctx.timeoutMs });
+    if (r.reservationId) ctx.shared.lastByStage.set(ctx.stage, r.reservationId);
     if (!r.ok && r.stage === "budget") {
       ctx.shared.calls.push({ stage: ctx.stage, kind, ok: false, reason: `budget:${r.reason}` });
       return { ok: false, status: 429, errorText: `budget:${r.reason}` };
     }
-    if (ctx.annotate) await ctx.annotate(r.reservationId, ctx.stage).catch(() => undefined);
     if (r.ok) {
       ctx.shared.calls.push({ stage: ctx.stage, kind, ok: true, reservationId: r.reservationId, reserved: r.reserved, cost: r.usage.cost });
       return { ok: true, status: 200, data: r.data };

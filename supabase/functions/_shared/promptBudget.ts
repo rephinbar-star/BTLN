@@ -35,7 +35,7 @@ export type Reservation = { ok: true; id: string } | { ok: false; reason: string
 export type ProviderResult = { ok: boolean; status: number; data?: any; errorText?: string };
 
 export type BudgetDeps = {
-  reserve: (a: { scope: string; jobId: string | null; kind: SpendKind; model: string; inTok: number; outTok: number; amount: number }) => Promise<Reservation>;
+  reserve: (a: { scope: string; jobId: string | null; kind: SpendKind; model: string; inTok: number; outTok: number; amount: number; stage?: string; fn?: string; retryOf?: string | null }) => Promise<Reservation>;
   reconcile: (a: { id: string; actual: number | null; pt: number | null; ct: number | null; outcome: string }) => Promise<void>;
   provider: (body: Record<string, unknown>, signal: AbortSignal) => Promise<ProviderResult>;
 };
@@ -47,13 +47,13 @@ export type MeteredResult =
 
 export const meteredCall = async (
   deps: BudgetDeps,
-  opts: { scope: string; jobId: string | null; kind: SpendKind; body: Record<string, unknown> & { model: string; max_tokens: number; messages: { content: unknown }[] }; timeoutMs: number },
+  opts: { scope: string; jobId: string | null; kind: SpendKind; stage?: string; fn?: string; retryOf?: string | null; body: Record<string, unknown> & { model: string; max_tokens: number; messages: { content: unknown }[] }; timeoutMs: number },
 ): Promise<MeteredResult> => {
   const { body } = opts;
   const inTok = estimateInputTokens(body.messages);
   const amount = maxCostUsd(body.model, inTok, body.max_tokens);
   if (amount === null) return { ok: false, stage: "budget", reason: "unknown_pricing" };
-  const res = await deps.reserve({ scope: opts.scope, jobId: opts.jobId, kind: opts.kind, model: body.model, inTok, outTok: body.max_tokens, amount });
+  const res = await deps.reserve({ scope: opts.scope, jobId: opts.jobId, kind: opts.kind, model: body.model, inTok, outTok: body.max_tokens, amount, stage: opts.stage, fn: opts.fn, retryOf: opts.retryOf ?? null });
   if (res.ok === false) return { ok: false, stage: "budget", reason: res.reason, detail: res.detail };
 
   const ctrl = new AbortController();
@@ -98,9 +98,11 @@ export const openRouterProvider = (apiKey: string, title: string) =>
 // deno-lint-ignore no-explicit-any
 export const dbBudget = (admin: any): Pick<BudgetDeps, "reserve" | "reconcile"> => ({
   reserve: async (a) => {
-    const { data, error } = await admin.rpc("reserve_prompt_spend", {
-      p_scope: a.scope, p_job: a.jobId, p_kind: a.kind, p_model: a.model, p_in: a.inTok, p_out: a.outTok, p_amount: a.amount,
-    });
+    // Test-run calls carry stage + function: validated and written atomically with the reservation.
+    const base = { p_scope: a.scope, p_job: a.jobId, p_kind: a.kind, p_model: a.model, p_in: a.inTok, p_out: a.outTok, p_amount: a.amount };
+    const { data, error } = await admin.rpc("reserve_prompt_spend", a.stage !== undefined || a.fn !== undefined
+      ? { ...base, p_stage: a.stage ?? null, p_function: a.fn ?? null, p_retry_of: a.retryOf ?? null }
+      : base);
     if (error || !data) return { ok: false, reason: "reservation_error" };
     return data.ok ? { ok: true, id: String(data.id) } : { ok: false, reason: String(data.reason), detail: data };
   },
