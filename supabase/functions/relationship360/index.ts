@@ -336,6 +336,14 @@ Deno.serve(async (req) => {
   await admin.from("journey_jobs")
     .update({ status: "failed", error_message: "timed out", completed_at: new Date().toISOString() })
     .eq("user_id", user.id).eq("status", "running").lt("updated_at", staleCutoff);
+  // Returning to an earlier input (e.g. personalization off -> on -> off, or a
+  // correction undone) must rebuild: the stored summary no longer matches, so
+  // release the idempotency key held by the older completed job.
+  {
+    const release = admin.from("journey_jobs").update({ input_fingerprint: null })
+      .eq("user_id", user.id).eq("status", "complete").eq("input_fingerprint", inputFingerprint);
+    await (relationshipId ? release.eq("relationship_id", relationshipId) : release.is("relationship_id", null));
+  }
 
   const { data: job, error: jobError } = await admin.from("journey_jobs").insert({
     user_id: user.id,
