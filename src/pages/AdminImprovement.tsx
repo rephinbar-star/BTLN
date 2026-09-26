@@ -1,3 +1,4 @@
+import { Relationship360Live } from "@/components/relationship360/Relationship360Live";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
@@ -339,6 +340,7 @@ const AdminImprovement = () => {
                   {r.notes && <p className="mt-1 text-[12px] text-muted-foreground">{r.notes}</p>}
                   <Button size="sm" variant="outline" className="mt-2 min-h-11 rounded-full" onClick={() => setParams(open ? { mode } : { mode, run: r.id })}>{open ? "Hide output" : "Show full output"}</Button>
                   {open && <pre className="mt-2 max-h-96 overflow-auto whitespace-pre-wrap break-words rounded-md bg-muted/40 p-2 text-[12px]">{JSON.stringify(r.output, null, 2)}</pre>}
+                                  {mode === "relationship360" && <R360ComponentReview resultId={r.id} />}
                 </li>
               );
             })}
@@ -394,4 +396,35 @@ function parityOf(r: { pipeline_parity?: string; stage_coverage?: Record<string,
 }
 function parityText(p: string): string {
   return ({ full_pipeline: "Full pipeline", final_call_only: "Final call only", partial: "Partial pipeline", blocked: "Blocked (no output)", unrecorded: "Stage coverage not recorded" } as Record<string, string>)[p] ?? "Stage coverage not recorded";
+}
+
+/** Operator component review of a RECORDED synthetic Relationship360 test build (not a customer E2E view). */
+function R360ComponentReview({ resultId }: { resultId: string }) {
+  const [data, setData] = useState<any>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [open, setOpen] = useState(false);
+  const load = async () => {
+    setOpen((o) => !o);
+    if (data || open) return;
+    try { setData(await call({ action: "r360_component_review", result_id: resultId })); } catch (e) { setErr((e as Error).message); }
+  };
+  return (
+    <div className="mt-2 min-w-0">
+      <Button size="sm" variant="outline" className="min-h-11 rounded-full" onClick={load}>{open ? "Hide component review" : "Component review"}</Button>
+      {open && err && <p className="mt-2 text-[13px] text-destructive">{err}</p>}
+      {open && data && (
+        <div className="mt-3 min-w-0 rounded-lg border border-border p-3">
+          <p className="rounded-md bg-muted px-3 py-2 text-[12px] text-foreground">
+            Component review: recorded synthetic test output ({data.eval_scope ? "evaluation scope" : "ordinary test scope"}, run {data.run_id}) shown in the real Relationship360 component. Not a signed-in customer view; nothing here is saved.
+          </p>
+          <ul className="mt-2 space-y-1 text-[12px] text-muted-foreground">
+            {(data.sources ?? []).map((s: any) => (
+              <li key={s.id} className="break-words">{s.source_kind} · {s.dated_count ?? 0} dated messages · {s.observed_period_start ? `${String(s.observed_period_start).slice(0, 10)} to ${String(s.observed_period_end ?? s.observed_period_start).slice(0, 10)}` : "dates unknown"}{s.evaluation_run_id ? " · test source" : ""}</li>
+            ))}
+          </ul>
+          <Relationship360Live relationships={[]} recorded={{ prime: true, opted_in: true, counts: { linked: (data.sources ?? []).length, eligible: (data.sources ?? []).length, pending: 0 }, summary: data.content ? { id: data.run_id, content: data.content, coverage: data.coverage, generated_at: data.generated_at } as any : null, job: null, observations: data.observations ?? [], reflections: [] }} />
+        </div>
+      )}
+    </div>
+  );
 }

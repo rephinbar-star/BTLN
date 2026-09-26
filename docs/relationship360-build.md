@@ -709,3 +709,43 @@ Human quality review: PENDING. Budget: $10.33 committed / $4.67 left of $15 roll
 
 Open: gate 1 false accept and false rejects; clean live style-off rerun; gate 3 signed-in UI check; human quality review. Separately queued: billing, 77 older security warnings, Group Roast expansion.
 Deployment: backend functions and DB migrations are live on the shared backend (the published site uses it too). The frontend was NOT published; nothing was charged or promoted.
+
+## #2 advice gate + visual handoff — 2026-09-26 22:50 UTC (packet f862f3c3-894a-4006-bfeb-820c9412946a, supersedes b417a4b5…, which is unchanged)
+Human quality review: PENDING. Budget: $10.77 committed / $4.23 left of $15 rolling 24h (5 unknown-cost rows, $0.000005, held in full). Caps unchanged.
+
+### A Adjudication of t1-pronoun-noquote / cs.p2.0 (engineering view, not owner-approved)
+- Transcript: Alex (p2, partner) raises planning twice (lines 0 and 2). Taylor (p1, user) shuts it down twice ("Whatever, fine", "can we just drop it"). Alex then says "Forget it. Dinner at 8?" (line 4).
+- Advice to Alex: "stay in the conversation instead of brushing it off and moving to logistics."
+- The cited line 4 was written by Alex, so the speaker is right. But "brushing it off" fits Taylor's pattern better; Alex switched topics once, after being shut down. The advice is only partly supported and misleading as a description of Alex.
+- Verdict: the original "withhold" label is defensible but not clear-cut, so it is **ambiguous**. Set 1 is unchanged and still runnable. Set 4 holds `t1-v2-adjudicated` with the item marked ambiguous; it is reported separately and never counted as a pass.
+- To stop the label change hiding a weakness, set 4 also adds clear-cut counterparts (t8: the same advice text, correct for the person who deflected and wrong for the other) and fresh cases (t9: future steps, a swap, joint plans). Set 4 was written by the same engineer in the same session, so it is not independent.
+
+### B Fix (advice-semantic-4)
+- The check now separates "change_own_behavior" (a claim about the recipient's past; the lines must be the recipient's, verified on the server, and not mainly the other person's) from "new_action" and "joint_plan" (forward-looking; they need lines showing the situation, not a past act).
+- Everything else still fails closed: counterpart/unclear recipient, unsupported or uncertain items, missing/malformed/duplicate/timed-out verdicts, and the old v3 verdict shape.
+- There are no phrase-specific exceptions.
+
+### Results
+- a130dbf1 (v4 first wording, $0.126): 0 false accepts out of 13, 3 false rejects out of 23 (all joint plans, "support unclear").
+- The support rule was then clarified for forward steps, i.e. tuned on this same suite. Rerun ac56925d ($0.132): 0 false accepts out of 13, 0 false rejects out of 23; the ambiguous item was accepted (kept). Set 4: 13/13.
+- Original set 1 on v4 (df56a1ca, $0.049): the old t1 cs.p2.0 is still "accepted" under its original label. This is expected given the adjudication.
+- These are small fixture sets, not proof of meaning.
+
+### C Clean live runs (run one after the other; the preference was changed only after the previous run finished)
+- Style OFF 6526576d / result 5ccb6879 ($0.069): 10/11 items kept, including 3 recipient-correct items for Alex (previously withheld). 1 withheld by the deterministic script rule. Quotes 5/5; raw messages deleted.
+- Style ON eda8fcaf / result dbfaf89a ($0.063): rewrite applied to 8/8 fields, one sentence each, recipients unchanged; 1/9 withheld (same rule); quotes 6/6.
+- Both runs recorded advice-semantic-4 at the end.
+- Earlier run 2f514b82 is classified INVALID as a style-off test (the preference was changed while it was running).
+- Mid-generation identity correction: not applicable to Deep Read. The R360 in-flight correction evidence a577202c remains valid.
+
+### D Visual gate
+- Signing the preview in as synthetic account A needs user approval, which is not available in this context. There is no in-product request for that approval; not retried, no workaround.
+- The ordinary /journey view does not show evaluation builds, by design.
+- Supplement added: an operator-only "Component review" button on /admin/improvement?mode=relationship360. It renders a recorded test build in the real Relationship360 component. It is read-only (no building, no reflections saved, feedback kept local), is labelled "not a signed-in customer view", and works only for synthetic evaluation accounts.
+- Checked for 09dbaac7 at 1280 and 390 as the operator: 0px horizontal overflow. The source list shows the 10k source (10,000 dated messages, 2024-01-01 to 2024-12-13, test source). The recent-400 caveat and the "Test build" notice are visible; Insight and Introspection sit inline and are readable.
+- Finding: the customer component itself says "9 included conversations" but does not show the 10k message count or date range.
+- Authenticated customer E2E remains BLOCKED.
+- Manual steps: there is currently NO supported way for the owner to sign in as the synthetic account. Its password is derived server-side and never shared, and the test email domain has no real mailbox for a reset link. The supported route is for the owner to approve a synthetic-account session through the platform approval card, when that approval is offered. Once approved: open /journey then Relationship360 at desktop and phone width and check sources/scope, the recent-400 note, inline Insight/Introspection, and no overflow. Because test builds are isolated, /journey will show only the ordinary state (no whole-account test summary). The eval output can legitimately be seen only through Component review.
+
+Open: signed-in customer visual check (needs owner/approval); showing the 10k message count in the customer screen (design decision); independent held-out advice cases; human quality review. Separately queued: billing, 77 older security warnings, Group Roast.
+Deployment: prompt-improvement, analyze-conversation and relationship360 are live on the shared backend (the published site uses it too). The frontend changes (Component review) are in preview only and not published.

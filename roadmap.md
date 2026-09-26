@@ -51,8 +51,8 @@
 - [ ] Relationship360 long-history screen browser check
 
 ## #2 closeout (2026-09-26 21:22, owner)
-- [ ] #2 advice semantic: 1 false accept (t1 cs.p2.0) + false rejects; clean style-off rerun
+- [x] #2 advice semantic v4 (adjudicated t1, 0 FA/13, 0 FR/23 after tuning; clean live off/on)
 - [x] #2 eval-scope no-save live proof (09dbaac7) + test jobs hidden from ordinary view
-- [ ] #2 R360 screen 1280/390 — blocked: synthetic-account sign-in needs approval unavailable here
+- [ ] #2 R360 signed-in customer screen check — needs owner sign-in (approval unavailable); component review done
 - [x] #2 concurrent stage limits (stage_selftest)
 - [x] C2 isolation, C3 Group Read brevity, C4 whole-account R360, review labels, successor packet b417a4b5
