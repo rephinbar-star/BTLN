@@ -566,11 +566,40 @@ Deno.serve(async (req) => {
       return v?.session?.access_token ?? null;
     };
     const callFn = async (fn: string, access: string, header: string, payload: unknown) => {
-      const r = await fetch(`${supaUrl}/functions/v1/${fn}`, { method: "POST", headers: { Authorization: `Bearer ${access}`, apikey: anonKey, "Content-Type": "application/json", "x-btln-test-run": header }, body: JSON.stringify(payload) });
+      const r = await fetch(`${supaUrl}/functions/v1/${fn}`, { method: "POST", headers: { Authorization: `Bearer ${access}`, apikey: anonKey, "Content-Type": "application/json", ...(header ? { "x-btln-test-run": header } : {}) }, body: JSON.stringify(payload) });
       const t = await r.text();
       let j: Admin = null; try { j = JSON.parse(t); } catch { j = { raw: t.slice(0, 300) }; }
       return { status: r.status, body: j };
     };
+
+    if (action === "ownership_probe") {
+      // No-model integration fixture: synthetic accounts calling Deep Read with
+      // no metered token run in the blocked context, so any model call is
+      // refused and nothing is spent. Verifies owner binding on the deployed code.
+      const accts = [body.a, body.b].map(String);
+      if (!accts.every((x) => UUID_RE.test(x))) return json(400, { error: "a and b synthetic ids required" });
+      const payload = () => ({ session_id: crypto.randomUUID(), input_method: "paste", context_data: { name1: "Robin", name2: "Sam" }, raw_text: "Robin: ownership probe line one\nSam: ownership probe line two\nRobin: probe three" });
+      const out: Admin = {};
+      const ids: string[] = [];
+      for (const [i, u] of accts.entries()) {
+        const tok = await sessionFor(u);
+        if (!tok) return json(403, { error: "Synthetic accounts only" });
+        const r = await callFn("analyze-conversation", tok, "", payload());
+        const id = r.body?.analysis_id;
+        ids.push(id);
+        const { data: row } = id ? await admin.from("analyses").select("user_id").eq("id", id).maybeSingle() : { data: null };
+        out[`account_${i ? "b" : "a"}`] = { status: r.status, owner_bound: r.body?.owner_bound, persisted_owner_matches: row?.user_id === u };
+      }
+      const tokB = await sessionFor(accts[1]);
+      const cross = await callFn("analyze-conversation", tokB!, "", { ...payload(), analysis_id: ids[0] });
+      out.cross_account_rerun = { status: cross.status };
+      const bad = await callFn("analyze-conversation", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4Iiwicm9sZSI6ImF1dGhlbnRpY2F0ZWQifQ.forged", "", payload());
+      out.forged_token = { status: bad.status };
+      await new Promise((r) => setTimeout(r, 6000));
+      const { data: after } = await admin.from("analyses").select("id,user_id,status").in("id", ids.filter(Boolean));
+      out.after_completion = (after ?? []).map((r: Admin) => ({ id: r.id, owner_kept: r.user_id === accts[ids.indexOf(r.id)], status: r.status }));
+      return json(200, out);
+    }
 
     if (action === "pipeline_start") {
       const key = body.mode;
