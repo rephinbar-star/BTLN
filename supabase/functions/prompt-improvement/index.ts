@@ -829,6 +829,27 @@ Deno.serve(async (req) => {
     return json(200, { results: data ?? [], rubric_version: MODE_RUBRIC_VERSION });
   }
 
+  // Operator-only component review of a RECORDED Relationship360 test build.
+  // Reads the immutable test-run record (never the ordinary summary tables) and
+  // only for synthetic evaluation accounts. Not an authenticated customer view.
+  if (action === "r360_component_review") {
+    if (!UUID_RE.test(String(body.result_id ?? ""))) return json(400, { error: "result_id required" });
+    const { data: pr } = await admin.from("prompt_pipeline_results").select("id,mode,test_run_id,created_at").eq("id", body.result_id).maybeSingle();
+    if (!pr || pr.mode !== "relationship360") return json(404, { error: "Not a Relationship360 result." });
+    const { data: run } = await admin.from("prompt_test_runs").select("id,target_user_id,eval_scope,state,created_at").eq("id", pr.test_run_id).maybeSingle();
+    const { data: evalAcct } = run ? await admin.from("evaluation_accounts").select("user_id").eq("user_id", run.target_user_id).maybeSingle() : { data: null };
+    if (!run || !evalAcct) return json(403, { error: "Synthetic evaluation accounts only." });
+    const b = run.state?.first?.body ?? {};
+    const content = b.content ?? null;
+    const ids = new Set<string>();
+    for (const k of ["patterns", "working", "recommendations"]) for (const x of (content?.[k] ?? [])) for (const e of (x?.evidence ?? [])) if (typeof e === "string" && UUID_RE.test(e)) ids.add(e);
+    const { data: obs } = ids.size ? await admin.from("journey_observations").select("id,journey_source_id,subject_kind,subject_label,observation_type,statement,evidence_refs,confidence,observed_period_start,observed_period_end,created_at").eq("user_id", run.target_user_id).in("id", [...ids]) : { data: [] };
+    const srcIds = Array.isArray(b.coverage?.input_source_ids) ? b.coverage.input_source_ids.filter((x: unknown) => typeof x === "string" && UUID_RE.test(x as string)) : [];
+    const { data: sources } = srcIds.length ? await admin.from("journey_sources").select("id,source_kind,dated_count,observed_period_start,observed_period_end,evaluation_run_id,quarantined_at").eq("user_id", run.target_user_id).in("id", srcIds) : { data: [] };
+    await audit(admin, user.id, "r360_component_review", "prompt_pipeline_results", pr.id, {});
+    return json(200, { recorded: true, run_id: run.id, eval_scope: run.eval_scope, generated_at: run.created_at, content, coverage: b.coverage ?? null, observations: obs ?? [], sources: sources ?? [] });
+  }
+
   // Re-applies the CURRENT versioned rubric to stored outputs (no model call).
   // The original result row is immutable; the re-screen is a separate record.
   if (action === "pipeline_rescreen") {
