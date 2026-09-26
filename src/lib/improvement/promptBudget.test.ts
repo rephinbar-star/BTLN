@@ -114,6 +114,20 @@ describe("hard spending control (deterministic fake provider)", () => {
     expect(l.committed()).toBeGreaterThan(0);
   });
 
+  it("zero cost, token-less usage and failed calls keep the full reservation (never free)", async () => {
+    const zero = ledger({ global: 100, perJob: 100, perCall: 100 });
+    await meteredCall({ ...zero.deps, provider: okProvider(0) }, { scope: "t", jobId: null, kind: "generation", body: body(), timeoutMs: 1000 });
+    expect(zero.rows[0].status).toBe("unknown");
+    const noTok = ledger({ global: 100, perJob: 100, perCall: 100 });
+    await meteredCall({ ...noTok.deps, provider: vi.fn(async () => ({ ok: true, status: 200, data: { usage: { prompt_tokens: 0, completion_tokens: 0, cost: 0.01 } } })) }, { scope: "t", jobId: null, kind: "generation", body: body(), timeoutMs: 1000 });
+    expect(noTok.rows[0].status).toBe("unknown");
+    const failed = ledger({ global: 100, perJob: 100, perCall: 100 });
+    const r = await meteredCall({ ...failed.deps, provider: vi.fn(async () => ({ ok: false, status: 502, data: { usage: { prompt_tokens: 10, cost: 0 } } })) }, { scope: "t", jobId: null, kind: "generation", body: body(), timeoutMs: 1000 });
+    expect(r.ok).toBe(false);
+    expect(failed.rows[0].status).toBe("unknown");
+    expect(failed.committed()).toBeCloseTo(reservedFor(body()), 6);
+  });
+
   it("reconciliation is idempotent", async () => {
     const l = ledger({ global: 100, perJob: 100, perCall: 100 });
     const r = await meteredCall({ ...l.deps, provider: okProvider(0.002) }, { scope: "t", jobId: null, kind: "proposal", body: body(), timeoutMs: 1000 });
