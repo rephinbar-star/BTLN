@@ -181,7 +181,7 @@ export const removeItems = (result: any, parts: Participant[], bad: Set<string>)
 // controls, and is supported by cited message indices keeps the item. Anything
 // else — unclear, malformed, missing, timeout — withholds it with a note.
 // This is a second opinion from a model, not proof of meaning.
-export const ADVICE_SEMANTIC_VERSION = "advice-semantic-3";
+export const ADVICE_SEMANTIC_VERSION = "advice-semantic-4";
 // Round 1 (gemini-3-flash, advice-semantic-1) on held-out set 1: 1/4 false accepts, 1/7 false rejects.
 // Round 2 (advice-semantic-2): 1 false accept on 18 items (t1-pronoun-noquote/cs.p2.0). Cause: the
 // verdict's evidence was never checked against WHO wrote the cited lines, and nothing asked whether the
@@ -207,15 +207,18 @@ export const semanticRequest = (items: AdviceItem[], parts: Participant[], msgs:
 People: ${people}. Transcript lines are "[index] person_id: text". Two people may share a display name; rely on person ids.
 For each advice item decide:
 - addressed_to: "recipient" if it asks the item's recipient to do something, "counterpart" if it really asks the other person, "both" for a joint action, "unclear" otherwise.
-- behavior_actor: whose behaviour it asks to change or build on: "recipient", "counterpart", "both", "none" (general, no specific behaviour), or "unclear".
-- behavior_lines: up to 3 transcript indices where the specific behaviour the advice targets (the thing to stop, replace, repair or keep doing) actually occurs. Empty only when behavior_actor is "none" or the item is a joint forward-looking plan.
-- mostly_shown_by: whose lines show that targeted behaviour most clearly and most often: "recipient", "counterpart", "equal", or "n/a" (joint plan or no specific behaviour). Count every line, not just the last one.
-- supported: "yes" only if transcript lines show the behaviour or situation it responds to, "no" if contradicted or absent, "unclear" otherwise.
-- evidence: up to 3 transcript indices that support your answer (empty if none).
-Judge meaning, not names: pronouns such as "you" refer to the recipient. Quoting a third party is fine.
-- A behaviour the advice asks the recipient to stop, soften, replace or repair must appear in the RECIPIENT's own lines. If it appears only or mainly in the other person's lines, behavior_actor is "counterpart" even when the advice says "you".
-- A joint or forward-looking suggestion (a plan, agreement or signal) is supported "yes" when the lines show the situation it addresses; it need not have happened already.
-Return only JSON: {"verdicts":[{"id":"...","addressed_to":"...","behavior_actor":"...","behavior_lines":[0],"mostly_shown_by":"...","supported":"...","evidence":[0]}]} with every id exactly once.`;
+- action_type:
+  "change_own_behavior" = it asks the recipient to stop, soften, replace, repair or keep doing something the RECIPIENT did. Wording such as "instead of X", "rather than X", "drop X", "without X", "keep doing X", "next time don't X" claims the recipient did X, so it is this type.
+  "new_action" = a forward-looking step for the recipient (make a request, ask a question, give an estimate, say what they think) that does NOT claim the recipient did anything wrong. It may respond to the other person's behaviour; it need not have happened already.
+  "joint_plan" = something both people agree or do together.
+  "general" = no specific behaviour or situation.
+- behavior_lines: for change_own_behavior only, up to 3 transcript indices where the RECIPIENT shows the behaviour X. Otherwise [].
+- mostly_shown_by: for change_own_behavior, whose lines show X most clearly and most often across the whole transcript: "recipient", "counterpart" or "equal". Otherwise "n/a".
+- premise_lines: up to 3 indices showing the situation the advice responds to (for any type except general).
+- supported: "yes" only if the lines show the behaviour or situation, and the advice fits what actually happened; "no" if contradicted or absent; "unclear" otherwise.
+- evidence: up to 3 indices supporting your answer.
+Judge meaning, not names: "you" refers to the recipient. Quoting a third party is fine. A correct speaker alone is not enough: the cited lines must show the specific behaviour the advice describes.
+Return only JSON: {"verdicts":[{"id":"...","addressed_to":"...","action_type":"...","behavior_lines":[],"mostly_shown_by":"...","premise_lines":[0],"supported":"...","evidence":[0]}]} with every id exactly once.`;
   const advice = items.map((it) => ({ id: it.id, recipient: it.recipient_id, counterpart: it.counterpart_ids, ...(it.context ? { replaces_pattern: it.context } : {}), text: it.text }));
   const user = `<transcript first_index="${msgs.length - lines.length}" total_messages="${msgs.length}">\n${lines.join("\n")}\n</transcript>\n<advice>${JSON.stringify(advice)}</advice>`;
   const firstIndex = msgs.length - lines.length;
@@ -238,22 +241,25 @@ export const applySemanticVerdicts = (items: AdviceItem[], response: unknown, ra
     if (r === undefined) { out.set(it.id, { ok: false, reasons: ["semantic_missing"], evidence: [] }); continue; }
     if (r === null) { out.set(it.id, { ok: false, reasons: ["semantic_duplicate"], evidence: [] }); continue; }
     const reasons: string[] = [];
-    const A = ["recipient", "counterpart", "both", "unclear"], B = ["recipient", "counterpart", "both", "none", "unclear"], S = ["yes", "no", "unclear"], M = ["recipient", "counterpart", "equal", "n/a"];
-    if (!A.includes(r.addressed_to) || !B.includes(r.behavior_actor) || !S.includes(r.supported) || !M.includes(r.mostly_shown_by) || !Array.isArray(r.behavior_lines)) reasons.push("semantic_malformed");
+    const A = ["recipient", "counterpart", "both", "unclear"], T = ["change_own_behavior", "new_action", "joint_plan", "general"], S = ["yes", "no", "unclear"], M = ["recipient", "counterpart", "equal", "n/a"];
+    if (!A.includes(r.addressed_to) || !T.includes(r.action_type) || !S.includes(r.supported) || !M.includes(r.mostly_shown_by) || !Array.isArray(r.behavior_lines) || !Array.isArray(r.premise_lines)) reasons.push("semantic_malformed");
     else {
       if (r.addressed_to === "counterpart") reasons.push("semantic_addressed_to_counterpart");
       else if (r.addressed_to === "unclear") reasons.push("semantic_recipient_unclear");
-      if (r.behavior_actor === "counterpart") reasons.push("semantic_behavior_is_counterparts");
-      else if (r.behavior_actor === "unclear") reasons.push("semantic_behavior_unclear");
       if (r.supported !== "yes") reasons.push(`semantic_support_${r.supported}`);
-      if (r.mostly_shown_by === "counterpart") reasons.push("semantic_behavior_mainly_counterparts");
-      // Verify, server-side, who actually wrote the lines the targeted behaviour is cited from.
-      if (r.behavior_actor === "recipient") {
+      if (r.action_type === "change_own_behavior") {
+        // A claim about the recipient's own behaviour must be shown in the recipient's own lines (server-verified authors).
         const bl = inRange(r.behavior_lines);
         const authors = range.senders ? bl.map((i) => range.senders![i]) : null;
         if (!authors) reasons.push("semantic_authors_unavailable");
         else if (bl.length === 0) reasons.push("semantic_no_behavior_lines");
         else if (authors.some((a) => a !== it.recipient_id)) reasons.push("semantic_behavior_lines_not_recipients");
+        if (r.mostly_shown_by === "counterpart") reasons.push("semantic_behavior_mainly_counterparts");
+        if (r.mostly_shown_by === "n/a") reasons.push("semantic_malformed");
+      } else if (r.action_type === "new_action" || r.action_type === "joint_plan") {
+        // Forward-looking: needs a real situation, not past wrongdoing by the recipient.
+        if (inRange(r.premise_lines).length === 0) reasons.push("semantic_no_premise");
+        if (r.action_type === "joint_plan" && r.addressed_to !== "both") reasons.push("semantic_joint_mismatch");
       }
     }
     const valid = inRange(r.evidence);
