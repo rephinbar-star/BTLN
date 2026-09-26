@@ -640,3 +640,16 @@ Status: person-specific attribution (#1) passes its acceptance list above.
 
 Still pending: persistent evaluated improvement workflow (#2, next), test-only billing (blocked: no provider test
 price), Group Roast humour/sharing, 10,000-message release matrix.
+
+## 2026-09-26 — BUILD #2: persistent feedback-to-improvement engine (sandbox only)
+
+**Built:** immutable prompt versions, datasets, rubrics, evaluation jobs/results, reviews, runtime selection and a content-free audit trail (DB triggers block edits; production selection is refused at the database). Operator-only backend (`prompt-improvement`, server role check) and `/admin/improvement` screen: create candidate, run evaluation, compare, approve/reject, activate in sandbox, sandbox generate, roll back. The old in-memory `src/lib/eval` prototype was removed. Consented style signals now also shape Deep Read and Relationship360 (style only, never evidence).
+
+**Live verification (synthetic accounts, synthetic cases only):**
+- Real evaluations, rubric `deep-read-screen-4` (quote check accepts multi-message quotes only when every fragment comes from that same speaker): grounded candidate 18 calls, 0 failures, $0.32; baseline 6/6, candidate 6/6 screens. Deliberately flattering candidate: 0/6 (frozen-principle check); note the model judge still *preferred* it in 3 of 6 cases — judge scores are advisory and disagreements are flagged for human review.
+- Refused: approving the failed candidate (409), tampered binding hash (409), unknown/incomplete evaluation (404/409), approval reused for another or edited version (409), production activation (403 in backend, blocked by DB trigger), non-operator review/self-grant/direct writes (403), direct row edit (DB trigger).
+- Sandbox: baseline fallback → approved candidate after activation (persists across a fresh session) → baseline after rollback. Production `prompt_versions` unchanged.
+- Personalization on a real Relationship360 build: off 91→on 62/65 words; the injected false claim in the comment was explicitly rejected in the output; reset → rebuilt without signals (83 words); reset during a build → build cancelled, nothing saved; delete removes all rows; second account cannot rate another account's report.
+- Fixed during testing: cache ignored personalization changes; returning to an earlier input could not rebuild (idempotency key now released).
+
+**Limits / not done:** screens are heuristics and do not prove coaching quality; the approval recorded was an automated test record, not a human sign-off. Deep Read personalization is wired but not live-tested. No hard spend cap beyond 8 evaluations/day × 18 calls (~$0.35 each). New evaluator calls go through the existing model provider helper, not the Lovable AI Gateway. Aggregate feedback empty (no ratings fabricated). Temporary operator role removed from the test account. 152 tests, typecheck and build pass. Nothing published, charged or promoted.

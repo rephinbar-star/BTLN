@@ -18,6 +18,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
+import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shared/coachingPreferences.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
 import {
   adaptDeepRead,
@@ -315,8 +316,12 @@ Deno.serve(async (req) => {
   const startedFromVersion = relationshipId ? relById.get(relationshipId)?.data_version : profile.data_version;
   if (startedFromVersion === undefined || startedFromVersion === null) return json(403, { error: "That relationship is not available." });
 
+  // Consented style signals are part of the input: consent on/off, reset or
+  // delete must not be answered from a cache built under different signals.
+  const r360Style = coachingPreferenceInstruction(await loadCoachingPreferences(admin as never, user.id));
   const inputFingerprint = await fingerprint([
     `v${startedFromVersion}`,
+    `style:${r360Style}`,
     ...eligible.map((s) => `${s.id}:${s.subject_participant}:${s.subject_participant_id ?? ""}:${s.updated_at ?? ""}`),
   ]);
 
@@ -331,6 +336,14 @@ Deno.serve(async (req) => {
   await admin.from("journey_jobs")
     .update({ status: "failed", error_message: "timed out", completed_at: new Date().toISOString() })
     .eq("user_id", user.id).eq("status", "running").lt("updated_at", staleCutoff);
+  // Returning to an earlier input (e.g. personalization off -> on -> off, or a
+  // correction undone) must rebuild: the stored summary no longer matches, so
+  // release the idempotency key held by the older completed job.
+  {
+    const release = admin.from("journey_jobs").update({ input_fingerprint: null })
+      .eq("user_id", user.id).eq("status", "complete").eq("input_fingerprint", inputFingerprint);
+    await (relationshipId ? release.eq("relationship_id", relationshipId) : release.is("relationship_id", null));
+  }
 
   const { data: job, error: jobError } = await admin.from("journey_jobs").insert({
     user_id: user.id,
@@ -343,6 +356,7 @@ Deno.serve(async (req) => {
   }).select("id").single();
   if (jobError || !job) {
     const running = (jobs ?? []).find((j) => j.status === "running" && (j.relationship_id ?? null) === relationshipId);
+    if (!running) console.error("r360 job insert failed", jobError?.code, jobError?.message);
     return json(200, { state: "updating", job_id: running?.id ?? null });
   }
 
@@ -538,12 +552,13 @@ Deno.serve(async (req) => {
     `"recommendations":[{"id":string,"type":"communication"|"behavioral","observation":string,"action":string,"why":string,"evidence":[observation_id]}]}`,
   ].join("\n");
 
+  // Loop A: private style signals (consented only) loaded above. Style, never evidence.
   const response = await callOpenRouter({
     model: MODEL,
     max_tokens: MAX_TOKENS,
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: system },
+      { role: "system", content: system + (r360Style ? `\n\n${r360Style}` : "") },
       {
         role: "user",
         content: `<observations>\n${JSON.stringify(facts)}\n</observations>\n<self_reported_notes>\n${
@@ -668,6 +683,13 @@ Deno.serve(async (req) => {
   if (!commitProfile?.opted_in_at || !commitProfile.activation_consent_at || (commitProfile.consent_version ?? 0) < CURRENT_CONSENT_VERSION) {
     await admin.from("journey_jobs").update({ status: "cancelled", completed_at: new Date().toISOString() }).eq("id", job.id);
     return json(200, { state: "cancelled", message: "Your Relationship360 settings changed while this was building, so nothing was saved." });
+  }
+  // Personalization withdrawn/reset/deleted during the build: do not commit a
+  // result shaped by signals the person no longer allows.
+  const commitStyle = coachingPreferenceInstruction(await loadCoachingPreferences(admin as never, user.id));
+  if (commitStyle !== r360Style) {
+    await admin.from("journey_jobs").update({ status: "cancelled", completed_at: new Date().toISOString() }).eq("id", job.id);
+    return json(200, { state: "cancelled", message: "Your personalization settings changed while this was building, so nothing was saved. Build again." });
   }
   const { data: commitSources } = await admin
     .from("journey_sources").select("id").eq("user_id", user.id)

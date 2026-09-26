@@ -8,6 +8,7 @@ import { extractJsonObject } from "../_shared/extractJson.ts";
 import { digestChunks, planChunks } from "../_shared/chunkedAnalysis.ts";
 import { mapToRoles, parseTwoPersonTranscript } from "../_shared/deterministicParse.ts";
 import { conversationKey, deriveDateMetaFromText, recordIngestMeta } from "../_shared/exchangeDates.ts";
+import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shared/coachingPreferences.ts";
 import { buildAttributedEvidence, toEvidenceMessages } from "../_shared/attributedEvidence.ts";
 
 const corsHeaders = {
@@ -468,6 +469,15 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
     .maybeSingle();
   if (pvErr || !pv) {
     return failAnalysis("No active prompt version configured.");
+  }
+  // Loop A: private coaching style signals for the owner, only with explicit
+  // personalization consent. Applied to HOW the read is explained, never to the
+  // evidence, attribution or conclusions.
+  {
+    const { data: ownerRow } = await supabase.from("analyses").select("user_id").eq("id", analysis_id).maybeSingle();
+    const ownerId = (ownerRow?.user_id as string | null | undefined) ?? null;
+    const styleBlock = coachingPreferenceInstruction(await loadCoachingPreferences(supabase as never, ownerId));
+    if (styleBlock) pv.prompt_text = `${pv.prompt_text}\n\n${styleBlock}`;
   }
 
   await supabase
