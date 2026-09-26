@@ -474,7 +474,8 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
   // personalization consent. Applied to HOW the read is explained, never to the
   // evidence, attribution or conclusions.
   {
-    const ownerId = (existing as { user_id?: string | null } | null)?.user_id ?? null;
+    const { data: ownerRow } = await supabase.from("analyses").select("user_id").eq("id", analysis_id).maybeSingle();
+    const ownerId = (ownerRow?.user_id as string | null | undefined) ?? null;
     const styleBlock = coachingPreferenceInstruction(await loadCoachingPreferences(supabase as never, ownerId));
     if (styleBlock) pv.prompt_text = `${pv.prompt_text}\n\n${styleBlock}`;
   }
