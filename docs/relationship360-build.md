@@ -704,7 +704,7 @@ Evaluator and production calls still use the existing OpenRouter integration; no
 ### Pending / blocked
 - Human quality approval: pending owner review of the packet.
 - Full-pipeline parity (digest/extraction/attribution stages) for evaluation: not built; production readiness blocked.
-- Deep Read personalisation effect: one read, no measurable style benefit shown; needs more cases to judge.
+- Deep Read personalisation effect (updated 2026-09-26 continuation): two further consent-on runs added. Off: 1,637 advice chars (n=1); on: 1,506 / 1,243 / 1,535 (n=3, mean ~1,428, −13%). Every run: false premise not adopted, 8 attributed items, limited-evidence noted. Evidence and attribution stayed intact, but the requested "one short sentence" style was NOT followed — the length change is small and inconsistent. **Style personalisation is not proven; safety properties are.** Next step would be strengthening how the style note is applied, then re-measuring.
 - 77 older security-definer linter warnings remain (27 callable when signed out, 50 when signed in); not part of this build.
 - Queued separately: #3 test checkout/webhook (blocked: no verified provider test price), Group Roast product enhancements, 10,000-message release checks.
 - Temporary operator role removed from the synthetic account (verified 0 test admins). Nothing published, charged or promoted.
