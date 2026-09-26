@@ -2091,6 +2091,35 @@ export type Database = {
           },
         ]
       }
+      prompt_test_run_claims: {
+        Row: {
+          claimed_at: string
+          function_name: string
+          run_id: string
+          seq: number
+        }
+        Insert: {
+          claimed_at?: string
+          function_name: string
+          run_id: string
+          seq: number
+        }
+        Update: {
+          claimed_at?: string
+          function_name?: string
+          run_id?: string
+          seq?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_test_run_claims_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_test_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_test_runs: {
         Row: {
           baseline_text_hash: string | null
