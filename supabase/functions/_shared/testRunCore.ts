@@ -69,7 +69,8 @@ export const meteredOpenRouter = async (ctx: TestCtx, body: Record<string, unkno
     const n = ctx.shared.seen.get(ctx.stage) ?? 0;
     ctx.shared.seen.set(ctx.stage, n + 1);
     const kind = n === 0 && attempt === 0 ? "generation" : "retry";
-    const r = await meteredCall(ctx.deps, { scope: ctx.scope, jobId: ctx.runId, kind, body: b, timeoutMs: ctx.timeoutMs });
+    // deno-lint-ignore no-explicit-any
+    const r: any = await meteredCall(ctx.deps, { scope: ctx.scope, jobId: ctx.runId, kind, body: b, timeoutMs: ctx.timeoutMs });
     if (!r.ok && r.stage === "budget") {
       ctx.shared.calls.push({ stage: ctx.stage, kind, ok: false, reason: `budget:${r.reason}` });
       return { ok: false, status: 429, errorText: `budget:${r.reason}` };
