@@ -473,12 +473,16 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
   // Loop A: private coaching style signals for the owner, only with explicit
   // personalization consent. Applied to HOW the read is explained, never to the
   // evidence, attribution or conclusions.
-  {
-    const { data: ownerRow } = await supabase.from("analyses").select("user_id").eq("id", analysis_id).maybeSingle();
-    const ownerId = (ownerRow?.user_id as string | null | undefined) ?? null;
-    const styleBlock = coachingPreferenceInstruction(await loadCoachingPreferences(supabase as never, ownerId));
-    if (styleBlock) pv.prompt_text = `${pv.prompt_text}\n\n${styleBlock}`;
-  }
+  // The style block is re-checked just before saving: if the owner withdrew
+  // consent, reset or deleted feedback while the read was generating, the
+  // stale style is discarded and the read is regenerated with current signals.
+  const basePrompt = pv.prompt_text as string;
+  const { data: ownerRow } = await supabase.from("analyses").select("user_id").eq("id", analysis_id).maybeSingle();
+  const ownerId = (ownerRow?.user_id as string | null | undefined) ?? null;
+  const currentStyleBlock = async () => coachingPreferenceInstruction(await loadCoachingPreferences(supabase as never, ownerId));
+  let styleBlock = await currentStyleBlock();
+  const promptWith = (block: string) => (block ? `${basePrompt}\n\n${block}` : basePrompt);
+  pv.prompt_text = promptWith(styleBlock);
 
   await supabase
     .from("analyses")
@@ -595,35 +599,51 @@ ${messagesBlock}`;
   };
 
   let resultJson: any = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const r = await callOpenRouter(
-      analysisBody,
-      OPENROUTER_API_KEY,
-      OPENROUTER_HTTP_REFERER,
-      OPENROUTER_X_TITLE,
-    );
-    if (!r.ok) {
-      return failAnalysis(`Analysis failed: ${r.status} ${r.errorText}`);
-    }
-    const completionTokens = r.data?.usage?.completion_tokens ?? 0;
-    if (completionTokens > MAX_OUTPUT_TOKENS) {
-      return failAnalysis(
-        "Analysis output was unexpectedly large. Please try again with a smaller conversation sample.",
+  const generate = async (): Promise<string | null> => {
+    resultJson = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const r = await callOpenRouter(
+        analysisBody,
+        OPENROUTER_API_KEY,
+        OPENROUTER_HTTP_REFERER,
+        OPENROUTER_X_TITLE,
       );
-    }
-    const raw = r.data?.choices?.[0]?.message?.content ?? "";
-    try {
-      const { value, cleaned } = extractJsonObject(String(raw));
-      resultJson = value;
-      if (cleaned) {
-        console.warn(
-          `[analyze-conversation] analysis JSON needed cleaning for ${analysis_id}`,
-        );
+      if (!r.ok) return `Analysis failed: ${r.status} ${r.errorText}`;
+      const completionTokens = r.data?.usage?.completion_tokens ?? 0;
+      if (completionTokens > MAX_OUTPUT_TOKENS) {
+        return "Analysis output was unexpectedly large. Please try again with a smaller conversation sample.";
       }
-      break;
-    } catch (_e) {
-      if (attempt === 0) continue;
-      return failAnalysis("Analysis response was not valid JSON.");
+      const raw = r.data?.choices?.[0]?.message?.content ?? "";
+      try {
+        const { value, cleaned } = extractJsonObject(String(raw));
+        resultJson = value;
+        if (cleaned) {
+          console.warn(
+            `[analyze-conversation] analysis JSON needed cleaning for ${analysis_id}`,
+          );
+        }
+        return null;
+      } catch (_e) {
+        if (attempt === 0) continue;
+        return "Analysis response was not valid JSON.";
+      }
+    }
+    return "Analysis response was not valid JSON.";
+  };
+  {
+    const err = await generate();
+    if (err) return failAnalysis(err);
+    // Style commit check: at most one regeneration, then fail closed.
+    const latest = await currentStyleBlock();
+    if (latest !== styleBlock) {
+      console.warn("[analyze-conversation] coaching preferences changed during generation; regenerating");
+      styleBlock = latest;
+      analysisBody.messages[0].content = promptWith(styleBlock);
+      const err2 = await generate();
+      if (err2) return failAnalysis(err2);
+      if ((await currentStyleBlock()) !== styleBlock) {
+        return failAnalysis("Your coaching preferences changed while this read was running. Please run it again.");
+      }
     }
   }
 
