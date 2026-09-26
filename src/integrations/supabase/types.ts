@@ -1478,6 +1478,36 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_budget_config: {
+        Row: {
+          global_cap_usd: number
+          note: string
+          per_call_cap_usd: number
+          per_job_cap_usd: number
+          scope: string
+          updated_at: string
+          window_hours: number
+        }
+        Insert: {
+          global_cap_usd: number
+          note?: string
+          per_call_cap_usd: number
+          per_job_cap_usd: number
+          scope: string
+          updated_at?: string
+          window_hours: number
+        }
+        Update: {
+          global_cap_usd?: number
+          note?: string
+          per_call_cap_usd?: number
+          per_job_cap_usd?: number
+          scope?: string
+          updated_at?: string
+          window_hours?: number
+        }
+        Relationships: []
+      }
       prompt_datasets: {
         Row: {
           cases: Json
@@ -1525,12 +1555,15 @@ export type Database = {
           created_at: string
           dataset_id: string
           error_message: string | null
+          heartbeat_at: string | null
           id: string
           mode: string
+          parity: Json
           prompt_tokens: number
           rubric_id: string
           started_by: string | null
           status: string
+          stop_reason: string | null
           summary: Json | null
         }
         Insert: {
@@ -1546,12 +1579,15 @@ export type Database = {
           created_at?: string
           dataset_id: string
           error_message?: string | null
+          heartbeat_at?: string | null
           id?: string
           mode: string
+          parity?: Json
           prompt_tokens?: number
           rubric_id: string
           started_by?: string | null
           status?: string
+          stop_reason?: string | null
           summary?: Json | null
         }
         Update: {
@@ -1567,12 +1603,15 @@ export type Database = {
           created_at?: string
           dataset_id?: string
           error_message?: string | null
+          heartbeat_at?: string | null
           id?: string
           mode?: string
+          parity?: Json
           prompt_tokens?: number
           rubric_id?: string
           started_by?: string | null
           status?: string
+          stop_reason?: string | null
           summary?: Json | null
         }
         Relationships: [
@@ -1616,8 +1655,10 @@ export type Database = {
           disagreement: boolean
           error_message: string | null
           id: string
+          input_case: Json | null
           job_id: string
           judge: Json | null
+          judge_order: string | null
           output: Json | null
           prompt_tokens: number
           screen_passed: boolean | null
@@ -1633,8 +1674,10 @@ export type Database = {
           disagreement?: boolean
           error_message?: string | null
           id?: string
+          input_case?: Json | null
           job_id: string
           judge?: Json | null
+          judge_order?: string | null
           output?: Json | null
           prompt_tokens?: number
           screen_passed?: boolean | null
@@ -1650,8 +1693,10 @@ export type Database = {
           disagreement?: boolean
           error_message?: string | null
           id?: string
+          input_case?: Json | null
           job_id?: string
           judge?: Json | null
+          judge_order?: string | null
           output?: Json | null
           prompt_tokens?: number
           screen_passed?: boolean | null
@@ -1667,6 +1712,71 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      prompt_review_notes: {
+        Row: {
+          author_id: string
+          binding_hash: string
+          case_id: string
+          created_at: string
+          id: string
+          is_test_record: boolean
+          job_id: string
+          note: string
+        }
+        Insert: {
+          author_id: string
+          binding_hash: string
+          case_id: string
+          created_at?: string
+          id?: string
+          is_test_record?: boolean
+          job_id: string
+          note: string
+        }
+        Update: {
+          author_id?: string
+          binding_hash?: string
+          case_id?: string
+          created_at?: string
+          id?: string
+          is_test_record?: boolean
+          job_id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_review_notes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_eval_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_review_packets: {
+        Row: {
+          created_at: string
+          created_by: string
+          id: string
+          items: Json
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          id?: string
+          items: Json
+          title: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          id?: string
+          items?: Json
+          title?: string
+        }
+        Relationships: []
       }
       prompt_reviews: {
         Row: {
@@ -1801,6 +1911,68 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "prompt_versions_eval"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_spend_ledger: {
+        Row: {
+          actual_usd: number | null
+          completion_tokens: number | null
+          created_at: string
+          id: string
+          job_id: string | null
+          kind: string
+          max_input_tokens: number
+          max_output_tokens: number
+          model: string
+          outcome: string | null
+          prompt_tokens: number | null
+          reconciled_at: string | null
+          reserved_usd: number
+          scope: string
+          status: string
+        }
+        Insert: {
+          actual_usd?: number | null
+          completion_tokens?: number | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          kind: string
+          max_input_tokens: number
+          max_output_tokens: number
+          model: string
+          outcome?: string | null
+          prompt_tokens?: number | null
+          reconciled_at?: string | null
+          reserved_usd: number
+          scope: string
+          status?: string
+        }
+        Update: {
+          actual_usd?: number | null
+          completion_tokens?: number | null
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          kind?: string
+          max_input_tokens?: number
+          max_output_tokens?: number
+          model?: string
+          outcome?: string | null
+          prompt_tokens?: number | null
+          reconciled_at?: string | null
+          reserved_usd?: number
+          scope?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_spend_ledger_scope_fkey"
+            columns: ["scope"]
+            isOneToOne: false
+            referencedRelation: "prompt_budget_config"
+            referencedColumns: ["scope"]
           },
         ]
       }
@@ -2483,6 +2655,10 @@ export type Database = {
         Returns: number
       }
       delete_my_ai_feedback: { Args: never; Returns: number }
+      expire_prompt_reservations: {
+        Args: { p_minutes: number }
+        Returns: number
+      }
       get_analysis_for_session: {
         Args: { p_id: string; p_session_id: string }
         Returns: {
@@ -2755,6 +2931,21 @@ export type Database = {
         Args: { p_error_message: string; p_id: string; p_session_id: string }
         Returns: boolean
       }
+      prompt_budget_status: { Args: { p_scope: string }; Returns: Json }
+      prompt_committed_usd: {
+        Args: { p_job: string; p_scope: string; p_since: string }
+        Returns: number
+      }
+      reconcile_prompt_spend: {
+        Args: {
+          p_actual: number
+          p_ct: number
+          p_id: string
+          p_outcome: string
+          p_pt: number
+        }
+        Returns: Json
+      }
       record_paywall_intent: {
         Args: { p_analysis_id: string; p_option: string; p_session_id: string }
         Returns: string
@@ -2766,6 +2957,18 @@ export type Database = {
           p_session_id: string
         }
         Returns: undefined
+      }
+      reserve_prompt_spend: {
+        Args: {
+          p_amount: number
+          p_in: number
+          p_job: string
+          p_kind: string
+          p_model: string
+          p_out: number
+          p_scope: string
+        }
+        Returns: Json
       }
       reset_coaching_personalization: { Args: never; Returns: number }
       resolve_analysis_share: { Args: { p_token_hash: string }; Returns: Json }
