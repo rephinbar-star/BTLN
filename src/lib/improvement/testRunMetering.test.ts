@@ -5,8 +5,10 @@ import {
 } from "../../../supabase/functions/_shared/testRunCore.ts";
 import { candidateSystem, sha256 } from "../../../supabase/functions/_shared/modeEval.ts";
 
-const ledger = (cfg: { global: number; perJob: number; perCall: number }) => {
-  const rows: { id: string; job: string | null; reserved: number; actual: number | null; status: string }[] = [];
+const PLAN: Record<string, string[]> = { "analyze-conversation": ["digest", "primary", "extraction", "attribution", "style_rewrite", "unlabelled"], "decode-conversation": ["primary"] };
+// Mirrors reserve_prompt_spend (10-arg): stage/function/retry/count/dollars checked and written in one serialized step.
+const ledger = (cfg: { global: number; perJob: number; perCall: number; maxCalls?: number; claimed?: string[] }) => {
+  const rows: { id: string; job: string | null; reserved: number; actual: number | null; status: string; stage?: string; fn?: string; retryOf?: string | null }[] = [];
   let lock = Promise.resolve();
   const committed = (job?: string) => rows.filter((r) => job === undefined || r.job === job).reduce((n, r) => n + (r.status === "reconciled" ? (r.actual ?? 0) : r.reserved), 0);
   const deps: Pick<BudgetDeps, "reserve" | "reconcile"> = {
@@ -14,10 +16,15 @@ const ledger = (cfg: { global: number; perJob: number; perCall: number }) => {
       const run = lock.then(async (): Promise<Reservation> => {
         await new Promise((r) => setTimeout(r, 1));
         if (a.amount > cfg.perCall) return { ok: false, reason: "per_call_cap" };
+        if (!a.fn || !(cfg.claimed ?? ["analyze-conversation"]).includes(a.fn)) return { ok: false, reason: "function_not_claimed" };
+        if (!a.stage || !(PLAN[a.fn] ?? []).includes(a.stage)) return { ok: false, reason: "unplanned_stage" };
+        if (a.kind === "retry") { const p = rows.find((x) => x.id === a.retryOf); if (!p || p.stage !== a.stage || p.fn !== a.fn) return { ok: false, reason: "retry_link_invalid" }; }
+        else if (a.retryOf) return { ok: false, reason: "retry_link_invalid" };
+        if (rows.filter((r) => r.job === a.jobId).length >= (cfg.maxCalls ?? 99)) return { ok: false, reason: "run_call_limit" };
         if (committed() + a.amount > cfg.global + 1e-9) return { ok: false, reason: "global_cap" };
         if (a.jobId && committed(a.jobId) + a.amount > cfg.perJob + 1e-9) return { ok: false, reason: "per_job_cap" };
         const id = `r${rows.length + 1}`;
-        rows.push({ id, job: a.jobId, reserved: a.amount, actual: null, status: "reserved" });
+        rows.push({ id, job: a.jobId, reserved: a.amount, actual: null, status: "reserved", stage: a.stage, fn: a.fn, retryOf: a.retryOf ?? null });
         return { ok: true, id };
       });
       lock = run.then(() => undefined);
@@ -35,7 +42,7 @@ const ledger = (cfg: { global: number; perJob: number; perCall: number }) => {
 const ok = (cost: number | null): ProviderResult => ({ ok: true, status: 200, data: { choices: [{ message: { content: "{}" } }], usage: { prompt_tokens: 5, completion_tokens: 5, ...(cost === null ? {} : { cost }) } } });
 
 const ctxWith = (provider: BudgetDeps["provider"], l = ledger({ global: 15, perJob: 3.5, perCall: 0.6 }), over: Partial<MeteredCtx> = {}): MeteredCtx => ({
-  kind: "metered", runId: "run-1", scope: "improvement", deps: { ...l.deps, provider }, stage: "unlabelled", maxCalls: 12, candidate: null, timeoutMs: 1000,
+  kind: "metered", runId: "run-1", fn: "analyze-conversation", scope: "improvement", deps: { ...l.deps, provider }, stage: "unlabelled", maxCalls: 12, candidate: null, timeoutMs: 1000,
   shared: { calls: [], seen: new Map(), candidateUsed: [] }, ...over,
 });
 const body = (model = "anthropic/claude-sonnet-4.6", max_tokens?: number) => ({ model, ...(max_tokens ? { max_tokens } : {}), messages: [{ role: "user", content: "hi" }] });
@@ -80,13 +87,16 @@ describe("metered test runs", () => {
     expect(results.some((r) => r.errorText === "budget:per_job_cap")).toBe(true);
   });
 
-  it("5xx retry is a separate reservation marked retry; a repeated stage call is a retry", async () => {
+  it("5xx retry is a separate, linked reservation; a repeated stage call is its own generation", async () => {
     const l = ledger({ global: 15, perJob: 3.5, perCall: 0.6 });
     const provider = vi.fn().mockResolvedValueOnce({ ok: false, status: 503 }).mockResolvedValue(ok(0.02));
     const ctx = ctxWith(provider, l);
     await testRunStore.run(ctx, async () => { markStage("primary"); await meteredOpenRouter(ctx, body()); await meteredOpenRouter(ctx, body()); });
-    expect(ctx.shared.calls.map((c) => c.kind)).toEqual(["generation", "retry", "retry"]);
+    expect(ctx.shared.calls.map((c) => c.kind)).toEqual(["generation", "retry", "generation"]);
     expect(l.rows).toHaveLength(3);
+    expect(l.rows[1].retryOf).toBe(l.rows[0].id); // retry linked to the exact call it repeats
+    expect(l.rows[2].retryOf).toBeNull();
+    expect(l.rows.every((r) => r.stage === "primary" && r.fn === "analyze-conversation")).toBe(true);
   });
 
   it("a timeout aborts the fetch and keeps the full reservation as unknown", async () => {
@@ -121,5 +131,35 @@ describe("metered test runs", () => {
       await expect(systemFor("quick_take", "DIFFERENT")).rejects.toThrow("candidate_baseline_mismatch");
     });
     expect(await systemFor("quick_take", base)).toBe(base); // outside a run: production text
+  });
+
+  it("every reservation row is born with its stage and function (no later labelling step)", async () => {
+    const l = ledger({ global: 15, perJob: 3.5, perCall: 0.6 });
+    let seenAtCall: unknown;
+    const ctx = ctxWith(async () => { seenAtCall = { ...l.rows[0] }; throw new Error("crash"); }, l);
+    await testRunStore.run(ctx, async () => { markStage("attribution"); await meteredOpenRouter(ctx, body()); });
+    expect(seenAtCall).toMatchObject({ stage: "attribution", fn: "analyze-conversation", status: "reserved" });
+    expect(l.rows[0].status).toBe("unknown"); // crash after reserve: full reservation retained, still labelled
+  });
+
+  it("unplanned stages and unclaimed or cross-function calls are refused before any provider call", async () => {
+    const provider = vi.fn(async () => ok(0.01));
+    const a = ctxWith(provider, ledger({ global: 15, perJob: 3.5, perCall: 0.6 }));
+    await testRunStore.run(a, async () => { markStage("free_bonus_stage"); expect((await meteredOpenRouter(a, body())).errorText).toBe("budget:unplanned_stage"); });
+    const b = ctxWith(provider, ledger({ global: 15, perJob: 3.5, perCall: 0.6 }), { fn: "decode-conversation" });
+    await testRunStore.run(b, async () => { markStage("primary"); expect((await meteredOpenRouter(b, body())).errorText).toBe("budget:function_not_claimed"); });
+    const c = ctxWith(provider, ledger({ global: 15, perJob: 3.5, perCall: 0.6, claimed: ["analyze-conversation", "decode-conversation"] }), { fn: "decode-conversation" });
+    await testRunStore.run(c, async () => { markStage("attribution"); expect((await meteredOpenRouter(c, body())).errorText).toBe("budget:unplanned_stage"); });
+    expect(provider).not.toHaveBeenCalled();
+  });
+
+  it("concurrent requests sharing one run cannot exceed the server-side call count", async () => {
+    const l = ledger({ global: 15, perJob: 3.5, perCall: 0.6, maxCalls: 3 });
+    // Two separate requests (separate in-memory counters) share the same run: only the DB count is authoritative.
+    const mk = () => ctxWith(async () => ok(0.001), l, { maxCalls: 99, shared: { calls: [], seen: new Map(), candidateUsed: [] } });
+    const [x, y] = [mk(), mk()];
+    const res = await Promise.all([...Array(4)].flatMap(() => [inStage("digest", () => meteredOpenRouter(x, body())), inStage("digest", () => meteredOpenRouter(y, body()))]));
+    expect(l.rows).toHaveLength(3);
+    expect(res.filter((r) => r.errorText === "budget:run_call_limit")).toHaveLength(5);
   });
 });

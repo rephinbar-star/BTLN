@@ -5,6 +5,7 @@
 
 import { withTestRun } from "../_shared/testRun.ts";
 import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
+import { INJECTION_DISCLOSURE_VERSION, sanitizeDisclosures } from "../_shared/injectionDisclosure.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
@@ -496,6 +497,8 @@ Deno.serve(withTestRun("analyze-group", async (req) => {
 
     // Safety wins over entertainment: our own detector OR the model flagging
     // anything (boolean or a stated reason) forces the serious register.
+    // Warnings must not reproduce injected instructions (generic notice instead).
+    const disclosureFixed = sanitizeDisclosures(result, messages.map((m) => String(m.content ?? "")));
     const modelReason = typeof result.safety_mode_reason === "string"
       ? result.safety_mode_reason.trim()
       : "";
@@ -519,6 +522,7 @@ Deno.serve(withTestRun("analyze-group", async (req) => {
         unavailable_metrics: stats.unavailable_metrics,
       },
       participants: participants.map((p) => ({ id: p.id, display_name: p.display_name })),
+      injection_disclosure: { version: INJECTION_DISCLOSURE_VERSION, sanitized_fields: disclosureFixed },
       identity_confirmation: absent ? { absent: true } : { participant_id: confirmedId },
     };
 

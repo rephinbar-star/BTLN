@@ -25,6 +25,8 @@ export type StageCall = { stage: string; kind: "generation" | "retry"; ok: boole
 export type MeteredCtx = {
   kind: "metered";
   runId: string;
+  /** Server-side function name (from the wrapper, never the client). */
+  fn: string;
   scope: string;
   deps: BudgetDeps;
   stage: string;
@@ -32,7 +34,6 @@ export type MeteredCtx = {
   candidate: Candidate;
   timeoutMs: number;
   shared: { calls: StageCall[]; seen: Map<string, number>; candidateUsed: string[] };
-  annotate?: (reservationId: string, stage: string) => Promise<void>;
 };
 export type BlockedCtx = { kind: "blocked"; reason: string };
 export type TestCtx = MeteredCtx | BlockedCtx;
@@ -52,15 +53,15 @@ export const defaultMaxOut = (model: string) => (model.startsWith("anthropic/") 
 
 /**
  * Metered replacement for the provider call. Keeps callOpenRouter's
- * semantics (one retry after a 5xx), but each attempt is its own reservation.
- * A repeated call in the same stage (a pipeline's own JSON retry) is recorded
- * with kind "retry".
+ * semantics (one retry after a 5xx), but each attempt is its own reservation;
+ * the retry is linked (retry_of) to the reservation it repeats.
  */
 export const meteredOpenRouter = async (ctx: TestCtx, body: Record<string, unknown>): Promise<ProviderResult> => {
   if (ctx.kind === "blocked") return { ok: false, status: 403, errorText: ctx.reason };
   const model = String(body.model ?? "");
   const b = { ...body, model, max_tokens: typeof body.max_tokens === "number" ? body.max_tokens : defaultMaxOut(model), messages: (body.messages ?? []) as { content: unknown }[] };
   let last: ProviderResult = { ok: false, status: 500, errorText: "not_run" };
+  let prevId: string | null = null;
   for (let attempt = 0; attempt < 2; attempt++) {
     if (ctx.shared.calls.length >= ctx.maxCalls) {
       ctx.shared.calls.push({ stage: ctx.stage, kind: "generation", ok: false, reason: "run_call_limit" });
@@ -68,14 +69,18 @@ export const meteredOpenRouter = async (ctx: TestCtx, body: Record<string, unkno
     }
     const n = ctx.shared.seen.get(ctx.stage) ?? 0;
     ctx.shared.seen.set(ctx.stage, n + 1);
-    const kind = n === 0 && attempt === 0 ? "generation" : "retry";
+    // Only the transport retry after a 5xx is a "retry", linked to the exact
+    // reservation it repeats. Repeated or concurrent calls in one stage (digest
+    // chunks, a pipeline's own JSON retry) are separate generation reservations.
+    const kind = attempt === 0 ? "generation" : "retry";
+    // Stage, function, call count and dollars are reserved in one atomic RPC.
     // deno-lint-ignore no-explicit-any
-    const r: any = await meteredCall(ctx.deps, { scope: ctx.scope, jobId: ctx.runId, kind, body: b, timeoutMs: ctx.timeoutMs });
+    const r: any = await meteredCall(ctx.deps, { scope: ctx.scope, jobId: ctx.runId, kind, stage: ctx.stage, fn: ctx.fn, retryOf: kind === "retry" ? prevId : null, body: b, timeoutMs: ctx.timeoutMs });
+    if (r.reservationId) prevId = r.reservationId;
     if (!r.ok && r.stage === "budget") {
       ctx.shared.calls.push({ stage: ctx.stage, kind, ok: false, reason: `budget:${r.reason}` });
       return { ok: false, status: 429, errorText: `budget:${r.reason}` };
     }
-    if (ctx.annotate) await ctx.annotate(r.reservationId, ctx.stage).catch(() => undefined);
     if (r.ok) {
       ctx.shared.calls.push({ stage: ctx.stage, kind, ok: true, reservationId: r.reservationId, reserved: r.reserved, cost: r.usage.cost });
       return { ok: true, status: 200, data: r.data };

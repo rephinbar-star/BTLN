@@ -2028,6 +2028,7 @@ export type Database = {
           actual_usd: number | null
           completion_tokens: number | null
           created_at: string
+          function_name: string | null
           id: string
           job_id: string | null
           kind: string
@@ -2038,6 +2039,7 @@ export type Database = {
           prompt_tokens: number | null
           reconciled_at: string | null
           reserved_usd: number
+          retry_of: string | null
           scope: string
           stage: string | null
           status: string
@@ -2047,6 +2049,7 @@ export type Database = {
           actual_usd?: number | null
           completion_tokens?: number | null
           created_at?: string
+          function_name?: string | null
           id?: string
           job_id?: string | null
           kind: string
@@ -2057,6 +2060,7 @@ export type Database = {
           prompt_tokens?: number | null
           reconciled_at?: string | null
           reserved_usd: number
+          retry_of?: string | null
           scope: string
           stage?: string | null
           status?: string
@@ -2066,6 +2070,7 @@ export type Database = {
           actual_usd?: number | null
           completion_tokens?: number | null
           created_at?: string
+          function_name?: string | null
           id?: string
           job_id?: string | null
           kind?: string
@@ -2076,12 +2081,20 @@ export type Database = {
           prompt_tokens?: number | null
           reconciled_at?: string | null
           reserved_usd?: number
+          retry_of?: string | null
           scope?: string
           stage?: string | null
           status?: string
           test_run_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "prompt_spend_ledger_retry_of_fkey"
+            columns: ["retry_of"]
+            isOneToOne: false
+            referencedRelation: "prompt_spend_ledger"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "prompt_spend_ledger_scope_fkey"
             columns: ["scope"]
@@ -2090,6 +2103,21 @@ export type Database = {
             referencedColumns: ["scope"]
           },
         ]
+      }
+      prompt_stage_plan: {
+        Row: {
+          function_name: string
+          stage: string
+        }
+        Insert: {
+          function_name: string
+          stage: string
+        }
+        Update: {
+          function_name?: string
+          stage?: string
+        }
+        Relationships: []
       }
       prompt_test_run_claims: {
         Row: {
@@ -3174,18 +3202,34 @@ export type Database = {
         }
         Returns: undefined
       }
-      reserve_prompt_spend: {
-        Args: {
-          p_amount: number
-          p_in: number
-          p_job: string
-          p_kind: string
-          p_model: string
-          p_out: number
-          p_scope: string
-        }
-        Returns: Json
-      }
+      reserve_prompt_spend:
+        | {
+            Args: {
+              p_amount: number
+              p_in: number
+              p_job: string
+              p_kind: string
+              p_model: string
+              p_out: number
+              p_scope: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_amount: number
+              p_function: string
+              p_in: number
+              p_job: string
+              p_kind: string
+              p_model: string
+              p_out: number
+              p_retry_of: string
+              p_scope: string
+              p_stage: string
+            }
+            Returns: Json
+          }
       reset_coaching_personalization: { Args: never; Returns: number }
       resolve_analysis_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_group_roast_share: {

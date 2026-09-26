@@ -22,7 +22,8 @@ import {
   buildMessages, CASES, candidateSystem, codeBaseline, hardPass, judgeSystem, MODE_KEYS, MODE_RUBRIC_VERSION, modeRubric, MODES,
   modeVersionHash, promptConflicts, screen, sha256, unblind, validateJudge, type ModeCase, type ModeKey,
 } from "../_shared/modeEval.ts";
-import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF } from "../_shared/pipelineCases.ts";
+import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF, withPayloadToken } from "../_shared/pipelineCases.ts";
+import { payloadToken } from "../_shared/injectionDisclosure.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -604,8 +605,11 @@ Deno.serve(async (req) => {
     if (action === "pipeline_start") {
       const key = body.mode;
       if (!isMode(key)) return json(400, { error: "Unknown mode." });
-      const c = PIPELINE_CASES[key].find((x) => x.id === body.case_id);
-      if (!c) return json(400, { error: "Unknown pipeline case for this mode." });
+      const c0 = PIPELINE_CASES[key].find((x) => x.id === body.case_id);
+      if (!c0) return json(400, { error: "Unknown pipeline case for this mode." });
+      // Unseen per-run injection payload (never the fixed dataset canary).
+      const payloadSeed = c0.expect.canary ? crypto.randomUUID() : null;
+      const c = withPayloadToken(c0, payloadSeed ? await payloadToken(payloadSeed) : null);
       const variant = body.variant === "candidate" ? "candidate" : body.variant === "personalization" ? "personalization" : "baseline";
       const target = String(body.target_user_id ?? "");
       if (!UUID_RE.test(target)) return json(400, { error: "target_user_id required" });
@@ -624,12 +628,12 @@ Deno.serve(async (req) => {
       const access = await sessionFor(target);
       if (!access) return json(403, { error: "Target must be a synthetic @btln-test.dev account." });
       const secret = Array.from(crypto.getRandomValues(new Uint8Array(32))).map((x) => x.toString(16).padStart(2, "0")).join("");
-      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? 10 : 6;
+      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? (c.id === "dr-long-10k" ? 16 : 10) : 6;
       const { data: run, error: runErr } = await admin.from("prompt_test_runs").insert({
         secret_hash: await sha256(secret), target_user_id: target, operator_id: user.id, function_name: FUNCTION_FOR[key], mode: key, variant,
         candidate_id: cand?.id ?? null, candidate_addendum: cand?.prompt_text ?? null, baseline_text_hash: baselineHash, case_id: c.id,
         purpose: String(body.purpose ?? "").slice(0, 300), max_calls: maxCalls, expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
-        state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null },
+        state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, payload_seed: payloadSeed },
       }).select("id").single();
       if (runErr || !run) return json(500, { error: "Could not create test run." });
       const header = `${run.id}.${secret}`;
@@ -647,7 +651,7 @@ Deno.serve(async (req) => {
       const payload = pipelineRequest(firstKey, firstCase as ModeCase);
       if (key === "deep_read_full" && body.personalization?.free_text !== undefined) (payload.context_data as Admin).free_text = String(body.personalization.free_text).slice(0, 500);
       const r = await callFn(FUNCTION_FOR[firstKey], access, header, payload);
-      await admin.from("prompt_test_runs").update({ state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, secret, first: { status: r.status, body: r.body, session_id: payload.session_id ?? null } } }).eq("id", run.id);
+      await admin.from("prompt_test_runs").update({ state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, payload_seed: payloadSeed, secret, first: { status: r.status, body: r.body, session_id: payload.session_id ?? null } } }).eq("id", run.id);
       return json(r.status < 300 ? 200 : 502, { run_id: run.id, status: r.status, response: r.body });
     }
 
@@ -659,8 +663,8 @@ Deno.serve(async (req) => {
     const { data: existing } = await admin.from("prompt_pipeline_results").select("*").eq("test_run_id", runId).maybeSingle();
     if (existing) return json(200, { result: existing, already: true });
     const key = run.mode as ModeKey;
-    const c = PIPELINE_CASES[key].find((x) => x.id === run.case_id)!;
     const st = run.state ?? {};
+    const c = withPayloadToken(PIPELINE_CASES[key].find((x) => x.id === run.case_id)!, st.payload_seed ? await payloadToken(st.payload_seed) : null);
     const header = `${run.id}.${st.secret}`;
     let output: Admin = null; let pending = false; let extraNotes: string[] = [];
     const nonModelStages: Record<string, string> = {};
@@ -704,6 +708,7 @@ Deno.serve(async (req) => {
         nonModelStages.raw_message_deletion = count === 0 ? "verified" : `failed (${count} temporary rows remain)`;
         nonModelStages.attributed_evidence = output?.attributed_evidence ? "present" : "missing";
         nonModelStages.quote_integrity = output?.quote_integrity ? `checked ${output.quote_integrity.quotes_checked}, supported ${output.quote_integrity.quotes_supported}, removed ${output.quote_integrity.sentences_removed?.length ?? 0}, duplicates ${output.quote_integrity.duplicate_sentences_removed}` : (row?.status === "complete" ? "missing" : "not_reached");
+        if (output?.coverage) nonModelStages.history_coverage = `supplied ${output.coverage.messages_supplied}, analyzed ${output.coverage.messages_analyzed}, read by AI ${output.coverage.messages_read_by_ai}, quoted verbatim ${output.coverage.messages_quoted_verbatim}, slices ${output.coverage.chunk_count} (failed ${output.coverage.failed_chunks}); attribution covers the recent window only`;
         nonModelStages.style_rewrite = output?.personalization ? `report: ${output.personalization.rewrite}, ${output.personalization.fields_applied}/${output.personalization.fields_total} fields` : "not_requested";
       }
     }
@@ -770,12 +775,13 @@ Deno.serve(async (req) => {
   if (action === "pipeline_rescreen") {
     const reason = String(body.reason ?? "").slice(0, 300);
     if (!reason) return json(400, { error: "reason required" });
-    const { data: rows } = await admin.from("prompt_pipeline_results").select("*, prompt_test_runs!inner(target_user_id, candidate_addendum)").neq("binding->>rubric", MODE_RUBRIC_VERSION).limit(200);
+    const { data: rows } = await admin.from("prompt_pipeline_results").select("*, prompt_test_runs!inner(target_user_id, candidate_addendum, state)").neq("binding->>rubric", MODE_RUBRIC_VERSION).limit(200);
     let n = 0;
     for (const r of rows ?? []) {
       const key = r.mode as ModeKey;
       let c: Admin = PIPELINE_CASES[key]?.find((x) => x.id === r.case_id);
       if (!c) continue;
+      if (r.prompt_test_runs?.state?.payload_seed) c = withPayloadToken(c, await payloadToken(r.prompt_test_runs.state.payload_seed));
       if (key === "relationship360") {
         const { data: obsRows } = await admin.from("journey_observations").select("id,journey_source_id,relationship_id,subject_kind,observed_period_start").eq("user_id", r.prompt_test_runs.target_user_id).is("excluded_at", null).limit(500);
         c = { ...c, r360: { observations: (obsRows ?? []).map((o: Admin) => ({ observation_id: o.id, source_id: o.journey_source_id, relationship_id: o.relationship_id, relationship_confirmed: true, kind: o.subject_kind, observed_from: o.observed_period_start })) } };

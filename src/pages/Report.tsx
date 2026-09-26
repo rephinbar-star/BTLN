@@ -1452,6 +1452,15 @@ export const DeepReport = ({
         </div>
       </Section>
       </ReportErrorBoundary>
+      {(() => {
+        const ai = (result as unknown as { advice_integrity?: { withheld_count?: number; note?: string | null } }).advice_integrity;
+        return ai?.withheld_count ? (
+          <p role="note" className="rounded-lg border border-border bg-muted p-3 text-[13px] text-muted-foreground">
+            {ai.note ?? "Some advice was held back because we could not confirm who it was for."}
+          </p>
+        ) : null;
+      })()}
+
 
       {/* 5. Bids for connection */}
       <ReportErrorBoundary label="bids" inline>
