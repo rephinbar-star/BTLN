@@ -356,6 +356,7 @@ Deno.serve(async (req) => {
   }).select("id").single();
   if (jobError || !job) {
     const running = (jobs ?? []).find((j) => j.status === "running" && (j.relationship_id ?? null) === relationshipId);
+    if (!running) console.error("r360 job insert failed", jobError?.code, jobError?.message);
     return json(200, { state: "updating", job_id: running?.id ?? null });
   }
 
