@@ -1,3 +1,5 @@
+import { withTestRun } from "../_shared/testRun.ts";
+import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
 import {
@@ -78,7 +80,7 @@ const truncateConversation = (text: string, max: number): string => {
 // deno-lint-ignore no-explicit-any
 declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
-Deno.serve(async (req) => {
+Deno.serve(withTestRun("analyze-conversation", async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -244,6 +246,14 @@ Deno.serve(async (req) => {
       })
       .eq("id", analysis_id);
   } else {
+    // A verified signed-in caller owns the new row from the start, so their own
+    // consented coaching preferences can apply. Guests stay unowned.
+    let creatorId: string | null = null;
+    const createAuth = req.headers.get("Authorization");
+    if (createAuth?.startsWith("Bearer ")) {
+      const { data: u, error: uErr } = await supabase.auth.getUser(createAuth.replace("Bearer ", ""));
+      if (!uErr) creatorId = u?.user?.id ?? null;
+    }
     const { data: created, error: createErr } = await supabase
       .from("analyses")
       .insert({
@@ -251,6 +261,7 @@ Deno.serve(async (req) => {
         context_data,
         input_method,
         status: "pending",
+        ...(creatorId ? { user_id: creatorId } : {}),
       })
       .select("id")
       .single();
@@ -313,7 +324,7 @@ Deno.serve(async (req) => {
       `[${m.timestamp_estimate ?? `#${i + 1}`}] ${m.sender_role === "user" ? name1 : name2}: ${m.content}`;
 
     const chunks = planChunks(capped, (m) => m.content.length + 40);
-    const digest = await digestChunks({
+    const digest = await inStage("digest", () => digestChunks({
       chunks,
       render: (chunk, i, total) =>
         [
@@ -327,7 +338,7 @@ Deno.serve(async (req) => {
       apiKey: OPENROUTER_API_KEY,
       referer: OPENROUTER_HTTP_REFERER,
       title: OPENROUTER_X_TITLE,
-    });
+    }));
     if (digest.digests.length === 0) {
       return failAnalysis("We couldn't read this history. Please try again.");
     }
@@ -354,6 +365,7 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
     let resultJson: any = null;
     let missing: string[] = REQUIRED_FIELDS;
     for (let attempt = 0; attempt < 2; attempt++) {
+      markStage("primary");
       const r = await callOpenRouter(
         {
           model: pv.model_string,
@@ -398,6 +410,7 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
     // Very long inputs sometimes make the model stop one key short. Ask for the
     // remaining keys on their own (small, bounded call) and merge them in.
     if (resultJson && missing.length > 0) {
+      markStage("primary_fill");
       const fill = await callOpenRouter(
         {
           model: pv.model_string,
@@ -480,7 +493,7 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
   // The style block is re-checked just before saving: if the owner withdrew
   // consent, reset or deleted feedback while the read was generating, the
   // stale style is discarded and the read is regenerated with current signals.
-  const basePrompt = pv.prompt_text as string;
+  const basePrompt = await systemFor("deep_read_full", pv.prompt_text as string);
   const { data: ownerRow } = await supabase.from("analyses").select("user_id").eq("id", analysis_id).maybeSingle();
   const ownerId = (ownerRow?.user_id as string | null | undefined) ?? null;
   // Free-text notes are never forwarded: they are mapped to a bounded enum
@@ -640,6 +653,7 @@ ${messagesBlock}`;
     }
     return "Analysis response was not valid JSON.";
   };
+  markStage("primary");
   {
     const err = await generate();
     if (err) return failAnalysis(err);
@@ -648,6 +662,7 @@ ${messagesBlock}`;
     if (latest !== styleBlock) {
       console.warn("[analyze-conversation] coaching preferences changed during generation; regenerating");
       styleBlock = latest;
+      markStage("primary_regenerate");
       analysisBody.messages[0].content = promptWith(styleBlock);
       const err2 = await generate();
       if (err2) return failAnalysis(err2);
@@ -668,6 +683,7 @@ ${messagesBlock}`;
       report.fields_applied = report.fields_total; report.fields_fallback = [];
     } else {
       const input = Object.fromEntries(pending.map((f) => [pathKey(f.path), f.text]));
+      markStage("style_rewrite");
       const r = await callOpenRouter({
         model: pv.model_string,
         max_tokens: 1200,
@@ -720,6 +736,7 @@ ${messagesBlock}`;
   const couple_type_id = assignCoupleType(resultJson, relationshipType, analysis_id);
 
   // 6. Finalize
+  markStage("attribution");
   await attachAttribution(
     resultJson,
     messages.sort((a, b) => a.sequence_order - b.sequence_order).map((m) => ({ sender_role: m.sender_role as "user" | "partner", content: m.content })),
@@ -751,4 +768,4 @@ ${messagesBlock}`;
   }
 
   return json(202, { analysis_id, status: "accepted" });
-});
+}));

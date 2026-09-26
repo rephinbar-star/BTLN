@@ -3,6 +3,8 @@
 // Privacy: raw message text is never persisted and never logged. It exists
 // only in this request's memory, including on the failure path.
 
+import { withTestRun } from "../_shared/testRun.ts";
+import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
@@ -55,7 +57,7 @@ declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-Deno.serve(async (req) => {
+Deno.serve(withTestRun("analyze-group", async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json(405, { error: "Method not allowed" });
 
@@ -196,20 +198,19 @@ Deno.serve(async (req) => {
     });
   }
 
-  // Full-report plans only. The Quick Take-only plan (decode_monthly) does not
-  // grant group reads.
-  const FULL_PLAN_TIERS = ["monthly", "annual"];
+  // Full-report plans and Prime (which includes every feature). The Quick
+  // Take-only plan (decode_monthly) does not grant group reads.
+  const FULL_PLAN_TIERS = ["monthly", "annual", "prime"];
+  const liveStatus = (s: { status: string; current_period_end: string | null }) =>
+    ["active", "trialing", "past_due"].includes(s.status) &&
+    (!s.current_period_end || Date.parse(s.current_period_end) > Date.now());
   const hasFullPlan = async (uid: string): Promise<boolean> => {
-    const { data: subs } = await supabase
-      .from("user_subscriptions")
-      .select("status, tier, current_period_end")
-      .eq("user_id", uid);
-    return (subs ?? []).some(
-      (s: { status: string; tier: string; current_period_end: string | null }) =>
-        FULL_PLAN_TIERS.includes(s.tier) &&
-        ["active", "trialing", "past_due"].includes(s.status) &&
-        (!s.current_period_end || Date.parse(s.current_period_end) > Date.now()),
-    );
+    const [{ data: subs }, { data: ents }] = await Promise.all([
+      supabase.from("user_subscriptions").select("status, tier, current_period_end").eq("user_id", uid),
+      supabase.from("subscription_entitlements").select("status, entitlement, current_period_end").eq("user_id", uid).eq("entitlement", "prime"),
+    ]);
+    return (subs ?? []).some((s: { status: string; tier: string; current_period_end: string | null }) => FULL_PLAN_TIERS.includes(s.tier) && liveStatus(s))
+      || (ents ?? []).some(liveStatus);
   };
 
   // Reuse an existing row when the client retries, so we never double-generate.
@@ -394,7 +395,7 @@ Deno.serve(async (req) => {
 
     if (longHistory) {
       const chunks = planChunks(messages, (m) => m.content.length + 40);
-      const digest = await digestChunks({
+      const digest = await inStage("digest", () => digestChunks({
         chunks,
         render: (chunk, i, total) =>
           [
@@ -409,7 +410,7 @@ Deno.serve(async (req) => {
         apiKey: OPENROUTER_API_KEY!,
         referer: REFERER,
         title: TITLE,
-      });
+      }));
       chunkCount = digest.chunkCount;
       digestedMessages = digest.digestedMessages;
       failedChunks = digest.failedChunks;
@@ -465,11 +466,13 @@ Deno.serve(async (req) => {
     ].join("\n");
 
 
+    markStage("primary");
+    const groupSystem = await systemFor("group_read", pv.prompt_text);
     const r = await callOpenRouter(
       {
         model: pv.model_string,
         messages: [
-          { role: "system", content: pv.prompt_text },
+          { role: "system", content: groupSystem },
           { role: "user", content: userContent },
         ],
         response_format: { type: "json_object" },
@@ -552,4 +555,4 @@ Deno.serve(async (req) => {
   }
 
   return json(202, { group_read_id: rowId, status: "accepted" });
-});
+}));
