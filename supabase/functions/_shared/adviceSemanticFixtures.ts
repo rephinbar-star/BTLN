@@ -89,3 +89,40 @@ export const SEMANTIC_FIXTURES_2: Fx[] = [
     it("cs.p2.1", "p2", "p1", "suggestion", "Give a specific time estimate next time you're running late.", "keep", "partner was late"),
   ] },
 ];
+
+// Held-out set 3 (written after advice-semantic-3 prompt; never shown to it).
+// Pronoun-only / no-name swaps with matching valid controls and a third party.
+const MC: Participant[] = [{ id: "p1", label: "Morgan", role: "user" }, { id: "p2", label: "Casey", role: "partner" }];
+const DQ: Participant[] = [{ id: "p1", label: "Drew", role: "user" }, { id: "p2", label: "Quinn", role: "partner" }];
+const T6: Msg[] = [
+  { sender_role: "user", content: "Hey are you there?" },
+  { sender_role: "user", content: "Hello??" },
+  { sender_role: "user", content: "Why are you ignoring me" },
+  { sender_role: "partner", content: "busy" },
+  { sender_role: "user", content: "You always do this, answer me" },
+  { sender_role: "partner", content: "..." },
+  { sender_role: "user", content: "Fine, I'll just keep texting until you reply" },
+];
+const T7: Msg[] = [
+  { sender_role: "partner", content: "My mom said the dinner felt rushed." },
+  { sender_role: "user", content: "Your mom criticises everything I do, it's ridiculous." },
+  { sender_role: "partner", content: "I'm not saying she's right, I just wanted you to know." },
+  { sender_role: "user", content: "Well I don't care what she thinks." },
+  { sender_role: "partner", content: "Okay. I'm sorry I brought it up." },
+];
+export const SEMANTIC_FIXTURES_3: Fx[] = [
+  { id: "t6-pursue-withdraw", parts: MC, msgs: T6, items: [
+    it("cs.p1.0", "p1", "p2", "suggestion", "Send one message saying you'd like to talk, then give them time to reply.", "keep", "user sent many messages"),
+    it("cs.p1.1", "p1", "p2", "suggestion", "When you need space, say so and give a time you'll come back, instead of going quiet.", "withhold", "partner went quiet"),
+    it("cs.p2.0", "p2", "p1", "suggestion", "If you need space, say so and name when you'll reply, rather than one-word answers.", "keep", "partner gave one-word answers"),
+    it("cs.p2.1", "p2", "p1", "suggestion", "Try sending one calm message and waiting, rather than several in a row.", "withhold", "user sent several in a row"),
+    it("cs.p2.2", "p2", "p1", "suggestion", "Drop the all-or-nothing framing and describe this one moment instead.", "withhold", "user used absolutes"),
+    it("step.0", "p1", "p2", "step", "Agree together on how long a reply can reasonably take on busy days.", "keep", "joint plan"),
+  ] },
+  { id: "t7-relative", parts: DQ, msgs: T7, items: [
+    it("cs.p1.0", "p1", "p2", "suggestion", "When a relative's comment comes up, ask what your partner thinks before reacting.", "keep", "user reacted to the mother"),
+    it("cs.p1.1", "p1", "p2", "suggestion", "Keep passing on hard feedback gently, as you did, and add what you think yourself.", "withhold", "partner passed it on gently"),
+    it("cs.p2.0", "p2", "p1", "suggestion", "Say what you think yourself about the dinner, not only what your mother said.", "keep", "partner relayed the mother's view"),
+    it("cs.p2.1", "p2", "p1", "suggestion", "Try responding to the comment without dismissing the whole family.", "withhold", "user dismissed the family"),
+  ] },
+];

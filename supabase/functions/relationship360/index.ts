@@ -256,6 +256,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     .from("journey_jobs")
     .select("id,status,kind,relationship_id,error_message,created_at,updated_at,attempt_count")
     .eq("user_id", user.id)
+    .is("evaluation_run_id", null) // isolated test builds are never shown or reused by the ordinary view
     .order("created_at", { ascending: false })
     .limit(10);
   if (jobsError) return json(500, { error: "Could not read your update history." });
@@ -355,7 +356,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   // Returning to an earlier input (e.g. personalization off -> on -> off, or a
   // correction undone) must rebuild: the stored summary no longer matches, so
   // release the idempotency key held by the older completed job.
-  {
+  if (evalScope === null) {
     const release = admin.from("journey_jobs").update({ input_fingerprint: null })
       .eq("user_id", user.id).eq("status", "complete").eq("input_fingerprint", inputFingerprint);
     await (relationshipId ? release.eq("relationship_id", relationshipId) : release.is("relationship_id", null));
@@ -367,7 +368,9 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     kind: relationshipId ? "relationship_synthesis" : "cross_relationship_synthesis",
     status: "running",
     started_from_version: startedFromVersion,
-    input_fingerprint: inputFingerprint,
+    // Test builds never hold the ordinary idempotency key and are tagged server-side.
+    input_fingerprint: evalScope === null ? inputFingerprint : null,
+    evaluation_run_id: evalScope,
     attempt_count: 1,
   }).select("id").single();
   if (jobError || !job) {
