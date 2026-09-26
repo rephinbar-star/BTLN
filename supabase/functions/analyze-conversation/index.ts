@@ -1,7 +1,11 @@
 import { withTestRun } from "../_shared/testRun.ts";
 import { resolveRequestOwner } from "../_shared/requestOwner.ts";
 import { enforceQuoteIntegrity } from "../_shared/quoteIntegrity.ts";
-import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
+import { currentTestRun, inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
+import {
+  ADVICE_RECIPIENT_VERSION, adviceItems, checkRecipient, mergeById, rewritePayload, withholdMisattributed,
+  type AdviceStatus, type Msg, type Participant,
+} from "../_shared/adviceRecipients.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
 import {
@@ -678,17 +682,34 @@ ${messagesBlock}`;
     }
   }
 
+  // Advice recipient integrity (runs for every read, personalised or not):
+  // each advice item carries an immutable recipient id; items whose original
+  // wording asks the recipient to change the other person's words are
+  // withheld with a reason rather than shown. See _shared/adviceRecipients.ts.
+  const parts: Participant[] = [{ id: "p1", label: name1, role: "user" }, { id: "p2", label: name2, role: "partner" }];
+  const canon: Msg[] = [...messages].sort((a, b) => a.sequence_order - b.sequence_order).map((m) => ({ sender_role: m.sender_role as "user" | "partner", content: m.content }));
+  const trace: Record<string, unknown> | null = currentTestRun()?.kind === "metered" ? {} : null;
+  let adviceStatuses: AdviceStatus[] = [];
+  if (resultJson && typeof resultJson === "object") {
+    if (trace) trace.generated = JSON.parse(JSON.stringify({ cs: resultJson.communication_suggestions ?? null, rg: resultJson.remedial_guidance ?? null }));
+    adviceStatuses = withholdMisattributed(resultJson, parts, canon).statuses;
+  }
+
   // Constrained style rewrite: at most one bounded call, editable advice fields
-  // only, every field validated; failures keep the original text.
+  // only. Items go out with id + explicit recipient/counterpart, come back by
+  // id, and each rewrite must pass the style invariants AND the recipient
+  // check; failures keep the (already verified) original.
   if (!isEmptyContract(styleContract) && resultJson && typeof resultJson === "object") {
     const allowedNames = [name1, name2].filter(Boolean) as string[];
-    const pending = fieldsNeedingRewrite(resultJson, styleContract, allowedNames);
+    const items = adviceItems(resultJson, parts);
+    const pendingKeys = new Set(fieldsNeedingRewrite(resultJson, styleContract, allowedNames).map((f) => pathKey(f.path)));
+    const pending = items.filter((i) => pendingKeys.has(pathKey(i.path)));
     let report: ApplyReport;
     if (pending.length === 0) {
       report = { ...applyRewrites(resultJson, {}, styleContract, allowedNames), rewrite: "not_needed" };
       report.fields_applied = report.fields_total; report.fields_fallback = [];
     } else {
-      const input = Object.fromEntries(pending.map((f) => [pathKey(f.path), f.text]));
+      const payload = rewritePayload(pending, parts);
       markStage("style_rewrite");
       const r = await callOpenRouter({
         model: pv.model_string,
@@ -696,21 +717,43 @@ ${messagesBlock}`;
         temperature: 0.2,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: `Rewrite each advice item to meet these presentation preferences. Return a JSON object with exactly the same keys. Keep the same meaning and any hedging (may/might/could). Do not add names, quotes, facts or claims.\n${contractInstruction(styleContract)}` },
-          { role: "user", content: JSON.stringify(input) },
+          { role: "system", content: `Rewrite the "text" of each advice item to meet these presentation preferences. Each item names its RECIPIENT (write to them as "you") and COUNTERPART (the other person, always by name, never "you"). Never change who the advice is for, whose behaviour it is about, or which pattern it replaces. Keep the same meaning and any hedging (may/might/could). Do not add names, quotes, facts or claims. Return {"items":[{"id":"<same id>","text":"<rewritten>"}]} with every id exactly once.\n${contractInstruction(styleContract)}` },
+          { role: "user", content: JSON.stringify({ items: payload }) },
         ],
       }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE);
-      let rewrites: Record<string, unknown> = {};
-      try { if (r.ok) rewrites = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? {}; } catch { rewrites = {}; }
-      const already = editableFields(resultJson).length - pending.length;
-      const onlyPending = Object.fromEntries(Object.entries(rewrites).filter(([k]) => k in input));
-      // Fields already compliant keep their text (identity rewrite passes).
-      for (const f of editableFields(resultJson)) { const k = pathKey(f.path); if (!(k in input)) onlyPending[k] = f.text; }
-      report = applyRewrites(resultJson, onlyPending, styleContract, allowedNames);
+      let parsed: unknown = {};
+      try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? {}; } catch { parsed = {}; }
+      const byId = mergeById(pending, parsed);
+      if (trace) { trace.rewrite_request = payload; trace.rewrite_response = parsed; }
+      const rewrites: Record<string, unknown> = {};
+      for (const it of items) {
+        const k = pathKey(it.path);
+        if (!pendingKeys.has(k)) { rewrites[k] = it.text; continue; }
+        const t = byId.get(it.id);
+        if (t === undefined) continue;
+        const rc = checkRecipient(it, t, parts, canon);
+        if (rc.ok) rewrites[k] = t;
+        else adviceStatuses.push({ id: it.id, recipient_id: it.recipient_id, status: "kept", reasons: rc.reasons.map((x) => `rewrite_rejected:${x}`) });
+      }
+      report = applyRewrites(resultJson, rewrites, styleContract, allowedNames);
+      for (const it of pending) if (rewrites[pathKey(it.path)] !== undefined && !report.fields_fallback.some((f) => f.key === pathKey(it.path))) {
+        const s = adviceStatuses.find((x) => x.id === it.id && x.status === "kept" && x.reasons.length === 0);
+        if (s) s.status = "rewritten";
+      }
       report.rewrite = r.ok ? "done" : "failed";
-      void already;
     }
     resultJson.personalization = report;
+  }
+  if (resultJson && typeof resultJson === "object") {
+    const withheld = adviceStatuses.filter((s) => s.status === "withheld");
+    resultJson.advice_integrity = {
+      version: ADVICE_RECIPIENT_VERSION,
+      items: adviceStatuses,
+      withheld_count: withheld.length,
+      note: withheld.length ? "Some advice was held back because it asked one person to change words only the other person used." : null,
+      limits: "Checks who each item is for and whose quoted words it asks to change; they do not prove full meaning.",
+    };
+    if (trace) { trace.final = { cs: resultJson.communication_suggestions ?? null, rg: resultJson.remedial_guidance ?? null }; resultJson.advice_trace = trace; }
   }
 
   // Validate required fields
