@@ -678,6 +678,8 @@ Deno.serve(async (req) => {
       const firstKey: ModeKey = key === "interactive" ? "quick_take" : key;
       const firstCase = key === "interactive" ? { ...c, speakers: ["You", "Them"], messages: [{ id: "s1", speaker: "Them", text: String(c.interactive?.original_take?.read ?? "") }, { id: "s2", speaker: "You", text: String(c.interactive?.prior_updates?.[0]?.result_json?.context_summary ?? "See you soon") }, ...c.messages.slice(0, 1).map((m) => ({ ...m, speaker: "Them" }))] } : c;
       const payload = pipelineRequest(firstKey, firstCase as ModeCase);
+      // Relationship-level Relationship360 (a normal product scope), owner-checked by the function itself.
+      if (key === "relationship360" && UUID_RE.test(String(body.relationship_id ?? ""))) (payload as Admin).relationship_id = String(body.relationship_id);
       if (key === "deep_read_full" && body.personalization?.free_text !== undefined) (payload.context_data as Admin).free_text = String(body.personalization.free_text).slice(0, 500);
       const r = await callFn(FUNCTION_FOR[firstKey], access, header, payload);
       // Server-owned provenance (eval-isolation-1): the result is recorded as
