@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  daysFromStamps,
   deterministicObservations,
   toEvidenceMessages,
   validateModelObservations,
@@ -14,7 +15,7 @@ const participants: AttributedParticipant[] = [
 const messages = toEvidenceMessages([
   { sender_role: "user", content: "Are we still on for Friday?", stamp: "03/03/2026, 10:00" },
   { sender_role: "partner", content: "Taylor never asks how my week went", stamp: "03/03/2026, 18:00" },
-  { sender_role: "user", content: "Sorry, how was your week?", stamp: "04/03/2026, 09:00" },
+  { sender_role: "user", content: "Sorry, how was your week?", stamp: "14/03/2026, 09:00" },
   { sender_role: "partner", content: "busy", stamp: null },
 ]);
 
@@ -105,5 +106,66 @@ describe("Relationship360 mapping of structured attribution", () => {
   it("legacy reports without structured attribution stay unattributed", () => {
     const legacy = adaptDeepRead({ hidden_pattern: { description: "Taylor rarely asks questions back." } }, ctx)[0];
     expect(legacy.subject_kind).toBe("relationship_context");
+  });
+});
+
+describe("shared date rule for attributed evidence", () => {
+  it("all-ambiguous day/month stays unknown", () => {
+    expect(daysFromStamps(["03/04/2026, 10:00", "05/06/2026, 11:00"])).toEqual([null, null]);
+  });
+  it("mixed conflicting formats stay unknown", () => {
+    expect(daysFromStamps(["13/04/2026, 10:00", "04/13/2026, 11:00"])).toEqual([null, null]);
+  });
+  it("a proving value resolves the whole export either way", () => {
+    expect(daysFromStamps(["13/04/2026", "05/06/2026"])).toEqual(["2026-04-13", "2026-06-05"]);
+    expect(daysFromStamps(["04/13/2026", "05/06/2026"])).toEqual(["2026-04-13", "2026-05-06"]);
+  });
+  it("ISO stamps, date-only and zone offsets are read as written", () => {
+    expect(daysFromStamps(["2026-02-03", "2026-02-04T23:30:00+05:00", "[2026-02-05 08:00]"])).toEqual(["2026-02-03", "2026-02-04", "2026-02-05"]);
+  });
+  it("invalid calendar dates are rejected", () => {
+    expect(daysFromStamps(["2026-02-30", "31/04/2026"])).toEqual([null, null]);
+  });
+});
+
+describe("evidence selection keeps the actor's support", () => {
+  const six = toEvidenceMessages([
+    { sender_role: "partner", content: "a1", stamp: "2026-05-01" },
+    { sender_role: "partner", content: "a2", stamp: "2026-05-02" },
+    { sender_role: "user", content: "t1", stamp: "2026-06-20" },
+    { sender_role: "partner", content: "a3", stamp: "2026-05-03" },
+  ]);
+  const run = (o: Record<string, unknown>) => validateModelObservations({ observations: [o] }, participants, six);
+  it("actor's only message in the third ref is retained and dates the claim", () => {
+    const r = run({ actor: "p1", kind: "behavior", statement: "Taylor proposed a time.", evidence: ["m1", "m2", "m3"] });
+    expect(r.accepted[0].actor).toBe("p1");
+    expect(r.accepted[0].evidence.map((e) => e.message_id)).toContain("m3");
+    expect(r.accepted[0].evidence.some((e) => e.speaker_id === "p1")).toBe(true);
+    const days = r.accepted[0].evidence.map((e) => e.day).sort();
+    expect(r.accepted[0].period).toEqual({ start: days[0], end: days[days.length - 1], provenance: "parsed" });
+  });
+  it("joint support from the third ref keeps one message from each person", () => {
+    const r = run({ actor: "joint", kind: "behavior", statement: "Both kept planning together.", evidence: ["m1", "m2", "m3"] });
+    expect(r.accepted[0].actor).toBe("joint");
+    expect(new Set(r.accepted[0].evidence.map((e) => e.speaker_id)).size).toBe(2);
+  });
+  it("a mix of valid and invented refs rejects the claim", () => {
+    const r = run({ actor: "p2", kind: "behavior", statement: "Alex kept replying late.", evidence: ["m1", "m99"] });
+    expect(r.accepted).toHaveLength(0);
+    expect(r.reasons.unknown_message_id).toBe(1);
+  });
+  it("model claims are labelled as reference-checked, not meaning-verified", () => {
+    const r = run({ actor: "p2", kind: "behavior", statement: "Alex sent short replies.", evidence: ["m1"] });
+    expect(r.accepted[0].support).toBe("references_and_speaker_checked");
+  });
+});
+
+describe("long-history scope", () => {
+  it("claims over a truncated history are tagged recent_window and adapt at low confidence", () => {
+    const r = validateModelObservations({ observations: [{ actor: "p2", kind: "behavior", statement: "Alex sent short replies.", evidence: ["m2"] }] }, participants, messages, true);
+    expect(r.accepted[0].scope).toBe("recent_window");
+    const drafts = adaptDeepRead({ attributed_evidence: { schema_version: 1, participants, observations: r.accepted } }, { label: "Deep Read", subject: "Taylor" } as never);
+    expect(drafts[0].observation_type).toBe("deep_read.behavior.recent_window");
+    expect(drafts[0].confidence).toBe("low");
   });
 });

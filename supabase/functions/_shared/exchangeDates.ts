@@ -51,7 +51,7 @@ const isoDay = (value: string): string | null => {
   const day = value.slice(0, 10);
   if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return null;
   const time = Date.parse(`${day}T00:00:00Z`);
-  if (Number.isNaN(time)) return null;
+  if (Number.isNaN(time) || new Date(time).toISOString().slice(0, 10) !== day) return null;
   // A conversation cannot have happened in the future, and dates before the
   // first mobile chat exports are treated as parse noise rather than history.
   const now = Date.now();
@@ -177,35 +177,71 @@ export const recordIngestMeta = async (
  * support: "[dd/mm/yyyy, hh:mm:ss]" (iOS) and "dd/mm/yyyy, hh:mm - " (Android).
  * Lines without a readable date count as undated; nothing is inferred.
  */
+export type DayOrder = "day_first" | "month_first" | "ambiguous" | "conflict";
+
+/**
+ * One rule for the whole export. A value above 12 proves which field is the
+ * day. If no value proves it the order is "ambiguous"; if values prove BOTH
+ * orders the export is "conflict". Neither case yields dates — unknown stays
+ * unknown until the person clarifies (which is then labelled self-reported).
+ */
+export const resolveDayOrder = (parts: { a: number; b: number }[]): DayOrder => {
+  const aDay = parts.some((p) => p.a > 12);
+  const bDay = parts.some((p) => p.b > 12);
+  if (aDay && bDay) return "conflict";
+  if (aDay) return "day_first";
+  if (bDay) return "month_first";
+  return "ambiguous";
+};
+
+const ISO_STAMP = /^\s*\[?(\d{4})-(\d{2})-(\d{2})(?:[T ,]|\]|$)/;
+const NUM_STAMP = /^\s*\[?(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/;
+
+/**
+ * Resolves timestamp strings to ISO days using the shared rule above.
+ * ISO (yyyy-mm-dd) stamps are unambiguous. The date is taken as written; any
+ * time or zone offset is ignored and the timezone is reported as unknown.
+ */
+export const resolveStampDays = (stamps: (string | null)[]): { days: (string | null)[]; order: DayOrder | "iso" | "none" } => {
+  const parsed = stamps.map((s) => {
+    if (!s) return null;
+    const iso = ISO_STAMP.exec(s);
+    if (iso) return { iso: `${iso[1]}-${iso[2]}-${iso[3]}` } as const;
+    const m = NUM_STAMP.exec(s);
+    if (!m) return null;
+    return { a: Number(m[1]), b: Number(m[2]), y: Number(m[3].length === 2 ? `20${m[3]}` : m[3]) } as const;
+  });
+  const numeric = parsed.filter((p): p is { a: number; b: number; y: number } => Boolean(p && "a" in p));
+  const order = numeric.length ? resolveDayOrder(numeric) : null;
+  const days = parsed.map((p) => {
+    if (!p) return null;
+    if ("iso" in p) return isoDay(p.iso);
+    if (order !== "day_first" && order !== "month_first") return null;
+    const day = order === "month_first" ? p.b : p.a;
+    const month = order === "month_first" ? p.a : p.b;
+    return isoDay(`${String(p.y).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`);
+  });
+  const hasIso = parsed.some((p) => p && "iso" in p);
+  return { days, order: order ?? (hasIso ? "iso" : "none") };
+};
+
 export const deriveDateMetaFromText = (text: string): DateMeta => {
-  const line = /^\s*\[?(\d{1,2})[./-](\d{1,2})[./-](\d{2,4}),?\s+(\d{1,2}:\d{2})/;
-  const parts: { a: number; b: number; year: number }[] = [];
-  let undated = 0;
-  for (const raw of text.split(/\r?\n/)) {
-    if (!raw.trim()) continue;
-    const match = line.exec(raw);
-    if (!match) { undated += 1; continue; }
-    const year = Number(match[3].length === 2 ? `20${match[3]}` : match[3]);
-    parts.push({ a: Number(match[1]), b: Number(match[2]), year });
+  const lines = text.split(/\r?\n/).filter((raw) => raw.trim());
+  const stamps = lines.map((raw) => (ISO_STAMP.test(raw) || /^\s*\[?\d{1,2}[./-]\d{1,2}[./-]\d{2,4},?\s+\d{1,2}:\d{2}/.test(raw) ? raw : null));
+  const { days: resolved, order } = resolveStampDays(stamps);
+  const days = resolved.filter((d): d is string => Boolean(d)).sort();
+  const undated = lines.length - days.length;
+  const orderNote = order === "ambiguous"
+    ? "Day and month order could not be established, so these dates are left unknown until you confirm them."
+    : order === "conflict"
+      ? "The export mixes day-first and month-first dates, so these dates are left unknown until you confirm them."
+      : "";
+  if (days.length === 0) {
+    return { ...EMPTY_DATE_META, undated_count: undated, date_note: orderNote || null };
   }
-  if (parts.length === 0) return { ...EMPTY_DATE_META, undated_count: undated };
-  // A value above 12 in the SECOND position proves the second field is the day,
-  // so the first is the month. Otherwise day-first (the WhatsApp default here).
-  const monthFirst = parts.some((p) => p.b > 12) && !parts.some((p) => p.a > 12);
-  const ambiguous = !parts.some((p) => p.a > 12) && !parts.some((p) => p.b > 12);
-  const days: string[] = [];
-  for (const part of parts) {
-    const day = monthFirst ? part.b : part.a;
-    const month = monthFirst ? part.a : part.b;
-    const iso = `${String(part.year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const valid = isoDay(iso);
-    if (valid) days.push(valid); else undated += 1;
-  }
-  if (days.length === 0) return { ...EMPTY_DATE_META, undated_count: undated };
-  days.sort();
   const notes = [
-    undated > 0 ? `${undated} line(s) carried no readable date.` : "",
-    ambiguous ? "Day and month order could not be established with certainty." : "",
+    undated > 0 ? `${undated} line(s) carried no usable date.` : "",
+    orderNote,
     "Timestamps are taken as written in the export; the timezone is not independently known.",
   ].filter(Boolean);
   return {
@@ -213,7 +249,7 @@ export const deriveDateMetaFromText = (text: string): DateMeta => {
     observed_end: days[days.length - 1],
     dated_count: days.length,
     undated_count: undated,
-    date_precision: "minute",
+    date_precision: "date",
     date_provenance: "parsed",
     timezone_ambiguous: true,
     date_note: notes.join(" ").slice(0, 400),

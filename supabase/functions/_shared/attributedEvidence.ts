@@ -11,7 +11,10 @@
 // never trusted. Only short clipped evidence lines are retained (the same kind
 // of derived evidence reports already store); no transcript is kept.
 
+import { resolveStampDays } from "./exchangeDates.ts";
+
 export const ATTRIBUTION_SCHEMA_VERSION = 1;
+export const MODEL_MESSAGE_CLIP = 500;
 const MAX_MODEL_MESSAGES = 400;
 const MAX_OBSERVATIONS = 8;
 const MAX_QUOTE = 160;
@@ -34,6 +37,10 @@ export type AttributedObservation = {
   alternatives: string[];
   period: { start: string | null; end: string | null; provenance: "parsed" | "unknown" };
   origin: "deterministic" | "model";
+  /** What the checks established: references exist and speakers match. Meaning is not machine-verified. */
+  support: "counted" | "references_and_speaker_checked";
+  /** Messages this claim could draw on. */
+  scope: "all_supplied" | "recent_window";
 };
 
 export type AttributedEvidence = {
@@ -48,33 +55,19 @@ export type AttributedEvidence = {
     rejected: number;
     reasons: Record<string, number>;
     model_pass: "ok" | "failed" | "skipped";
+    /** Model claims read only the most recent messages, each clipped. Counts read everything supplied. */
+    scope: { model_window: number; model_message_clip: number; model_partial_history: boolean; deterministic: "all_supplied" };
   };
 };
 
 const clip = (value: string, max: number) => (value.length > max ? `${value.slice(0, max - 1).trimEnd()}…` : value);
 const str = (value: unknown) => (typeof value === "string" ? value.trim() : "");
 
-/** Turns parser timestamps into ISO days using one consistent day/month order for the whole export. */
-export const daysFromStamps = (stamps: (string | null)[]): (string | null)[] => {
-  const re = /^\s*\[?(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})/;
-  const parts = stamps.map((s) => {
-    const m = s ? re.exec(s) : null;
-    return m ? { a: Number(m[1]), b: Number(m[2]), y: Number(m[3].length === 2 ? `20${m[3]}` : m[3]) } : null;
-  });
-  const valid = parts.filter(Boolean) as { a: number; b: number; y: number }[];
-  const monthFirst = valid.some((p) => p.b > 12) && !valid.some((p) => p.a > 12);
-  const maxDay = Date.now() + 86_400_000;
-  return parts.map((p) => {
-    if (!p) return null;
-    const day = monthFirst ? p.b : p.a;
-    const month = monthFirst ? p.a : p.b;
-    const iso = `${p.y}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const t = Date.parse(`${iso}T00:00:00Z`);
-    if (!Number.isFinite(t) || new Date(t).toISOString().slice(0, 10) !== iso) return null;
-    if (t < Date.parse("2000-01-01T00:00:00Z") || t > maxDay) return null;
-    return iso;
-  });
-};
+/**
+ * ISO days from parser timestamps, via the SAME rule shared ingestion uses:
+ * ambiguous or conflicting day/month order yields null (unknown), never a guess.
+ */
+export const daysFromStamps = (stamps: (string | null)[]): (string | null)[] => resolveStampDays(stamps).days;
 
 const periodOf = (evidence: { day: string | null }[]): AttributedObservation["period"] => {
   const days = evidence.map((e) => e.day).filter((d): d is string => Boolean(d)).sort();
@@ -106,6 +99,8 @@ export const deterministicObservations = (
       alternatives: [],
       period: periodOf(mine),
       origin: "deterministic",
+      support: "counted",
+      scope: "all_supplied",
     });
   }
   return out;
@@ -119,6 +114,7 @@ export const validateModelObservations = (
   raw: unknown,
   participants: AttributedParticipant[],
   messages: EvidenceMessage[],
+  partialHistory = false,
 ): { accepted: AttributedObservation[]; downgraded: number; rejected: number; reasons: Record<string, number> } => {
   const reasons: Record<string, number> = {};
   const bump = (k: string) => { reasons[k] = (reasons[k] ?? 0) + 1; };
@@ -136,8 +132,13 @@ export const validateModelObservations = (
     if (statement.length < 8) { rejected += 1; bump("empty_statement"); continue; }
     const evidenceIds = Array.isArray(rec.evidence) ? rec.evidence.map(str).filter(Boolean).slice(0, 4) : [];
     const resolved = evidenceIds.map((id) => byId.get(id)).filter((m): m is EvidenceMessage => Boolean(m));
-    if (resolved.length !== evidenceIds.length) bump("unknown_message_id");
-    if (resolved.length === 0) { rejected += 1; bump("no_valid_evidence"); continue; }
+    // An unresolvable reference means the claim cited something that is not in
+    // the conversation. Reject the whole item rather than keep it on the rest.
+    if (evidenceIds.length === 0 || resolved.length !== evidenceIds.length) {
+      rejected += 1;
+      bump(evidenceIds.length === 0 ? "no_valid_evidence" : "unknown_message_id");
+      continue;
+    }
 
     const kind: AttributedObservation["kind"] = str(rec.kind) === "behavior" ? "observed_behavior" : "generated_interpretation";
     let actor = str(rec.actor) as AttributedObservation["actor"];
@@ -157,7 +158,14 @@ export const validateModelObservations = (
       const speakers = new Set(resolved.map((m) => m.speaker_id));
       if (speakers.size < 2) { bump("joint_single_speaker"); actor = "unknown"; downgraded += 1; }
     }
-    const evidence = resolved.slice(0, 2).map((m) => ({ message_id: m.id, speaker_id: m.speaker_id, quote: clip(m.content, MAX_QUOTE), day: m.day }));
+    // Keep at most two references, but always the ones that carry the actor's
+    // support: the actor's own message, or one from each person for joint.
+    const kept: EvidenceMessage[] = [];
+    const take = (m: EvidenceMessage | undefined) => { if (m && !kept.includes(m) && kept.length < 2) kept.push(m); };
+    if (actor === "p1" || actor === "p2") take(resolved.find((m) => m.speaker_id === actor));
+    if (actor === "joint") { take(resolved.find((m) => m.speaker_id === "p1")); take(resolved.find((m) => m.speaker_id === "p2")); }
+    resolved.forEach(take);
+    const evidence = kept.map((m) => ({ message_id: m.id, speaker_id: m.speaker_id, quote: clip(m.content, MAX_QUOTE), day: m.day }));
     accepted.push({
       actor,
       kind,
@@ -165,8 +173,11 @@ export const validateModelObservations = (
       evidence,
       uncertainty: clip(str(rec.uncertainty), 240) || null,
       alternatives: Array.isArray(rec.alternatives) ? rec.alternatives.map(str).filter(Boolean).slice(0, 2).map((a) => clip(a, 200)) : [],
-      period: periodOf(resolved),
+      // Dated only from the references actually kept and shown.
+      period: periodOf(kept),
       origin: "model",
+      support: "references_and_speaker_checked",
+      scope: partialHistory ? "recent_window" : "all_supplied",
     });
     if (accepted.length >= MAX_OBSERVATIONS) break;
   }
@@ -187,13 +198,14 @@ export const buildAttributedEvidence = async (input: {
     { id: "p2", label: input.name2, role: "name2" },
   ];
   const considered = input.messages.slice(-MAX_MODEL_MESSAGES);
+  const partialHistory = considered.length < input.messages.length || considered.some((m) => m.content.length > MODEL_MESSAGE_CLIP);
   const observations = deterministicObservations(participants, input.messages);
   let modelPass: AttributedEvidence["validation"]["model_pass"] = "skipped";
   let downgraded = 0;
   let rejected = 0;
   let reasons: Record<string, number> = {};
   if (input.call && considered.length >= 4) {
-    const lines = considered.map((m) => `${m.id}|${m.speaker_id}|${JSON.stringify(m.content.slice(0, 500))}`).join("\n");
+    const lines = considered.map((m) => `${m.id}|${m.speaker_id}|${JSON.stringify(m.content.slice(0, MODEL_MESSAGE_CLIP))}`).join("\n");
     const system = [
       "You extract attributed communication behaviours from a two-person conversation.",
       "Participants are identified ONLY by id: p1 and p2. Display names are irrelevant and may be identical.",
@@ -219,7 +231,7 @@ export const buildAttributedEvidence = async (input: {
       });
       if (r.ok) {
         const parsed = JSON.parse(r.content.replace(/^```(?:json)?|```$/g, "").trim());
-        const v = validateModelObservations(parsed, participants, considered);
+        const v = validateModelObservations(parsed, participants, considered, partialHistory);
         observations.push(...v.accepted);
         downgraded = v.downgraded;
         rejected = v.rejected;
@@ -242,6 +254,7 @@ export const buildAttributedEvidence = async (input: {
       rejected,
       reasons,
       model_pass: modelPass,
+      scope: { model_window: MAX_MODEL_MESSAGES, model_message_clip: MODEL_MESSAGE_CLIP, model_partial_history: partialHistory, deterministic: "all_supplied" },
     },
   };
 };

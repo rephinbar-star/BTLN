@@ -655,6 +655,7 @@ Deno.serve(async (req) => {
     observations: observations.length,
     omitted_observations: omitted,
     dated_observations: datedObservations,
+    recent_window_observations: observations.filter((o) => String(o.observation_type).endsWith(".recent_window")).length,
     comparison,
     single_read: distinctSources === 1,
     self_reported_notes: reflections.length,
