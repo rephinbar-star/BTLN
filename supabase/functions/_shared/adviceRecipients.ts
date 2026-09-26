@@ -215,7 +215,7 @@ For each advice item decide:
 - behavior_lines: for change_own_behavior only, up to 3 transcript indices where the RECIPIENT shows the behaviour X. Otherwise [].
 - mostly_shown_by: for change_own_behavior, whose lines show X most clearly and most often across the whole transcript: "recipient", "counterpart" or "equal". Otherwise "n/a".
 - premise_lines: up to 3 indices showing the situation the advice responds to (for any type except general).
-- supported: "yes" only if the lines show the behaviour or situation, and the advice fits what actually happened; "no" if contradicted or absent; "unclear" otherwise.
+- supported: for change_own_behavior, "yes" only if the recipient's lines show the behaviour and the advice fits what happened. For new_action and joint_plan, "yes" when the premise lines show the situation it addresses (the step itself need not have happened). "no" if contradicted or absent; "unclear" otherwise.
 - evidence: up to 3 indices supporting your answer.
 Judge meaning, not names: "you" refers to the recipient. Quoting a third party is fine. A correct speaker alone is not enough: the cited lines must show the specific behaviour the advice describes.
 Return only JSON: {"verdicts":[{"id":"...","addressed_to":"...","action_type":"...","behavior_lines":[],"mostly_shown_by":"...","premise_lines":[0],"supported":"...","evidence":[0]}]} with every id exactly once.`;
