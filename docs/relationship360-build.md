@@ -591,9 +591,52 @@ Actually verified (live, synthetic account r360-a, Prime via test_fixture — no
 - Unit tests: `src/lib/relationship360/attribution.test.ts` (11) — named object, quoted speech, forged ids,
   joint, interpretation, undated, same display names, absent user, advice, legacy. Suite 143 passing; typecheck clean.
 
-Not tested this increment: correction DURING a running build (existing version guard, not re-run), screenshot Deep
-Read attribution live, Interactive copied-vs-sent (covered by earlier adapter tests only). Share snapshots are built
-from named fields and do not include `attributed_evidence`.
+(The "not tested" items from this entry are closed by the 2026-09-26 entry below.)
 
-Still pending: persistent evaluated improvement workflow, test-only billing (blocked: no provider test price),
-Group Roast humour/sharing, 10,000-message release matrix.
+## Attribution review fixes + acceptance — ledger 2026-09-26
+
+Implemented:
+- One date rule. `exchangeDates.ts` `resolveDayOrder` / `resolveStampDays` is used by both ingestion
+  (`deriveDateMetaFromText`) and `attributedEvidence.daysFromStamps`. Day/month order that no value proves
+  ("ambiguous") or that values prove both ways ("conflict") yields NO dates — unknown until the person supplies a
+  period (stored `user_supplied`, labelled self-reported). ISO stamps read as written; time/zone offsets ignored and
+  timezone reported unknown; impossible calendar dates (30 Feb, 31 Apr) rejected by round-trip check. Precision is
+  now `date`, not `minute`. Consequence: exports whose dates are all ≤12/≤12 (e.g. earlier 03/03 test data) no
+  longer produce parsed periods.
+- Evidence selection. Any unresolvable message id rejects the whole claim (`unknown_message_id`). Kept references
+  (≤2) always include the actor's own message, or one message from each person for joint; the claim's period is
+  computed only from the kept, shown references. Model claims carry `support: "references_and_speaker_checked"` —
+  reference existence and speaker only; meaning is not machine-verified. Counts carry `support: "counted"`.
+- Long-history scope. `validation.scope` records model window (last 400 messages), per-message clip (500 chars),
+  `model_partial_history`, and that counts cover all supplied messages. Model claims over a truncated history are
+  `scope: "recent_window"`, adapt as `*.recent_window` at low confidence, and Relationship360 coverage reports
+  `recent_window_observations` with a visible line that they describe the recent stretch, not the whole history.
+- Tests: 10 new (all-ambiguous, conflicting, proving value either order, ISO/date-only/offset, invalid calendar,
+  actor in third ref, joint support in third ref, mixed invalid ref, support label, recent-window adaptation).
+  Suite 153 passing; typecheck clean. Deployed analyze-conversation, decode-conversation, relationship360.
+
+Verified live (test account A, Prime via test_fixture — not a purchase; account B not Prime):
+- Correction during a running build: forced a real build (self p1), job observed `running` at 2.2 s, switched self
+  to p2 at 4.8 s; build returned `cancelled` ("changed while this was building, so nothing was saved") at 24.1 s, job
+  row `cancelled`, previous summary kept and marked stale; the p1 result was never written.
+- Screenshot Deep Read: synthetic PNG → real `extract-chat-input` (10 messages; the in-image date header was not
+  carried, so undated) → real Deep Read: 9 attributed items (2 counted, 7 model), 0 rejected/downgraded, all periods
+  unknown, journey source `undated_count 10`. Confirmed p1 → build: 5 user_behavior (Jordan) / 4 other_behavior
+  (Sam) / 3 context; corrected to p2 → build: every personal item flipped, narrative rebuilt.
+- Forged `id:p7` refused (400); account B confirmation of A's source → false; B reads A's observations → [];
+  B status on A's relationship → empty, non-Prime shell.
+- Self-reported period saved as `user_supplied` with the self-reported note.
+- Ambiguous 2024 export (all day/month ≤12) → real Deep Read: every claim and the source undated, with the
+  "left unknown until you confirm" note. Historical export 14–16/03/2024 → claims dated 14/15/16 Mar 2024 from their
+  own messages, source parsed 14–16 Mar 2024.
+
+Remaining gaps:
+- Attributed claims on an undated source do not inherit a later self-reported source period (they stay unknown per
+  claim); legacy-extraction items do take the source period. Honest but uneven.
+- Long-history (>400 messages) recent-window path verified by unit test only, not a live long export.
+- 390px visual re-check not repeated this increment. Interactive copied-vs-sent still adapter-test only.
+
+Status: person-specific attribution (#1) passes its acceptance list above.
+
+Still pending: persistent evaluated improvement workflow (#2, next), test-only billing (blocked: no provider test
+price), Group Roast humour/sharing, 10,000-message release matrix.
