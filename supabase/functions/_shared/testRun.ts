@@ -57,6 +57,7 @@ export const withTestRun = (fnName: string, handler: (req: Request) => Promise<R
     candidate: data.variant === "candidate" && data.candidate_addendum
       ? { mode: String(data.mode), addendum: String(data.candidate_addendum), baselineTextHash: String(data.baseline_text_hash) }
       : null,
+    evalScope: data.eval_scope === true,
     timeoutMs: 150_000,
     shared: { calls: [], seen: new Map(), candidateUsed: [] },
   };

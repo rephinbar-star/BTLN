@@ -196,11 +196,21 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
                 <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{content.narrative}</p>
               </R360Card>
             )}
+            {(coverage as { evaluation_scope?: string | null } | null)?.evaluation_scope && (
+              <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-[12px] text-foreground">
+                Test build: this was made in an operator evaluation run and includes test conversations. It is not an ordinary Relationship360.
+              </p>
+            )}
             <p className="mt-3 text-[12px] text-muted-foreground">
               Built {new Date(status.summary.generated_at).toLocaleString()} from {coverage?.observations ?? 0} stored observations. No raw messages are kept.
               {(coverage as { recent_window_observations?: number } | null)?.recent_window_observations
                 ? ` ${(coverage as { recent_window_observations: number }).recent_window_observations} of them come from long conversations where only the most recent 400 messages were read closely, so they describe that recent stretch, not the whole history.`
                 : ""}
+              {(() => {
+                // omitted_observations is the total left out (size cap and call budget combined).
+                const n = (coverage as { omitted_observations?: number } | null)?.omitted_observations ?? 0;
+                return n > 0 ? ` ${n} further observations were left out to keep this build within its size limit.` : "";
+              })()}
             </p>
 
             <ThenNow comparison={comparison} />

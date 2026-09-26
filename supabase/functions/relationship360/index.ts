@@ -16,6 +16,8 @@
 //    cross-relationship claim against distinct CONFIRMED relationships.
 //  - Observation text is fenced as untrusted data in the prompt.
 
+import { compactContext, expandRefs, R360_CONTEXT_VERSION } from "../_shared/r360Context.ts";
+import { estimateInputTokens, maxCostUsd } from "../_shared/promptBudget.ts";
 import { withTestRun } from "../_shared/testRun.ts";
 import { codeBaseline } from "../_shared/modeEval.ts";
 import { currentTestRun, inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
@@ -42,6 +44,8 @@ const corsHeaders = {
 const MODEL = "openai/gpt-6-astra";
 const MAX_OBSERVATIONS = 120;
 const MAX_TOKENS = 2_600;
+// Per-call upper bound kept below the $0.60 operator cap (same bound applies to real users; no cap change).
+const CALL_BUDGET_USD = 0.58;
 const STALE_JOB_MS = 5 * 60 * 1000;
 const CURRENT_CONSENT_VERSION = 2;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -232,7 +236,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   // synthetic evaluation scope). Candidate output is quarantined in the database
   // and never eligible. Nothing here is controlled by the client.
   const tr = currentTestRun();
-  const evalScope = tr?.kind === "metered" ? tr.runId : null;
+  const evalScope = tr?.kind === "metered" && tr.evalScope === true ? tr.runId : null;
   const eligible = sources.filter((s) => s.identity_status === "confirmed" && s.subject_participant && !s.excluded_at
     && !(s as { quarantined_at?: string | null }).quarantined_at
     && (evalScope !== null || !(s as { evaluation_run_id?: string | null }).evaluation_run_id));
@@ -445,7 +449,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   } catch {
     return await failJob("Could not read the stored observations.");
   }
-  const { kept: observations, omitted } = selectRepresentative(allObservations, MAX_OBSERVATIONS);
+  let { kept: observations, omitted } = selectRepresentative(allObservations, MAX_OBSERVATIONS);
 
   if (observations.length === 0) {
     await admin.from("journey_jobs").update({ status: "complete", completed_at: new Date().toISOString() }).eq("id", job.id);
@@ -463,26 +467,22 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     .order("self_reported_at", { ascending: false }).limit(10);
   const reflections = (reflectionRows ?? []).filter((r) => !relationshipId || r.relationship_id === relationshipId);
 
-  const facts = observations.map((o) => {
-    const source = sourceById.get(o.journey_source_id);
-    const rel = source ? relById.get(source.relationship_id) : undefined;
-    return {
-      observation_id: o.id,
-      source_id: o.journey_source_id,
-      source_kind: source?.source_kind ?? "unknown",
-      relationship_id: source?.relationship_id ?? null,
-      relationship_label: rel?.label ?? "A relationship",
-      relationship_confirmed: Boolean(rel?.is_confirmed),
-      kind: o.subject_kind,
-      actor: o.subject_label,
-      type: o.observation_type,
-      observed_from: o.observed_period_start,
-      observed_to: o.observed_period_end,
-      confidence: o.confidence,
-      statement: o.statement,
-    };
-  });
-
+  const notesText = `<self_reported_notes>\n${JSON.stringify(reflections.map((r) => ({ id: r.id, kind: r.reflection_kind, outcome: r.outcome, text: r.response_text, self_reported_at: r.self_reported_at, about: r.recommendation_id })))}\n</self_reported_notes>`;
+  // Upper-bound estimate uses the longest system text this request could carry.
+  const sysApprox = relationship360System({ distinctSources: 99, confirmedRelationships: 99, datedObservations: 9999 }) + (r360Style ? `\n\n${r360Style}` : "") + " ".repeat(1200);
+  // Compact, evidence-preserving context; reduce (and report) only if the
+  // conservative upper-bound cost would exceed the per-call budget.
+  let ctxBuilt = compactContext(observations, sourceById, relById);
+  const estimate = () => maxCostUsd(MODEL, estimateInputTokens([{ content: sysApprox }, { content: `${ctxBuilt.text}\n${notesText}` }]), MAX_TOKENS) ?? Infinity;
+  const budgetOmitted = { count: 0 };
+  while (estimate() > CALL_BUDGET_USD && observations.length > 12) {
+    const next = selectRepresentative(allObservations, Math.floor(observations.length * 0.8));
+    budgetOmitted.count += observations.length - next.kept.length;
+    observations = next.kept; omitted = next.omitted;
+    ctxBuilt = compactContext(observations, sourceById, relById);
+  }
+  const estimatedMaxUsd = estimate();
+  if (estimatedMaxUsd > CALL_BUDGET_USD) return await failJob(`This synthesis would need up to $${estimatedMaxUsd.toFixed(3)} per call, above the limit.`, 429);
   const distinctSources = new Set(observations.map((o) => o.journey_source_id)).size;
   const confirmedRelationshipIds = new Set(
     observations.map((o) => relOf(o.journey_source_id)).filter((id) => relById.get(id)?.is_confirmed),
@@ -536,6 +536,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
 
   markStage("synthesis");
   const system = await systemFor("relationship360", relationship360System({ distinctSources, confirmedRelationships: confirmedRelationshipIds.size, datedObservations }), codeBaseline("relationship360")!);
+  const systemText = system + (r360Style ? `\n\n${r360Style}` : "");
 
   // Loop A: private style signals (consented only) loaded above. Style, never evidence.
   const response = await callOpenRouter({
@@ -543,12 +544,10 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     max_tokens: MAX_TOKENS,
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: system + (r360Style ? `\n\n${r360Style}` : "") },
+      { role: "system", content: systemText },
       {
         role: "user",
-        content: `<observations>\n${JSON.stringify(facts)}\n</observations>\n<self_reported_notes>\n${
-          JSON.stringify(reflections.map((r) => ({ id: r.id, kind: r.reflection_kind, outcome: r.outcome, text: r.response_text, self_reported_at: r.self_reported_at, about: r.recommendation_id })))
-        }\n</self_reported_notes>`,
+        content: `${ctxBuilt.text}\n${notesText}`,
       },
     ],
   }, aiKey, "https://betweenthelines.app", "BetweenTheLines Relationship360");
@@ -560,7 +559,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   // deno-lint-ignore no-explicit-any
   let content: any;
   try {
-    content = extractJsonObject(String(raw)).value;
+    content = expandRefs(extractJsonObject(String(raw)).value, ctxBuilt.back);
   } catch {
     return await failJob("The synthesis output could not be read.", 502);
   }
@@ -650,11 +649,15 @@ Deno.serve(withTestRun("relationship360", async (req) => {
 
   const coverage = {
     sources: distinctSources,
-    evaluation_scope: evalScope, // non-null only inside an operator test run
+    evaluation_scope: evalScope, // non-null only inside an explicit evaluation-scope test run
+    input_source_ids: Array.from(new Set(observations.map((o) => o.journey_source_id))), // ids only, no content
     relationships: distinctRelationships,
     confirmed_relationships: confirmedRelationshipIds.size,
     observations: observations.length,
     omitted_observations: omitted,
+    omitted_for_call_budget: budgetOmitted.count,
+    context_version: R360_CONTEXT_VERSION,
+    estimated_max_call_usd: Math.round(estimatedMaxUsd * 10000) / 10000,
     dated_observations: datedObservations,
     recent_window_observations: observations.filter((o) => String(o.observation_type).endsWith(".recent_window")).length,
     comparison,

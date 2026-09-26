@@ -1,4 +1,5 @@
 // Mode-specific evaluation contracts for the operator improvement workflow.
+import { checkGroupBrevity } from "./groupBrevity.ts";
 //
 // Baselines are the DEPLOYED instruction text: database-backed modes snapshot
 // the active production prompt row (id + hash recorded); code-backed modes use
@@ -360,7 +361,13 @@ export const screen = (key: ModeKey, c: ModeCase, output: unknown, promptText?: 
   const dupes = all_strings.length - new Set(all_strings).size;
   add("nonrepetitive", false, dupes === 0, `${dupes} repeated sentence(s)`);
   const words = all.split(" ").length;
-  add("concise", false, words <= spec.wordLimit, `${words} words (limit ${spec.wordLimit})`);
+  if (key === "group_read") {
+    // Group-size-aware prose bounds (coverage/stat metadata excluded) + one home per idea.
+    const g = checkGroupBrevity(o, c.speakers.length);
+    add("concise", false, g.total <= g.limit && g.over.length === 0, `${g.total} prose words (limit ${g.limit} for ${c.speakers.length} people)${g.over.length ? `; over: ${g.over.slice(0, 3).join(", ")}` : ""}`);
+    add("no_duplicate_ideas", false, g.duplicated.length <= 1 && g.selfRepeat === 0, `${g.duplicated.length} moment(s) retold across sections; ${g.selfRepeat} card(s) repeat their own evidence`);
+    add("brevity_kept_participants", true, g.participantsCovered >= c.speakers.length, `${g.participantsCovered}/${c.speakers.length} participants have a card`);
+  } else add("concise", false, words <= spec.wordLimit, `${words} words (limit ${spec.wordLimit})`);
 
   // Mode-specific.
   if (key === "quick_take" || key === "interactive") {

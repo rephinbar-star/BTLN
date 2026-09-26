@@ -3,9 +3,10 @@ import { resolveRequestOwner } from "../_shared/requestOwner.ts";
 import { enforceQuoteIntegrity } from "../_shared/quoteIntegrity.ts";
 import { currentTestRun, inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import {
-  ADVICE_RECIPIENT_VERSION, adviceItems, checkRecipient, mergeById, rewritePayload, withholdMisattributed,
+  ADVICE_RECIPIENT_VERSION, ADVICE_SEMANTIC_VERSION, SEMANTIC_MODEL, adviceItems, applySemanticVerdicts, checkRecipient, mergeById, removeItems, rewritePayload, semanticRequest, withholdMisattributed,
   type AdviceStatus, type Msg, type Participant,
 } from "../_shared/adviceRecipients.ts";
+// Advice semantic check model (SEMANTIC_MODEL): priced in MODEL_RATES (promptBudget.ts); bounded input/output.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
 import {
@@ -751,14 +752,49 @@ ${messagesBlock}`;
     }
     resultJson.personalization = report;
   }
+
+  // Semantic recipient/support check on the FINAL advice (original or
+  // rewritten). One bounded call; untrusted data; fail closed per item.
+  let semantic: { status: "done" | "failed" | "skipped"; checked: number; withheld: number } = { status: "skipped", checked: 0, withheld: 0 };
+  if (resultJson && typeof resultJson === "object") {
+    const finalItems = adviceItems(resultJson, parts);
+    if (finalItems.length) {
+      const req = semanticRequest(finalItems, parts, canon);
+      markStage("advice_check");
+      const call = callOpenRouter({
+        model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
+        messages: [{ role: "system", content: req.system }, { role: "user", content: req.user }],
+      }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE);
+      const r = await Promise.race([call, new Promise<null>((res) => setTimeout(() => res(null), 30_000))]);
+      let parsed: unknown = null;
+      try { if (r && r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null; } catch { parsed = null; }
+      const verdicts = applySemanticVerdicts(finalItems, parsed, req);
+      const bad = new Set<string>();
+      for (const it of finalItems) {
+        const v = verdicts.get(it.id)!;
+        if (v.ok) continue;
+        bad.add(it.id);
+        const st = adviceStatuses.find((x) => x.id === it.id && x.status !== "withheld");
+        if (st) { st.status = "withheld"; st.reasons = [...st.reasons, ...v.reasons]; }
+        else adviceStatuses.push({ id: it.id, recipient_id: it.recipient_id, status: "withheld", reasons: v.reasons });
+      }
+      removeItems(resultJson, parts, bad);
+      semantic = { status: parsed ? "done" : "failed", checked: finalItems.length, withheld: bad.size };
+      if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), response: parsed, verdicts: Object.fromEntries(verdicts) };
+    }
+  }
   if (resultJson && typeof resultJson === "object") {
     const withheld = adviceStatuses.filter((s) => s.status === "withheld");
     resultJson.advice_integrity = {
       version: ADVICE_RECIPIENT_VERSION,
       items: adviceStatuses,
       withheld_count: withheld.length,
-      note: withheld.length ? "Some advice was held back because it asked one person to change words only the other person used." : null,
-      limits: "Checks who each item is for and whose quoted words it asks to change; they do not prove full meaning.",
+      semantic_version: ADVICE_SEMANTIC_VERSION,
+      semantic,
+      note: semantic.status === "failed"
+        ? "Some advice was held back because we could not finish checking who it is for. Running the read again may restore it."
+        : withheld.length ? "Some advice was held back because we could not confirm it was meant for the person it was addressed to." : null,
+      limits: "Rule checks plus a second model review of who each item is for and whether messages support it. This lowers the risk of misdirected advice; it does not prove meaning.",
     };
     if (trace) { trace.final = { cs: resultJson.communication_suggestions ?? null, rg: resultJson.remedial_guidance ?? null }; resultJson.advice_trace = trace; }
   }

@@ -24,6 +24,8 @@ import {
 } from "../_shared/modeEval.ts";
 import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF, withPayloadToken } from "../_shared/pipelineCases.ts";
 import { payloadToken } from "../_shared/injectionDisclosure.ts";
+import { applySemanticVerdicts, SEMANTIC_MODEL, semanticRequest } from "../_shared/adviceRecipients.ts";
+import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2 } from "../_shared/adviceSemanticFixtures.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -290,10 +292,17 @@ Deno.serve(async (req) => {
     await admin.from("prompt_eval_jobs").update({ status: "abandoned", stop_reason: "no heartbeat", completed_at: new Date().toISOString() }).eq("status", "running").lt("heartbeat_at", cutoff);
     await admin.rpc("expire_prompt_reservations", { p_minutes: ABANDON_MINUTES });
     const since = new Date(Date.now() - 90 * 86400_000).toISOString();
-    const { data: fb, error: fbErr } = await admin.from("ai_feedback").select("source_kind,target_kind,rating,reason_codes,prompt_version").gte("updated_at", since).eq("product_improvement_consent", true).limit(5000);
+    const { data: fb, error: fbErr } = await admin.from("ai_feedback").select("source_kind,source_id,user_id,target_kind,rating,reason_codes,prompt_version").gte("updated_at", since).eq("product_improvement_consent", true).limit(5000);
     if (fbErr) return json(500, { error: "Could not read feedback aggregate." });
+    // Evaluation isolation: drop feedback on test-run artifacts and from registered test accounts.
+    const [{ data: evArts }, { data: evAccts }] = await Promise.all([
+      admin.from("evaluation_artifacts").select("source_id").limit(5000),
+      admin.from("evaluation_accounts").select("user_id"),
+    ]);
+    const evSrc = new Set((evArts ?? []).map((a: { source_id: string }) => String(a.source_id)));
+    const evUsr = new Set((evAccts ?? []).map((a: { user_id: string }) => String(a.user_id)));
     const buckets = new Map<string, Admin>();
-    for (const r of fb ?? []) {
+    for (const r of (fb ?? []).filter((x: any) => !evSrc.has(String(x.source_id)) && !evUsr.has(String(x.user_id)))) {
       const tk = String(r.target_kind).split(":")[0];
       const k = `${r.source_kind}|${tk}|${r.prompt_version ?? ""}`;
       const b = buckets.get(k) ?? { source_kind: r.source_kind, target_kind: tk, prompt_version: r.prompt_version, up: 0, down: 0, reasons: {} };
@@ -661,7 +670,9 @@ Deno.serve(async (req) => {
       const { data: run, error: runErr } = await admin.from("prompt_test_runs").insert({
         secret_hash: await sha256(secret), target_user_id: target, operator_id: user.id, function_name: FUNCTION_FOR[key], mode: key, variant,
         candidate_id: cand?.id ?? null, candidate_addendum: cand?.prompt_text ?? null, baseline_text_hash: baselineHash, case_id: c.id,
-        purpose: String(body.purpose ?? "").slice(0, 300), max_calls: maxCalls, expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+        purpose: String(body.purpose ?? "").slice(0, 300), max_calls: maxCalls,
+        // Explicit, operator-set evaluation scope: baseline Relationship360 only; never candidates.
+        eval_scope: body.eval_scope === true && key === "relationship360" && variant === "baseline", expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
         state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, payload_seed: payloadSeed },
       }).select("id").single();
       if (runErr || !run) return json(500, { error: "Could not create test run." });
@@ -856,6 +867,36 @@ Deno.serve(async (req) => {
     }
     await audit(admin, user.id, "synthetic_preferences", "ai_feedback", target, { op: body.op });
     return json(200, { ok: true });
+  }
+
+  if (action === "advice_semantic_eval") {
+    // Held-out semantic recipient check: one metered judge call per fixture, same prompt/model as production.
+    if (!aiKey) return json(503, { error: "Model key unavailable." });
+    const jobId = crypto.randomUUID();
+    const rows: Admin[] = [];
+    const sets = body.set === 1 ? SEMANTIC_FIXTURES : body.set === 2 ? SEMANTIC_FIXTURES_2 : [...SEMANTIC_FIXTURES, ...SEMANTIC_FIXTURES_2];
+    for (const fx of sets) {
+      const req = semanticRequest(fx.items, fx.parts, fx.msgs);
+      const r = await meteredCall(deps, { scope: SCOPE, jobId, kind: "judge", timeoutMs: 60_000, body: {
+        model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
+        messages: [{ role: "system", content: req.system }, { role: "user", content: req.user }] } as Admin });
+      let parsed: unknown = null;
+      try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value; } catch { parsed = null; }
+      const v = applySemanticVerdicts(fx.items, parsed, req);
+      for (const i of fx.items) { const x = v.get(i.id)!; rows.push({ fixture: fx.id, id: i.id, expect: i.expect, got: x.ok ? "keep" : "withhold", reasons: x.reasons, evidence: x.evidence, note: i.note }); }
+      if (!r.ok) rows.push({ fixture: fx.id, call_failed: r.stage === "budget" ? `budget:${r.reason}` : r.reason });
+    }
+    const items = rows.filter((r) => r.expect);
+    const summary = {
+      items: items.length,
+      false_accepts: items.filter((r) => r.expect === "withhold" && r.got === "keep").length,
+      false_rejects: items.filter((r) => r.expect === "keep" && r.got === "withhold").length,
+      valid_items: items.filter((r) => r.expect === "keep").length,
+      swapped_items: items.filter((r) => r.expect === "withhold").length,
+    };
+    const { data: ledger } = await admin.from("prompt_spend_ledger").select("reserved_usd,actual_usd,status").eq("job_id", jobId);
+    await audit(admin, user.id, "advice_semantic_eval", "prompt_spend_ledger", null, { job_id: jobId, summary });
+    return json(200, { job_id: jobId, model: SEMANTIC_MODEL, summary, rows, ledger });
   }
 
   if (action === "budget_selftest") {

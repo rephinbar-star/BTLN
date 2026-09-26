@@ -32,6 +32,8 @@ export type MeteredCtx = {
   stage: string;
   maxCalls: number;
   candidate: Candidate;
+  /** Server-set on the run row: only then may earlier evaluation output be used as evidence. */
+  evalScope?: boolean;
   timeoutMs: number;
   shared: { calls: StageCall[]; seen: Map<string, number>; candidateUsed: string[] };
 };
