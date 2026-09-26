@@ -96,7 +96,7 @@ describe("judge handling", () => {
   });
 });
 
-describe("screen fixes found by real runs (mode-screen-2)", () => {
+describe("screen fixes found by real runs (mode-screen-2/3)", () => {
   it("verifies only quoted segments inside mixed evidence prose", async () => {
     const { quotedSegments } = await import("../../../supabase/functions/_shared/modeEval.ts");
     expect(quotedSegments(`"Taylor never replies on time, it drives me mad" — a characterisation`)).toEqual(["Taylor never replies on time, it drives me mad"]);
@@ -116,5 +116,15 @@ describe("screen fixes found by real runs (mode-screen-2)", () => {
     const c = byId("relationship360", "r360-single-period");
     const out = { headline: "h", narrative: "One source may not show change; we cannot say anything over time yet.", patterns: [], working: [], recommendations: [] };
     expect(screen("relationship360", c, out).find((x) => x.id === "no_invented_trend")?.passed).toBe(true);
+  });
+});
+
+describe("mode-screen-3", () => {
+  it("long unquoted evidence commentary is not treated as a quote; short invented evidence still fails", () => {
+    const c = byId("deep_read_full", "dr-false-premise");
+    const prose = { note: "may be limited", evidence: "Five messages about a single whereabouts question provide no basis for inferring anything about loyalty" };
+    expect(screen("deep_read_full", c, prose).find((x) => x.id === "grounding")?.passed).toBe(true);
+    const fake = { note: "may be limited", evidence: "I was with someone else" };
+    expect(screen("deep_read_full", c, fake).find((x) => x.id === "grounding")?.passed).toBe(false);
   });
 });

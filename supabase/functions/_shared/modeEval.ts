@@ -253,7 +253,8 @@ const quotes = (v: unknown, out: { quote: string; speaker: string | null }[] = [
         // "evidence" often mixes a quote with commentary: verify only the quoted segments.
         const segs = quotedSegments(val);
         if (segs.length) segs.forEach((q) => out.push({ quote: q, speaker: speaker ?? null }));
-        else if (pureKey || !/\s[\u2014\u2013-]\s|\(|:/.test(val)) out.push({ quote: val, speaker: speaker ?? null });
+        // Unquoted evidence of 12+ words is treated as commentary (not verifiable as a quote); shorter text must match.
+        else if (pureKey || (!/\s[\u2014\u2013-]\s|\(|:/.test(val) && val.trim().split(/\s+/).length < 12)) out.push({ quote: val, speaker: speaker ?? null });
       }
       else if (quoteKey && Array.isArray(val)) val.filter((x) => typeof x === "string").forEach((x) => out.push({ quote: x as string, speaker: speaker ?? null }));
       else quotes(val, out);
@@ -435,5 +436,5 @@ export const sha256 = async (value: unknown): Promise<string> => {
 /** Includes the frozen guard, so changing it changes every candidate hash. */
 export const modeVersionHash = (v: { mode: string; kind: string; prompt_text: string; model: string; config: unknown }) =>
   sha256({ mode: v.mode, kind: v.kind, prompt_text: v.prompt_text, guard: v.kind === "candidate" ? FROZEN_GUARD : null, model: v.model, config: v.config });
-export const MODE_RUBRIC_VERSION = "mode-screen-2";
-export const modeRubric = (key: ModeKey) => ({ mode: key, version: MODE_RUBRIC_VERSION, judge_criteria: judgeCriteria(key), guard: FROZEN_GUARD, screen_source: "modeEval.screen@mode-screen-2" });
+export const MODE_RUBRIC_VERSION = "mode-screen-3";
+export const modeRubric = (key: ModeKey) => ({ mode: key, version: MODE_RUBRIC_VERSION, judge_criteria: judgeCriteria(key), guard: FROZEN_GUARD, screen_source: "modeEval.screen@mode-screen-3" });
