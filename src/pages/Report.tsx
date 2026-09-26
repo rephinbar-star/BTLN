@@ -1857,19 +1857,24 @@ const FlagListSection = ({
         aria-hidden={locked || undefined}
       >
         {list.map((flag, i) => {
-          const obj = typeof flag === "object" && flag ? (flag as { title?: string; description?: string; evidence?: string }) : null;
+          const obj = typeof flag === "object" && flag ? (flag as { title?: string; description?: string; evidence?: string; evidence_kind?: string }) : null;
           const heading = obj?.title ?? (typeof flag === "string" ? null : null);
           const desc = obj?.description ?? (typeof flag === "string" ? flag : null);
           const ev = obj?.evidence ?? null;
+          const paraphrase = obj?.evidence_kind === "paraphrase";
           return (
             <div key={i} className={`rounded-xl p-4 ${wrap}`}>
               {heading && <h4 className="text-[15px] font-semibold">{heading}</h4>}
               {desc && <p className="mt-2 text-[14px] leading-relaxed">{desc}</p>}
-              {ev && (
-                <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
-                  &quot;{ev}&quot;
+              {ev && (paraphrase ? (
+                <p className="mt-2 text-[13px] leading-relaxed opacity-80">
+                  <span className="font-medium">In summary (not a quote):</span> {ev}
                 </p>
-              )}
+              ) : (
+                <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
+                  {/^["\u201C]/.test(ev.trim()) ? ev : <>&quot;{ev}&quot;</>}
+                </p>
+              ))}
             </div>
           );
         })}
