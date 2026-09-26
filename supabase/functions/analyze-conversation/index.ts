@@ -8,7 +8,11 @@ import { extractJsonObject } from "../_shared/extractJson.ts";
 import { digestChunks, planChunks } from "../_shared/chunkedAnalysis.ts";
 import { mapToRoles, parseTwoPersonTranscript } from "../_shared/deterministicParse.ts";
 import { conversationKey, deriveDateMetaFromText, recordIngestMeta } from "../_shared/exchangeDates.ts";
-import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shared/coachingPreferences.ts";
+import { loadCoachingPreferences } from "../_shared/coachingPreferences.ts";
+import {
+  applyRewrites, contractInstruction, editableFields, fieldsNeedingRewrite, isEmptyContract, normalizeStyle, pathKey,
+  type ApplyReport, type StyleContract,
+} from "../_shared/styleContract.ts";
 import { buildAttributedEvidence, toEvidenceMessages } from "../_shared/attributedEvidence.ts";
 
 const corsHeaders = {
@@ -479,8 +483,14 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
   const basePrompt = pv.prompt_text as string;
   const { data: ownerRow } = await supabase.from("analyses").select("user_id").eq("id", analysis_id).maybeSingle();
   const ownerId = (ownerRow?.user_id as string | null | undefined) ?? null;
-  const currentStyleBlock = async () => coachingPreferenceInstruction(await loadCoachingPreferences(supabase as never, ownerId));
-  let styleBlock = await currentStyleBlock();
+  // Free-text notes are never forwarded: they are mapped to a bounded enum
+  // contract (see _shared/styleContract.ts) with field-level targets.
+  let styleContract: StyleContract = normalizeStyle(await loadCoachingPreferences(supabase as never, ownerId));
+  const currentStyleBlock = async () => {
+    styleContract = normalizeStyle(await loadCoachingPreferences(supabase as never, ownerId));
+    return contractInstruction(styleContract);
+  };
+  let styleBlock = contractInstruction(styleContract);
   const promptWith = (block: string) => (block ? `${basePrompt}\n\n${block}` : basePrompt);
   pv.prompt_text = promptWith(styleBlock);
 
@@ -645,6 +655,40 @@ ${messagesBlock}`;
         return failAnalysis("Your coaching preferences changed while this read was running. Please run it again.");
       }
     }
+  }
+
+  // Constrained style rewrite: at most one bounded call, editable advice fields
+  // only, every field validated; failures keep the original text.
+  if (!isEmptyContract(styleContract) && resultJson && typeof resultJson === "object") {
+    const allowedNames = [name1, name2].filter(Boolean) as string[];
+    const pending = fieldsNeedingRewrite(resultJson, styleContract, allowedNames);
+    let report: ApplyReport;
+    if (pending.length === 0) {
+      report = { ...applyRewrites(resultJson, {}, styleContract, allowedNames), rewrite: "not_needed" };
+      report.fields_applied = report.fields_total; report.fields_fallback = [];
+    } else {
+      const input = Object.fromEntries(pending.map((f) => [pathKey(f.path), f.text]));
+      const r = await callOpenRouter({
+        model: pv.model_string,
+        max_tokens: 1200,
+        temperature: 0.2,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: `Rewrite each advice item to meet these presentation preferences. Return a JSON object with exactly the same keys. Keep the same meaning and any hedging (may/might/could). Do not add names, quotes, facts or claims.\n${contractInstruction(styleContract)}` },
+          { role: "user", content: JSON.stringify(input) },
+        ],
+      }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE);
+      let rewrites: Record<string, unknown> = {};
+      try { if (r.ok) rewrites = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? {}; } catch { rewrites = {}; }
+      const already = editableFields(resultJson).length - pending.length;
+      const onlyPending = Object.fromEntries(Object.entries(rewrites).filter(([k]) => k in input));
+      // Fields already compliant keep their text (identity rewrite passes).
+      for (const f of editableFields(resultJson)) { const k = pathKey(f.path); if (!(k in input)) onlyPending[k] = f.text; }
+      report = applyRewrites(resultJson, onlyPending, styleContract, allowedNames);
+      report.rewrite = r.ok ? "done" : "failed";
+      void already;
+    }
+    resultJson.personalization = report;
   }
 
   // Validate required fields

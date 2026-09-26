@@ -30,3 +30,12 @@
 - [x] Interactive Mode proven live end to end on an entitled synthetic account, including same-thread continuation, retry idempotency and refusal without entitlement.
 - [x] Priority B: real Relationship360 adapters, synthesis engine, grouping and dated Then/Now.
 - [ ] Priority C: billing lifecycle (blocked on provider test credentials) and persistent operator-authorised evaluation store.
+
+## #2 completion (2026-09-26, owner "let's complete #2")
+- [x] 1a Diagnose ignored "one short sentence" preference; structured style contract + field-level validated rewrite (unit-tested; deployed).
+- [ ] 1b Live off/on paired runs (sparse, conflict, multi-person), opt-out/reset/delete, hostile note, cross-account — needs metered test context (2).
+- [ ] 2 Server-owned metered test execution context covering extraction/digest/attribution/synthesis/rewrite calls.
+- [ ] 3 Full-pipeline evaluation parity per mode with stage coverage + hashes.
+- [ ] 4 Investigate Group Read canary repetition, Quick Take two-reply outputs, candidate regressions.
+- [ ] 5 Successor review packet linked to 0e97aa05-80a2-49a6-a113-afb1ac5339d9.
+- [ ] 6 Consolidated ledger + closeout checks.
