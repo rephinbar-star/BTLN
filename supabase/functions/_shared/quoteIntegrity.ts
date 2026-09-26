@@ -39,7 +39,7 @@ export type QuoteIntegrityReport = {
 };
 
 /** Advice / example-reply fields: quotes here are suggestions, not evidence. */
-const EXAMPLE_PATH = /(communication_suggestions|scripted_alternatives|remedial_guidance\.specific_steps|\.try$|\.script|example_reply|suggested_reply|attributed_evidence|^meta|^personalization|^coverage)/;
+const EXAMPLE_PATH = /(communication_suggestions|scripted_alternatives|remedial_guidance\.specific_steps|\.try$|\.script|example_reply|suggested_reply|attributed_evidence|^meta|^personalization|^coverage|^advice_trace|^advice_integrity)/;
 
 export const normQ = (s: string) =>
   s
