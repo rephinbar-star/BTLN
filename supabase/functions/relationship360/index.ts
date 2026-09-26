@@ -316,8 +316,12 @@ Deno.serve(async (req) => {
   const startedFromVersion = relationshipId ? relById.get(relationshipId)?.data_version : profile.data_version;
   if (startedFromVersion === undefined || startedFromVersion === null) return json(403, { error: "That relationship is not available." });
 
+  // Consented style signals are part of the input: consent on/off, reset or
+  // delete must not be answered from a cache built under different signals.
+  const r360Style = coachingPreferenceInstruction(await loadCoachingPreferences(admin as never, user.id));
   const inputFingerprint = await fingerprint([
     `v${startedFromVersion}`,
+    `style:${r360Style}`,
     ...eligible.map((s) => `${s.id}:${s.subject_participant}:${s.subject_participant_id ?? ""}:${s.updated_at ?? ""}`),
   ]);
 
@@ -539,8 +543,7 @@ Deno.serve(async (req) => {
     `"recommendations":[{"id":string,"type":"communication"|"behavioral","observation":string,"action":string,"why":string,"evidence":[observation_id]}]}`,
   ].join("\n");
 
-  // Loop A: private style signals (consented only). Style, never evidence.
-  const r360Style = coachingPreferenceInstruction(await loadCoachingPreferences(admin as never, user.id));
+  // Loop A: private style signals (consented only) loaded above. Style, never evidence.
   const response = await callOpenRouter({
     model: MODEL,
     max_tokens: MAX_TOKENS,
