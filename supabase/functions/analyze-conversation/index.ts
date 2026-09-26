@@ -1,4 +1,6 @@
 import { withTestRun } from "../_shared/testRun.ts";
+import { resolveRequestOwner } from "../_shared/requestOwner.ts";
+import { enforceQuoteIntegrity } from "../_shared/quoteIntegrity.ts";
 import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
@@ -195,6 +197,17 @@ Deno.serve(withTestRun("analyze-conversation", async (req) => {
     }
   };
 
+  // Quotation integrity against the canonical messages, before they are deleted.
+  // Unsupported quotations drop the sentence that relies on them; too many
+  // unsupported quotations fail the read safely instead of saving it.
+  // deno-lint-ignore no-explicit-any
+  const checkQuotes = (resultJson: any, rows: { sender_role: string; content: string }[]): boolean => {
+    const { name1, name2 } = context_data!;
+    const qi = enforceQuoteIntegrity(resultJson, rows.map((m) => ({ speaker: m.sender_role === "user" ? name1 : name2, content: m.content })), [name1, name2]);
+    resultJson.quote_integrity = qi;
+    return !qi.unsafe;
+  };
+
   const raw_text_for_analysis = raw_text
     ? truncateConversation(raw_text, MAX_TOTAL_MESSAGES)
     : raw_text;
@@ -203,6 +216,7 @@ Deno.serve(withTestRun("analyze-conversation", async (req) => {
 
   // 1. Resolve analysis row: update existing if analysis_id provided, else create one.
   let analysis_id: string;
+  let ownerBound = false;
   if (provided_analysis_id) {
     const { data: existing, error: exErr } = await supabase
       .from("analyses")
@@ -215,18 +229,9 @@ Deno.serve(withTestRun("analyze-conversation", async (req) => {
     // Ownership check: caller must either own the row (matching JWT user_id)
     // or present the original session_id. Analysis UUIDs are shareable via
     // /report/:id, so existence alone is not authorization.
-    let jwt_user_id: string | null = null;
-    const authHeader = req.headers.get("Authorization");
-    if (authHeader?.startsWith("Bearer ")) {
-      const token = authHeader.replace("Bearer ", "");
-      // supabase-js v2.45 in the Edge runtime does not expose getClaims().
-      // Validate the caller token with getUser() instead; anonymous/anon-key
-      // callers can still re-run only when their browser session_id matches.
-      const { data: userData, error: userErr } = await supabase.auth.getUser(token);
-      if (!userErr) {
-        jwt_user_id = userData?.user?.id ?? null;
-      }
-    }
+    const who = await resolveRequestOwner(req);
+    if (who.kind === "invalid") return json(401, { error: "Your sign-in has expired. Sign in again to continue." });
+    const jwt_user_id: string | null = who.kind === "user" ? who.id : null;
     const ownsByUser =
       jwt_user_id !== null && existing.user_id === jwt_user_id;
     const ownsBySession =
@@ -247,13 +252,13 @@ Deno.serve(withTestRun("analyze-conversation", async (req) => {
       .eq("id", analysis_id);
   } else {
     // A verified signed-in caller owns the new row from the start, so their own
-    // consented coaching preferences can apply. Guests stay unowned.
-    let creatorId: string | null = null;
-    const createAuth = req.headers.get("Authorization");
-    if (createAuth?.startsWith("Bearer ")) {
-      const { data: u, error: uErr } = await supabase.auth.getUser(createAuth.replace("Bearer ", ""));
-      if (!uErr) creatorId = u?.user?.id ?? null;
-    }
+    // consented coaching preferences can apply. Guests stay unowned and can be
+    // claimed later only through the existing session proof. An invalid token
+    // is refused, never silently downgraded to a guest.
+    const who = await resolveRequestOwner(req);
+    if (who.kind === "invalid") return json(401, { error: "Your sign-in has expired. Sign in again to continue." });
+    const creatorId: string | null = who.kind === "user" ? who.id : null;
+    ownerBound = creatorId !== null;
     const { data: created, error: createErr } = await supabase
       .from("analyses")
       .insert({
@@ -460,6 +465,7 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
       full_history_read: digest.failedChunks === 0,
     };
 
+    if (!checkQuotes(resultJson, capped)) return failAnalysis("We could not verify enough of this report against your messages. Please retry.");
     await attachAttribution(resultJson, capped, pv.model_string);
     await recordDeepReadDates();
 
@@ -727,6 +733,10 @@ ${messagesBlock}`;
     return failAnalysis(`Analysis missing required fields: ${missing.join(", ")}`);
   }
 
+  if (!checkQuotes(resultJson, [...messages].sort((a, b) => a.sequence_order - b.sequence_order))) {
+    return failAnalysis("We could not verify enough of this report against your messages. Please retry.");
+  }
+
   // 5. Privacy: hard-delete temp messages
   await supabase.from("messages_temp").delete().eq("analysis_id", analysis_id);
   await cleanupScreenshots();
@@ -767,5 +777,5 @@ ${messagesBlock}`;
     void runPipeline();
   }
 
-  return json(202, { analysis_id, status: "accepted" });
+  return json(202, { analysis_id, status: "accepted", owner_bound: ownerBound });
 }));

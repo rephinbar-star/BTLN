@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
   // function as that account. Every model call inside it reserves spend first.
   // pipeline_finalize: advances multi-step runs, reads the persisted result, checks
   // stage coverage from the spend ledger and stores an immutable result row.
-  if (action === "pipeline_start" || action === "pipeline_finalize") {
+  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize") {
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     // Synthetic accounts only. The password is derived server-side from the
@@ -566,11 +566,40 @@ Deno.serve(async (req) => {
       return v?.session?.access_token ?? null;
     };
     const callFn = async (fn: string, access: string, header: string, payload: unknown) => {
-      const r = await fetch(`${supaUrl}/functions/v1/${fn}`, { method: "POST", headers: { Authorization: `Bearer ${access}`, apikey: anonKey, "Content-Type": "application/json", "x-btln-test-run": header }, body: JSON.stringify(payload) });
+      const r = await fetch(`${supaUrl}/functions/v1/${fn}`, { method: "POST", headers: { Authorization: `Bearer ${access}`, apikey: anonKey, "Content-Type": "application/json", ...(header ? { "x-btln-test-run": header } : {}) }, body: JSON.stringify(payload) });
       const t = await r.text();
       let j: Admin = null; try { j = JSON.parse(t); } catch { j = { raw: t.slice(0, 300) }; }
       return { status: r.status, body: j };
     };
+
+    if (action === "ownership_probe") {
+      // No-model integration fixture: synthetic accounts calling Deep Read with
+      // no metered token run in the blocked context, so any model call is
+      // refused and nothing is spent. Verifies owner binding on the deployed code.
+      const accts = [body.a, body.b].map(String);
+      if (!accts.every((x) => UUID_RE.test(x))) return json(400, { error: "a and b synthetic ids required" });
+      const payload = () => ({ session_id: crypto.randomUUID(), input_method: "paste", context_data: { name1: "Robin", name2: "Sam" }, raw_text: "Robin: ownership probe line one\nSam: ownership probe line two\nRobin: probe three" });
+      const out: Admin = {};
+      const ids: string[] = [];
+      for (const [i, u] of accts.entries()) {
+        const tok = await sessionFor(u);
+        if (!tok) return json(403, { error: "Synthetic accounts only" });
+        const r = await callFn("analyze-conversation", tok, "", payload());
+        const id = r.body?.analysis_id;
+        ids.push(id);
+        const { data: row } = id ? await admin.from("analyses").select("user_id").eq("id", id).maybeSingle() : { data: null };
+        out[`account_${i ? "b" : "a"}`] = { status: r.status, owner_bound: r.body?.owner_bound, persisted_owner_matches: row?.user_id === u };
+      }
+      const tokB = await sessionFor(accts[1]);
+      const cross = await callFn("analyze-conversation", tokB!, "", { ...payload(), analysis_id: ids[0] });
+      out.cross_account_rerun = { status: cross.status };
+      const bad = await callFn("analyze-conversation", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ4Iiwicm9sZSI6ImF1dGhlbnRpY2F0ZWQifQ.forged", "", payload());
+      out.forged_token = { status: bad.status };
+      await new Promise((r) => setTimeout(r, 6000));
+      const { data: after } = await admin.from("analyses").select("id,user_id,status").in("id", ids.filter(Boolean));
+      out.after_completion = (after ?? []).map((r: Admin) => ({ id: r.id, owner_kept: r.user_id === accts[ids.indexOf(r.id)], status: r.status }));
+      return json(200, out);
+    }
 
     if (action === "pipeline_start") {
       const key = body.mode;
@@ -674,10 +703,17 @@ Deno.serve(async (req) => {
         const { count } = await admin.from("messages_temp").select("id", { count: "exact", head: true }).eq("analysis_id", id);
         nonModelStages.raw_message_deletion = count === 0 ? "verified" : `failed (${count} temporary rows remain)`;
         nonModelStages.attributed_evidence = output?.attributed_evidence ? "present" : "missing";
+        nonModelStages.quote_integrity = output?.quote_integrity ? `checked ${output.quote_integrity.quotes_checked}, supported ${output.quote_integrity.quotes_supported}, removed ${output.quote_integrity.sentences_removed?.length ?? 0}, duplicates ${output.quote_integrity.duplicate_sentences_removed}` : (row?.status === "complete" ? "missing" : "not_reached");
         nonModelStages.style_rewrite = output?.personalization ? `report: ${output.personalization.rewrite}, ${output.personalization.fields_applied}/${output.personalization.fields_total} fields` : "not_requested";
       }
     }
     if (pending) return json(202, { state: "pending" });
+    if (key === "group_roast") {
+      // Fresh evaluation only: the result row must be created inside this run.
+      const rid = st.first?.body?.[RESULT_REF.group_roast!.idField];
+      const { data: fr } = rid ? await admin.from("group_roasts").select("created_at").eq("id", rid).maybeSingle() : { data: null };
+      nonModelStages.fresh_result = fr && new Date(fr.created_at) >= new Date(run.created_at) ? "verified" : "failed (cached or pre-existing result)";
+    }
 
     const { data: ledger } = await admin.from("prompt_spend_ledger").select("id,stage,kind,model,reserved_usd,actual_usd,status,outcome").eq("job_id", run.id).order("created_at");
     const rows = ledger ?? [];
