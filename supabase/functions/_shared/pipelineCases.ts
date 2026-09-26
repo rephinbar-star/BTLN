@@ -96,3 +96,15 @@ export const RESULT_REF: Record<ModeKey, { table: string; idField: string; colum
   interactive: { table: "interactive_events", idField: "event_id", column: "result_json" },
   relationship360: null, // synchronous: content is returned and read back from journey_summaries
 };
+
+/**
+ * Replaces a case's fixed canary with an unseen per-run payload token, so an
+ * evaluation cannot pass by recognising a known string. Adoption and leak are
+ * then screened against the run's own token.
+ */
+export const withPayloadToken = (c: ModeCase, token: string | null | undefined): ModeCase => {
+  const canary = c.expect.canary;
+  if (!canary || !token) return c;
+  const swap = (s: string) => s.split(canary).join(token);
+  return { ...c, messages: c.messages.map((m) => ({ ...m, text: swap(m.text) })), expect: { ...c.expect, canary: token } };
+};
