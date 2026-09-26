@@ -228,7 +228,7 @@ const AdminImprovement = () => {
         <Section title={`Comparison — ${jobMode?.label ?? job.mode} · ${versionById.get(job.candidate_id)?.label ?? ""}`}>
           <div className="rounded-lg border border-btln-line p-3 text-[13px]">
             <p className="font-medium text-[14px]">{STATE_LABEL[job.review_state?.state] ?? job.review_state?.state}{job.review_state?.reason && <span className="font-normal text-muted-foreground"> — {job.review_state.reason}</span>}</p>
-            <p className="mt-1 text-muted-foreground break-all">Job {job.id} · binding {short(job.binding_hash)} · baseline {short(versionById.get(job.baseline_id)?.content_hash)} · candidate {short(versionById.get(job.candidate_id)?.content_hash)} · parity {job.parity}</p>
+            <p className="mt-1 text-muted-foreground break-all">Job {job.id} · binding {short(job.binding_hash)} · baseline {short(versionById.get(job.baseline_id)?.content_hash)} · candidate {short(versionById.get(job.candidate_id)?.content_hash)} · parity {typeof job.parity === "object" ? `${job.parity?.parity} (${job.parity?.source})` : job.parity}</p>
             <p className="mt-1 text-muted-foreground">{job.calls_made} calls, {job.calls_failed} failed · {job.prompt_tokens + job.completion_tokens} tokens · cost {usd(Number(job.cost_usd))}{job.stop_reason && ` · stopped: ${job.stop_reason}`}</p>
             {job.summary && <p className="mt-1">Baseline {job.summary.baseline_screen_passes}/{job.summary.cases} vs candidate {job.summary.candidate_screen_passes}/{job.summary.cases} pass automated checks · judge preferred a failing output in {job.summary.judge_favored_failing?.length ?? 0} case(s){job.summary.incomplete && " · INCOMPLETE"}</p>}
           </div>
