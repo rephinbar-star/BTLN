@@ -695,4 +695,17 @@ Deployment: shared backend functions (`analyze-conversation`, `analyze-group`, `
 | C5 Concurrency | `budget_selftest` (14 simultaneous → 10 accepted at $1 cap; 8 simultaneous per job → 5 at $0.50; missing cost kept; per-call cap refused) | Run 2026-09-26 21:45 | DONE (reservation races; test-run stage-call race covered only by the single-RPC design, not a parallel run) |
 | C5 R360 long-history screen | "Test build" notice, omitted-coverage note | NOT inspected: signing the preview in as synthetic account A needs owner approval that isn't available here | OPEN |
 
-Open: advice semantic false accept; live re-run of advice style/correction with semantic stage; eval-scope R360 live re-run after no-save fix; R360 long-history screen check at 1280/390; parallel test-run stage-call race; human quality review; billing, 77 older security warnings, Group Roast expansion (separately queued).
+(Superseded Open list — see the final-four section below.)
+
+## #2 final four gaps — 2026-09-26 22:30 UTC (packet b417a4b5-93df-4808-806d-fbe7ef021156, supersedes 9e6534ba…, which is unchanged)
+Human quality review: PENDING. Budget: $10.33 committed / $4.67 left of $15 rolling 24h (5 unknown-cost rows, $0.000005, held in full). Caps unchanged.
+
+| Gate | Implemented | Verified | Status |
+|---|---|---|---|
+| 1 Advice semantic | advice-semantic-3: each verdict must cite the behaviour lines; the server checks who wrote those lines; fails closed on missing/malformed/timed-out verdicts | Offline eval d660df47 (28 items, $0.081): 1 false accept out of 11 swapped items; 2 false rejects out of 17 valid items. Held-out set 3: 10/10 correct. Live 2f514b82 + 8e97fd7e ($0.18): no swapped recipient in the output; withheld 4/11 and 1/9 | OPEN. t1 cs.p2.0 is still accepted; its label is debatable because the cited line "Forget it. Dinner at 8?" was written by the recipient. The live run withheld 3 Alex items that were addressed correctly (likely false rejects). 2f514b82 was not a clean style-off run: the harness set the preference while the run was still going. Deep Read has no mid-generation identity input; the R360 in-flight correction result is reused from a577202c |
+| 2 Eval-scope persistence | Test builds are not saved or cached; summary quarantine table + trigger; 79b4e4fd quarantined; new journey_jobs.evaluation_run_id; test jobs hold no idempotency key and are hidden from the ordinary view (found and fixed this pass) | Live 09dbaac7 (job 7b73e8ce, $0.119): persisted:false, 9 sources incl. the 10k, 85 observations. Account A's 2 ordinary summaries are byte-identical before and after; no account summary was created. The ordinary view shows 73 observations from 8 sources; the 10k source is absent | DONE. Failure/cancel non-persistence is covered by the code path and a577202c; no new fixture was added |
+| 3 R360 UI 1280/390 | — | Not viewed | BLOCKED. `lovable auth-session --user 2acf9fe9…` was refused with "requires user approval, which is unavailable in this context". No bypass was attempted. Handoff: the owner signs in to the preview as the synthetic account |
+| 4 Concurrent stage limits | reserve_prompt_spend stage ceilings | Live stage_selftest: 10 simultaneous requests on 1 slot → 1 accepted, 9 refused; stage and run ceilings held; retry binding held; unrelated jobs stayed independent; no excess rows | DONE |
+
+Open: gate 1 false accept and false rejects; clean live style-off rerun; gate 3 signed-in UI check; human quality review. Separately queued: billing, 77 older security warnings, Group Roast expansion.
+Deployment: backend functions and DB migrations are live on the shared backend (the published site uses it too). The frontend was NOT published; nothing was charged or promoted.

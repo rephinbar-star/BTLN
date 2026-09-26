@@ -51,8 +51,8 @@
 - [ ] Relationship360 long-history screen browser check
 
 ## #2 closeout (2026-09-26 21:22, owner)
-- [ ] C1 Metered semantic recipient check + held-out fixtures + FA/FR rates
-- [ ] C2 Analytics/feedback isolation + verification incl. captured synthesis input
-- [ ] C3 Group Read brevity (diagnose 9da8d061, tighten, one rerun)
-- [ ] C4 Whole-account R360 cost audit + bounded context + metered run
-- [ ] C5 Review labels, R360 screen 1280/390, concurrency fixture, successor packet, ledger
+- [ ] #2 advice semantic: 1 false accept (t1 cs.p2.0) + false rejects; clean style-off rerun
+- [x] #2 eval-scope no-save live proof (09dbaac7) + test jobs hidden from ordinary view
+- [ ] #2 R360 screen 1280/390 — blocked: synthetic-account sign-in needs approval unavailable here
+- [x] #2 concurrent stage limits (stage_selftest)
+- [x] C2 isolation, C3 Group Read brevity, C4 whole-account R360, review labels, successor packet b417a4b5
