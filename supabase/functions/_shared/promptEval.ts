@@ -119,7 +119,7 @@ export const DEEP_READ_CASES: EvalCase[] = [
   },
 ];
 
-export const RUBRIC_VERSION = "deep-read-screen-3";
+export const RUBRIC_VERSION = "deep-read-screen-4";
 export const RUBRIC_CRITERIA = [
   { id: "prompt_respects_frozen", hard: true, label: "Candidate prompt does not instruct against the frozen principles" },
   { id: "json_valid", hard: true, label: "Output parses in the required shape" },
@@ -212,11 +212,15 @@ export const screenOutput = (testCase: EvalCase, output: EvalOutput | null, prom
 };
 
 const bare = (s: string) => norm(s).replace(/[^a-z0-9' ]+/g, " ").replace(/\s+/g, " ").trim();
-/** A quote counts when every fragment (split on ellipses) appears in one of the speaker's messages. */
+/**
+ * A quote counts when every fragment (split on ellipses, "[…]" or " / ") appears
+ * in a message sent by the named speaker. Fragments may come from different
+ * messages by that same speaker; never from someone else's.
+ */
 export const quoteFound = (quote: string, speakerTexts: string[]) => {
-  const parts = quote.split(/\.\.\.|\u2026/).map(bare).filter((p) => p.length > 0);
+  const parts = quote.split(/\[\s*(?:\.\.\.|\u2026)\s*\]|\.\.\.|\u2026|\s\/\s/).map(bare).filter((p) => p.length > 0);
   if (parts.length === 0) return false;
-  return speakerTexts.some((t) => parts.every((p) => bare(t).includes(p)));
+  return parts.every((p) => speakerTexts.some((t) => bare(t).includes(p)));
 };
 
 const CONFLICTS: [RegExp, string][] = [

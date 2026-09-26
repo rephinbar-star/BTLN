@@ -61,3 +61,11 @@ describe("hash binding", () => {
     expect(await bindingHash({ candidate: h1, baseline: "b", dataset: "d", rubric: "r2" })).not.toBe(b1);
   });
 });
+
+describe("multi-message quotes", () => {
+  it("joins fragments from the same speaker, never another speaker", () => {
+    expect(quoteFound("Can we talk tonight? / Ha, very funny. 8pm?", ["Can we talk tonight?", "Ha, very funny. 8pm?"])).toBe(true);
+    expect(quoteFound("You forgot my birthday dinner [\u2026] It's in the calendar", ["You forgot my birthday dinner", "It's in the calendar we share"])).toBe(true);
+    expect(quoteFound("Can we talk tonight? / 8 is good", ["Can we talk tonight?"])).toBe(false);
+  });
+});
