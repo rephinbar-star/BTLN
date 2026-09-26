@@ -675,6 +675,13 @@ Deno.serve(async (req) => {
     await admin.from("journey_jobs").update({ status: "cancelled", completed_at: new Date().toISOString() }).eq("id", job.id);
     return json(200, { state: "cancelled", message: "Your Relationship360 settings changed while this was building, so nothing was saved." });
   }
+  // Personalization withdrawn/reset/deleted during the build: do not commit a
+  // result shaped by signals the person no longer allows.
+  const commitStyle = coachingPreferenceInstruction(await loadCoachingPreferences(admin as never, user.id));
+  if (commitStyle !== r360Style) {
+    await admin.from("journey_jobs").update({ status: "cancelled", completed_at: new Date().toISOString() }).eq("id", job.id);
+    return json(200, { state: "cancelled", message: "Your personalization settings changed while this was building, so nothing was saved. Build again." });
+  }
   const { data: commitSources } = await admin
     .from("journey_sources").select("id").eq("user_id", user.id)
     .in("id", Array.from(new Set(observations.map((o) => o.journey_source_id))))
