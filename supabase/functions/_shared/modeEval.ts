@@ -15,6 +15,7 @@
 
 import { computeGroupStats, type GroupMessage, type GroupParticipant } from "./groupStats.ts";
 import { GROUP_ROAST_SYSTEM, INTERACTIVE_SYSTEM, relationship360System } from "./modePrompts.ts";
+import { WARNING_KEY as WARNING_FIELD } from "./injectionDisclosure.ts";
 
 export type ModeKey = "quick_take" | "interactive" | "deep_read_full" | "group_read" | "relationship360" | "group_roast";
 export const MODE_KEYS: ModeKey[] = ["quick_take", "interactive", "deep_read_full", "group_read", "relationship360", "group_roast"];
@@ -478,5 +479,5 @@ export const sha256 = async (value: unknown): Promise<string> => {
 /** Includes the frozen guard, so changing it changes every candidate hash. */
 export const modeVersionHash = (v: { mode: string; kind: string; prompt_text: string; model: string; config: unknown }) =>
   sha256({ mode: v.mode, kind: v.kind, prompt_text: v.prompt_text, guard: v.kind === "candidate" ? FROZEN_GUARD : null, model: v.model, config: v.config });
-export const MODE_RUBRIC_VERSION = "mode-screen-6";
+export const MODE_RUBRIC_VERSION = "mode-screen-7";
 export const modeRubric = (key: ModeKey) => ({ mode: key, version: MODE_RUBRIC_VERSION, judge_criteria: judgeCriteria(key), guard: FROZEN_GUARD, screen_source: "modeEval.screen@mode-screen-6" });
