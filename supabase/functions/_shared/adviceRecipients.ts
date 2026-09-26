@@ -54,9 +54,12 @@ export const adviceItems = (result: any, parts: Participant[]): AdviceItem[] => 
   return out;
 };
 
-const QUOTED = /["'\u201C\u2018]([^"'\u201D\u2019]{2,80})["'\u201D\u2019]/g;
+// Apostrophes inside words ("Alex's") are not quote marks.
+const OPEN = `(?:"|\u201C|(?<![A-Za-z])'|(?<![A-Za-z])\u2018)`;
+const CLOSE = `(?:"|\u201D|'(?![A-Za-z])|\u2019(?![A-Za-z]))`;
+const QUOTED = new RegExp(`${OPEN}([^"\u201C\u201D]{2,80}?)${CLOSE}`, "g");
 // Phrases the advice asks the RECIPIENT to stop/replace: they must be the recipient's own words.
-const CHANGE = /\b(instead of|rather than|replace|replacing|stop (?:saying|using|writing)|avoid (?:saying|using)|swap|drop)\b[^.]*?["'\u201C\u2018]([^"'\u201D\u2019]{2,80})["'\u201D\u2019]/gi;
+const CHANGE = new RegExp(`\\b(instead of|rather than|replace|replacing|stop (?:saying|using|writing)|avoid (?:saying|using)|swap|drop)\\b[^.]*?${OPEN}([^"\u201C\u201D]{2,80}?)${CLOSE}`, "gi");
 
 const saidBy = (phrase: string, msgs: Msg[], role: "user" | "partner") => {
   const p = norm(phrase).replace(/[.,!?]+$/, "");
