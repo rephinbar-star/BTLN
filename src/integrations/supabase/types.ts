@@ -1448,6 +1448,362 @@ export type Database = {
         }
         Relationships: []
       }
+      prompt_audit_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          entity: string
+          entity_id: string | null
+          id: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity: string
+          entity_id?: string | null
+          id?: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          entity?: string
+          entity_id?: string | null
+          id?: string
+        }
+        Relationships: []
+      }
+      prompt_datasets: {
+        Row: {
+          cases: Json
+          content_hash: string
+          created_at: string
+          id: string
+          mode: string
+          name: string
+          origin: string
+          revision: number
+        }
+        Insert: {
+          cases: Json
+          content_hash: string
+          created_at?: string
+          id?: string
+          mode: string
+          name: string
+          origin?: string
+          revision: number
+        }
+        Update: {
+          cases?: Json
+          content_hash?: string
+          created_at?: string
+          id?: string
+          mode?: string
+          name?: string
+          origin?: string
+          revision?: number
+        }
+        Relationships: []
+      }
+      prompt_eval_jobs: {
+        Row: {
+          baseline_id: string
+          binding_hash: string
+          calls_failed: number
+          calls_made: number
+          candidate_id: string
+          cases_total: number
+          completed_at: string | null
+          completion_tokens: number
+          cost_usd: number
+          created_at: string
+          dataset_id: string
+          error_message: string | null
+          id: string
+          mode: string
+          prompt_tokens: number
+          rubric_id: string
+          started_by: string | null
+          status: string
+          summary: Json | null
+        }
+        Insert: {
+          baseline_id: string
+          binding_hash: string
+          calls_failed?: number
+          calls_made?: number
+          candidate_id: string
+          cases_total?: number
+          completed_at?: string | null
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          dataset_id: string
+          error_message?: string | null
+          id?: string
+          mode: string
+          prompt_tokens?: number
+          rubric_id: string
+          started_by?: string | null
+          status?: string
+          summary?: Json | null
+        }
+        Update: {
+          baseline_id?: string
+          binding_hash?: string
+          calls_failed?: number
+          calls_made?: number
+          candidate_id?: string
+          cases_total?: number
+          completed_at?: string | null
+          completion_tokens?: number
+          cost_usd?: number
+          created_at?: string
+          dataset_id?: string
+          error_message?: string | null
+          id?: string
+          mode?: string
+          prompt_tokens?: number
+          rubric_id?: string
+          started_by?: string | null
+          status?: string
+          summary?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_eval_jobs_baseline_id_fkey"
+            columns: ["baseline_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_versions_eval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_eval_jobs_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_versions_eval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_eval_jobs_dataset_id_fkey"
+            columns: ["dataset_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_datasets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_eval_jobs_rubric_id_fkey"
+            columns: ["rubric_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_rubrics"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_eval_results: {
+        Row: {
+          attempts: number
+          case_id: string
+          checks: Json
+          completion_tokens: number
+          created_at: string
+          disagreement: boolean
+          error_message: string | null
+          id: string
+          job_id: string
+          judge: Json | null
+          output: Json | null
+          prompt_tokens: number
+          screen_passed: boolean | null
+          status: string
+          variant: string
+        }
+        Insert: {
+          attempts?: number
+          case_id: string
+          checks?: Json
+          completion_tokens?: number
+          created_at?: string
+          disagreement?: boolean
+          error_message?: string | null
+          id?: string
+          job_id: string
+          judge?: Json | null
+          output?: Json | null
+          prompt_tokens?: number
+          screen_passed?: boolean | null
+          status: string
+          variant: string
+        }
+        Update: {
+          attempts?: number
+          case_id?: string
+          checks?: Json
+          completion_tokens?: number
+          created_at?: string
+          disagreement?: boolean
+          error_message?: string | null
+          id?: string
+          job_id?: string
+          judge?: Json | null
+          output?: Json | null
+          prompt_tokens?: number
+          screen_passed?: boolean | null
+          status?: string
+          variant?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_eval_results_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_eval_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_reviews: {
+        Row: {
+          binding_hash: string
+          candidate_id: string
+          created_at: string
+          decision: string
+          id: string
+          is_test_record: boolean
+          job_id: string
+          rationale: string
+          reviewer_id: string
+        }
+        Insert: {
+          binding_hash: string
+          candidate_id: string
+          created_at?: string
+          decision: string
+          id?: string
+          is_test_record?: boolean
+          job_id: string
+          rationale: string
+          reviewer_id: string
+        }
+        Update: {
+          binding_hash?: string
+          candidate_id?: string
+          created_at?: string
+          decision?: string
+          id?: string
+          is_test_record?: boolean
+          job_id?: string
+          rationale?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_reviews_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_versions_eval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_reviews_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_eval_jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      prompt_rubrics: {
+        Row: {
+          content_hash: string
+          created_at: string
+          criteria: Json
+          frozen: boolean
+          id: string
+          mode: string
+          version: string
+        }
+        Insert: {
+          content_hash: string
+          created_at?: string
+          criteria: Json
+          frozen?: boolean
+          id?: string
+          mode: string
+          version: string
+        }
+        Update: {
+          content_hash?: string
+          created_at?: string
+          criteria?: Json
+          frozen?: boolean
+          id?: string
+          mode?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      prompt_runtime_selection: {
+        Row: {
+          binding_hash: string | null
+          environment: string
+          mode: string
+          previous_version_id: string | null
+          review_id: string | null
+          selected_at: string
+          selected_by: string
+          version_id: string
+        }
+        Insert: {
+          binding_hash?: string | null
+          environment: string
+          mode: string
+          previous_version_id?: string | null
+          review_id?: string | null
+          selected_at?: string
+          selected_by: string
+          version_id: string
+        }
+        Update: {
+          binding_hash?: string | null
+          environment?: string
+          mode?: string
+          previous_version_id?: string | null
+          review_id?: string | null
+          selected_at?: string
+          selected_by?: string
+          version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_runtime_selection_previous_version_id_fkey"
+            columns: ["previous_version_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_versions_eval"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_runtime_selection_review_id_fkey"
+            columns: ["review_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_reviews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "prompt_runtime_selection_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_versions_eval"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       prompt_versions: {
         Row: {
           active: boolean
@@ -1483,6 +1839,65 @@ export type Database = {
           vision_model_string?: string
         }
         Relationships: []
+      }
+      prompt_versions_eval: {
+        Row: {
+          config: Json
+          content_hash: string
+          created_at: string
+          created_by: string | null
+          id: string
+          is_test_record: boolean
+          issue_ref: Json
+          kind: string
+          label: string
+          mode: string
+          model: string
+          parent_id: string | null
+          prompt_text: string
+          rationale: string | null
+        }
+        Insert: {
+          config?: Json
+          content_hash: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_test_record?: boolean
+          issue_ref?: Json
+          kind: string
+          label: string
+          mode: string
+          model: string
+          parent_id?: string | null
+          prompt_text: string
+          rationale?: string | null
+        }
+        Update: {
+          config?: Json
+          content_hash?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_test_record?: boolean
+          issue_ref?: Json
+          kind?: string
+          label?: string
+          mode?: string
+          model?: string
+          parent_id?: string | null
+          prompt_text?: string
+          rationale?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "prompt_versions_eval_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "prompt_versions_eval"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       recipient_perspectives: {
         Row: {
