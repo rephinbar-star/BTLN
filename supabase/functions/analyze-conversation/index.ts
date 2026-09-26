@@ -23,6 +23,11 @@ import {
 } from "../_shared/styleContract.ts";
 import { buildAttributedEvidence, toEvidenceMessages } from "../_shared/attributedEvidence.ts";
 
+// Fixed field-to-person binding sent with every read (advice-recipient-1). The
+// traced failures (ec8ce5d8, c4b22897, ac16108c) showed the primary generation
+// itself swapping person1/person2 advice and mixing recipients in steps.
+const ADVICE_BINDING = (n1: string, n2: string) =>
+  `- Advice field binding (fixed, do not swap): communication_suggestions.person1 is advice FOR ${n1}; communication_suggestions.person2 is advice FOR ${n2}. Every remedial_guidance.specific_steps item and every scripted_alternatives item is advice FOR ${n1}, written to ${n1} as "you"; refer to ${n2} by name. A scripted_alternatives.instead_of may only quote ${n1}'s own words. Never tell someone to change words the other person wrote.`;
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -355,6 +360,7 @@ Deno.serve(withTestRun("analyze-conversation", async (req) => {
     const tail = capped.slice(-TAIL_MESSAGES);
     const userBlock = `CONTEXT:
 - Names: ${name1} and ${name2}
+${ADVICE_BINDING(name1, name2)}
 - Relationship type: ${context_data!.relationship_type ?? "romantic"}
 - Relationship stage: ${context_data!.relationship_stage ?? ""}
 - Duration: ${context_data!.duration ?? ""}
@@ -611,6 +617,7 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
 
   const userBlock = `CONTEXT:
 - Names: ${name1} and ${name2}
+${ADVICE_BINDING(name1, name2)}
 - Relationship type: ${context_data.relationship_type ?? "romantic"}
 - Relationship stage: ${context_data.relationship_stage ?? ""}
 - Duration: ${context_data.duration ?? ""}
