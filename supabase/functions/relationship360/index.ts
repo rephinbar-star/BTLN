@@ -650,6 +650,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
 
   const coverage = {
     sources: distinctSources,
+    evaluation_scope: evalScope, // non-null only inside an operator test run
     relationships: distinctRelationships,
     confirmed_relationships: confirmedRelationshipIds.size,
     observations: observations.length,

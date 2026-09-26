@@ -651,6 +651,17 @@ Deno.serve(async (req) => {
       const payload = pipelineRequest(firstKey, firstCase as ModeCase);
       if (key === "deep_read_full" && body.personalization?.free_text !== undefined) (payload.context_data as Admin).free_text = String(body.personalization.free_text).slice(0, 500);
       const r = await callFn(FUNCTION_FOR[firstKey], access, header, payload);
+      // Server-owned provenance (eval-isolation-1): the result is recorded as
+      // evaluation output at once; a DB trigger quarantines candidate output
+      // even if it was already staged, and staging paths refuse it later.
+      {
+        const kindFor: Record<string, [string, string]> = { quick_take: ["quick_take", "decode_id"], interactive: ["quick_take", "decode_id"], deep_read_full: ["deep_read", "analysis_id"], group_read: ["group_read", "group_read_id"], group_roast: ["group_roast", "group_roast_id"] };
+        const kf = kindFor[key];
+        const sid = kf ? r.body?.[kf[1]] : null;
+        if (kf && typeof sid === "string" && UUID_RE.test(sid)) {
+          await admin.from("evaluation_artifacts").upsert({ source_kind: kf[0], source_id: sid, run_id: run.id, candidate_id: cand?.id ?? null, variant, target_user_id: target }, { onConflict: "source_kind,source_id", ignoreDuplicates: true });
+        }
+      }
       await admin.from("prompt_test_runs").update({ state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, payload_seed: payloadSeed, secret, first: { status: r.status, body: r.body, session_id: payload.session_id ?? null } } }).eq("id", run.id);
       return json(r.status < 300 ? 200 : 502, { run_id: run.id, status: r.status, response: r.body });
     }
