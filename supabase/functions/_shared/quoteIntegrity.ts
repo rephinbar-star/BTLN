@@ -82,7 +82,7 @@ export const locateQuote = (quote: string, msgs: CanonMsg[]): { ok: true; index:
   return { ok: false, reason: "not_in_source" };
 };
 
-const SENT_SPLIT = /(?<=[.!?])\s+(?=[A-Z\u201C"])/;
+const SENT_SPLIT = /(?<=[.!?]["\u201D']?)\s+(?=[A-Z\u201C"])/;
 
 // deno-lint-ignore no-explicit-any
 type Json = any;
