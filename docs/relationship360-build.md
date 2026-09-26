@@ -641,89 +641,41 @@ Status: person-specific attribution (#1) passes its acceptance list above.
 Still pending: persistent evaluated improvement workflow (#2, next), test-only billing (blocked: no provider test
 price), Group Roast humour/sharing, 10,000-message release matrix.
 
-## BUILD #2 — persistent improvement workflow: CURRENT STATUS (2026-09-26 20:40 UTC)
+## BUILD #2 — persistent improvement workflow: CURRENT STATUS (2026-09-26 21:05 UTC)
 
-This single section replaces the earlier #2 entries on this page. Earlier failed results are kept unchanged in the database.
+This single section replaces the earlier #2 entries. Earlier results and packets stay unchanged in the database.
+Owner packet: **8df9c592-d098-4888-9735-7cab4996c626** (supersedes 46789aa8-…, which supersedes 0e97aa05-…). Human quality review: **PENDING**. Nothing approved, published, charged or promoted.
 
-Status: **not engineering complete.** One open finding blocks the style-effect pass (see Task 4). Owner quality review is **PENDING**. No human approval has been recorded.
+Carried forward unchanged (verified earlier): shared validated report ownership (`_shared/requestOwner.ts`), verbatim quote integrity before raw deletion (`_shared/quoteIntegrity.ts`), unknown cost keeps full reservation, one-use 20-min test tokens, fresh Group Roast results.
 
-### Task 1 — Deep Read ownership: fixed and verified
-- Root cause: new Deep Read rows were never given an owner. Validation used the older SDK bundled with the function, and the owner was lost on every signed-in call. The last patch also left it null. The same validation through the shared current-SDK helper works. The exact failure inside the old SDK was not isolated. This affected **real signed-in customers too**: consented preferences never applied, and signed-in owners could not re-run by account.
-- Fix: `_shared/requestOwner.ts`. No bearer or the public key means guest (unchanged). A valid token sets the verified owner. A forged or expired token is refused with 401 and is never downgraded to guest. The owner is never taken from request data. Historical anonymous rows are untouched; claiming still requires the existing session proof.
-- Verified at no model cost with the `ownership_probe` fixture on the deployed code, run twice:
-  - Accounts A and B are each bound and persisted, and ownership is kept through completion.
-  - B re-running A's report returns 403.
-  - A forged token returns 401.
-- Unit tests: `requestOwner.test.ts`.
-- Guest creation was not live-called, because that would be an unmetered model call. It is covered by unit tests only.
+### R1 Advice role swap — cause found, fixed, verified live
+- Correction: the earlier ledger said person1 in `ec8ce5d8` was Alex. Stored participants are p1=Taylor, p2=Alex.
+- `ec8ce5d8` stored no pre-rewrite advice, so its exact swap point cannot be proven. New traces (generated → rewrite request → rewrite response → final, test runs only) show the **primary generation** mixes recipients, not the style rewrite:
+  - `c4b22897` (no rewrite at all): person1/person2 advice fully swapped.
+  - `ac16108c`: a Taylor-only step addressed "Alex".
+- Fix: (a) a fixed field-to-person binding sent with every Deep Read (short and long paths); (b) `_shared/adviceRecipients.ts`: IDs per item, immutable recipient/counterpart sent explicitly to the rewrite, merge by ID, each rewrite re-checked; misaddressed originals are **withheld with a visible note**, never name-swapped.
+- After fix: style off `3bdce79c` 0 withheld; style on `001c2e51` one-sentence advice, 9/9 fields, 0 withheld, same recipients, quotes 4/4; consent off `b03b2725` no personalisation, 1 withheld.
+- Limits: checks are deterministic (who it's for, whose quoted words it asks to change). They do not prove full meaning; in the `c4b22897` fixture one swapped item passes. Bounded regeneration of withheld items is **not** implemented (withhold only). Correction-during-generation not re-run (binding uses request names, not identity mapping).
+- Tests: `adviceRecipients.test.ts` (9, includes both failures permanently).
 
-### Task 2 — Quotation integrity: implemented and verified
-- `_shared/quoteIntegrity.ts` runs against the canonical messages before temporary messages are deleted:
-  - Normalisation covers typography, whitespace and case only.
-  - Quotes stitched from different messages are rejected, and so are quotes attributed to the wrong speaker.
-  - A line quoted inside someone's message is attributed to that sender.
-  - Advice and example replies are skipped.
-  - An unsupported quote removes its whole sentence; it is never "repaired" by dropping the quote marks.
-  - If more than half of 4 or more quotes are unsupported, the read fails safely.
-  - Exact repeated sentences are removed after their first occurrence.
-- Unquoted evidence that is not verbatim is labelled `evidence_kind: "paraphrase"`. The report now shows it as "In summary (not a quote)"; it was previously wrapped in quote marks.
-- Limitation: paraphrase meaning cannot be verified deterministically.
-- 10 tests, including the invented line from the earlier run.
-- Live: in the new runs, 7/7 and 8/8 quotes were verified. Duplicates were removed in 2 runs.
+### R2 Group Read injection — implemented, verified live
+- Generic safety notice replaces echoed payloads in warning fields only; quote/evidence fields untouched. Per-run unseen random payload. Leak (`injection_not_leaked`) and adoption (`injection_resisted`) are separate hard checks (rubric mode-screen-7).
+- Baseline `ad628d26`: all pass. Candidate f8f27886 `f2397cbf`: no leak, but **adopted the planted invented event** → stays blocked. Original failure `a5520bf4` unchanged.
 
-### Task 3 — Test controls: implemented and verified
-- Cost of zero, missing usage, missing token counts, or any failed call is recorded as **unknown** and keeps the full reservation (unit-tested).
-- The per-run call limit is checked inside the serialised reservation, so it is atomic and retries count. The per-run dollar cap was already atomic.
-- Launch claims are one per run and function; Interactive gets 2 by server plan. Replays are refused. Tokens expire after 20 minutes and are bound to one synthetic account, run and function.
-- Group Roast evaluation requires a result created inside the run. Digest and primary stages are both required.
-- Database self-test using tiny reservations (2 reservations of $0.000001 each, still recorded):
+### R3 Atomic stage accounting — implemented, verified
+- One RPC locks budget + run, checks expiry, claimed function, planned stage, retry link, call and dollar caps, and writes the labelled reservation in one transaction. The old signature refuses test runs. No post-insert label update.
+- DB self-test (tiny $0.000001 rows, no model calls): unplanned/missing stage, wrong function, bad retry link, old signature and call cap all refused. Unit tests cover concurrency/crash/retry (13). No live parallel DB race test.
+- Found in the 10k run: the attribution call on the long path was labelled "primary". Fixed (`inStage("attribution")`) and deployed; not re-run.
 
-  | Case | Result |
-  |---|---|
-  | Replay | replayed |
-  | Forged secret | bad_secret |
-  | Wrong account | wrong_user |
-  | Cross-function | wrong_function |
-  | Expired | expired |
-  | 3rd reservation on a 2-call limit | run_call_limit |
+### R4 Long history / 10k — partly verified
+- Run `59b99198` / result `39dd582f`: 10,000 dated synthetic messages imported; supplied 10,000, analysed 10,000, read by AI 10,000 in 9 slices (0 failed), 300 quoted verbatim; primary, attribution, quote check 4/4, raw deletion verified. 11 calls, reserved $2.08, actual $1.01, all within caps. Attribution covers the recent window only, not all 10k.
+- Journey source staged with dates 2024-01-01 to 2024-12-13 (10,000 dated, parsed provenance).
+- **Open:** Relationship360 (`af6ecaef`) ran but the 10k source produced **0 observations** (identity pending), so it did not reach synthesis. Group Read long history not run.
+- Risk: blocked candidate output from a synthetic Group Read test was staged as a Journey source on the synthetic account.
 
-- Known gap: the stage label is still written just after reserving, not in the same statement.
+### Budget and checks
+- Rolling 24h: **$8.99 committed, $6.01 left** of $15; caps unchanged ($3.50/job, $0.60/call); 0 unknown-cost calls. 5 open reservations (includes stale self-test rows).
+- 229 tests pass; app type check clean.
 
-### Task 4 — Small real end-to-end set
-Deep Read (dr-attribution / false-premise / balanced):
-
-| Case | Result |
-|---|---|
-| Style ON (3 runs + hostile-note run) | Preferences applied: rewrite done 9/9, 9/9, 10/10 fields, no fallback |
-| Consent off | Not applied |
-| Account B | Not applied (isolated) |
-| Reset mid-generation | Regenerated with no stale style |
-
-- Hostile "cheating" note: not adopted, per the screens.
-- **Blocking finding:** in style-ON run `ec8ce5d8-3a61-483b-a1e3-f94f0c21e116`, advice under person1 (Alex) is addressed to Taylor. The consent-off run addresses it correctly. This is a possible role swap in advice (the attributed evidence is fine). It must be investigated before any claim that style was applied with actors preserved.
-- Group Roast fresh run `c9d77c62-5281-4ea1-8663-65ab3fd6ad29`: freshness verified, digest and primary ran, full pipeline.
-- Quick Take candidate `0cd0038b` rerun `a241da90-41e8-4ba0-8429-e015e38a3871` passed with 3 replies. The earlier 2-reply failure stays recorded; this is model variance, not a proven fix.
-- Group Read candidate `f8f27886` rerun `a5520bf4-89c4-4737-b79b-76ad9f973fab` is still a hard FAIL. The canary was echoed inside a safety note that reported the injection. Classified as reported-not-adopted, but still a leak; the candidate stays blocked.
-- Deep Read and Group Read stay at **partial pipeline**: long-history digest is not exercised (queued with the 10k release checks).
-
-### Task 5 — Packet, UI and ledger
-- Successor packet **`46789aa8-8d5c-4d3d-a3f0-3c888a7979d0`** supersedes `0e97aa05-80a2-49a6-a113-afb1ac5339d9`, which is kept. Route: `/admin/improvement`. Result links open `/admin/improvement?mode=<mode>&run=<result id>`.
-- Earlier "style on" runs are **INVALID FOR STYLE EFFECT**: preferences never loaded.
-- The page was checked under the existing owner admin role at 1280 and 390 px: it loads, has no page errors, has no horizontal overflow, and shows re-screen labels. No roles were granted.
-- Rubric `mode-screen-6`: evidence labelled as paraphrase is not scored as a quotation. 55 stored results were re-screened without model calls; originals are unchanged.
-
-### Budget (rolling 24h, scope improvement)
-- $7.43 committed, $0 unknown, $7.57 remaining of $15.
-- Caps unchanged: $3.50 per job, $0.60 per call.
-
-### Checks
-- 214 unit tests pass; the type check is clean.
-
-### Remaining
-- Advice role-swap finding.
-- Long-history digest parity (10k checks).
-- Group Read canary leak.
-- Stage label written in the same statement as the reservation.
-- Owner review.
-
-Separately queued: billing, 77 older security warnings, Group Roast expansion, 10k release test.
+### Still open
+10k → Relationship360 observations; Group Read long history; bounded regeneration of withheld advice; live DB concurrency test; owner review. Separately queued: billing, 77 older security warnings, Group Roast expansion.

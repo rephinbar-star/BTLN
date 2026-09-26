@@ -41,8 +41,8 @@
 - [ ] 6 Consolidated ledger + closeout checks.
 
 ## #2 remaining (2026-09-26 evening)
-- [ ] R1 Advice role swap trace + ID-bound rewrite + fixtures + paired live test
-- [ ] R2 Group Read injection disclosure (generic warning, randomized canary, leak vs adoption)
-- [ ] R3 Atomic stage accounting RPC
-- [ ] R4 Long-history / 10k parity (within caps)
-- [ ] R5 Verification, successor packet, ledger
+- [x] R1 Advice role swap trace + ID-bound rewrite + fixtures + paired live test
+- [x] R2 Group Read injection disclosure (generic warning, randomized canary, leak vs adoption)
+- [x] R3 Atomic stage accounting RPC
+- [ ] R4 Long-history / 10k parity — Deep Read done; R360 observations + Group Read long open
+- [x] R5 Verification, successor packet, ledger
