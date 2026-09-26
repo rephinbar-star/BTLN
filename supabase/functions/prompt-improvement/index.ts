@@ -25,7 +25,7 @@ import {
 import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF, withPayloadToken } from "../_shared/pipelineCases.ts";
 import { payloadToken } from "../_shared/injectionDisclosure.ts";
 import { ADVICE_SEMANTIC_VERSION, applySemanticVerdicts, SEMANTIC_MODEL, semanticRequest } from "../_shared/adviceRecipients.ts";
-import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3 } from "../_shared/adviceSemanticFixtures.ts";
+import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3, SEMANTIC_FIXTURES_4 } from "../_shared/adviceSemanticFixtures.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -880,7 +880,9 @@ Deno.serve(async (req) => {
     if (!aiKey) return json(503, { error: "Model key unavailable." });
     const jobId = crypto.randomUUID();
     const rows: Admin[] = [];
-    const sets = body.set === 1 ? SEMANTIC_FIXTURES : body.set === 2 ? SEMANTIC_FIXTURES_2 : body.set === 3 ? SEMANTIC_FIXTURES_3 : [...SEMANTIC_FIXTURES, ...SEMANTIC_FIXTURES_2, ...SEMANTIC_FIXTURES_3];
+    // "current" suite: t1 is replaced by its adjudicated v2 (set 4); the original stays runnable as set 1.
+    const sets: typeof SEMANTIC_FIXTURES_4 = body.set === 1 ? SEMANTIC_FIXTURES : body.set === 2 ? SEMANTIC_FIXTURES_2 : body.set === 3 ? SEMANTIC_FIXTURES_3 : body.set === 4 ? SEMANTIC_FIXTURES_4
+      : [...SEMANTIC_FIXTURES.filter((f) => f.id !== "t1-pronoun-noquote"), ...SEMANTIC_FIXTURES_2, ...SEMANTIC_FIXTURES_3, ...SEMANTIC_FIXTURES_4];
     for (const fx of sets) {
       const req = semanticRequest(fx.items, fx.parts, fx.msgs);
       const r = await meteredCall(deps, { scope: SCOPE, jobId, kind: "judge", timeoutMs: 60_000, body: {
@@ -889,7 +891,7 @@ Deno.serve(async (req) => {
       let parsed: unknown = null;
       try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value; } catch { parsed = null; }
       const v = applySemanticVerdicts(fx.items, parsed, req);
-      for (const i of fx.items) { const x = v.get(i.id)!; rows.push({ fixture: fx.id, id: i.id, expect: i.expect, got: x.ok ? "keep" : "withhold", reasons: x.reasons, evidence: x.evidence, behavior_lines: x.behavior_lines, note: i.note }); }
+      for (const i of fx.items) { const x = v.get(i.id)!; rows.push({ fixture: fx.id, id: i.id, expect: i.expect, got: x.ok ? "keep" : "withhold", reasons: x.reasons, evidence: x.evidence, behavior_lines: x.behavior_lines, set4: SEMANTIC_FIXTURES_4.some((f) => f.id === fx.id), note: i.note }); }
       if (!r.ok) rows.push({ fixture: fx.id, call_failed: r.stage === "budget" ? `budget:${r.reason}` : r.reason });
     }
     const items = rows.filter((r) => r.expect);
@@ -899,6 +901,7 @@ Deno.serve(async (req) => {
       false_rejects: items.filter((r) => r.expect === "keep" && r.got === "withhold").length,
       valid_items: items.filter((r) => r.expect === "keep").length,
       swapped_items: items.filter((r) => r.expect === "withhold").length,
+      ambiguous_items: items.filter((r) => r.expect === "ambiguous").map((r) => `${r.fixture}/${r.id}:${r.got}`),
     };
     const { data: ledger } = await admin.from("prompt_spend_ledger").select("reserved_usd,actual_usd,status").eq("job_id", jobId);
     await audit(admin, user.id, "advice_semantic_eval", "prompt_spend_ledger", null, { job_id: jobId, summary });

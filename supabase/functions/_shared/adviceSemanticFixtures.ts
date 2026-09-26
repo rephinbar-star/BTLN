@@ -126,3 +126,60 @@ export const SEMANTIC_FIXTURES_3: Fx[] = [
     it("cs.p2.1", "p2", "p1", "suggestion", "Try responding to the comment without dismissing the whole family.", "withhold", "user dismissed the family"),
   ] },
 ];
+
+// ---------------------------------------------------------------------------
+// Set 4 (advice-semantic-4, 2026-09-26). Written by the same engineer in the
+// same session as the v4 prompt, so "fresh held-out" means not used to tune it,
+// not independently authored. Earlier sets above stay byte-for-byte unchanged.
+//
+// Adjudication of t1-pronoun-noquote / cs.p2.0 (engineering view, NOT owner-approved):
+// Alex (p2) raised the issue twice (lines 0, 2) and only disengaged at line 4
+// ("Forget it. Dinner at 8?") after Taylor refused twice ("Whatever", "drop it").
+// The advice tells Alex to stop "brushing it off and moving to logistics".
+// Speaker: line 4 IS Alex's, so the cited words have the right author.
+// Support: "brushing it off" describes Taylor's pattern far better; Alex's
+// one switch followed being shut down. The advice is partly supported and
+// misleading as a characterisation. Original label "withhold" is defensible but
+// not clear-cut, so v2 marks it AMBIGUOUS and counts it separately (never as a
+// pass). Unambiguous counterparts are in t8 below.
+type Label = "keep" | "withhold" | "ambiguous";
+type Fx4 = { id: string; parts: Participant[]; msgs: Msg[]; items: (AdviceItem & { expect: Label; note: string })[] };
+const it4 = (id: string, rid: string, cid: string, kind: AdviceItem["kind"], text: string, expect: Label, note: string) =>
+  ({ id, path: [id], recipient_id: rid, counterpart_ids: [cid], kind, text, expect, note });
+const AB: Participant[] = [{ id: "p1", label: "Avery", role: "user" }, { id: "p2", label: "Blake", role: "partner" }];
+const EF: Participant[] = [{ id: "p1", label: "Emery", role: "user" }, { id: "p2", label: "Finley", role: "partner" }];
+const T8: Msg[] = [
+  { sender_role: "user", content: "I felt hurt when you cancelled on Saturday." },
+  { sender_role: "partner", content: "ok. anyway what time is the game" },
+  { sender_role: "user", content: "Can we talk about Saturday first?" },
+  { sender_role: "partner", content: "not now. pizza tonight?" },
+  { sender_role: "user", content: "I really want to sort this out." },
+];
+const T9: Msg[] = [
+  { sender_role: "partner", content: "You forgot to pay the electric bill again." },
+  { sender_role: "user", content: "I've been swamped, I'm sorry." },
+  { sender_role: "partner", content: "It's the third time this year." },
+  { sender_role: "user", content: "I know. I'll sort it tonight." },
+];
+export const SEMANTIC_FIXTURES_4: Fx4[] = [
+  { id: "t1-v2-adjudicated", parts: TA, msgs: T1, items: [
+    it4("cs.p1.0", "p1", "p2", "suggestion", "When a comment stings, say that it stung instead of closing the topic.", "keep", "Taylor closed the topic"),
+    it4("cs.p1.1", "p1", "p2", "suggestion", "Try voicing your frustration without the all-or-nothing word that makes it sound like a verdict.", "withhold", "absolutes were Alex's"),
+    it4("cs.p2.0", "p2", "p1", "suggestion", "Next time, stay in the conversation instead of brushing it off and moving to logistics.", "ambiguous", "see adjudication: right speaker for line 4, weak/misleading support"),
+    it4("cs.p2.1", "p2", "p1", "suggestion", "Ask for help with planning as a specific request rather than a statement about their character.", "keep", "Alex generalised"),
+    it4("step.0", "p1", "p2", "step", "Together, pick one evening this week to plan the next few days.", "keep", "joint plan"),
+  ] },
+  { id: "t8-brushoff-unambiguous", parts: AB, msgs: T8, items: [
+    it4("cs.p2.0", "p2", "p1", "suggestion", "Stay with the topic instead of brushing it off and moving to plans.", "keep", "Blake deflected twice"),
+    it4("cs.p1.0", "p1", "p2", "suggestion", "Stay with the topic instead of brushing it off and moving to plans.", "withhold", "Avery kept returning to the topic"),
+    it4("cs.p1.1", "p1", "p2", "suggestion", "If now doesn't work for them, ask for a specific time to talk about Saturday.", "keep", "future request responding to Blake's deflection"),
+    it4("cs.p2.1", "p2", "p1", "suggestion", "If now isn't a good time, say when you can talk about it.", "keep", "future step for Blake"),
+  ] },
+  { id: "t9-bills-future", parts: EF, msgs: T9, items: [
+    it4("cs.p1.0", "p1", "p2", "suggestion", "Set up a reminder or autopay so the bill doesn't slip again.", "keep", "Emery missed the bill"),
+    it4("cs.p2.0", "p2", "p1", "suggestion", "Set up autopay so you stop forgetting the bill.", "withhold", "Finley did not forget"),
+    it4("cs.p2.1", "p2", "p1", "suggestion", "Ask what would help with the bills, alongside naming how often it has happened.", "keep", "future request for Finley"),
+    it4("cs.p1.1", "p1", "p2", "suggestion", "Stop keeping score of how many times things went wrong.", "withhold", "Finley kept count"),
+    it4("step.0", "p1", "p2", "step", "Agree together who owns which bills.", "keep", "joint plan"),
+  ] },
+];
