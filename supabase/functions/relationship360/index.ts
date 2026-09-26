@@ -18,6 +18,7 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
+import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shared/coachingPreferences.ts";
 import { extractJsonObject } from "../_shared/extractJson.ts";
 import {
   adaptDeepRead,
@@ -538,12 +539,14 @@ Deno.serve(async (req) => {
     `"recommendations":[{"id":string,"type":"communication"|"behavioral","observation":string,"action":string,"why":string,"evidence":[observation_id]}]}`,
   ].join("\n");
 
+  // Loop A: private style signals (consented only). Style, never evidence.
+  const r360Style = coachingPreferenceInstruction(await loadCoachingPreferences(admin as never, user.id));
   const response = await callOpenRouter({
     model: MODEL,
     max_tokens: MAX_TOKENS,
     response_format: { type: "json_object" },
     messages: [
-      { role: "system", content: system },
+      { role: "system", content: system + (r360Style ? `\n\n${r360Style}` : "") },
       {
         role: "user",
         content: `<observations>\n${JSON.stringify(facts)}\n</observations>\n<self_reported_notes>\n${
