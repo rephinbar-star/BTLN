@@ -185,24 +185,28 @@ export const adaptAttributedDeepRead = (evidence: any, ctx: Ctx): ObservationDra
     })).filter((e: { quote: string }) => e.quote);
     const period = obj(o.period);
     const local: Ctx = { ...ctx, observedStart: text(period.start) || null, observedEnd: text(period.end) || null };
-    const conf = o.origin === "deterministic" ? "high" : "medium";
+    // Model claims that read only the recent window are tagged so coverage can
+    // say so, and are never presented as whole-history behaviour.
+    const recent = o.scope === "recent_window";
+    const conf = o.origin === "deterministic" ? "high" : recent ? "low" : "medium";
+    const tag = (t: string) => (recent ? `${t}.recent_window` : t);
     if (text(o.kind) !== "observed_behavior") {
-      out.push(make(local, "generated_interpretation", null, "deep_read.interpretation", statement, ev, "low"));
+      out.push(make(local, "generated_interpretation", null, tag("deep_read.interpretation"), statement, ev, "low"));
       continue;
     }
     if (!labelOf.has(actor)) {
       // joint or unknown: never anyone's personal behaviour.
-      out.push(make(local, "relationship_context", null, actor === "joint" ? "deep_read.joint" : "deep_read.context", statement, ev, conf));
+      out.push(make(local, "relationship_context", null, tag(actor === "joint" ? "deep_read.joint" : "deep_read.context"), statement, ev, conf));
       continue;
     }
     if (!selfId) {
       // The person's own side is not resolved for this source: describe the
       // participant by name without deciding whether it is "you".
-      out.push(make(local, "relationship_context", null, "deep_read.unresolved_self", statement, ev, conf));
+      out.push(make(local, "relationship_context", null, tag("deep_read.unresolved_self"), statement, ev, conf));
       continue;
     }
     const kind: SubjectKind = actor === selfId ? "user_behavior" : "other_behavior";
-    const draft = make(local, kind, labelOf.get(actor) ?? null, "deep_read.behavior", statement, ev, conf);
+    const draft = make(local, kind, labelOf.get(actor) ?? null, tag("deep_read.behavior"), statement, ev, conf);
     if (draft && Array.isArray(o.alternatives)) draft.alternatives = o.alternatives.map(text).filter(Boolean).slice(0, 2);
     out.push(draft);
   }

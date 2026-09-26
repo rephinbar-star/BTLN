@@ -198,6 +198,9 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
             )}
             <p className="mt-3 text-[12px] text-muted-foreground">
               Built {new Date(status.summary.generated_at).toLocaleString()} from {coverage?.observations ?? 0} stored observations. No raw messages are kept.
+              {(coverage as { recent_window_observations?: number } | null)?.recent_window_observations
+                ? ` ${(coverage as { recent_window_observations: number }).recent_window_observations} of them come from long conversations where only the most recent 400 messages were read closely, so they describe that recent stretch, not the whole history.`
+                : ""}
             </p>
 
             <ThenNow comparison={comparison} />
