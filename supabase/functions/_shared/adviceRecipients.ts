@@ -80,7 +80,10 @@ export const checkRecipient = (item: AdviceItem, text: string, parts: Participan
     // Vocative to the counterpart ("Alex, try …") means the advice is addressed to the wrong person.
     if (others.some((o) => new RegExp(`^\\s*${o.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s*,`, "i").test(unquoted))) reasons.push("addresses_counterpart");
     // The recipient named as a third party outside quotes ("…ask Taylor…" in advice for Taylor).
-    if (new RegExp(`\\b${me.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(unquoted)) reasons.push("recipient_named_as_third_party");
+    // Direct address to the recipient ("you (Taylor)", "Taylor, …") is fine.
+    const meRe = me.label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const thirdParty = unquoted.replace(new RegExp(`\\byou\\s*\\(${meRe}\\)`, "gi"), " ").replace(new RegExp(`^\\s*${meRe}\\s*,`, "i"), " ");
+    if (new RegExp(`\\b${meRe}\\b`, "i").test(thirdParty)) reasons.push("recipient_named_as_third_party");
   }
   for (const m of text.matchAll(CHANGE)) {
     const phrase = m[2];

@@ -31,7 +31,22 @@ const EC8 = () => ({
   },
 });
 
+// Retained permanently: c4b22897 (no rewrite) — the primary generation put Alex's advice under person1 and Taylor's under person2.
+const C4B_SWAPPED = {
+  communication_suggestions: {
+    person1: ["Try replacing 'never' with something specific: instead of 'Taylor never replies on time,' try naming the actual instance.", "When Taylor offers a defense, resist the 'Whatever' — that word ends the conversation."],
+    person2: ["Your counter-example ('I replied within the hour yesterday') is accurate but it reads as deflection. Try acknowledging Alex's feeling first.", "You accepted 'Whatever' and moved straight to dinner plans."],
+  },
+};
+
 describe("advice recipient integrity", () => {
+  it("c4b22897: a fully swapped person1/person2 generation is withheld, not shown or name-swapped", () => {
+    const r = JSON.parse(JSON.stringify(C4B_SWAPPED));
+    const { statuses } = withholdMisattributed(r, P, M);
+    expect(statuses.filter((s) => s.status === "withheld").map((s) => s.id).sort()).toEqual(["cs.p1.0", "cs.p1.1", "cs.p2.0"]);
+    expect(r.communication_suggestions.person1).toEqual([]);
+  });
+
   it("ec8ce5d8: withholds exactly the step and script that ask Taylor to change Alex's words", () => {
     const r = EC8();
     const { statuses, items } = withholdMisattributed(r, P, M);
@@ -64,6 +79,9 @@ describe("advice recipient integrity", () => {
     expect(checkRecipient(it, "Tell Alex how she made you feel when she mentioned 'Jordan said Taylor forgot'.", P, M).ok).toBe(true);
     expect(checkRecipient(it, "Ask Taylor what she needs from Alex.", P, M).reasons).toContain("recipient_named_as_third_party");
     expect(checkRecipient(it, "Alex, try asking one question first.", P, M).reasons).toContain("addresses_counterpart");
+    // Traced in ac16108c: correct direct address to the recipient is not a third-party mention.
+    expect(checkRecipient(it, "Next time Alex raises a complaint, you (Taylor) name the feeling first.", P, M).ok).toBe(true);
+    expect(checkRecipient(it, "Taylor, ask Alex one question first.", P, M).ok).toBe(true);
   });
 
   it("advice containing the counterpart's name and joint advice pass", () => {
