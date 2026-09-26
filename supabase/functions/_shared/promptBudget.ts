@@ -70,9 +70,12 @@ export const meteredCall = async (
   }
   clearTimeout(timer);
   const u = result.data?.usage ?? null;
-  const cost = typeof u?.cost === "number" && Number.isFinite(u.cost) && u.cost >= 0 ? u.cost : null;
   const pt = typeof u?.prompt_tokens === "number" ? u.prompt_tokens : null;
   const ct = typeof u?.completion_tokens === "number" ? u.completion_tokens : null;
+  // A reported cost is trusted only when it is positive and backed by token
+  // counts. Zero, missing or token-less usage (e.g. an error body with 200, or a
+  // failed call) is UNKNOWN and keeps the full reservation — never free.
+  const cost = result.ok && typeof u?.cost === "number" && Number.isFinite(u.cost) && u.cost > 0 && (pt ?? 0) > 0 ? u.cost : null;
   await deps.reconcile({ id: res.id, actual: cost, pt, ct, outcome: result.ok ? (cost === null ? "ok_cost_missing" : "ok") : `http_${result.status}` });
   if (!result.ok) return { ok: false, stage: "provider", reason: `http_${result.status}`, status: result.status, reservationId: res.id, reserved: amount };
   return { ok: true, data: result.data, usage: { prompt_tokens: pt, completion_tokens: ct, cost }, reservationId: res.id, reserved: amount };
