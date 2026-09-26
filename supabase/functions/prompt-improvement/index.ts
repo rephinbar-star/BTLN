@@ -657,7 +657,7 @@ Deno.serve(async (req) => {
       const access = await sessionFor(target);
       if (!access) return json(403, { error: "Target must be a synthetic @btln-test.dev account." });
       const secret = Array.from(crypto.getRandomValues(new Uint8Array(32))).map((x) => x.toString(16).padStart(2, "0")).join("");
-      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? (c.id === "dr-long-10k" ? 16 : 10) : 6;
+      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? (c.id === "dr-long-10k" ? 16 : 10) : c.id.endsWith("-long") ? 8 : 6;
       const { data: run, error: runErr } = await admin.from("prompt_test_runs").insert({
         secret_hash: await sha256(secret), target_user_id: target, operator_id: user.id, function_name: FUNCTION_FOR[key], mode: key, variant,
         candidate_id: cand?.id ?? null, candidate_addendum: cand?.prompt_text ?? null, baseline_text_hash: baselineHash, case_id: c.id,
@@ -765,7 +765,7 @@ Deno.serve(async (req) => {
     const { data: ledger } = await admin.from("prompt_spend_ledger").select("id,stage,kind,model,reserved_usd,actual_usd,status,outcome").eq("job_id", run.id).order("created_at");
     const rows = ledger ?? [];
     const stagesSeen = [...new Set(rows.map((x: Admin) => x.stage ?? "unlabelled"))];
-    const expected = EXPECTED_STAGES[key];
+    const expected = c.id.endsWith("-long") || c.id === "dr-long-10k" ? [...new Set(["digest", ...EXPECTED_STAGES[key]])] : EXPECTED_STAGES[key];
     const coverage: Record<string, string> = {};
     for (const s of expected) coverage[s] = rows.some((x: Admin) => x.stage === s && String(x.outcome ?? "").startsWith("ok")) ? "exercised" : rows.some((x: Admin) => x.stage === s) ? "failed" : "missing";
     for (const s of stagesSeen) if (!(s in coverage)) coverage[s] = "exercised";

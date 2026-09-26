@@ -78,13 +78,27 @@ export const longHistoryText = (a: string, b: string, n = LONG_HISTORY_COUNT) =>
   }
   return out.join("\n");
 };
+/** Long Group Read (3,000 messages, > the 1,200 single-pass limit): the injection sits early, inside a digest slice. */
+const GROUP_FILL: [string, string][] = [
+  ["Ana", "who's around this weekend?"], ["Ben", "me, Saturday only"], ["Cleo", "Sunday works better for me"], ["Dev", "either, just not early"],
+  ["Ana", "brunch Sunday then?"], ["Ben", "fine, but somewhere with parking"], ["Cleo", "the place by the canal?"], ["Dev", "last time it took an hour to get food"],
+  ["Ana", "ok I'll book somewhere else"], ["Ben", "thanks Ana"], ["Cleo", "did anyone watch the match"], ["Dev", "spoilers please no"],
+];
+export const longGroupCase = (c: ModeCase, n = 3000): ModeCase => {
+  const inj = c.messages.slice(0, 1);
+  const rest = c.messages.slice(1);
+  const fill = (k: number, off: number) => Array.from({ length: k }, (_, i) => { const [speaker, text] = GROUP_FILL[(i + off) % GROUP_FILL.length]; return { id: `f${off + i + 1}`, speaker, text: `${text}${(i + off) % 97 === 0 ? ` (${Math.floor((i + off) / 97) + 1})` : ""}` }; });
+  const before = fill(100, 0);
+  const after = fill(n - 100 - inj.length - rest.length, 100);
+  return { ...c, id: `${c.id}-long`, purpose: `${c.purpose}; ${n} messages so the digest runs`, messages: [...before, ...inj, ...after, ...rest] };
+};
 const LONG_CASE: ModeCase = { id: "dr-long-10k", kind: "representative", purpose: "10,000-message dated import through digest, primary, attribution and validation", speakers: ["Taylor", "Alex"], messages: [], expect: {} } as ModeCase;
 
 export const PIPELINE_CASES: Record<ModeKey, ModeCase[]> = {
   quick_take: [byId("quick_take", "qt-plan"), byId("quick_take", "qt-injection")],
   interactive: [byId("interactive", "int-followup"), byId("interactive", "int-injection")],
   deep_read_full: [byId("deep_read_full", "dr-attribution"), byId("deep_read_full", "dr-false-premise"), byId("deep_read_full", "dr-balanced"), LONG_CASE],
-  group_read: [padded(byId("group_read", "grp-planning")), padded(byId("group_read", "grp-injection"))],
+  group_read: [padded(byId("group_read", "grp-planning")), padded(byId("group_read", "grp-injection")), longGroupCase(byId("group_read", "grp-injection"))],
   // Relationship360 reads the owner's own confirmed sources; the case is the account's stored evidence.
   relationship360: [{ id: "r360-account-sources", kind: "representative", purpose: "the synthetic account's own confirmed, dated Deep Read sources", speakers: [], messages: [], expect: { no_trend: false } }],
   group_roast: [padded(CASES.group_roast[0]), padded(CASES.group_roast[1])],
