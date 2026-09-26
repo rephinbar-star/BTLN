@@ -376,18 +376,18 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     const errors: typeof fieldErrors = {};
     let banner: string | undefined;
 
-    if (mode === "paste") {
-      if (form.conversation.trim().length < 100) {
-        errors.conversation = "Paste at least 100 characters of conversation.";
-      }
-    } else if (mode === "file") {
-      if (form.conversation.trim().length < 100) {
-        banner = "Upload a chat file with at least 100 characters of conversation.";
-      }
-    } else if (mode === "screenshots") {
-      if (screenshots.length < 1) {
-        banner = "Upload at least one screenshot.";
-      }
+    // The shared input owns uploads. Only a reviewed transcript can be analyzed.
+    const reviewed = sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending";
+    const pendingShots = sharedDraft.method === "screenshots" && sharedDraft.screenshots.length > 0;
+    if (!reviewed && pendingShots) {
+      banner = sharedDraft.screenshotSelfSide
+        ? "Tap “Preview extracted messages” to read your screenshots before analyzing."
+        : "Choose which side of the screenshots is you, then tap “Preview extracted messages”.";
+    } else if (!reviewed && sharedDraft.method === "screenshots") {
+      banner = "Upload at least one screenshot.";
+    } else if (form.conversation.trim().length < 100) {
+      if (mode === "file") banner = "Upload a chat file with at least 100 characters of conversation.";
+      else errors.conversation = "Paste at least 100 characters of conversation.";
     }
 
     if (!form.yourName.trim()) errors.yourName = "Required.";

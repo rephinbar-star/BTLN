@@ -213,17 +213,10 @@ export const adaptAttributedDeepRead = (evidence: any, ctx: Ctx): ObservationDra
 export const adaptDeepRead = (result: any, ctx: Ctx): ObservationDraft[] => {
   const root = obj(result);
   const structuredRoot = obj(root.attributed_evidence);
-  if (structuredRoot.schema_version === 1) {
-    const structured = adaptAttributedDeepRead(structuredRoot, ctx);
-    const advice = (Array.isArray(root.communication_suggestions) ? root.communication_suggestions.slice(0, 2) : [])
-      .map((item: unknown) => text(typeof item === "string" ? item : obj(item).suggestion ?? obj(item).text))
-      .filter(Boolean)
-      .map((s: string) => make(ctx, "ai_advice", null, "suggestion.not_sent", s, [], "low"))
-      .filter((item: ObservationDraft | null): item is ObservationDraft => Boolean(item));
-    return [...structured, ...advice].slice(0, MAX_PER_SOURCE);
-  }
-  // Legacy reports (no structured attribution) stay unattributed unless a field names a speaker.
-  const out: (ObservationDraft | null)[] = [];
+  // Structured attribution comes first; the report's pattern, strengths and
+  // diagnostic still follow (unattributed unless a field names a speaker).
+  const out: (ObservationDraft | null)[] =
+    structuredRoot.schema_version === 1 ? adaptAttributedDeepRead(structuredRoot, ctx) : [];
   const diagnostic = obj(root.communication_diagnostic);
   for (const key of ["key_observation", "initiator_balance", "question_ratio", "response_time_asymmetry"]) {
     const raw = diagnostic[key];
