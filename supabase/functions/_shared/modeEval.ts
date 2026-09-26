@@ -248,7 +248,8 @@ const quotes = (v: unknown, out: { quote: string; speaker: string | null }[] = [
     const speaker = ["speaker", "who", "sender", "said_by"].map((k) => o[k]).find((x) => typeof x === "string") as string | undefined;
     for (const [k, val] of Object.entries(o)) {
       const pureKey = /quote|verbatim/i.test(k);
-      const quoteKey = pureKey || k === "evidence";
+      // Evidence explicitly labelled as a paraphrase is not a quotation claim.
+      const quoteKey = pureKey || (k === "evidence" && o.evidence_kind !== "paraphrase");
       if (quoteKey && typeof val === "string" && val.trim() && val.trim().toLowerCase() !== "null") {
         // "evidence" often mixes a quote with commentary: verify only the quoted segments.
         const segs = quotedSegments(val);

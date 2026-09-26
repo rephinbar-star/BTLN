@@ -33,6 +33,7 @@ export type QuoteIntegrityReport = {
   quotes_supported: number;
   sentences_removed: { path: string; reason: "not_in_source" | "stitched" | "wrong_speaker" }[];
   duplicate_sentences_removed: number;
+  paraphrases_labelled: number;
   unsafe: boolean;
   limitation: string;
 };
@@ -89,7 +90,7 @@ type Json = any;
 
 export const enforceQuoteIntegrity = (report: Json, msgs: CanonMsg[], names: string[]): QuoteIntegrityReport => {
   const out: QuoteIntegrityReport = {
-    version: 1, quotes_checked: 0, quotes_supported: 0, sentences_removed: [], duplicate_sentences_removed: 0, unsafe: false,
+    version: 1, quotes_checked: 0, quotes_supported: 0, sentences_removed: [], duplicate_sentences_removed: 0, paraphrases_labelled: 0, unsafe: false,
     limitation: "Quotes are checked verbatim against the source messages. Unquoted paraphrase cannot be verified automatically.",
   };
   const seen = new Set<string>();
@@ -129,6 +130,15 @@ export const enforceQuoteIntegrity = (report: Json, msgs: CanonMsg[], names: str
         const p = path ? `${path}.${k}` : k;
         if (EXAMPLE_PATH.test(p)) continue;
         const v = node[k];
+        if (k === "evidence" && typeof v === "string" && v.trim() && !quotedIn(v).length && !/^["\u201C]/.test(v.trim())) {
+          // Unquoted evidence is a paraphrase, not a quotation. Label it so it is
+          // never presented or scored as verbatim; paraphrase meaning cannot be
+          // verified deterministically (see limitation).
+          if (locateQuote(v, msgs).ok) { out.quotes_checked++; out.quotes_supported++; }
+          else { node.evidence_kind = "paraphrase"; out.paraphrases_labelled++; }
+          node[k] = cleanString(v, p, speaker);
+          continue;
+        }
         if (typeof v === "string" && speaker && /quote|example|evidence/i.test(k)) {
           // Structured quote field: the whole value may be the quotation itself.
           const bare = v.replace(/^["\u201C]|["\u201D]$/g, "");
