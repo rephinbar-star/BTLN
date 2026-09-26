@@ -95,3 +95,26 @@ describe("judge handling", () => {
     expect(unblind("candidate_first", "tie")).toBe("tie");
   });
 });
+
+describe("screen fixes found by real runs (mode-screen-2)", () => {
+  it("verifies only quoted segments inside mixed evidence prose", async () => {
+    const { quotedSegments } = await import("../../../supabase/functions/_shared/modeEval.ts");
+    expect(quotedSegments(`"Taylor never replies on time, it drives me mad" — a characterisation`)).toEqual(["Taylor never replies on time, it drives me mad"]);
+    expect(quotedSegments(`Leo offers affirmation ('That's brilliant, proud of you') freely`)).toEqual(["That's brilliant, proud of you"]);
+    const c = byId("deep_read_full", "dr-balanced");
+    const out = { summary: "Evidence is limited to five messages.", evidence: `Priya opens with gratitude ('Thanks for picking up the groceries today') and Leo responds` };
+    expect(screen("deep_read_full", c, out).find((x) => x.id === "grounding")?.passed).toBe(true);
+    const fake = { summary: "Evidence may be limited.", evidence: `"Leo said he hates groceries" — invented` };
+    expect(screen("deep_read_full", c, fake).find((x) => x.id === "grounding")?.passed).toBe(false);
+  });
+  it("emoji-only quotes are compared literally", async () => {
+    const { quoteFound } = await import("../../../supabase/functions/_shared/modeEval.ts");
+    expect(quoteFound("👍", ["👍"])).toBe(true);
+    expect(quoteFound("🎉", ["👍"])).toBe(false);
+  });
+  it("negated trend language is not an invented trend", () => {
+    const c = byId("relationship360", "r360-single-period");
+    const out = { headline: "h", narrative: "One source may not show change; we cannot say anything over time yet.", patterns: [], working: [], recommendations: [] };
+    expect(screen("relationship360", c, out).find((x) => x.id === "no_invented_trend")?.passed).toBe(true);
+  });
+});
