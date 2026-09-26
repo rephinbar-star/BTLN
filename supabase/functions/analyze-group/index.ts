@@ -5,6 +5,7 @@
 
 import { withTestRun } from "../_shared/testRun.ts";
 import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
+import { groupBrevityContract } from "../_shared/groupBrevity.ts";
 import { INJECTION_DISCLOSURE_VERSION, sanitizeDisclosures } from "../_shared/injectionDisclosure.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
@@ -468,7 +469,8 @@ Deno.serve(withTestRun("analyze-group", async (req) => {
 
 
     markStage("primary");
-    const groupSystem = await systemFor("group_read", pv.prompt_text);
+    // Brevity contract is appended after the (hash-checked) production/candidate text.
+    const groupSystem = `${await systemFor("group_read", pv.prompt_text)}\n\n${groupBrevityContract(participants.length)}`;
     const r = await callOpenRouter(
       {
         model: pv.model_string,

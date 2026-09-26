@@ -149,7 +149,7 @@ const AdminImprovement = () => {
                 if (it.result_id) return (
                   <li key={it.result_id}>
                     <button type="button" className="min-h-11 text-left underline underline-offset-4" onClick={() => { setMode(it.mode); setParams({ mode: it.mode, run: it.result_id }); }}>
-                      {dash!.modes.find((m) => m.key === it.mode)?.label ?? it.mode}{it.group ? ` — ${it.group}` : ""} — full-pipeline result, awaiting owner review
+                      {dash!.modes.find((m) => m.key === it.mode)?.label ?? it.mode}{it.group ? ` — ${it.group}` : ""} — {it.parity ? parityText(it.parity) : "stage coverage shown on the run"}, awaiting owner review
                     </button>
                     <p className="text-[13px] text-muted-foreground">{it.highlight}</p>
                   </li>
@@ -313,13 +313,13 @@ const AdminImprovement = () => {
         </Section>
       )}
 
-      <Section title="Full-pipeline test runs (metered, synthetic accounts)">
+      <Section title="Pipeline test runs (metered, synthetic accounts)">
         <p className="mb-3 text-[13px] text-muted-foreground">
           These runs go through the deployed pipeline for this mode (reading, validation, analysis, attribution, storage) as a synthetic account,
           with every model call reserved against the spending limit. "Partial" means a stage was not exercised (for example long-history digests),
           so the mode is not full-pipeline ready. Automated checks are screening aids, not human approval.
         </p>
-        {pipe.length === 0 ? <Muted>No full-pipeline runs for this mode yet.</Muted> : (
+        {pipe.length === 0 ? <Muted>No pipeline test runs for this mode yet.</Muted> : (
           <ul className="space-y-3">
             {pipe.map((r) => {
               const rs = (r.prompt_pipeline_rescreens ?? []).slice().sort((a: any, b: any) => String(b.created_at).localeCompare(String(a.created_at)))[0];
@@ -331,7 +331,7 @@ const AdminImprovement = () => {
                 <li key={r.id} className="rounded-lg border border-btln-line p-3 text-[14px]">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <p className="font-medium">{r.case_id} · {r.variant}{r.binding?.personalization ? " · style" : ""}</p>
-                    <p className="text-[12px] text-muted-foreground">{r.pipeline_parity === "full_pipeline" ? "Full pipeline" : "Partial pipeline"} · checks {passed ? "passed" : "failed"}{rs ? ` (re-screened ${rs.rubric_version})` : ""} · {usd(r.spend?.actual_usd)} ({r.spend?.calls} calls, {r.spend?.unknown_cost_calls} unknown)</p>
+                    <p className="text-[12px] text-muted-foreground">{parityText(parityOf(r))} · checks {passed ? "passed" : "failed"}{rs ? ` (re-screened ${rs.rubric_version})` : ""} · {usd(r.spend?.actual_usd)} ({r.spend?.calls} calls, {r.spend?.unknown_cost_calls} unknown)</p>
                   </div>
                   <p className="text-[12px] text-muted-foreground break-all">Result {r.id} · binding {short(r.binding?.binding_hash)} · {r.binding?.pipeline_code} · {r.binding?.rubric}</p>
                   <p className="mt-1 text-[13px]">Stages: {Object.entries(r.stage_coverage ?? {}).map(([k, v]) => `${k}: ${v}`).join(" · ")}</p>
@@ -380,3 +380,18 @@ const Shell = ({ children }: { children: React.ReactNode }) => (
 );
 
 export default AdminImprovement;
+
+type Parity = "full_pipeline" | "final_call_only" | "partial" | "blocked" | "unrecorded";
+// Label comes from the stages that actually ran in this run, not from the mode's plan.
+function parityOf(r: { pipeline_parity?: string; stage_coverage?: Record<string, string> | null; output?: unknown }): Parity {
+  const cov = Object.entries(r.stage_coverage ?? {});
+  if (cov.length === 0) return "unrecorded";
+  const ran = cov.filter(([, v]) => v === "exercised");
+  if (ran.length === 0 || r.output == null) return "blocked";
+  if (ran.length === cov.length && r.pipeline_parity === "full_pipeline") return "full_pipeline";
+  if (ran.length === 1 && ran[0][0] === "primary") return "final_call_only";
+  return "partial";
+}
+function parityText(p: string): string {
+  return ({ full_pipeline: "Full pipeline", final_call_only: "Final call only", partial: "Partial pipeline", blocked: "Blocked (no output)", unrecorded: "Stage coverage not recorded" } as Record<string, string>)[p] ?? "Stage coverage not recorded";
+}

@@ -176,6 +176,7 @@ type DashboardData = {
 
 const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
   const [loading, setLoading] = useState(true);
+  const [evalCounts, setEvalCounts] = useState<{ events: number; analyses: number } | null>(null);
   const [refreshedAt, setRefreshedAt] = useState<Date | null>(null);
   const [data, setData] = useState<DashboardData>({
     events: [],
@@ -197,6 +198,7 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
     const eventsP = supabase
       .from("events")
       .select("session_id,event_name,created_at")
+      .eq("is_evaluation", false)
       .gte("created_at", since30)
       .limit(10000);
 
@@ -205,9 +207,14 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
       .select(
         "id,status,input_method,message_count,error_message,feedback_score,feedback_text,feedback_email,result_json,context_data,created_at",
       )
+      .eq("is_evaluation", false)
       .gte("created_at", since30)
       .order("created_at", { ascending: false })
       .limit(1000);
+
+    // Test-account / test-run activity, kept out of the numbers above but inspectable.
+    const evalEvP = supabase.from("events").select("id", { count: "exact", head: true }).eq("is_evaluation", true).gte("created_at", since30);
+    const evalAnP = supabase.from("analyses").select("id", { count: "exact", head: true }).eq("is_evaluation", true).gte("created_at", since30);
 
     const sharesP = supabase
       .from("share_clicks")
@@ -218,7 +225,8 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
     const testimonialsP = supabase.functions.invoke("admin-testimonials", {
       body: { action: "list" },
     });
-    const [evRes, anRes, shRes, testRes] = await Promise.all([eventsP, analysesP, sharesP, testimonialsP]);
+    const [evRes, anRes, shRes, testRes, evalEv, evalAn] = await Promise.all([eventsP, analysesP, sharesP, testimonialsP, evalEvP, evalAnP]);
+    setEvalCounts({ events: evalEv.count ?? 0, analyses: evalAn.count ?? 0 });
 
     const next: DashboardData = { events: [], analyses30: [], shares: [], testimonials: [] };
     const errs: typeof errors = {};
@@ -379,6 +387,11 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
 
         {/* 2. Top-line metrics */}
         <SectionShell title="Last 7 days">
+          {evalCounts && (
+            <p className="text-xs text-muted-foreground">
+              Excluded as test activity (last 30 days): {evalCounts.events} events, {evalCounts.analyses} Deep Reads. Anonymous test sessions before 26 Sep 2026 cannot be identified and may still be counted.
+            </p>
+          )}
           {errors.events && <ErrorNote msg={`Events: ${errors.events}`} />}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[

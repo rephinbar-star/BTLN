@@ -49,3 +49,10 @@
 
 - [ ] Review page shows "full-pipeline" for partial results (display)
 - [ ] Relationship360 long-history screen browser check
+
+## #2 closeout (2026-09-26 21:22, owner)
+- [ ] C1 Metered semantic recipient check + held-out fixtures + FA/FR rates
+- [ ] C2 Analytics/feedback isolation + verification incl. captured synthesis input
+- [ ] C3 Group Read brevity (diagnose 9da8d061, tighten, one rerun)
+- [ ] C4 Whole-account R360 cost audit + bounded context + metered run
+- [ ] C5 Review labels, R360 screen 1280/390, concurrency fixture, successor packet, ledger

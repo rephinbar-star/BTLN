@@ -96,6 +96,7 @@ export type Database = {
           feedback_text: string | null
           id: string
           input_method: string
+          is_evaluation: boolean
           is_paid: boolean
           message_count: number | null
           prompt_version_id: string | null
@@ -118,6 +119,7 @@ export type Database = {
           feedback_text?: string | null
           id?: string
           input_method: string
+          is_evaluation?: boolean
           is_paid?: boolean
           message_count?: number | null
           prompt_version_id?: string | null
@@ -140,6 +142,7 @@ export type Database = {
           feedback_text?: string | null
           id?: string
           input_method?: string
+          is_evaluation?: boolean
           is_paid?: boolean
           message_count?: number | null
           prompt_version_id?: string | null
@@ -395,6 +398,24 @@ export type Database = {
           },
         ]
       }
+      evaluation_accounts: {
+        Row: {
+          created_at: string
+          label: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          label: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          label?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       evaluation_artifacts: {
         Row: {
           candidate_id: string | null
@@ -436,6 +457,7 @@ export type Database = {
           created_at: string
           event_name: string
           id: string
+          is_evaluation: boolean
           metadata: Json | null
           session_id: string
           user_id: string | null
@@ -444,6 +466,7 @@ export type Database = {
           created_at?: string
           event_name: string
           id?: string
+          is_evaluation?: boolean
           metadata?: Json | null
           session_id: string
           user_id?: string | null
@@ -452,6 +475,7 @@ export type Database = {
           created_at?: string
           event_name?: string
           id?: string
+          is_evaluation?: boolean
           metadata?: Json | null
           session_id?: string
           user_id?: string | null
@@ -2200,6 +2224,7 @@ export type Database = {
           candidate_id: string | null
           case_id: string | null
           created_at: string
+          eval_scope: boolean
           expires_at: string
           finalized_at: string | null
           function_name: string
@@ -2220,6 +2245,7 @@ export type Database = {
           candidate_id?: string | null
           case_id?: string | null
           created_at?: string
+          eval_scope?: boolean
           expires_at: string
           finalized_at?: string | null
           function_name: string
@@ -2240,6 +2266,7 @@ export type Database = {
           candidate_id?: string | null
           case_id?: string | null
           created_at?: string
+          eval_scope?: boolean
           expires_at?: string
           finalized_at?: string | null
           function_name?: string
@@ -3104,6 +3131,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_evaluation_user: { Args: { _uid: string }; Returns: boolean }
       journey_activate: {
         Args: { p_auto_include: boolean }
         Returns: undefined
