@@ -708,7 +708,7 @@ Deno.serve(async (req) => {
         nonModelStages.raw_message_deletion = count === 0 ? "verified" : `failed (${count} temporary rows remain)`;
         nonModelStages.attributed_evidence = output?.attributed_evidence ? "present" : "missing";
         nonModelStages.quote_integrity = output?.quote_integrity ? `checked ${output.quote_integrity.quotes_checked}, supported ${output.quote_integrity.quotes_supported}, removed ${output.quote_integrity.sentences_removed?.length ?? 0}, duplicates ${output.quote_integrity.duplicate_sentences_removed}` : (row?.status === "complete" ? "missing" : "not_reached");
-        if (output?.coverage) nonModelStages.history_coverage = `supplied ${output.coverage.messages_supplied ?? "?"}, analyzed ${output.coverage.messages_analyzed ?? "?"}, digest slices ${output.coverage.chunks ?? output.coverage.chunk_count ?? "?"}; attributed last ${output.attributed_evidence?.window?.messages ?? "≤400"} only`;
+        if (output?.coverage) nonModelStages.history_coverage = `supplied ${output.coverage.messages_supplied}, analyzed ${output.coverage.messages_analyzed}, read by AI ${output.coverage.messages_read_by_ai}, quoted verbatim ${output.coverage.messages_quoted_verbatim}, slices ${output.coverage.chunk_count} (failed ${output.coverage.failed_chunks}); attribution covers the recent window only`;
         nonModelStages.style_rewrite = output?.personalization ? `report: ${output.personalization.rewrite}, ${output.personalization.fields_applied}/${output.personalization.fields_total} fields` : "not_requested";
       }
     }
