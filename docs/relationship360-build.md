@@ -641,41 +641,40 @@ Status: person-specific attribution (#1) passes its acceptance list above.
 Still pending: persistent evaluated improvement workflow (#2, next), test-only billing (blocked: no provider test
 price), Group Roast humour/sharing, 10,000-message release matrix.
 
-## BUILD #2 — persistent improvement workflow: CURRENT STATUS (2026-09-26 21:05 UTC)
+## BUILD #2 — persistent improvement workflow: CURRENT STATUS (2026-09-26 21:25 UTC)
 
-This single section replaces the earlier #2 entries. Earlier results and packets stay unchanged in the database.
-Owner packet: **8df9c592-d098-4888-9735-7cab4996c626** (supersedes 46789aa8-…, which supersedes 0e97aa05-…). Human quality review: **PENDING**. Nothing approved, published, charged or promoted.
+This single section replaces the earlier #2 entries. Earlier results and packets are unchanged in the database.
+Owner packet: **57e4fe36-0572-4e2b-bd84-04b032f83425** → supersedes 8df9c592 → 46789aa8 → 0e97aa05. Human quality review: **PENDING**.
+Status: engineering gates below pass **except** the soft quality checks noted; the advice validator is still deterministic (see limits). Not an approval.
 
-Carried forward unchanged (verified earlier): shared validated report ownership (`_shared/requestOwner.ts`), verbatim quote integrity before raw deletion (`_shared/quoteIntegrity.ts`), unknown cost keeps full reservation, one-use 20-min test tokens, fresh Group Roast results.
+### 1 Advice recipient validation (advice-recipient-2)
+- Participants: p1=Taylor (reader, person1), p2=Alex (person2). The earlier "person1=Alex" statement was wrong.
+- Cause (traced in c4b22897/ac16108c): the first generation mixes recipients; the rewrite did not introduce it. Fix: fixed field-to-person binding in every Deep Read request; IDs + immutable recipient/counterpart through the rewrite; merge by ID; originals and rewrites both validated; failures withheld with a note, never name-swapped.
+- v2 adds actor references around quotes: "you said/your ('x')" must be the recipient's words; "you accepted/heard 'x'", "they said 'x'", "<other>'s 'x'" must be the counterpart's. The escaped item "You accepted 'Whatever'…" in Alex's slot is now withheld; the c4b22897 fixture withholds all 4 swapped items.
+- Fixtures (15 tests): escaped item, possessives, reversed order, same display names (roles, not names), joint advice, quoted third party, reorder/duplicate IDs.
+- Live: style off 2ddfebaf and style on 10c56043 withhold the same single item (script pattern quoting Alex); style on rewrote 10/10 fields; quotes 9/9 and 7/7; raw deletion verified.
+- Limits: deterministic pattern checks only. They do not prove meaning; advice with no quotes and no names that is meant for the other person can still pass. No metered semantic checker was added.
 
-### R1 Advice role swap — cause found, fixed, verified live
-- Correction: the earlier ledger said person1 in `ec8ce5d8` was Alex. Stored participants are p1=Taylor, p2=Alex.
-- `ec8ce5d8` stored no pre-rewrite advice, so its exact swap point cannot be proven. New traces (generated → rewrite request → rewrite response → final, test runs only) show the **primary generation** mixes recipients, not the style rewrite:
-  - `c4b22897` (no rewrite at all): person1/person2 advice fully swapped.
-  - `ac16108c`: a Taylor-only step addressed "Alex".
-- Fix: (a) a fixed field-to-person binding sent with every Deep Read (short and long paths); (b) `_shared/adviceRecipients.ts`: IDs per item, immutable recipient/counterpart sent explicitly to the rewrite, merge by ID, each rewrite re-checked; misaddressed originals are **withheld with a visible note**, never name-swapped.
-- After fix: style off `3bdce79c` 0 withheld; style on `001c2e51` one-sentence advice, 9/9 fields, 0 withheld, same recipients, quotes 4/4; consent off `b03b2725` no personalisation, 1 withheld.
-- Limits: checks are deterministic (who it's for, whose quoted words it asks to change). They do not prove full meaning; in the `c4b22897` fixture one swapped item passes. Bounded regeneration of withheld items is **not** implemented (withhold only). Correction-during-generation not re-run (binding uses request names, not identity mapping).
-- Tests: `adviceRecipients.test.ts` (9, includes both failures permanently).
+### 2 Evaluation data isolation (eval-isolation-1)
+- `evaluation_artifacts` (server-written only; admins read) records run, candidate and variant for every test-run report, recorded by `prompt-improvement` when the run starts. Backfilled: 63 past artifacts (10 candidate).
+- Candidate output is never staged; any existing source is quarantined (excluded, observations deleted, summaries marked stale). A DB trigger keeps quarantine and test provenance on any update, and observations can't be written for a quarantined source. Other test output is never auto-included and is only eligible for Relationship360 inside a server-issued test run. Feedback aggregates exclude test output.
+- Verified: c9a550ad (blocked f8f27886 output) quarantined, 0 observations remain; the owner's re-include and identity confirmation leave it excluded; account B can't confirm A's source; users can't write artifacts (insert/update/delete revoked). All affected rows belong to synthetic accounts.
+- Not separately built: "sandbox-approved candidate" is treated like any candidate (always excluded). The ordinary non-test Relationship360 exclusion was checked in the code and by counting rows (8 ordinary + 1 test source), not by reading the model input. User analytics events were not filtered.
 
-### R2 Group Read injection — implemented, verified live
-- Generic safety notice replaces echoed payloads in warning fields only; quote/evidence fields untouched. Per-run unseen random payload. Leak (`injection_not_leaked`) and adoption (`injection_resisted`) are separate hard checks (rubric mode-screen-7).
-- Baseline `ad628d26`: all pass. Candidate f8f27886 `f2397cbf`: no leak, but **adopted the planted invented event** → stays blocked. Original failure `a5520bf4` unchanged.
+### 3 10k → Relationship360 — verified
+- Reused report 19b5a4e8 (run 59b99198: 10,000 supplied/analysed/read by AI in 9 slices; 300 quoted verbatim; attribution covers the recent window only, NOT all 10k).
+- Identity confirmed as Taylor via the normal RPC as the synthetic user; relationship confirmed. Test-scope relationship synthesis 4503e025: 1 source, 12 observations (8 dated 2024-11-29..30, 4 undated digest-level), $0.078. Source dates 2024-01-01..2024-12-13, 10,000 dated.
+- The whole-account synthesis would need more than the $0.60 per-call cap (it was refused, no spend), so a relationship-level build was used; the cap was not raised.
+- Identity corrected during build (a577202c): cancelled, nothing saved; identity restored afterwards.
 
-### R3 Atomic stage accounting — implemented, verified
-- One RPC locks budget + run, checks expiry, claimed function, planned stage, retry link, call and dollar caps, and writes the labelled reservation in one transaction. The old signature refuses test runs. No post-insert label update.
-- DB self-test (tiny $0.000001 rows, no model calls): unplanned/missing stage, wrong function, bad retry link, old signature and call cap all refused. Unit tests cover concurrency/crash/retry (13). No live parallel DB race test.
-- Found in the 10k run: the attribution call on the long path was labelled "primary". Fixed (`inStage("attribution")`) and deployed; not re-run.
-
-### R4 Long history / 10k — partly verified
-- Run `59b99198` / result `39dd582f`: 10,000 dated synthetic messages imported; supplied 10,000, analysed 10,000, read by AI 10,000 in 9 slices (0 failed), 300 quoted verbatim; primary, attribution, quote check 4/4, raw deletion verified. 11 calls, reserved $2.08, actual $1.01, all within caps. Attribution covers the recent window only, not all 10k.
-- Journey source staged with dates 2024-01-01 to 2024-12-13 (10,000 dated, parsed provenance).
-- **Open:** Relationship360 (`af6ecaef`) ran but the 10k source produced **0 observations** (identity pending), so it did not reach synthesis. Group Read long history not run.
-- Risk: blocked candidate output from a synthetic Group Read test was staged as a Journey source on the synthetic account.
+### 4 Long Group Read + controls — verified
+- 9da8d061 (run 406000af): 3,000 messages, 3 digest slices + primary, full pipeline, $0.21. Unseen payload not adopted; the echoed warning was made generic. Failed soft check: concise.
+- Attribution stage label fix confirmed in both new Deep Read runs.
+- Atomic stage accounting: unchanged, as verified earlier with database fixtures; no new live race test.
 
 ### Budget and checks
-- Rolling 24h: **$8.99 committed, $6.01 left** of $15; caps unchanged ($3.50/job, $0.60/call); 0 unknown-cost calls. 5 open reservations (includes stale self-test rows).
-- 229 tests pass; app type check clean.
+- Rolling 24h $9.48 committed, **$5.52 left**; caps unchanged; 0 unknown-cost calls.
+- 235 tests pass. `/admin/improvement` at 1280 and 390 px: no errors, no sideways scrolling, packet v4 visible. The review page labels every result "full-pipeline", even partial ones (display issue). The Relationship360 long-history screen was not checked in the browser.
 
-### Still open
-10k → Relationship360 observations; Group Read long history; bounded regeneration of withheld advice; live DB concurrency test; owner review. Separately queued: billing, 77 older security warnings, Group Roast expansion.
+### Open
+Deterministic-only advice validation; the review page's parity label; Relationship360 long-history screen check; owner review. Separately queued: billing, 77 older security warnings, Group Roast expansion.

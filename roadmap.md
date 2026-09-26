@@ -44,5 +44,8 @@
 - [x] R1 Advice role swap trace + ID-bound rewrite + fixtures + paired live test
 - [x] R2 Group Read injection disclosure (generic warning, randomized canary, leak vs adoption)
 - [x] R3 Atomic stage accounting RPC
-- [ ] R4 Long-history / 10k parity — Deep Read done; R360 observations + Group Read long open
+- [x] R4 Long-history / 10k parity (10k→R360 relationship scope, long Group Read)
 - [x] R5 Verification, successor packet, ledger
+
+- [ ] Review page shows "full-pipeline" for partial results (display)
+- [ ] Relationship360 long-history screen browser check

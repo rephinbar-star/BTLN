@@ -395,6 +395,42 @@ export type Database = {
           },
         ]
       }
+      evaluation_artifacts: {
+        Row: {
+          candidate_id: string | null
+          created_at: string
+          eval_scope: string
+          id: string
+          run_id: string
+          source_id: string
+          source_kind: string
+          target_user_id: string
+          variant: string
+        }
+        Insert: {
+          candidate_id?: string | null
+          created_at?: string
+          eval_scope?: string
+          id?: string
+          run_id: string
+          source_id: string
+          source_kind: string
+          target_user_id: string
+          variant: string
+        }
+        Update: {
+          candidate_id?: string | null
+          created_at?: string
+          eval_scope?: string
+          id?: string
+          run_id?: string
+          source_id?: string
+          source_kind?: string
+          target_user_id?: string
+          variant?: string
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           created_at: string
@@ -1178,12 +1214,15 @@ export type Database = {
           date_precision: string
           date_provenance: string
           dated_count: number
+          evaluation_run_id: string | null
           excluded_at: string | null
           id: string
           identity_status: string
           notes: string | null
           observed_period_end: string | null
           observed_period_start: string | null
+          quarantine_reason: string | null
+          quarantined_at: string | null
           relationship_id: string
           source_id: string
           source_kind: string
@@ -1203,12 +1242,15 @@ export type Database = {
           date_precision?: string
           date_provenance?: string
           dated_count?: number
+          evaluation_run_id?: string | null
           excluded_at?: string | null
           id?: string
           identity_status?: string
           notes?: string | null
           observed_period_end?: string | null
           observed_period_start?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           relationship_id: string
           source_id: string
           source_kind: string
@@ -1228,12 +1270,15 @@ export type Database = {
           date_precision?: string
           date_provenance?: string
           dated_count?: number
+          evaluation_run_id?: string | null
           excluded_at?: string | null
           id?: string
           identity_status?: string
           notes?: string | null
           observed_period_end?: string | null
           observed_period_start?: string | null
+          quarantine_reason?: string | null
+          quarantined_at?: string | null
           relationship_id?: string
           source_id?: string
           source_kind?: string

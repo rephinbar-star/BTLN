@@ -18,7 +18,7 @@
 
 import { withTestRun } from "../_shared/testRun.ts";
 import { codeBaseline } from "../_shared/modeEval.ts";
-import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
+import { currentTestRun, inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { relationship360System } from "../_shared/modePrompts.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
@@ -223,11 +223,19 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   // ---- Eligible sources: owner, confirmed identity, not excluded. -------------
   const { data: allSources, error: sourcesError } = await admin
     .from("journey_sources")
-    .select("id,relationship_id,source_kind,source_id,subject_participant,subject_participant_id,identity_status,excluded_at,observed_period_start,observed_period_end,updated_at")
-    .eq("user_id", user.id);
+    .select("id,relationship_id,source_kind,source_id,subject_participant,subject_participant_id,identity_status,excluded_at,observed_period_start,observed_period_end,updated_at,evaluation_run_id,quarantined_at")
+    .eq("user_id", user.id).is("quarantined_at", null);
   if (sourcesError) return json(500, { error: "Could not read your included conversations." });
   const sources = ((allSources ?? []) as SourceRow[]).filter((s) => !relationshipId || s.relationship_id === relationshipId);
-  const eligible = sources.filter((s) => s.identity_status === "confirmed" && s.subject_participant && !s.excluded_at);
+  // Evaluation isolation (eval-isolation-1): output created by an operator test
+  // run is only eligible inside a server-issued metered test run (the isolated
+  // synthetic evaluation scope). Candidate output is quarantined in the database
+  // and never eligible. Nothing here is controlled by the client.
+  const tr = currentTestRun();
+  const evalScope = tr?.kind === "metered" ? tr.runId : null;
+  const eligible = sources.filter((s) => s.identity_status === "confirmed" && s.subject_participant && !s.excluded_at
+    && !(s as { quarantined_at?: string | null }).quarantined_at
+    && (evalScope !== null || !(s as { evaluation_run_id?: string | null }).evaluation_run_id));
 
   const scope = relationshipId ? "relationship" : "cross_relationship";
   const summaryQuery = admin
@@ -642,6 +650,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
 
   const coverage = {
     sources: distinctSources,
+    evaluation_scope: evalScope, // non-null only inside an operator test run
     relationships: distinctRelationships,
     confirmed_relationships: confirmedRelationshipIds.size,
     observations: observations.length,
@@ -671,7 +680,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   const { data: commitSources } = await admin
     .from("journey_sources").select("id").eq("user_id", user.id)
     .in("id", Array.from(new Set(observations.map((o) => o.journey_source_id))))
-    .eq("identity_status", "confirmed").is("excluded_at", null);
+    .eq("identity_status", "confirmed").is("excluded_at", null).is("quarantined_at", null);
   if ((commitSources ?? []).length === 0) {
     await admin.from("journey_jobs").update({ status: "cancelled", completed_at: new Date().toISOString() }).eq("id", job.id);
     return json(200, { state: "cancelled", message: "The conversations behind this changed while it was building, so nothing was saved." });

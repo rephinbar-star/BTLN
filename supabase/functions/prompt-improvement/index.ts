@@ -547,7 +547,7 @@ Deno.serve(async (req) => {
   // function as that account. Every model call inside it reserves spend first.
   // pipeline_finalize: advances multi-step runs, reads the persisted result, checks
   // stage coverage from the spend ledger and stores an immutable result row.
-  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize") {
+  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize" || action === "synthetic_as_user") {
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     // Synthetic accounts only. The password is derived server-side from the
@@ -572,6 +572,35 @@ Deno.serve(async (req) => {
       let j: Admin = null; try { j = JSON.parse(t); } catch { j = { raw: t.slice(0, 300) }; }
       return { status: r.status, body: j };
     };
+
+    // Acts AS a synthetic account through its own signed-in session, so every
+    // normal ownership / identity / consent guard applies. Whitelisted calls
+    // only; no model call can run unmetered (synthetic accounts without a test
+    // token are refused by testRun.ts).
+    if (action === "synthetic_as_user") {
+      const target = String(body.target_user_id ?? "");
+      if (!UUID_RE.test(target)) return json(400, { error: "target_user_id required" });
+      const access = await sessionFor(target);
+      if (!access) return json(403, { error: "Synthetic accounts only." });
+      const RPCS = new Set(["journey_confirm_identity", "journey_confirm_relationship", "journey_source_participants", "journey_assign_source", "journey_set_source_excluded", "journey_auto_include"]);
+      const as = createClient(supaUrl, anonKey, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${access}` } } });
+      if (body.rpc) {
+        if (!RPCS.has(String(body.rpc))) return json(400, { error: "rpc not allowed" });
+        const { data, error } = await as.rpc(String(body.rpc), body.args ?? {});
+        await audit(admin, user.id, "synthetic_as_user", "rpc", target, { rpc: body.rpc });
+        return json(200, { data, error: error?.message ?? null });
+      }
+      if (body.select === "journey_sources") {
+        const { data, error } = await as.from("journey_sources").select("id,source_kind,source_id,identity_status,subject_participant,excluded_at,quarantined_at,evaluation_run_id,relationship_id,dated_count,observed_period_start,observed_period_end").eq("id", String(body.id ?? ""));
+        return json(200, { data, error: error?.message ?? null });
+      }
+      if (body.fn === "relationship360") {
+        // Ordinary (non-test) call: used to prove evaluation output is not eligible outside the scope.
+        const r = await callFn("relationship360", access, "", body.payload ?? {});
+        return json(200, r);
+      }
+      return json(400, { error: "nothing to do" });
+    }
 
     if (action === "ownership_probe") {
       // No-model integration fixture: synthetic accounts calling Deep Read with
@@ -628,7 +657,7 @@ Deno.serve(async (req) => {
       const access = await sessionFor(target);
       if (!access) return json(403, { error: "Target must be a synthetic @btln-test.dev account." });
       const secret = Array.from(crypto.getRandomValues(new Uint8Array(32))).map((x) => x.toString(16).padStart(2, "0")).join("");
-      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? (c.id === "dr-long-10k" ? 16 : 10) : 6;
+      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? (c.id === "dr-long-10k" ? 16 : 10) : c.id.endsWith("-long") ? 8 : 6;
       const { data: run, error: runErr } = await admin.from("prompt_test_runs").insert({
         secret_hash: await sha256(secret), target_user_id: target, operator_id: user.id, function_name: FUNCTION_FOR[key], mode: key, variant,
         candidate_id: cand?.id ?? null, candidate_addendum: cand?.prompt_text ?? null, baseline_text_hash: baselineHash, case_id: c.id,
@@ -649,8 +678,21 @@ Deno.serve(async (req) => {
       const firstKey: ModeKey = key === "interactive" ? "quick_take" : key;
       const firstCase = key === "interactive" ? { ...c, speakers: ["You", "Them"], messages: [{ id: "s1", speaker: "Them", text: String(c.interactive?.original_take?.read ?? "") }, { id: "s2", speaker: "You", text: String(c.interactive?.prior_updates?.[0]?.result_json?.context_summary ?? "See you soon") }, ...c.messages.slice(0, 1).map((m) => ({ ...m, speaker: "Them" }))] } : c;
       const payload = pipelineRequest(firstKey, firstCase as ModeCase);
+      // Relationship-level Relationship360 (a normal product scope), owner-checked by the function itself.
+      if (key === "relationship360" && UUID_RE.test(String(body.relationship_id ?? ""))) (payload as Admin).relationship_id = String(body.relationship_id);
       if (key === "deep_read_full" && body.personalization?.free_text !== undefined) (payload.context_data as Admin).free_text = String(body.personalization.free_text).slice(0, 500);
       const r = await callFn(FUNCTION_FOR[firstKey], access, header, payload);
+      // Server-owned provenance (eval-isolation-1): the result is recorded as
+      // evaluation output at once; a DB trigger quarantines candidate output
+      // even if it was already staged, and staging paths refuse it later.
+      {
+        const kindFor: Record<string, [string, string]> = { quick_take: ["quick_take", "decode_id"], interactive: ["quick_take", "decode_id"], deep_read_full: ["deep_read", "analysis_id"], group_read: ["group_read", "group_read_id"], group_roast: ["group_roast", "group_roast_id"] };
+        const kf = kindFor[key];
+        const sid = kf ? r.body?.[kf[1]] : null;
+        if (kf && typeof sid === "string" && UUID_RE.test(sid)) {
+          await admin.from("evaluation_artifacts").upsert({ source_kind: kf[0], source_id: sid, run_id: run.id, candidate_id: cand?.id ?? null, variant, target_user_id: target }, { onConflict: "source_kind,source_id", ignoreDuplicates: true });
+        }
+      }
       await admin.from("prompt_test_runs").update({ state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, payload_seed: payloadSeed, secret, first: { status: r.status, body: r.body, session_id: payload.session_id ?? null } } }).eq("id", run.id);
       return json(r.status < 300 ? 200 : 502, { run_id: run.id, status: r.status, response: r.body });
     }
@@ -723,7 +765,7 @@ Deno.serve(async (req) => {
     const { data: ledger } = await admin.from("prompt_spend_ledger").select("id,stage,kind,model,reserved_usd,actual_usd,status,outcome").eq("job_id", run.id).order("created_at");
     const rows = ledger ?? [];
     const stagesSeen = [...new Set(rows.map((x: Admin) => x.stage ?? "unlabelled"))];
-    const expected = EXPECTED_STAGES[key];
+    const expected = c.id.endsWith("-long") || c.id === "dr-long-10k" ? [...new Set(["digest", ...EXPECTED_STAGES[key]])] : EXPECTED_STAGES[key];
     const coverage: Record<string, string> = {};
     for (const s of expected) coverage[s] = rows.some((x: Admin) => x.stage === s && String(x.outcome ?? "").startsWith("ok")) ? "exercised" : rows.some((x: Admin) => x.stage === s) ? "failed" : "missing";
     for (const s of stagesSeen) if (!(s in coverage)) coverage[s] = "exercised";
