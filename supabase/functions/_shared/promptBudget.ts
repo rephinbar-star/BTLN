@@ -54,7 +54,7 @@ export const meteredCall = async (
   const amount = maxCostUsd(body.model, inTok, body.max_tokens);
   if (amount === null) return { ok: false, stage: "budget", reason: "unknown_pricing" };
   const res = await deps.reserve({ scope: opts.scope, jobId: opts.jobId, kind: opts.kind, model: body.model, inTok, outTok: body.max_tokens, amount });
-  if (!res.ok) return { ok: false, stage: "budget", reason: res.reason, detail: res.detail };
+  if (res.ok === false) return { ok: false, stage: "budget", reason: res.reason, detail: res.detail };
 
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(new Error("timeout")), opts.timeoutMs);
