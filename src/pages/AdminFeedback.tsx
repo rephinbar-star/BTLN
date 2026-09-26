@@ -172,8 +172,9 @@ const AdminFeedback = () => {
           </section>
 
           <p className="mt-10 text-[13px] text-muted-foreground">
-            Ratings are a signal, not proof. A prompt change is only promoted after it passes the
-            frozen Deep Read regression rubric in the evaluation harness, and promotion is manual.
+            Ratings are a signal, not proof. Prompt changes go through the{" "}
+            <Link className="underline underline-offset-4" to="/admin/improvement">improvement workflow</Link>:
+            real evaluation, operator review, sandbox only. Production promotion is disabled.
           </p>
         </>
       )}
