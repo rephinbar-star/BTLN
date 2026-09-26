@@ -104,7 +104,7 @@ export const enforceQuoteIntegrity = (report: Json, msgs: CanonMsg[], names: str
       for (const q of quotedIn(s)) {
         out.quotes_checked++;
         const loc = locateQuote(q, msgs);
-        if (!loc.ok) { drop = loc.reason; break; }
+        if (!loc.ok) { drop = (loc as { reason: "not_in_source" | "stitched" }).reason; break; }
         if (speakerHint && nameSet.includes(normQ(speakerHint)) && normQ(msgs[loc.index].speaker) !== normQ(speakerHint)) { drop = "wrong_speaker"; break; }
         out.quotes_supported++;
       }
@@ -145,7 +145,7 @@ export const enforceQuoteIntegrity = (report: Json, msgs: CanonMsg[], names: str
           if (bare.split(/\s+/).length >= 3 && !quotedIn(v).length) {
             out.quotes_checked++;
             const loc = locateQuote(bare, msgs);
-            const reason = !loc.ok ? loc.reason : nameSet.includes(normQ(speaker)) && normQ(msgs[loc.index].speaker) !== normQ(speaker) ? "wrong_speaker" : null;
+            const reason = !loc.ok ? (loc as { reason: "not_in_source" | "stitched" }).reason : nameSet.includes(normQ(speaker)) && normQ(msgs[loc.index].speaker) !== normQ(speaker) ? "wrong_speaker" : null;
             if (reason) { out.sentences_removed.push({ path: p, reason }); node[k] = ""; continue; }
             out.quotes_supported++;
             continue;
