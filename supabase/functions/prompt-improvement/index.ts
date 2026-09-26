@@ -547,7 +547,7 @@ Deno.serve(async (req) => {
   // function as that account. Every model call inside it reserves spend first.
   // pipeline_finalize: advances multi-step runs, reads the persisted result, checks
   // stage coverage from the spend ledger and stores an immutable result row.
-  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize") {
+  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize" || action === "synthetic_as_user") {
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     // Synthetic accounts only. The password is derived server-side from the
@@ -572,6 +572,35 @@ Deno.serve(async (req) => {
       let j: Admin = null; try { j = JSON.parse(t); } catch { j = { raw: t.slice(0, 300) }; }
       return { status: r.status, body: j };
     };
+
+    // Acts AS a synthetic account through its own signed-in session, so every
+    // normal ownership / identity / consent guard applies. Whitelisted calls
+    // only; no model call can run unmetered (synthetic accounts without a test
+    // token are refused by testRun.ts).
+    if (action === "synthetic_as_user") {
+      const target = String(body.target_user_id ?? "");
+      if (!UUID_RE.test(target)) return json(400, { error: "target_user_id required" });
+      const access = await sessionFor(target);
+      if (!access) return json(403, { error: "Synthetic accounts only." });
+      const RPCS = new Set(["journey_confirm_identity", "journey_confirm_relationship", "journey_source_participants", "journey_assign_source", "journey_set_source_excluded", "journey_auto_include"]);
+      const as = createClient(supaUrl, anonKey, { auth: { persistSession: false }, global: { headers: { Authorization: `Bearer ${access}` } } });
+      if (body.rpc) {
+        if (!RPCS.has(String(body.rpc))) return json(400, { error: "rpc not allowed" });
+        const { data, error } = await as.rpc(String(body.rpc), body.args ?? {});
+        await audit(admin, user.id, "synthetic_as_user", "rpc", target, { rpc: body.rpc });
+        return json(200, { data, error: error?.message ?? null });
+      }
+      if (body.select === "journey_sources") {
+        const { data, error } = await as.from("journey_sources").select("id,source_kind,source_id,identity_status,subject_participant,excluded_at,quarantined_at,evaluation_run_id,relationship_id,dated_count,observed_period_start,observed_period_end").eq("id", String(body.id ?? ""));
+        return json(200, { data, error: error?.message ?? null });
+      }
+      if (body.fn === "relationship360") {
+        // Ordinary (non-test) call: used to prove evaluation output is not eligible outside the scope.
+        const r = await callFn("relationship360", access, "", body.payload ?? {});
+        return json(200, r);
+      }
+      return json(400, { error: "nothing to do" });
+    }
 
     if (action === "ownership_probe") {
       // No-model integration fixture: synthetic accounts calling Deep Read with
