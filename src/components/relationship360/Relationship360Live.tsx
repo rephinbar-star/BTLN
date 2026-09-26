@@ -29,7 +29,11 @@ import type { R360Pattern, R360Recommendation, R360Working } from "@/lib/relatio
  * The fictional preview lives separately at /examples/journey and is never
  * mixed into this view.
  */
-export const Relationship360Live = ({ relationships }: { relationships: JourneyRelationship[] }) => {
+/**
+ * `recorded`: operator component review of a recorded synthetic test build.
+ * Nothing is fetched, built, saved or sent as feedback. Not a customer view.
+ */
+export const Relationship360Live = ({ relationships, recorded }: { relationships: JourneyRelationship[]; recorded?: LiveStatus }) => {
   const { toast } = useToast();
   const [relationshipId, setRelationshipId] = useState<string | null>(null);
   const [status, setStatus] = useState<LiveStatus | null>(null);
@@ -39,6 +43,7 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
   const [reflectText, setReflectText] = useState("");
 
   const load = useCallback(async () => {
+    if (recorded) { setStatus(recorded); setLoading(false); return; }
     setLoading(true);
     try {
       setStatus(await getLiveStatus(relationshipId));
@@ -51,7 +56,7 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
     } finally {
       setLoading(false);
     }
-  }, [relationshipId, toast]);
+  }, [relationshipId, toast, recorded]);
 
   useEffect(() => {
     void load();
@@ -96,6 +101,7 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
   };
 
   const submitReflection = async (recommendationId: string, outcome: "used" | "not_used") => {
+    if (recorded) return;
     try {
       await saveReflection({
         relationshipId,
@@ -132,7 +138,7 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
     <section className="mt-10 min-w-0" aria-labelledby="r360-live">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="r360-live" className="text-[20px] font-medium">Your profile</h2>
-        {status?.prime && status.opted_in && (
+        {!recorded && status?.prime && status.opted_in && (
           <Button
             variant="outline"
             className="h-11 rounded-full"
@@ -180,7 +186,7 @@ export const Relationship360Live = ({ relationships }: { relationships: JourneyR
       )}
 
       {content && status?.summary && (
-        <FeedbackProvider sourceKind="relationship360" sourceId={status.summary.id}>
+        <FeedbackProvider sourceKind="relationship360" sourceId={status.summary.id} demo={!!recorded}>
           <div className="mt-6">
             <R360Overview
               headline={content.headline}
