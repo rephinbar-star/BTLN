@@ -60,3 +60,13 @@ describe("quotation integrity", () => {
     expect(enforceQuoteIntegrity(r, msgs, names).unsafe).toBe(true);
   });
 });
+
+describe("paraphrase labelling", () => {
+  it("labels unquoted, non-verbatim evidence as paraphrase and keeps verbatim evidence as a quote", () => {
+    const r = { green_flags: [{ title: "t", evidence: "Drew's messages contain zero questions about Casey." }, { title: "u", evidence: "Can we do tomorrow?" }] } as any;
+    const qi = enforceQuoteIntegrity(r, msgs, names);
+    expect(r.green_flags[0].evidence_kind).toBe("paraphrase");
+    expect(r.green_flags[1].evidence_kind).toBeUndefined();
+    expect(qi.paraphrases_labelled).toBe(1);
+  });
+});

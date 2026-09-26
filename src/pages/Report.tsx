@@ -1920,7 +1920,7 @@ export const FreeInsights = ({ result }: { result: AnalysisResult }) => {
             )}
             {greenEvidence && (
               <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
-                &quot;{greenEvidence}&quot;
+                {(greenObj as { evidence_kind?: string } | null)?.evidence_kind === "paraphrase" ? <>In summary (not a quote): {greenEvidence}</> : <>&quot;{greenEvidence}&quot;</>}
               </p>
             )}
           </div>
