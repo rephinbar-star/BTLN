@@ -703,10 +703,17 @@ Deno.serve(async (req) => {
         const { count } = await admin.from("messages_temp").select("id", { count: "exact", head: true }).eq("analysis_id", id);
         nonModelStages.raw_message_deletion = count === 0 ? "verified" : `failed (${count} temporary rows remain)`;
         nonModelStages.attributed_evidence = output?.attributed_evidence ? "present" : "missing";
+        nonModelStages.quote_integrity = output?.quote_integrity ? `checked ${output.quote_integrity.quotes_checked}, supported ${output.quote_integrity.quotes_supported}, removed ${output.quote_integrity.sentences_removed?.length ?? 0}, duplicates ${output.quote_integrity.duplicate_sentences_removed}` : (row?.status === "complete" ? "missing" : "not_reached");
         nonModelStages.style_rewrite = output?.personalization ? `report: ${output.personalization.rewrite}, ${output.personalization.fields_applied}/${output.personalization.fields_total} fields` : "not_requested";
       }
     }
     if (pending) return json(202, { state: "pending" });
+    if (key === "group_roast") {
+      // Fresh evaluation only: the result row must be created inside this run.
+      const rid = st.first?.body?.[RESULT_REF.group_roast!.idField];
+      const { data: fr } = rid ? await admin.from("group_roasts").select("created_at").eq("id", rid).maybeSingle() : { data: null };
+      nonModelStages.fresh_result = fr && new Date(fr.created_at) >= new Date(run.created_at) ? "verified" : "failed (cached or pre-existing result)";
+    }
 
     const { data: ledger } = await admin.from("prompt_spend_ledger").select("id,stage,kind,model,reserved_usd,actual_usd,status,outcome").eq("job_id", run.id).order("created_at");
     const rows = ledger ?? [];
