@@ -628,7 +628,7 @@ Deno.serve(async (req) => {
       const access = await sessionFor(target);
       if (!access) return json(403, { error: "Target must be a synthetic @btln-test.dev account." });
       const secret = Array.from(crypto.getRandomValues(new Uint8Array(32))).map((x) => x.toString(16).padStart(2, "0")).join("");
-      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? 10 : 6;
+      const maxCalls = key === "interactive" ? 8 : key === "deep_read_full" ? (c.id === "dr-long-10k" ? 16 : 10) : 6;
       const { data: run, error: runErr } = await admin.from("prompt_test_runs").insert({
         secret_hash: await sha256(secret), target_user_id: target, operator_id: user.id, function_name: FUNCTION_FOR[key], mode: key, variant,
         candidate_id: cand?.id ?? null, candidate_addendum: cand?.prompt_text ?? null, baseline_text_hash: baselineHash, case_id: c.id,
@@ -708,6 +708,7 @@ Deno.serve(async (req) => {
         nonModelStages.raw_message_deletion = count === 0 ? "verified" : `failed (${count} temporary rows remain)`;
         nonModelStages.attributed_evidence = output?.attributed_evidence ? "present" : "missing";
         nonModelStages.quote_integrity = output?.quote_integrity ? `checked ${output.quote_integrity.quotes_checked}, supported ${output.quote_integrity.quotes_supported}, removed ${output.quote_integrity.sentences_removed?.length ?? 0}, duplicates ${output.quote_integrity.duplicate_sentences_removed}` : (row?.status === "complete" ? "missing" : "not_reached");
+        if (output?.coverage) nonModelStages.history_coverage = `supplied ${output.coverage.messages_supplied ?? "?"}, analyzed ${output.coverage.messages_analyzed ?? "?"}, digest slices ${output.coverage.chunks ?? output.coverage.chunk_count ?? "?"}; attributed last ${output.attributed_evidence?.window?.messages ?? "≤400"} only`;
         nonModelStages.style_rewrite = output?.personalization ? `report: ${output.personalization.rewrite}, ${output.personalization.fields_applied}/${output.personalization.fields_total} fields` : "not_requested";
       }
     }
