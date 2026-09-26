@@ -1,5 +1,6 @@
 import { withTestRun } from "../_shared/testRun.ts";
 import { resolveRequestOwner } from "../_shared/requestOwner.ts";
+import { enforceQuoteIntegrity } from "../_shared/quoteIntegrity.ts";
 import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
@@ -194,6 +195,17 @@ Deno.serve(withTestRun("analyze-conversation", async (req) => {
     } catch (_e) {
       console.warn("[analyze-conversation] attribution skipped");
     }
+  };
+
+  // Quotation integrity against the canonical messages, before they are deleted.
+  // Unsupported quotations drop the sentence that relies on them; too many
+  // unsupported quotations fail the read safely instead of saving it.
+  // deno-lint-ignore no-explicit-any
+  const checkQuotes = (resultJson: any, rows: { sender_role: string; content: string }[]): boolean => {
+    const { name1, name2 } = context_data!;
+    const qi = enforceQuoteIntegrity(resultJson, rows.map((m) => ({ speaker: m.sender_role === "user" ? name1 : name2, content: m.content })), [name1, name2]);
+    resultJson.quote_integrity = qi;
+    return !qi.unsafe;
   };
 
   const raw_text_for_analysis = raw_text
@@ -453,6 +465,7 @@ ${tail.map((m, j) => line(m, j)).join("\n")}`;
       full_history_read: digest.failedChunks === 0,
     };
 
+    if (!checkQuotes(resultJson, capped)) return failAnalysis("We could not verify enough of this report against your messages. Please retry.");
     await attachAttribution(resultJson, capped, pv.model_string);
     await recordDeepReadDates();
 
@@ -718,6 +731,10 @@ ${messagesBlock}`;
   const missing = required.filter((k) => !(k in (resultJson ?? {})));
   if (missing.length > 0) {
     return failAnalysis(`Analysis missing required fields: ${missing.join(", ")}`);
+  }
+
+  if (!checkQuotes(resultJson, [...messages].sort((a, b) => a.sequence_order - b.sequence_order))) {
+    return failAnalysis("We could not verify enough of this report against your messages. Please retry.");
   }
 
   // 5. Privacy: hard-delete temp messages
