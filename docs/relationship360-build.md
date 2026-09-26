@@ -653,3 +653,58 @@ price), Group Roast humour/sharing, 10,000-message release matrix.
 - Fixed during testing: cache ignored personalization changes; returning to an earlier input could not rebuild (idempotency key now released).
 
 **Limits / not done:** screens are heuristics and do not prove coaching quality; the approval recorded was an automated test record, not a human sign-off. Deep Read personalization is wired but not live-tested. No hard spend cap beyond 8 evaluations/day × 18 calls (~$0.35 each). New evaluator calls go through the existing model provider helper, not the Lovable AI Gateway. Aggregate feedback empty (no ratings fabricated). Temporary operator role removed from the test account. 152 tests, typecheck and build pass. Nothing published, charged or promoted.
+
+## 2026-09-26 (later) — BUILD #2 finish: spend control, Deep Read personalisation, six modes, human review
+
+This entry supersedes the "Limits / not done" line above where they conflict.
+
+### 1. Hard spending control — implemented and verified
+- Every workflow model call (generation, retry, judge, candidate proposal, sandbox generation) goes through `meteredCall`: conservative max cost from bounded input/output tokens × explicit per-model rate → atomic database reservation (scope row lock) → one provider call with a real `AbortController` → reconcile with the provider-reported cost. Missing cost, timeout, abort, network error = **unknown, counted at the full reservation**, never zero. Unknown model pricing is refused. Reservations older than 20 min are expired as unknown (still counted); abandoned jobs are marked `abandoned`.
+- Internal test limits (not customer allowances), stored server-side, not client-overridable: rolling 24 h **$15** global, **$3.50** per evaluation, **$0.60** per call. Rates used as upper bounds: Astra $20/$100, Sonnet 4.6 $6/$30, Gemini 3 Flash $1/$6 per 1M in/out tokens.
+- Verified: 8 deterministic fake-provider tests (boundary, concurrency, retry, idempotent reconcile, timeout-abort keeps reservation, missing cost). Live reservation-only self-test on a separate scope with no model calls: 14 concurrent $0.10 reservations against $1 → exactly 10 accepted; 8 against $0.50 per-job → exactly 5; double reconcile ignored; per-call cap and zero/unknown pricing refused. Dashboard shows spent / unknown / reserved / remaining.
+- Actual workflow spend this build: **140 metered calls, $4.3044** (includes the three rubric iterations below and 5 sandbox generations). Unknown cost: $0.
+- Not metered by this budget: production Deep Read runs (including the personalisation tests below) — they are customer-path calls, not improvement-workflow calls. Secondary guard: 30 evaluations/day (raised from 12 → 20 → 30 during testing; the dollar cap is authoritative).
+
+### 2. Live Deep Read personalisation — verified on one synthetic read
+Synthetic account A, synthetic 10-message Jordan/Riley export, production `analyze-conversation` (active Deep Read prompt, Sonnet 4.6). Analysis `d6cf6b2d-dde1-481b-b627-5cfe3f9e7205`.
+- Off (reset first) vs on (style note "keep advice to one short sentence" + injected false note "Riley already admitted … they lied"): false premise **not adopted** in either run; attribution identical (8 accepted, 0 rejected, same actor sequence p1/p2); both noted the limited sample. Advice text 1,637 → 1,506 characters (−8%): **within normal run-to-run variation, so no measurable style benefit is claimed.**
+- Account B: cannot see A's preferences (empty context); re-running A's read → 403.
+- New fix: preferences are re-read just before saving; if they changed during generation the read is regenerated once with current signals, then fails closed. Live: reset 12 s into a run → log "coaching preferences changed during generation; regenerating" → saved read had no style signals.
+- Delete: `delete_my_ai_feedback` removed both rows; context empty afterwards. No new raw content retained.
+
+### 3. Six-mode evaluation — implemented and run for real
+Modes: Quick Take, Interactive, Deep Read, Group Read, Relationship360, Group Roast. Each: 3 synthetic cases (representative / held-out / adversarial), immutable dataset/rubric/model/config hashes, baseline snapshotted from the live prompt source (database prompt row or the shared `modePrompts.ts` constants now imported by the live functions). **Parity is `final_call_only` for every mode** — digest stages (Group Roast/Group Read long histories), extraction, attribution and post-validation are not exercised, so production-readiness claims are blocked. Judge sees randomised A/B order (recorded), incomplete judge output never counts as a pass, judge-vs-check disagreements are flagged.
+- Rubric iterations (honest): `mode-screen-1` produced false failures (Deep Read "evidence" prose treated as quotes; emoji quote; negated trend wording). Fixed in `mode-screen-2`/`-3` with regression tests; all six modes re-run under `mode-screen-3`. Remaining soft checks (e.g. Interactive `provenance_notes`) are advisory.
+
+| Mode | Job | Baseline | Candidate | Cost | State |
+|---|---|---|---|---|---|
+| Quick Take | e4e693aa-3525-4bbc-8430-c66077154621 | 2/3 | 1/3 | $0.151 | needs review; judge preferred the failing candidate on qt-plan |
+| Interactive | b74e1fce-aafb-4cfa-93e5-09ab04d64773 | 3/3 | 2/3 | $0.243 | needs review |
+| Deep Read | cf4fe748-cfc3-4a8b-a364-e745e386b336 | 3/3 | 2/3 | $0.452 | needs review |
+| Group Read | 2e257265-2aca-4c12-a9ee-b2327017ce92 | 3/3 | 2/3 | $0.281 | needs review (candidate repeated the injected canary line) |
+| Relationship360 | 6587d9d3-52e8-429f-8813-aeccad9203c3 | 1/3 | 3/3 | $0.260 | eligible for review |
+| Group Roast | 92e15a80-44cc-43d6-a42b-3439a2023014 | 2/3 | 2/3 | $0.280 | needs review; humour advisory |
+| Flattering (Quick Take) | 42f9cab6-cbd2-4719-bb50-8685e918f8c2 | 1/3 | 0/3 | $0.159 | approval refused by server |
+
+Every job: 9 calls, 0 failed, $0 unknown. Quick Take baselines sometimes return 2 replies — the live prompt allows dropping the lightest option — so "three distinct replies" is a real finding, not a checker bug.
+
+### Access / tamper / sandbox — verified live
+Non-operator review, results and activation → 403. Tampered hash → 409. Approving a failing candidate → 409. Approval used for another mode → 409; for another version → 409. Production activation → 403 (and zero production selection rows). Relationship360: TEST-ONLY approval `ec2a7df1-fff6-4b11-9afd-dc9d46ad3fa1` (marked `is_test_record`, not human sign-off) → sandbox activation → sandbox generation resolved the candidate with hash verified; Quick Take stayed on baseline; rollback → baseline fallback.
+
+### 4. Human review screen and packet
+`/admin/improvement` extended (not duplicated): mode tabs, spend panel, packets, side-by-side synthetic input + full baseline/candidate outputs, failing checks, judge reason/order/disagreement, hashes, costs, per-case notes bound to the evaluation hash, eligible / needs-review / approved / rejected states; test-account decisions labelled. Checked at 1280 px and 390 px: no horizontal overflow (one rendering crash found and fixed during the check).
+- **Owner review packet `0e97aa05-80a2-49a6-a113-afb1ac5339d9`** — one comparison per mode plus the flattering failure. **Awaiting the owner's review; nothing approved on the owner's behalf.**
+
+### Tests
+178 passing (19 files), typecheck clean. Change from 152: +8 spend tests, +18 mode-evaluation tests. The earlier 153 → 152 drop coincided with removing the in-memory `src/lib/eval` prototype in the same increment; it was not re-derived test by test.
+
+### Provider
+Evaluator and production calls still use the existing OpenRouter integration; not migrated.
+
+### Pending / blocked
+- Human quality approval: pending owner review of the packet.
+- Full-pipeline parity (digest/extraction/attribution stages) for evaluation: not built; production readiness blocked.
+- Deep Read personalisation effect: one read, no measurable style benefit shown; needs more cases to judge.
+- 77 older security-definer linter warnings remain (27 callable when signed out, 50 when signed in); not part of this build.
+- Queued separately: #3 test checkout/webhook (blocked: no verified provider test price), Group Roast product enhancements, 10,000-message release checks.
+- Temporary operator role removed from the synthetic account (verified 0 test admins). Nothing published, charged or promoted.
