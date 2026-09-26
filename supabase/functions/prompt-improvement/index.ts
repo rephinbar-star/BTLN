@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
   // function as that account. Every model call inside it reserves spend first.
   // pipeline_finalize: advances multi-step runs, reads the persisted result, checks
   // stage coverage from the spend ledger and stores an immutable result row.
-  if (action === "pipeline_start" || action === "pipeline_finalize") {
+  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize") {
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     // Synthetic accounts only. The password is derived server-side from the
