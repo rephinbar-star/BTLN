@@ -197,7 +197,7 @@ Deno.serve(withTestRun("analyze-conversation", async (req) => {
         messages: toEvidenceMessages(rows),
         model,
         call: async (body) => {
-          const r = await callOpenRouter(body, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE);
+          const r = await inStage("attribution", () => callOpenRouter(body, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE));
           return { ok: r.ok, content: String(r.data?.choices?.[0]?.message?.content ?? "") };
         },
       });
