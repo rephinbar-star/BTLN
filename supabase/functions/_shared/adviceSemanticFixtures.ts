@@ -183,3 +183,51 @@ export const SEMANTIC_FIXTURES_4: Fx4[] = [
     it4("step.0", "p1", "p2", "step", "Agree together who owns which bills.", "keep", "joint plan"),
   ] },
 ];
+
+// ---------------------------------------------------------------------------
+// External benchmark ext-1 (2026-09-27). Authored by Codex outside the
+// implementation session from product requirements (not human/clinical
+// adjudication). Frozen verbatim in prompt_datasets BEFORE the first model
+// call; labels/notes are never sent to the checker. Message mN -> index N-1.
+// Item ids are canonical (cs.<recipient>.<n>, step.<n> for joint plans);
+// `ext` is the owner's label (A1..F3). Do not edit: fixes need a new version.
+const m = (role: "p1" | "p2", content: string): Msg => ({ sender_role: role === "p1" ? "user" : "partner", content });
+const P = (a: string, b: string): Participant[] => [{ id: "p1", label: a, role: "user" }, { id: "p2", label: b, role: "partner" }];
+const ex = (ext: string, id: string, rid: string, kind: AdviceItem["kind"], text: string, expect: "keep" | "withhold", note: string) =>
+  ({ ext, id, path: [id], recipient_id: rid, counterpart_ids: [rid === "p1" ? "p2" : "p1"], kind, text, expect, note });
+export const EXTERNAL_BENCHMARK_1 = {
+  name: "advice-external-ext-1",
+  author: "Codex (external to implementation session); not independent human/clinical adjudication",
+  fixtures: [
+    { id: "ext-A", parts: P("Nora", "Eli"), msgs: [m("p1", "Can we settle who books the train?"), m("p2", "You always make a big deal of everything."), m("p1", "I need a yes or no so I can plan."), m("p2", "Stop being dramatic.")], items: [
+      ex("A1", "cs.p1.0", "p1", "suggestion", "Stop dismissing their practical questions as drama.", "withhold", "asserted past dismissal belongs to p2"),
+      ex("A2", "cs.p2.0", "p2", "suggestion", "Answer the practical question without dismissing their concern.", "keep", ""),
+      ex("A3", "cs.p1.1", "p1", "suggestion", "State when you need the answer and what you will do if it does not arrive.", "keep", "future step grounded in planning"),
+    ] },
+    { id: "ext-B", parts: P("Sam", "Sam"), msgs: [m("p1", "I'm sorry I cancelled at the last minute."), m("p2", "Thanks for acknowledging it."), m("p1", "Next time I'll tell you as soon as I know.")], items: [
+      ex("B1", "cs.p2.0", "p2", "suggestion", "Follow through on your promise to give earlier notice.", "withhold", "promise belongs to p1"),
+      ex("B2", "cs.p1.0", "p1", "suggestion", "Follow through on your promise to give earlier notice.", "keep", ""),
+      ex("B3", "cs.p2.1", "p2", "suggestion", "Explain how much notice would help you plan.", "keep", "forward-looking"),
+    ] },
+    { id: "ext-C", parts: P("Dev", "Jo"), msgs: [m("p1", "My brother said, 'You're impossible to please.'"), m("p2", "That sounds painful. What happened?"), m("p1", "He didn't want to discuss it.")], items: [
+      ex("C1", "cs.p1.0", "p1", "suggestion", "Stop calling your partner impossible to please.", "withhold", "quoted third-party words are not p1 behaviour toward p2"),
+      ex("C2", "cs.p2.0", "p2", "suggestion", "Ask whether they want listening or suggestions before offering advice.", "keep", ""),
+      ex("C3", "cs.p2.1", "p2", "suggestion", "Apologize for calling them impossible to please.", "withhold", "no such action by p2"),
+    ] },
+    { id: "ext-D", parts: P("Inez", "Bo"), msgs: [m("p1", "We're both exhausted after work."), m("p2", "Yes, let's discuss the budget on Saturday."), m("p1", "Saturday morning works.")], items: [
+      ex("D1", "step.0", "p1", "step", "Set aside a short Saturday check-in and let each person finish speaking.", "keep", "joint future plan, no existing interruption asserted"),
+      ex("D2", "cs.p1.0", "p1", "suggestion", "Stop interrupting whenever money comes up.", "withhold", "unsupported past behaviour"),
+      ex("D3", "cs.p2.0", "p2", "suggestion", "Bring one budget question to the Saturday conversation.", "keep", ""),
+    ] },
+    { id: "ext-E", parts: P("Lee", "Rae"), msgs: [m("p2", "I can pick you up at six."), m("p1", "Thanks, that works."), m("p2", "I'm running late; it will be six-thirty."), m("p1", "Please let me know earlier next time.")], items: [
+      ex("E1", "cs.p1.0", "p1", "suggestion", "Give earlier updates when your pickup time changes.", "withhold", "changed pickup commitment belongs to p2"),
+      ex("E2", "cs.p2.0", "p2", "suggestion", "Send an update as soon as you know the pickup time has changed.", "keep", ""),
+      ex("E3", "cs.p1.1", "p1", "suggestion", "Agree on a backup plan together if timing changes again.", "keep", ""),
+    ] },
+    { id: "ext-F", parts: P("Uma", "Zed"), msgs: [m("p1", "Could we talk about what happened?"), m("p2", "Not tonight. I need some time."), m("p1", "Okay. Can you suggest another time tomorrow?")], items: [
+      ex("F1", "cs.p1.0", "p1", "suggestion", "When you ask for space, offer a time to reconnect.", "withhold", "request for space belongs to p2"),
+      ex("F2", "cs.p2.0", "p2", "suggestion", "Offer a time to reconnect after asking for space.", "keep", ""),
+      ex("F3", "cs.p1.1", "p1", "suggestion", "Give them the requested space while keeping your request for a return time clear.", "keep", ""),
+    ] },
+  ],
+};
