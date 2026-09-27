@@ -800,7 +800,7 @@ ${messagesBlock}`;
       semantic_version: ADVICE_SEMANTIC_VERSION,
       semantic,
       note: semantic.status === "failed"
-        ? "Some advice was held back because we could not finish checking who it is for. Running the read again may restore it."
+        ? "We could not finish the extra check of who each suggestion is for, so the advice is shown without that review. Treat it with care."
         : withheld.length ? "Some advice was held back because we could not confirm it was meant for the person it was addressed to." : null,
       limits: "Rule checks plus a second model review of who each item is for and whether messages support it. This lowers the risk of misdirected advice; it does not prove meaning.",
     };
