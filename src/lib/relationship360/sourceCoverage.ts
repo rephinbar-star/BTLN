@@ -27,7 +27,7 @@ const KIND_LABEL: Record<string, string> = {
 const fmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" });
 
-export const describeSource = (s: R360SourceMeta, observationsFromSource: number) => {
+export const describeSource = (s: R360SourceMeta, observationsFromSource: number, cited = false) => {
   const dated = Math.max(0, s.dated_count ?? 0);
   const undated = Math.max(0, s.undated_count ?? 0);
   const recorded = s.dated_count != null || s.undated_count != null;
@@ -55,6 +55,6 @@ export const describeSource = (s: R360SourceMeta, observationsFromSource: number
     count,
     dates,
     attribution,
-    used: `${observationsFromSource} observation${observationsFromSource === 1 ? "" : "s"} used`,
+    used: `${observationsFromSource} ${cited ? "cited in this build" : `stored observation${observationsFromSource === 1 ? "" : "s"}`}`,
   };
 };

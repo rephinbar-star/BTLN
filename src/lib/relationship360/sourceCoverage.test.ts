@@ -9,7 +9,7 @@ describe("describeSource", () => {
     expect(d.count).toBe("10,000 messages supplied");
     expect(d.dates).toBe("Jan 1, 2024 – Dec 13, 2024 (from message dates)");
     expect(d.attribution).toMatch(/most recent 400 only/);
-    expect(d.used).toBe("12 observations used");
+    expect(d.used).toBe("12 stored observations");
   });
   it("small, undated and self-reported fallbacks", () => {
     expect(describeSource({ ...base, dated_count: 0, undated_count: 30 }, 1).attribution).toBe("Speakers checked closely in all 30");

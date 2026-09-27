@@ -220,7 +220,7 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
               })()}
             </p>
 
-            <SourceCoverage sources={status.sources} observations={observations} />
+            <SourceCoverage sources={status.sources} observations={observations} cited={!!recorded} />
 
             <ThenNow comparison={comparison} />
 
@@ -312,7 +312,7 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
 };
 
 /** Compact per-conversation coverage: supplied count, date range and attribution scope. */
-const SourceCoverage = ({ sources, observations }: { sources?: R360SourceMeta[]; observations: { journey_source_id?: string }[] }) => {
+const SourceCoverage = ({ sources, observations, cited }: { sources?: R360SourceMeta[]; observations: { journey_source_id?: string }[]; cited?: boolean }) => {
   if (!sources || sources.length === 0) return null;
   return (
     <details className="mt-3 min-w-0 rounded-xl border border-btln-line">
@@ -321,7 +321,7 @@ const SourceCoverage = ({ sources, observations }: { sources?: R360SourceMeta[];
       </summary>
       <ul className="space-y-2 px-3 pb-3">
         {sources.map((s) => {
-          const d = describeSource(s, observations.filter((o) => o.journey_source_id === s.id).length);
+          const d = describeSource(s, observations.filter((o) => o.journey_source_id === s.id).length, cited);
           return (
             <li key={s.id} className="min-w-0 border-t border-btln-line pt-2 text-[13px] leading-relaxed">
               <p className="break-words"><span className="font-medium">{d.kind}</span> · {d.count}</p>
