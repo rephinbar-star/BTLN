@@ -91,3 +91,17 @@ describe("advice semantic verdicts v4 (fail closed)", () => {
     expect(r.communication_suggestions.person1).toEqual([]);
   });
 });
+
+import { EXTERNAL_BENCHMARK_1 } from "../../../supabase/functions/_shared/adviceSemanticFixtures";
+describe("external benchmark ext-1 (frozen)", () => {
+  it("has 18 items with the owner's labels, and labels/notes never reach the checker input", () => {
+    const items = EXTERNAL_BENCHMARK_1.fixtures.flatMap((f) => f.items);
+    expect(items.length).toBe(18);
+    expect(items.filter((i) => i.expect === "withhold").map((i) => i.ext)).toEqual(["A1", "B1", "C1", "C3", "D2", "E1", "F1"]);
+    for (const f of EXTERNAL_BENCHMARK_1.fixtures) {
+      const r = semanticRequest(f.items, f.parts, f.msgs);
+      expect(r.user).not.toMatch(/"expect"|"note"|"ext"|withhold/);
+      for (const i of f.items) expect(r.user).toContain(JSON.stringify(i.text).slice(1, -1));
+    }
+  });
+});
