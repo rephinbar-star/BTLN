@@ -398,11 +398,19 @@ function parityText(p: string): string {
   return ({ full_pipeline: "Full pipeline", final_call_only: "Final call only", partial: "Partial pipeline", blocked: "Blocked (no output)", unrecorded: "Stage coverage not recorded" } as Record<string, string>)[p] ?? "Stage coverage not recorded";
 }
 
+/** Fictional layout-only sources for the component review (never stored, never sent anywhere). */
+const LAYOUT_FIXTURE_SOURCES = [
+  { id: "fixture-small", source_kind: "deep_read", dated_count: 0, undated_count: 42, date_provenance: "unknown", date_precision: "unknown", observed_period_start: null, observed_period_end: null },
+  { id: "fixture-undated", source_kind: "quick_take", dated_count: null, undated_count: null, date_provenance: "unknown", date_precision: "unknown", observed_period_start: null, observed_period_end: null },
+  { id: "fixture-self", source_kind: "deep_read", dated_count: 0, undated_count: 120, date_provenance: "user_supplied", date_precision: "date", observed_period_start: "2023-03-01T00:00:00Z", observed_period_end: "2023-06-30T00:00:00Z" },
+];
+
 /** Operator component review of a RECORDED synthetic Relationship360 test build (not a customer E2E view). */
 function R360ComponentReview({ resultId }: { resultId: string }) {
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
+  const [fixtures, setFixtures] = useState(false);
   const load = async () => {
     setOpen((o) => !o);
     if (data || open) return;

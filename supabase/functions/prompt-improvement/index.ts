@@ -845,7 +845,7 @@ Deno.serve(async (req) => {
     for (const k of ["patterns", "working", "recommendations"]) for (const x of (content?.[k] ?? [])) for (const e of (x?.evidence ?? [])) if (typeof e === "string" && UUID_RE.test(e)) ids.add(e);
     const { data: obs } = ids.size ? await admin.from("journey_observations").select("id,journey_source_id,subject_kind,subject_label,observation_type,statement,evidence_refs,confidence,observed_period_start,observed_period_end,created_at").eq("user_id", run.target_user_id).in("id", [...ids]) : { data: [] };
     const srcIds = Array.isArray(b.coverage?.input_source_ids) ? b.coverage.input_source_ids.filter((x: unknown) => typeof x === "string" && UUID_RE.test(x as string)) : [];
-    const { data: sources } = srcIds.length ? await admin.from("journey_sources").select("id,source_kind,dated_count,observed_period_start,observed_period_end,evaluation_run_id,quarantined_at").eq("user_id", run.target_user_id).in("id", srcIds) : { data: [] };
+    const { data: sources } = srcIds.length ? await admin.from("journey_sources").select("id,source_kind,dated_count,undated_count,date_provenance,date_precision,observed_period_start,observed_period_end,evaluation_run_id,quarantined_at").eq("user_id", run.target_user_id).in("id", srcIds) : { data: [] };
     await audit(admin, user.id, "r360_component_review", "prompt_pipeline_results", pr.id, {});
     return json(200, { recorded: true, run_id: run.id, eval_scope: run.eval_scope, generated_at: run.created_at, content, coverage: b.coverage ?? null, observations: obs ?? [], sources: sources ?? [] });
   }

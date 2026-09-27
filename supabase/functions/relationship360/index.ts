@@ -227,7 +227,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   // ---- Eligible sources: owner, confirmed identity, not excluded. -------------
   const { data: allSources, error: sourcesError } = await admin
     .from("journey_sources")
-    .select("id,relationship_id,source_kind,source_id,subject_participant,subject_participant_id,identity_status,excluded_at,observed_period_start,observed_period_end,updated_at,evaluation_run_id,quarantined_at")
+    .select("id,relationship_id,source_kind,source_id,subject_participant,subject_participant_id,identity_status,excluded_at,observed_period_start,observed_period_end,updated_at,evaluation_run_id,quarantined_at,dated_count,undated_count,date_provenance,date_precision")
     .eq("user_id", user.id).is("quarantined_at", null);
   if (sourcesError) return json(500, { error: "Could not read your included conversations." });
   const sources = ((allSources ?? []) as SourceRow[]).filter((s) => !relationshipId || s.relationship_id === relationshipId);
@@ -314,6 +314,11 @@ Deno.serve(withTestRun("relationship360", async (req) => {
       summary: summaryRow,
       job: latestJob,
       observations,
+      // Source-level coverage from stored metadata for eligible (non-evaluation, non-quarantined) sources only.
+      sources: eligible.map((s) => {
+        const x = s as unknown as Record<string, unknown>;
+        return { id: s.id, source_kind: s.source_kind, dated_count: x.dated_count ?? null, undated_count: x.undated_count ?? null, date_provenance: x.date_provenance ?? null, date_precision: x.date_precision ?? null, observed_period_start: s.observed_period_start, observed_period_end: s.observed_period_end };
+      }),
       reflections: reflections ?? [],
     });
   }
