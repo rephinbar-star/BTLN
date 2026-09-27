@@ -768,19 +768,27 @@ ${messagesBlock}`;
       const r = await Promise.race([call, new Promise<null>((res) => setTimeout(() => res(null), 30_000))]);
       let parsed: unknown = null;
       try { if (r && r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null; } catch { parsed = null; }
-      const verdicts = applySemanticVerdicts(finalItems, parsed, req);
-      const bad = new Set<string>();
-      for (const it of finalItems) {
-        const v = verdicts.get(it.id)!;
-        if (v.ok) continue;
-        bad.add(it.id);
-        const st = adviceStatuses.find((x) => x.id === it.id && x.status !== "withheld");
-        if (st) { st.status = "withheld"; st.reasons = [...st.reasons, ...v.reasons]; }
-        else adviceStatuses.push({ id: it.id, recipient_id: it.recipient_id, status: "withheld", reasons: v.reasons });
+      if (!parsed) {
+        // The auxiliary check itself failed (timeout/provider/parse error).
+        // Degrade gracefully: keep the advice (already passed deterministic
+        // recipient checks), surface a note, withhold nothing.
+        semantic = { status: "failed", checked: 0, withheld: 0 };
+        if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), response: null, verdicts: {} };
+      } else {
+        const verdicts = applySemanticVerdicts(finalItems, parsed, req);
+        const bad = new Set<string>();
+        for (const it of finalItems) {
+          const v = verdicts.get(it.id)!;
+          if (v.ok) continue;
+          bad.add(it.id);
+          const st = adviceStatuses.find((x) => x.id === it.id && x.status !== "withheld");
+          if (st) { st.status = "withheld"; st.reasons = [...st.reasons, ...v.reasons]; }
+          else adviceStatuses.push({ id: it.id, recipient_id: it.recipient_id, status: "withheld", reasons: v.reasons });
+        }
+        removeItems(resultJson, parts, bad);
+        semantic = { status: "done", checked: finalItems.length, withheld: bad.size };
+        if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), response: parsed, verdicts: Object.fromEntries(verdicts) };
       }
-      removeItems(resultJson, parts, bad);
-      semantic = { status: parsed ? "done" : "failed", checked: finalItems.length, withheld: bad.size };
-      if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), response: parsed, verdicts: Object.fromEntries(verdicts) };
     }
   }
   if (resultJson && typeof resultJson === "object") {
@@ -792,7 +800,7 @@ ${messagesBlock}`;
       semantic_version: ADVICE_SEMANTIC_VERSION,
       semantic,
       note: semantic.status === "failed"
-        ? "Some advice was held back because we could not finish checking who it is for. Running the read again may restore it."
+        ? "We could not finish the extra check of who each suggestion is for, so the advice is shown without that review. Treat it with care."
         : withheld.length ? "Some advice was held back because we could not confirm it was meant for the person it was addressed to." : null,
       limits: "Rule checks plus a second model review of who each item is for and whether messages support it. This lowers the risk of misdirected advice; it does not prove meaning.",
     };
