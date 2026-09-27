@@ -749,3 +749,23 @@ Human quality review: PENDING. Budget: $10.77 committed / $4.23 left of $15 roll
 
 Open: signed-in customer visual check (needs owner/approval); showing the 10k message count in the customer screen (design decision); independent held-out advice cases; human quality review. Separately queued: billing, 77 older security warnings, Group Roast.
 Deployment: prompt-improvement, analyze-conversation and relationship360 are live on the shared backend (the published site uses it too). The frontend changes (Component review) are in preview only and not published.
+
+## #2 external advice benchmark + source coverage — 2026-09-27 05:30 UTC (packet 80036524-5a12-47cb-8ac0-2ae078777793, supersedes f862f3c3…, unchanged; human review PENDING)
+
+### 1 External benchmark ext-1 (Codex-authored from product requirements; not human/clinical adjudication)
+- Frozen before any model call: prompt_datasets 828054e6-adb7-4a58-b42a-afe2c16c3aca (immutable), content hash 786c140a…, checker config hash 9d5fb3de… (advice-semantic-4, same model/prompt/validator). Labels, notes and A1–F3 names never sent to the checker (unit-tested).
+- FIRST PASS, unchanged checker, job 6dacba69-db82-45c6-bf31-4982424dce09, $0.0648 actual: 17/18 match. False accepts 0/7 misaddressed. False rejects 1/11 valid: C2 ("Ask whether they want listening or suggestions before offering advice") — checker said support "unclear". No timeouts or call failures. D2 was withheld correctly, but one of its reasons was a malformed field (mostly_shown_by "n/a" on a behaviour claim) — counted separately as a malformed verdict.
+- Dispute (not relabelled): C2 assumes Jo tends to offer advice; Jo only asked "What happened?". Withholding is defensible on a narrow reading; kept as the owner's KEEP label, so it counts as a false reject.
+- No tuning, no second version. Original t1 cs.p2.0 remains separately visible: labelled ambiguous, and the checker accepted it (it was not withheld).
+- Assessment: when a behavioural characterisation is only partly supported (t1 cs.p2.0), production advice should use narrower, situation-bound wording ("after the topic was closed twice…") rather than a trait ("brushing it off"). Not implemented in this step.
+
+### 2 Customer source coverage
+- Relationship360 now shows "Conversations included (N)": per conversation, supplied message count (undated noted), date range with provenance ("from message dates" / "period you entered" / "Dates unknown"), Deep Read close-speaker scope (all N, or most recent 400 only), and stored observations (component review: "cited in this build"). No combined total. Status returns metadata for eligible non-evaluation sources only.
+- Verified in component review of result 792030e2 (run 09dbaac7) at 1280 and 390: 10k source "10,000 messages supplied · Jan 1, 2024 – Dec 13, 2024 (from message dates) · most recent 400 only"; fixture small/undated/self-reported rows correct; 0px overflow.
+
+### 3 Authenticated review — still BLOCKED
+- No approval card for signing in as synthetic account A; not retried. Component review is supplemental only.
+- Human steps: open /admin/improvement?mode=relationship360 → Relationship360 result 792030e2 → "Component review" → open "Conversations included" → check 10k row, recent-400 note, inline Insight/Introspection at desktop and phone width.
+
+Budget: $10.84 used / $4.16 left of $15 (rolling 24h). 251 tests pass; typecheck clean.
+Open: authenticated customer check; C2 dispute decision; narrower-wording change (proposal only); human review.

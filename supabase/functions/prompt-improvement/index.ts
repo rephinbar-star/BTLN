@@ -25,7 +25,7 @@ import {
 import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF, withPayloadToken } from "../_shared/pipelineCases.ts";
 import { payloadToken } from "../_shared/injectionDisclosure.ts";
 import { ADVICE_SEMANTIC_VERSION, applySemanticVerdicts, SEMANTIC_MODEL, semanticRequest } from "../_shared/adviceRecipients.ts";
-import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3, SEMANTIC_FIXTURES_4 } from "../_shared/adviceSemanticFixtures.ts";
+import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3, SEMANTIC_FIXTURES_4, EXTERNAL_BENCHMARK_1 } from "../_shared/adviceSemanticFixtures.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -845,7 +845,7 @@ Deno.serve(async (req) => {
     for (const k of ["patterns", "working", "recommendations"]) for (const x of (content?.[k] ?? [])) for (const e of (x?.evidence ?? [])) if (typeof e === "string" && UUID_RE.test(e)) ids.add(e);
     const { data: obs } = ids.size ? await admin.from("journey_observations").select("id,journey_source_id,subject_kind,subject_label,observation_type,statement,evidence_refs,confidence,observed_period_start,observed_period_end,created_at").eq("user_id", run.target_user_id).in("id", [...ids]) : { data: [] };
     const srcIds = Array.isArray(b.coverage?.input_source_ids) ? b.coverage.input_source_ids.filter((x: unknown) => typeof x === "string" && UUID_RE.test(x as string)) : [];
-    const { data: sources } = srcIds.length ? await admin.from("journey_sources").select("id,source_kind,dated_count,observed_period_start,observed_period_end,evaluation_run_id,quarantined_at").eq("user_id", run.target_user_id).in("id", srcIds) : { data: [] };
+    const { data: sources } = srcIds.length ? await admin.from("journey_sources").select("id,source_kind,dated_count,undated_count,date_provenance,date_precision,observed_period_start,observed_period_end,evaluation_run_id,quarantined_at").eq("user_id", run.target_user_id).in("id", srcIds) : { data: [] };
     await audit(admin, user.id, "r360_component_review", "prompt_pipeline_results", pr.id, {});
     return json(200, { recorded: true, run_id: run.id, eval_scope: run.eval_scope, generated_at: run.created_at, content, coverage: b.coverage ?? null, observations: obs ?? [], sources: sources ?? [] });
   }
@@ -927,6 +927,53 @@ Deno.serve(async (req) => {
     const { data: ledger } = await admin.from("prompt_spend_ledger").select("reserved_usd,actual_usd,status").eq("job_id", jobId);
     await audit(admin, user.id, "advice_semantic_eval", "prompt_spend_ledger", null, { job_id: jobId, summary });
     return json(200, { job_id: jobId, model: SEMANTIC_MODEL, version: ADVICE_SEMANTIC_VERSION, summary, rows, ledger });
+  }
+
+  // External benchmark ext-1: frozen immutably (cases + labels + checker config hash) BEFORE any model call.
+  if (action === "advice_benchmark_freeze" || action === "advice_benchmark_run") {
+    const B = EXTERNAL_BENCHMARK_1;
+    const sha = async (s: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))).map((b) => b.toString(16).padStart(2, "0")).join("");
+    const contentHash = await sha(JSON.stringify(B));
+    const configHash = await sha(JSON.stringify({ version: ADVICE_SEMANTIC_VERSION, model: SEMANTIC_MODEL, prompts: B.fixtures.map((f) => semanticRequest(f.items, f.parts, f.msgs).system), validator: applySemanticVerdicts.toString(), request: semanticRequest.toString() }));
+    if (action === "advice_benchmark_freeze") {
+      const { data: existing } = await admin.from("prompt_datasets").select("id,content_hash,cases,created_at").eq("mode", "advice-semantic").eq("name", B.name).maybeSingle();
+      if (existing) return json(200, { already_frozen: true, id: existing.id, content_hash: existing.content_hash, config_hash: existing.cases?.config_hash, created_at: existing.created_at, matches: existing.content_hash === contentHash });
+      const { data, error } = await admin.from("prompt_datasets").insert({ mode: "advice-semantic", name: B.name, revision: 1, origin: "synthetic", content_hash: contentHash, cases: { benchmark: B, config_hash: configHash, checker_version: ADVICE_SEMANTIC_VERSION, model: SEMANTIC_MODEL, frozen_by: user.id } }).select("id,created_at").single();
+      if (error) return json(500, { error: error.message });
+      await audit(admin, user.id, "advice_benchmark_freeze", "prompt_datasets", data.id, { content_hash: contentHash, config_hash: configHash });
+      return json(200, { id: data.id, created_at: data.created_at, content_hash: contentHash, config_hash: configHash, checker_version: ADVICE_SEMANTIC_VERSION });
+    }
+    const { data: frozen } = await admin.from("prompt_datasets").select("id,content_hash,cases,created_at").eq("mode", "advice-semantic").eq("name", B.name).maybeSingle();
+    if (!frozen || frozen.content_hash !== contentHash) return json(409, { error: "Benchmark not frozen or cases changed." });
+    const configMatches = frozen.cases?.config_hash === configHash;
+    if (!configMatches && !body.allow_new_config) return json(409, { error: "Checker config differs from the frozen first-pass config; rerun must be reported as a separate version.", frozen_config: frozen.cases?.config_hash, current_config: configHash });
+    if (!aiKey) return json(503, { error: "Model key unavailable." });
+    const jobId = crypto.randomUUID();
+    const rows: Admin[] = [];
+    const calls: Admin[] = [];
+    for (const fx of B.fixtures) {
+      const req = semanticRequest(fx.items, fx.parts, fx.msgs); // labels/notes/ext never serialised
+      const r = await meteredCall(deps, { scope: SCOPE, jobId, kind: "judge", timeoutMs: 60_000, body: {
+        model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
+        messages: [{ role: "system", content: req.system }, { role: "user", content: req.user }] } as Admin });
+      let parsed: unknown = null;
+      try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value; } catch { parsed = null; }
+      calls.push({ fixture: fx.id, ok: r.ok, failure: r.ok ? null : (r.stage === "budget" ? `budget:${r.reason}` : r.reason), parsed: parsed !== null, raw_verdicts: (parsed as Admin)?.verdicts ?? null });
+      const v = applySemanticVerdicts(fx.items, parsed, req);
+      for (const i of fx.items) { const x = v.get(i.id)!; rows.push({ ext: i.ext, fixture: fx.id, id: i.id, expect: i.expect, got: x.ok ? "keep" : "withhold", reasons: x.reasons, evidence: x.evidence, behavior_lines: x.behavior_lines }); }
+    }
+    const summary = {
+      items: rows.length,
+      true_keep: rows.filter((r) => r.expect === "keep" && r.got === "keep").length,
+      true_withhold: rows.filter((r) => r.expect === "withhold" && r.got === "withhold").length,
+      false_accepts: rows.filter((r) => r.expect === "withhold" && r.got === "keep").map((r) => r.ext),
+      false_rejects: rows.filter((r) => r.expect === "keep" && r.got === "withhold").map((r) => `${r.ext}:${r.reasons.join("|")}`),
+      malformed_or_unavailable: rows.filter((r) => r.reasons.some((x: string) => ["semantic_malformed", "semantic_unavailable", "semantic_missing", "semantic_duplicate"].includes(x))).map((r) => r.ext),
+      call_failures: calls.filter((c) => !c.ok).map((c) => `${c.fixture}:${c.failure}`),
+    };
+    const { data: ledger } = await admin.from("prompt_spend_ledger").select("reserved_usd,actual_usd,status").eq("job_id", jobId);
+    await audit(admin, user.id, "advice_benchmark_run", "prompt_datasets", frozen.id, { job_id: jobId, first_pass_config: configMatches, config_hash: configHash, version: ADVICE_SEMANTIC_VERSION, summary, rows, calls });
+    return json(200, { job_id: jobId, dataset_id: frozen.id, version: ADVICE_SEMANTIC_VERSION, config_matches_frozen: configMatches, config_hash: configHash, summary, rows, calls, ledger });
   }
 
   if (action === "budget_selftest") {

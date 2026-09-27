@@ -102,6 +102,8 @@ export type LiveStatus = {
   job: LiveJob | null;
   observations: LiveObservation[];
   reflections: LiveReflection[];
+  /** Included conversations with stored counts/dates (server metadata). Older servers omit it. */
+  sources?: import("./sourceCoverage").R360SourceMeta[];
 };
 
 export type BuildResult =

@@ -23,6 +23,7 @@ import {
 import type { JourneyRelationship } from "@/lib/journey/types";
 import type { LiveComparison } from "@/lib/relationship360/live";
 import type { R360Pattern, R360Recommendation, R360Working } from "@/lib/relationship360/types";
+import { describeSource, type R360SourceMeta } from "@/lib/relationship360/sourceCoverage";
 
 /**
  * The real profile, built from the person's own confirmed conversations.
@@ -219,6 +220,8 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
               })()}
             </p>
 
+            <SourceCoverage sources={status.sources} observations={observations} cited={!!recorded} />
+
             <ThenNow comparison={comparison} />
 
             {patterns.map((pattern) => (
@@ -305,6 +308,33 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
         </FeedbackProvider>
       )}
     </section>
+  );
+};
+
+/** Compact per-conversation coverage: supplied count, date range and attribution scope. */
+const SourceCoverage = ({ sources, observations, cited }: { sources?: R360SourceMeta[]; observations: { journey_source_id?: string }[]; cited?: boolean }) => {
+  if (!sources || sources.length === 0) return null;
+  return (
+    <details className="mt-3 min-w-0 rounded-xl border border-btln-line">
+      <summary className="flex min-h-11 cursor-pointer items-center px-3 text-[14px] font-medium">
+        Conversations included ({sources.length})
+      </summary>
+      <ul className="space-y-2 px-3 pb-3">
+        {sources.map((s) => {
+          const d = describeSource(s, observations.filter((o) => o.journey_source_id === s.id).length, cited);
+          return (
+            <li key={s.id} className="min-w-0 border-t border-btln-line pt-2 text-[13px] leading-relaxed">
+              <p className="break-words"><span className="font-medium">{d.kind}</span> · {d.count}</p>
+              <p className="break-words text-muted-foreground">{d.dates}</p>
+              <p className="break-words text-muted-foreground">{[d.attribution, d.used].filter(Boolean).join(" · ")}</p>
+            </li>
+          );
+        })}
+      </ul>
+      <p className="px-3 pb-3 text-[12px] text-muted-foreground">
+        Counts are per conversation as supplied; overlapping imports are not merged into one total.
+      </p>
+    </details>
   );
 };
 
