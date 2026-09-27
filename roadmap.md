@@ -56,3 +56,9 @@
 - [ ] #2 R360 signed-in customer screen check — needs owner sign-in (approval unavailable); component review done
 - [x] #2 concurrent stage limits (stage_selftest)
 - [x] C2 isolation, C3 Group Read brevity, C4 whole-account R360, review labels, successor packet b417a4b5
+
+## #2 external benchmark + coverage (2026-09-27)
+- [x] Frozen external benchmark ext-1, first pass 17/18 (job 6dacba69)
+- [x] Source-level count/date/attribution list in Relationship360 (component review verified 1280/390)
+- [ ] Signed-in customer check — blocked, no approval available
+- [ ] Owner: C2 dispute; narrower wording for partly supported advice
