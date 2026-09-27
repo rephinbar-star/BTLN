@@ -417,12 +417,14 @@ function R360ComponentReview({ resultId }: { resultId: string }) {
           <p className="rounded-md bg-muted px-3 py-2 text-[12px] text-foreground">
             Component review: recorded synthetic test output ({data.eval_scope ? "evaluation scope" : "ordinary test scope"}, run {data.run_id}) shown in the real Relationship360 component. Not a signed-in customer view; nothing here is saved.
           </p>
-          <ul className="mt-2 space-y-1 text-[12px] text-muted-foreground">
-            {(data.sources ?? []).map((s: any) => (
-              <li key={s.id} className="break-words">{s.source_kind} · {s.dated_count ?? 0} dated messages · {s.observed_period_start ? `${String(s.observed_period_start).slice(0, 10)} to ${String(s.observed_period_end ?? s.observed_period_start).slice(0, 10)}` : "dates unknown"}{s.evaluation_run_id ? " · test source" : ""}</li>
-            ))}
-          </ul>
-          <Relationship360Live relationships={[]} recorded={{ prime: true, opted_in: true, counts: { linked: (data.sources ?? []).length, eligible: (data.sources ?? []).length, pending: 0 }, summary: data.content ? { id: data.run_id, content: data.content, coverage: data.coverage, generated_at: data.generated_at } as any : null, job: null, observations: data.observations ?? [], reflections: [] }} />
+          <label className="mt-2 flex min-h-11 items-center gap-2 text-[13px]">
+            <input type="checkbox" checked={fixtures} onChange={(e) => setFixtures(e.target.checked)} />
+            Add 3 layout fixture sources (small, undated, self-reported period) — fictional, labelled
+          </label>
+          {(() => {
+            const srcs = [...(data.sources ?? []), ...(fixtures ? LAYOUT_FIXTURE_SOURCES : [])];
+            return <Relationship360Live relationships={[]} recorded={{ prime: true, opted_in: true, counts: { linked: srcs.length, eligible: srcs.length, pending: 0 }, summary: data.content ? { id: data.run_id, content: data.content, coverage: data.coverage, generated_at: data.generated_at } as any : null, job: null, observations: data.observations ?? [], reflections: [], sources: srcs }} />;
+          })()}
         </div>
       )}
     </div>
