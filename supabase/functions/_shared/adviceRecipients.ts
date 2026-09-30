@@ -181,7 +181,14 @@ export const removeItems = (result: any, parts: Participant[], bad: Set<string>)
 // controls, and is supported by cited message indices keeps the item. Anything
 // else — unclear, malformed, missing, timeout — withholds it with a note.
 // This is a second opinion from a model, not proof of meaning.
-export const ADVICE_SEMANTIC_VERSION = "advice-semantic-4";
+export const ADVICE_SEMANTIC_VERSION = "advice-semantic-6";
+// Round 6: semantic-5 regression run 551f830f still withheld C2 as supported:"no" — the check required the
+// conditional's event ("offering advice") to be in the transcript. Support for a new action is now judged by
+// whether the situation that makes the step useful is shown, not whether the named future moment occurred.
+// Round 5 (advice-semantic-5): ext-1 first pass (run 6dacba69, semantic-4) wrongly withheld C2, a support step
+// ("ask whether they want listening or suggestions before offering advice") judged as an unsupported habit claim.
+// The rule now states that a conditional/temporal frame ("before X", "when X", "if X") describes a future
+// situation, not a claim the recipient did X; only wording that asserts or presupposes past conduct needs it shown.
 // Round 1 (gemini-3-flash, advice-semantic-1) on held-out set 1: 1/4 false accepts, 1/7 false rejects.
 // Round 2 (advice-semantic-2): 1 false accept on 18 items (t1-pronoun-noquote/cs.p2.0). Cause: the
 // verdict's evidence was never checked against WHO wrote the cited lines, and nothing asked whether the
@@ -209,13 +216,13 @@ For each advice item decide:
 - addressed_to: "recipient" if it asks the item's recipient to do something, "counterpart" if it really asks the other person, "both" for a joint action, "unclear" otherwise.
 - action_type:
   "change_own_behavior" = it asks the recipient to stop, soften, replace, repair or keep doing something the RECIPIENT did. Wording such as "instead of X", "rather than X", "drop X", "without X", "keep doing X", "next time don't X" claims the recipient did X, so it is this type.
-  "new_action" = a forward-looking step for the recipient (make a request, ask a question, give an estimate, say what they think) that does NOT claim the recipient did anything wrong. It may respond to the other person's behaviour; it need not have happened already.
+  "new_action" = a forward-looking step for the recipient (make a request, ask a question, check what the other person needs, offer support, give an estimate, say what they think) that does NOT claim the recipient did anything wrong. It may respond to the other person's behaviour; it need not have happened already. A conditional or temporal frame ("before X", "when X", "if X", "next time X happens") describes a future situation; it does not claim the recipient already did X. Classify as change_own_behavior only when the wording asserts or presupposes the recipient's past conduct (stop, again, keep, instead of, your habit of, apologise for).
   "joint_plan" = something both people agree or do together.
   "general" = no specific behaviour or situation.
 - behavior_lines: for change_own_behavior only, up to 3 transcript indices where the RECIPIENT shows the behaviour X. Otherwise [].
 - mostly_shown_by: for change_own_behavior, whose lines show X most clearly and most often across the whole transcript: "recipient", "counterpart" or "equal". Otherwise "n/a".
 - premise_lines: up to 3 indices showing the situation the advice responds to (for any type except general).
-- supported: for change_own_behavior, "yes" only if the recipient's lines show the behaviour and the advice fits what happened. For new_action and joint_plan, "yes" when the premise lines show the situation it addresses (the step itself need not have happened). "no" if contradicted or absent; "unclear" otherwise.
+- supported: for change_own_behavior, "yes" only if the recipient's lines show the behaviour and the advice fits what happened. For new_action and joint_plan, "yes" when the premise lines show the situation it addresses (the step itself need not have happened; e.g. the other person sharing a difficulty is a premise for a support step). A moment named in a conditional ("before offering advice", "when they vent") is hypothetical: do not require it to appear in the transcript and do not answer "no" because it has not happened yet. Answer "no" for a new_action only if the transcript contradicts the situation or the step presupposes something false about either person. "no" if contradicted or absent; "unclear" otherwise.
 - evidence: up to 3 indices supporting your answer.
 Judge meaning, not names: "you" refers to the recipient. Quoting a third party is fine. A correct speaker alone is not enough: the cited lines must show the specific behaviour the advice describes.
 Return only JSON: {"verdicts":[{"id":"...","addressed_to":"...","action_type":"...","behavior_lines":[],"mostly_shown_by":"...","premise_lines":[0],"supported":"...","evidence":[0]}]} with every id exactly once.`;

@@ -24,29 +24,42 @@ export async function callOpenRouter(
   apiKey: string,
   referer: string,
   title: string,
+  opts: { timeoutMs?: number; singleAttempt?: boolean } = {},
 ): Promise<{ ok: boolean; status: number; data?: any; errorText?: string }> {
   // Inside a server-issued test run every call is reserved and reconciled;
   // a synthetic account without a run is refused (see testRunCore.ts).
   const testCtx = currentTestRun();
-  if (testCtx) return meteredOpenRouter(testCtx, body);
+  if (testCtx) return meteredOpenRouter(testCtx, body, opts);
   let last: Response | null = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await fetch(OPENROUTER_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": referer,
-        "X-Title": title,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-    last = res;
-    if (res.ok) {
-      const data = await res.json();
-      return { ok: true, status: res.status, data };
+  const attempts = opts.singleAttempt ? 1 : 2;
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    // A real abort on timeout so the provider request is actually cancelled.
+    const ctrl = opts.timeoutMs ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(() => ctrl.abort(new Error("timeout")), opts.timeoutMs) : null;
+    let res: Response;
+    try {
+      res = await fetch(OPENROUTER_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "HTTP-Referer": referer,
+          "X-Title": title,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+        signal: ctrl?.signal,
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return { ok: true, status: res.status, data };
+      }
+    } catch (e) {
+      return { ok: false, status: ctrl?.signal.aborted ? 504 : 502, errorText: ctrl?.signal.aborted ? "timeout" : String((e as Error)?.message ?? e) };
+    } finally {
+      if (timer) clearTimeout(timer);
     }
-    if (res.status >= 500 && attempt === 0) {
+    last = res;
+    if (res.status >= 500 && attempt < attempts - 1) {
       await sleep(2000);
       continue;
     }

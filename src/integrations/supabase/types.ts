@@ -14,6 +14,62 @@ export type Database = {
   }
   public: {
     Tables: {
+      advice_reviews: {
+        Row: {
+          analysis_id: string
+          attempts: number
+          checker_version: string
+          created_at: string
+          evidence: Json | null
+          evidence_expires_at: string | null
+          last_attempt_at: string | null
+          lease_until: string | null
+          max_attempts: number
+          pending: Json | null
+          status: string
+          terminal_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          analysis_id: string
+          attempts?: number
+          checker_version: string
+          created_at?: string
+          evidence?: Json | null
+          evidence_expires_at?: string | null
+          last_attempt_at?: string | null
+          lease_until?: string | null
+          max_attempts?: number
+          pending?: Json | null
+          status: string
+          terminal_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string
+          attempts?: number
+          checker_version?: string
+          created_at?: string
+          evidence?: Json | null
+          evidence_expires_at?: string | null
+          last_attempt_at?: string | null
+          lease_until?: string | null
+          max_attempts?: number
+          pending?: Json | null
+          status?: string
+          terminal_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advice_reviews_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: true
+            referencedRelation: "analyses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_feedback: {
         Row: {
           comment: string | null
@@ -2927,6 +2983,14 @@ export type Database = {
           up_count: number
         }[]
       }
+      advice_review_note: {
+        Args: { p_status: string; p_verified: number }
+        Returns: string
+      }
+      advice_review_terminate: {
+        Args: { p_analysis_id: string; p_reason: string }
+        Returns: undefined
+      }
       ai_feedback_owns_source: {
         Args: {
           p_session_id: string
@@ -2943,6 +3007,14 @@ export type Database = {
           p_source: string
         }
         Returns: undefined
+      }
+      claim_advice_review: {
+        Args: {
+          p_analysis_id: string
+          p_lease_seconds?: number
+          p_min_gap_seconds?: number
+        }
+        Returns: Json
       }
       claim_analyses_for_session: {
         Args: { p_session_id: string }
@@ -2998,9 +3070,22 @@ export type Database = {
         Returns: number
       }
       delete_my_ai_feedback: { Args: never; Returns: number }
+      expire_advice_reviews: { Args: never; Returns: number }
       expire_prompt_reservations: {
         Args: { p_minutes: number }
         Returns: number
+      }
+      finish_advice_review: {
+        Args: {
+          p_analysis_id: string
+          p_attempt: number
+          p_base_hash: string
+          p_new_result: Json
+          p_remaining: Json
+          p_status: string
+          p_terminal_reason: string
+        }
+        Returns: Json
       }
       get_analysis_for_session: {
         Args: { p_id: string; p_session_id: string }
@@ -3300,6 +3385,10 @@ export type Database = {
           p_platform: string
           p_session_id: string
         }
+        Returns: undefined
+      }
+      release_advice_review: {
+        Args: { p_analysis_id: string; p_attempt: number }
         Returns: undefined
       }
       reserve_prompt_spend:

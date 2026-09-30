@@ -35,6 +35,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 import { FeedbackControl } from "@/components/feedback/FeedbackControl";
+import { AdviceReviewNotice, type AdviceIntegrity } from "@/components/results/AdviceReviewNotice";
 
 type Row = {
   id: string;
@@ -1452,14 +1453,10 @@ export const DeepReport = ({
         </div>
       </Section>
       </ReportErrorBoundary>
-      {(() => {
-        const ai = (result as unknown as { advice_integrity?: { withheld_count?: number; note?: string | null } }).advice_integrity;
-        return ai?.withheld_count ? (
-          <p role="note" className="rounded-lg border border-border bg-muted p-3 text-[13px] text-muted-foreground">
-            {ai.note ?? "Some advice was held back because we could not confirm who it was for."}
-          </p>
-        ) : null;
-      })()}
+      <AdviceReviewNotice
+        integrity={(result as unknown as { advice_integrity?: AdviceIntegrity }).advice_integrity}
+        analysisId={typeof window !== "undefined" ? window.location.pathname.match(/[0-9a-f-]{36}/i)?.[0] : undefined}
+      />
 
 
       {/* 5. Bids for connection */}

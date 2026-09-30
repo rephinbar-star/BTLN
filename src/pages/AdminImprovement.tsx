@@ -1,3 +1,4 @@
+import { AdviceReviewNotice, type AdviceIntegrity } from "@/components/results/AdviceReviewNotice";
 import { Relationship360Live } from "@/components/relationship360/Relationship360Live";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
@@ -178,6 +179,9 @@ const AdminImprovement = () => {
         </div>
         {modeInfo && <p className="mt-2 text-[13px] text-muted-foreground">Baseline parity: {modeInfo.parity} — {modeInfo.parity_note}{dash?.baseline_stale[mode] && " · Deployed prompt changed since the baseline snapshot."}</p>}
       </Section>
+
+      {mode === "deep_read_full" && <AdviceStateReview />}
+
 
       <Section title="Feedback signals (last 90 days, consented only)">
         {!dash ? <Muted>Loading…</Muted> : dash.aggregates.length === 0 ? <Muted>No consented ratings yet. Demo ratings are never stored.</Muted> : (
@@ -436,5 +440,30 @@ function R360ComponentReview({ resultId }: { resultId: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+// Component review only (not customer E2E): the real advice-check notice rendered
+// with truthful demo states. The button here never calls the server.
+const ADVICE_STATE_FIXTURES: { label: string; integrity: AdviceIntegrity }[] = [
+  { label: "Normal (all checked)", integrity: { withheld_count: 0, note: null, review: { status: "complete", verified: 7, unresolved: 0, attempts: 1, max_attempts: 3, can_retry: false } } },
+  { label: "Partial (some held back)", integrity: { withheld_count: 2, note: "Some advice was held back because it didn't seem to be meant for the person it was addressed to.", review: { status: "complete", verified: 5, unresolved: 0, attempts: 1, max_attempts: 3, can_retry: false } } },
+  { label: "Pending (check unfinished)", integrity: { withheld_count: 3, note: "Your analysis is complete. A few suggestions are still being checked to make sure they're meant for the right person, so they're hidden for now.", review: { status: "pending", verified: 4, unresolved: 3, attempts: 2, max_attempts: 3, can_retry: true } } },
+  { label: "Terminal (none could be checked)", integrity: { withheld_count: 9, note: "Your analysis is complete, but we couldn't finish checking your suggestions, so we've left them out rather than show advice that might be meant for the wrong person.", review: { status: "unavailable", verified: 0, unresolved: 9, attempts: 3, max_attempts: 3, can_retry: false } } },
+  { label: "Older report (no review field)", integrity: { withheld_count: 1, note: null } },
+];
+function AdviceStateReview() {
+  return (
+    <Section title="Advice check states — component review (demo data, not a customer view)">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {ADVICE_STATE_FIXTURES.map((f) => (
+          <div key={f.label} className="min-w-0 space-y-1" data-testid="advice-state">
+            <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{f.label}</p>
+            <AdviceReviewNotice integrity={f.integrity} preview />
+            {!f.integrity.note && !f.integrity.withheld_count && <p className="text-[12px] text-muted-foreground">(No notice shown — expected.)</p>}
+          </div>
+        ))}
+      </div>
+    </Section>
   );
 }

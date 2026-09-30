@@ -231,3 +231,25 @@ export const EXTERNAL_BENCHMARK_1 = {
     ] },
   ],
 };
+
+// Regression set reg-prospective-1 (advice-semantic-5). Authored in the implementation session AFTER seeing
+// ext-1 results: a tuned/regression check, NOT independent held-out proof. Prospective support steps must be
+// kept; unsupported past-conduct claims and recipient swaps must be withheld.
+export const REGRESSION_PROSPECTIVE_1 = {
+  name: "advice-regression-prospective-1",
+  author: "Implementation session (post ext-1); regression only",
+  fixtures: [
+    { id: "rp-A", parts: P("Mara", "Kit"), msgs: [m("p1", "Work was awful, my manager yelled at me in front of everyone."), m("p2", "Oh no. Are you okay?"), m("p1", "Not really. I keep replaying it.")], items: [
+      ex("RA1", "cs.p2.0", "p2", "suggestion", "Check whether Mara wants comfort or ideas before sharing your view.", "keep", "prospective support step"),
+      ex("RA2", "cs.p2.1", "p2", "suggestion", "When she's replaying a hard moment, ask what would help most right now.", "keep", "conditional future frame"),
+      ex("RA3", "cs.p2.2", "p2", "suggestion", "Stop jumping straight to fixes when she vents.", "withhold", "asserts past conduct not shown"),
+      ex("RA4", "cs.p1.0", "p1", "suggestion", "Keep checking in on how Kit is doing when he sounds upset.", "withhold", "swap: checking in was p2's, and Kit did not sound upset"),
+    ] },
+    { id: "rp-B", parts: P("Omar", "Lina"), msgs: [m("p2", "My sister isn't speaking to me again."), m("p1", "That's rough. Want to talk about it?"), m("p2", "Maybe later.")], items: [
+      ex("RB1", "cs.p1.0", "p1", "suggestion", "If Lina says maybe later, let her pick the time and check in gently tomorrow.", "keep", "conditional future frame"),
+      ex("RB2", "cs.p1.1", "p1", "suggestion", "Apologise for pushing her to talk before she was ready.", "withhold", "no pushing shown"),
+      ex("RB3", "cs.p2.0", "p2", "suggestion", "Let Omar know when you'd like to talk so he isn't left guessing.", "keep", "prospective"),
+      ex("RB4", "cs.p2.1", "p2", "suggestion", "Keep offering to listen when he mentions family trouble.", "withhold", "swap: offering to listen was p1's"),
+    ] },
+  ],
+};

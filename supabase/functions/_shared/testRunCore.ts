@@ -58,13 +58,14 @@ export const defaultMaxOut = (model: string) => (model.startsWith("anthropic/") 
  * semantics (one retry after a 5xx), but each attempt is its own reservation;
  * the retry is linked (retry_of) to the reservation it repeats.
  */
-export const meteredOpenRouter = async (ctx: TestCtx, body: Record<string, unknown>): Promise<ProviderResult> => {
+export const meteredOpenRouter = async (ctx: TestCtx, body: Record<string, unknown>, opts: { timeoutMs?: number; singleAttempt?: boolean } = {}): Promise<ProviderResult> => {
   if (ctx.kind === "blocked") return { ok: false, status: 403, errorText: ctx.reason };
   const model = String(body.model ?? "");
   const b = { ...body, model, max_tokens: typeof body.max_tokens === "number" ? body.max_tokens : defaultMaxOut(model), messages: (body.messages ?? []) as { content: unknown }[] };
   let last: ProviderResult = { ok: false, status: 500, errorText: "not_run" };
   let prevId: string | null = null;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const timeoutMs = opts.timeoutMs ? Math.min(opts.timeoutMs, ctx.timeoutMs) : ctx.timeoutMs;
+  for (let attempt = 0; attempt < (opts.singleAttempt ? 1 : 2); attempt++) {
     if (ctx.shared.calls.length >= ctx.maxCalls) {
       ctx.shared.calls.push({ stage: ctx.stage, kind: "generation", ok: false, reason: "run_call_limit" });
       return { ok: false, status: 429, errorText: "run_call_limit" };
