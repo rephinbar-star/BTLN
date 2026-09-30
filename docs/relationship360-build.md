@@ -790,3 +790,14 @@ Open: authenticated customer check; C2 dispute decision; narrower-wording change
 
 Budget: $0.39 used of $15 (rolling 24h), 0 unreconciled. 270 tests pass; typecheck clean. Backend functions (analyze-conversation, advice-review, prompt-improvement) are deployed on the shared backend used by the live site; frontend unpublished.
 Open: visual/authenticated review; live outage retry observation; human quality review. Billing, older security warnings, Group Roast separate.
+
+
+## advice-review-2 — privacy-preserving recovery (packet `1f531865-7787-430c-b7a6-b9ff1858cdba`, follows `78e17884-1add-4775-8c10-cc2db9dd0d5d`)
+Supersedes the advice-review-1 manual retry and two-hour evidence retention above.
+- Implemented: original processing = initial + 1 automatic retry only. Verified items are shown. Rejected and unresolved items are withheld with an honest note.
+- Implemented: the retry transcript store is removed (evidence columns dropped, old retry RPCs dropped). Only status, attempts, versions, recovery state and a keyed report-bound fingerprint are kept. Hidden report suggestions are kept only while a recovery is available.
+- Implemented: free "Resubmit to recover suggestions". It needs owner plus full-report access. The same input must match by fingerprint, and a mismatch or unreadable input does not use it up. It is one per report and atomic, with initial + 1 retry inside. It has a stale-report guard and lease expiry for abandoned jobs. The resubmitted text is used in memory only.
+- Compatibility: the old retry action returns resubmit_required, and legacy pending reports render as unavailable.
+- Verified: 275 tests pass. A rolled-back DB self-test and live anonymous endpoint checks passed. Cleanup counts are 0.
+- Blocked: 390/1280 visual review and the operator self-test need authorized sign-in. The same-input live success was checked with an injected model only. Legacy reports can't be recovered. Backups can't be verified.
+- Spend: $0 this work. Rolling 24h is $0.39 of $15. Human quality review is pending. The backend is shared and deployed; the frontend is unpublished.
