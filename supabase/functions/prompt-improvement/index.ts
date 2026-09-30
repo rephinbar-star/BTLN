@@ -760,7 +760,7 @@ Deno.serve(async (req) => {
       const before_ids = new Set((ledBefore ?? []).map((x: Admin) => x.id));
       const recoveryCalls = (led ?? []).filter((x: Admin) => !before_ids.has(x.id));
       const evidence = { run_id: run.id, analysis_id: aid, keep_verdicts: run.recovery_probe.keep_verdicts, http: r.status,
-        response: { ok: r.body?.ok, reason: r.body?.reason ?? null, attempts: r.body?.attempts ?? null, probe: r.body?.probe ?? null, review: r.body?.review ?? null },
+        response: { ok: r.body?.ok, reason: r.body?.reason ?? null, error: r.body?.error ?? null, attempts: r.body?.attempts ?? null, probe: r.body?.probe ?? null, review: r.body?.review ?? null },
         before, after, recovery_calls: recoveryCalls, run_ledger_total: (led ?? []).length };
       await admin.from("prompt_test_runs").update({ state: { ...st, recovery_probe_result: evidence } }).eq("id", run.id);
       await audit(admin, user.id, "recovery_probe_resubmit", "prompt_test_runs", run.id, { analysis_id: aid, ok: r.body?.ok ?? null });
