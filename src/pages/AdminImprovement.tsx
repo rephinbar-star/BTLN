@@ -449,13 +449,14 @@ function R360ComponentReview({ resultId }: { resultId: string }) {
 
 // Component review only (not customer E2E): the real advice-check notice rendered
 // with truthful demo states. The button here never calls the server.
-const ADVICE_STATE_FIXTURES: { label: string; integrity: AdviceIntegrity }[] = [
+const ADVICE_STATE_FIXTURES: { label: string; integrity: AdviceIntegrity; locked?: boolean }[] = [
   { label: "Normal (all checked)", integrity: { withheld_count: 0, note: null, review: { status: "complete", verified: 7, unresolved: 0, attempts: 1, max_attempts: 2, can_retry: false, recovery: "not_available", can_recover: false } } },
   { label: "Partial (some held back)", integrity: { withheld_count: 2, note: "Some advice was held back because it didn't seem to be meant for the person it was addressed to.", review: { status: "complete", verified: 5, unresolved: 0, attempts: 1, max_attempts: 2, can_retry: false, recovery: "not_available", can_recover: false } } },
   { label: "Some unchecked (recovery available)", integrity: { withheld_count: 3, note: "Your analysis is complete. Some suggestions couldn't be checked, so we've left them out.", review: { status: "unavailable", verified: 4, unresolved: 3, attempts: 2, max_attempts: 2, can_retry: false, recovery: "available", can_recover: true } } },
   { label: "Terminal (recovery used / not available)", integrity: { withheld_count: 9, note: "Your analysis is complete, but your suggestions couldn't be checked, so we've left them out rather than show advice that might be meant for the wrong person.", review: { status: "unavailable", verified: 0, unresolved: 9, attempts: 2, max_attempts: 2, can_retry: false, recovery: "unavailable", can_recover: false } } },
   { label: "Legacy pending (old retry retired)", integrity: { withheld_count: 3, note: "Your analysis is complete. A few suggestions are still being checked…", review: { status: "pending", verified: 4, unresolved: 3, attempts: 2, max_attempts: 3, can_retry: true } } },
   { label: "Older report (no review field)", integrity: { withheld_count: 1, note: null } },
+  { label: "Locked or shared view (no recovery offered)", locked: true, integrity: { withheld_count: 3, note: "Your analysis is complete. Some suggestions couldn't be checked, so we've left them out.", review: { status: "unavailable", verified: 4, unresolved: 3, attempts: 2, max_attempts: 2, can_retry: false, recovery: "available", can_recover: true } } },
 ];
 function AdviceStateReview() {
   return (
@@ -464,7 +465,7 @@ function AdviceStateReview() {
         {ADVICE_STATE_FIXTURES.map((f) => (
           <div key={f.label} className="min-w-0 space-y-1" data-testid="advice-state">
             <p className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">{f.label}</p>
-            <AdviceReviewNotice integrity={f.integrity} preview />
+            <AdviceReviewNotice integrity={f.integrity} preview allowRecovery={!f.locked} />
             {!f.integrity.note && !f.integrity.withheld_count && <p className="text-[12px] text-muted-foreground">(No notice shown — expected.)</p>}
           </div>
         ))}

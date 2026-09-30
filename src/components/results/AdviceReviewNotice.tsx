@@ -26,6 +26,8 @@ type Props = {
   onUpdated?: () => void;
   /** Component review only: never calls the server. */
   preview?: boolean;
+  /** Only the owner of an unlocked report (not shared or locked views) is offered recovery. */
+  allowRecovery?: boolean;
 };
 
 const FALLBACK_HELD = "Some advice was held back because it didn't seem to be meant for the person it was addressed to.";
@@ -58,7 +60,7 @@ const REASONS: Record<string, { text: string; final?: boolean }> = {
  * optional free resubmission flow. Unknown or older statuses fall back to the
  * server-written note, so older and newer report shapes both render truthfully.
  */
-export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }: Props) {
+export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview, allowRecovery = false }: Props) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState<ConversationDraft>(recoveryDraft);
   const [busy, setBusy] = useState(false);
@@ -72,7 +74,7 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
   const unchecked = status === "unavailable" || status === "pending";
   const note = (status === "pending" ? null : integrity.note) ?? (unchecked ? UNCHECKED : integrity.withheld_count ? FALLBACK_HELD : null);
   if (!note) return null;
-  const canRecover = unchecked && review?.can_recover === true && review?.recovery === "available" && !closed;
+  const canRecover = allowRecovery && unchecked && review?.can_recover === true && review?.recovery === "available" && !closed;
 
   const submit = async () => {
     if (preview) { setMessage("Preview only — nothing was sent."); return; }
