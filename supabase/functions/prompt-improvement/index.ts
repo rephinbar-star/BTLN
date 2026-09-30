@@ -929,6 +929,73 @@ Deno.serve(async (req) => {
     return json(200, { job_id: jobId, model: SEMANTIC_MODEL, version: ADVICE_SEMANTIC_VERSION, summary, rows, ledger });
   }
 
+  // No-model DB self-test of advice-review-1: concurrent claims, shared cap, stale finish, expiry, cleanup.
+  // Uses a throwaway synthetic analysis row (session "selftest-advice-review") and deletes it afterwards.
+  if (action === "advice_review_selftest") {
+    const out: Admin = {};
+    const mk = async (extra: Admin = {}) => {
+      const { data: an, error } = await admin.from("analyses").insert({ session_id: `selftest-advice-review-${crypto.randomUUID()}`, context_data: { selftest: true }, input_method: "paste", status: "complete",
+        result_json: { communication_suggestions: { person1: [], person2: [] }, advice_integrity: { review: { status: "pending", verified: 0, rejected: 0, unresolved: 1, attempts: 2, max_attempts: 3, can_retry: true }, note: "x", withheld_count: 1 } } }).select("id").single();
+      if (error) throw new Error(error.message);
+      await admin.from("advice_reviews").insert({ analysis_id: an.id, status: "pending", attempts: 0, max_attempts: 3, checker_version: ADVICE_SEMANTIC_VERSION,
+        pending: [{ key: "k", text: "t" }], evidence: { transcript: "x" }, evidence_expires_at: new Date(Date.now() + 3600_000).toISOString(), ...extra });
+      return an.id as string;
+    };
+    const claim = (id: string, gap = 0) => admin.rpc("claim_advice_review", { p_analysis_id: id, p_lease_seconds: 75, p_min_gap_seconds: gap }).then((r: Admin) => r.data);
+    const ids: string[] = [];
+    try {
+      // 1. 12 simultaneous claims against one review with 3 attempts free: exactly 1 wins (single-flight lease).
+      const a = await mk(); ids.push(a);
+      const res = await Promise.all(Array.from({ length: 12 }, () => claim(a)));
+      out.concurrent_single_flight = { requests: 12, accepted: res.filter((r: Admin) => r?.ok).length, reasons: res.filter((r: Admin) => !r?.ok).map((r: Admin) => r?.reason) };
+      const { data: ra } = await admin.from("advice_reviews").select("attempts").eq("analysis_id", a).single();
+      out.concurrent_attempts_recorded = ra.attempts;
+      // 2. Shared cap: releases between rounds, 3 rounds of 6 concurrent claims -> at most 3 attempts ever; 4th round terminal.
+      const b = await mk(); ids.push(b);
+      let wins = 0;
+      for (let round = 0; round < 4; round++) {
+        const rr = await Promise.all(Array.from({ length: 6 }, () => claim(b)));
+        const w = rr.find((r: Admin) => r?.ok); if (w) { wins++; await admin.rpc("release_advice_review", { p_analysis_id: b, p_attempt: w.attempt }); }
+      }
+      const { data: rb } = await admin.from("advice_reviews").select("status,attempts,evidence,pending,terminal_reason").eq("analysis_id", b).single();
+      out.shared_cap = { rounds: 4, per_round: 6, accepted: wins, final: { status: rb.status, attempts: rb.attempts, evidence_cleared: rb.evidence === null && rb.pending === null, reason: rb.terminal_reason } };
+      // 3. Stale result: report changes after claim -> finish refused, nothing written, review terminal.
+      const c = await mk(); ids.push(c);
+      const cc = await claim(c);
+      await admin.from("analyses").update({ result_json: { corrected: true } }).eq("id", c);
+      const fin = await admin.rpc("finish_advice_review", { p_analysis_id: c, p_attempt: cc.attempt, p_base_hash: cc.base_hash, p_new_result: { should_not: "apply" }, p_remaining: [], p_status: "complete", p_terminal_reason: null });
+      const { data: ac } = await admin.from("analyses").select("result_json").eq("id", c).single();
+      const { data: rc } = await admin.from("advice_reviews").select("status,terminal_reason,evidence").eq("analysis_id", c).single();
+      out.stale_result = { finish: fin.data, report_untouched: !!(ac.result_json as Admin)?.corrected && !(ac.result_json as Admin)?.should_not, review: { status: rc.status, reason: rc.terminal_reason, evidence_cleared: rc.evidence === null } };
+      // 4. Old attempt number cannot finish after a newer claim.
+      const d = await mk(); ids.push(d);
+      const d1 = await claim(d); await admin.rpc("release_advice_review", { p_analysis_id: d, p_attempt: d1.attempt });
+      const d2 = await claim(d);
+      const late = await admin.rpc("finish_advice_review", { p_analysis_id: d, p_attempt: d1.attempt, p_base_hash: d1.base_hash, p_new_result: { late: true }, p_remaining: [], p_status: "complete", p_terminal_reason: null });
+      out.late_attempt = { first: d1.attempt, second: d2?.attempt, late_finish: late.data };
+      // 5. Expired evidence: claim refused, evidence cleared, customer note set to unavailable.
+      const e = await mk({ evidence_expires_at: new Date(Date.now() - 1000).toISOString() }); ids.push(e);
+      const ce = await claim(e);
+      const { data: re } = await admin.from("advice_reviews").select("status,evidence,pending,terminal_reason").eq("analysis_id", e).single();
+      const { data: ae } = await admin.from("analyses").select("result_json").eq("id", e).single();
+      out.expired_evidence = { claim: ce, status: re.status, evidence_cleared: re.evidence === null && re.pending === null, reason: re.terminal_reason, report_review_status: (ae.result_json as Admin)?.advice_integrity?.review?.status, note: (ae.result_json as Admin)?.advice_integrity?.note };
+      // 6. Backoff gap: immediate second claim after release is refused.
+      const f = await mk(); ids.push(f);
+      const f1 = await claim(f, 5); await admin.rpc("release_advice_review", { p_analysis_id: f, p_attempt: f1.attempt });
+      out.backoff = { first: f1.ok, immediate_second: (await claim(f, 5))?.reason };
+      // 7. Report deletion cascades the review (and its evidence).
+      await admin.from("analyses").delete().eq("id", a);
+      const { data: gone } = await admin.from("advice_reviews").select("analysis_id").eq("analysis_id", a).maybeSingle();
+      out.delete_cascade = gone === null;
+    } finally {
+      await admin.from("analyses").delete().in("id", ids);
+    }
+    const { data: left } = await admin.from("advice_reviews").select("analysis_id").in("analysis_id", ids);
+    out.fixtures_left = left?.length ?? 0;
+    await audit(admin, user.id, "advice_review_selftest", "advice_reviews", null, out);
+    return json(200, out);
+  }
+
   // Tuned regression run (advice-semantic-5+): ext-1 (dataset unchanged; config differs, so labelled
   // "tuned_regression", never held-out) plus reg-prospective-1. Metered through meteredCall.
   if (action === "advice_regression_run") {
