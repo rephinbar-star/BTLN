@@ -934,7 +934,7 @@ Deno.serve(async (req) => {
   if (action === "advice_review_selftest") {
     const out: Admin = {};
     const mk = async (extra: Admin = {}) => {
-      const { data: an, error } = await admin.from("analyses").insert({ session_id: `selftest-advice-review-${crypto.randomUUID()}`, context_data: { selftest: true }, input_method: "paste", status: "complete",
+      const { data: an, error } = await admin.from("analyses").insert({ session_id: crypto.randomUUID(), context_data: { selftest: "advice-review" }, input_method: "paste", status: "complete",
         result_json: { communication_suggestions: { person1: [], person2: [] }, advice_integrity: { review: { status: "pending", verified: 0, rejected: 0, unresolved: 1, attempts: 2, max_attempts: 3, can_retry: true }, note: "x", withheld_count: 1 } } }).select("id").single();
       if (error) throw new Error(error.message);
       await admin.from("advice_reviews").insert({ analysis_id: an.id, status: "pending", attempts: 0, max_attempts: 3, checker_version: ADVICE_SEMANTIC_VERSION,
