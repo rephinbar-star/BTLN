@@ -13,7 +13,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { z } from "npm:zod@3.23.8";
 import { withTestRun } from "../_shared/testRun.ts";
 import { resolveRequestOwner } from "../_shared/requestOwner.ts";
-import { markStage } from "../_shared/testRunCore.ts";
+import { currentTestRun, markStage } from "../_shared/testRunCore.ts";
 import { callOpenRouter, extractJsonObject } from "../_shared/extractMessages.ts";
 import { parseTwoPersonTranscript } from "../_shared/deterministicParse.ts";
 import { ADVICE_SEMANTIC_VERSION, SEMANTIC_MODEL, applySemanticVerdicts, semanticRequest, type Msg, type Participant } from "../_shared/adviceRecipients.ts";
@@ -74,12 +74,23 @@ Deno.serve(withTestRun("advice-review", async (req) => {
   if (action === "retry") return json(200, { ok: false, reason: "resubmit_required", ...(await readState()) });
 
   // ---- recover ----
+  // Evaluation isolation: a report produced by a test run can be recovered only
+  // inside the SAME operator-issued recovery-probe run (metered), never by a
+  // customer path or another run.
+  const ctx0 = currentTestRun();
+  const { data: art } = await admin.from("evaluation_artifacts").select("run_id").eq("source_kind", "deep_read").eq("source_id", analysis_id).maybeSingle();
+  const probeRun = ctx0?.kind === "metered" && !!ctx0.recoveryProbe && !!art && art.run_id === ctx0.runId;
+  if (art && !probeRun) return json(200, { ok: false, reason: "not_recoverable" });
   // Entitlement: the same access that unlocks the full report (no new purchase, credit or checkout).
   let entitled = a!.is_paid === true;
   if (!entitled && owner.kind === "user") {
     const { data: paid } = await admin.rpc("user_has_paid_access", { p_user_id: owner.id, p_analysis_id: analysis_id });
     entitled = paid === true;
   }
+  // Probe limit (documented): synthetic accounts hold no purchase, and none is faked.
+  // Inside the bound probe run only, the entitlement result is recorded, not enforced.
+  const entitlementChecked = entitled;
+  if (!entitled && probeRun) entitled = true;
   if (!entitled) return json(200, { ok: false, reason: "not_entitled" });
   if (!rawText?.trim()) return json(200, { ok: false, reason: "input_required" });
   const key = Deno.env.get("OPENROUTER_API_KEY");
@@ -124,7 +135,7 @@ Deno.serve(withTestRun("advice-review", async (req) => {
         return data as any;
       },
     });
-    return json(200, { ...out, ...(await readState()) });
+    return json(200, { ...out, ...(probeRun ? { probe: { entitlement_checked: entitlementChecked, entitlement_waived_for_probe: !entitlementChecked } } : {}), ...(await readState()) });
   } finally {
     rawText = null; // resubmitted text is never persisted; drop the reference on every path
     if (claimed && !finished) await admin.rpc("advice_review_terminate", { p_analysis_id: analysis_id, p_reason: "recovery_failed" });

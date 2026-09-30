@@ -775,7 +775,7 @@ ${messagesBlock}`;
       // Test-only fault injection (operator-issued recovery probe inside a metered
       // synthetic run): real verdicts are kept for the first N items only.
       const tctx = currentTestRun();
-      const probe = tctx?.kind === "metered" && tctx.variant !== "candidate" ? tctx.recoveryProbe ?? null : null;
+      const probe = tctx?.kind === "metered" && !tctx.candidate ? tctx.recoveryProbe ?? null : null;
       const keepIds = probe ? new Set(finalItems.slice(0, probe.keep_verdicts).map((i) => i.id)) : null;
       const { states, attempts, trace: attemptsTrace } = await checkItems(finalItems, {
         build: (items) => semanticRequest(items, parts, canon),
