@@ -132,7 +132,7 @@ export type RetryDeps = {
 
 export const runReviewRetry = async (d: RetryDeps) => {
   const c = await d.claim();
-  if (!c.ok) return { ok: false as const, reason: c.reason };
+  if (c.ok === false) return { ok: false as const, reason: c.reason };
   if (c.version !== d.version) {
     const f = await d.finish({ attempt: c.attempt, base_hash: c.base_hash, new_result: null, remaining: [], status: "unavailable", terminal_reason: "checker_version_changed" });
     return { ok: false as const, reason: f.ok ? "checker_version_changed" : f.reason ?? "stale" };
