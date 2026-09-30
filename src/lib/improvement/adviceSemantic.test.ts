@@ -56,7 +56,7 @@ describe("advice semantic verdicts v4 (fail closed)", () => {
   it("set 4 keeps the original t1 fixture unchanged and marks the disputed item ambiguous", () => {
     expect(SEMANTIC_FIXTURES[0].items.find((i) => i.id === "cs.p2.0")!.expect).toBe("withhold");
     expect(SEMANTIC_FIXTURES_4[0].items.find((i) => i.id === "cs.p2.0")!.expect).toBe("ambiguous");
-    expect(ADVICE_SEMANTIC_VERSION).toBe("advice-semantic-5");
+    expect(ADVICE_SEMANTIC_VERSION).toBe("advice-semantic-6");
   });
   it("withholds everything on malformed, missing or timed-out output", () => {
     for (const bad of [null, {}, { verdicts: "x" }, "garbage"]) {

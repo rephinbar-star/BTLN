@@ -181,7 +181,10 @@ export const removeItems = (result: any, parts: Participant[], bad: Set<string>)
 // controls, and is supported by cited message indices keeps the item. Anything
 // else — unclear, malformed, missing, timeout — withholds it with a note.
 // This is a second opinion from a model, not proof of meaning.
-export const ADVICE_SEMANTIC_VERSION = "advice-semantic-5";
+export const ADVICE_SEMANTIC_VERSION = "advice-semantic-6";
+// Round 6: semantic-5 regression run 551f830f still withheld C2 as supported:"no" — the check required the
+// conditional's event ("offering advice") to be in the transcript. Support for a new action is now judged by
+// whether the situation that makes the step useful is shown, not whether the named future moment occurred.
 // Round 5 (advice-semantic-5): ext-1 first pass (run 6dacba69, semantic-4) wrongly withheld C2, a support step
 // ("ask whether they want listening or suggestions before offering advice") judged as an unsupported habit claim.
 // The rule now states that a conditional/temporal frame ("before X", "when X", "if X") describes a future
@@ -219,7 +222,7 @@ For each advice item decide:
 - behavior_lines: for change_own_behavior only, up to 3 transcript indices where the RECIPIENT shows the behaviour X. Otherwise [].
 - mostly_shown_by: for change_own_behavior, whose lines show X most clearly and most often across the whole transcript: "recipient", "counterpart" or "equal". Otherwise "n/a".
 - premise_lines: up to 3 indices showing the situation the advice responds to (for any type except general).
-- supported: for change_own_behavior, "yes" only if the recipient's lines show the behaviour and the advice fits what happened. For new_action and joint_plan, "yes" when the premise lines show the situation it addresses (the step itself need not have happened; e.g. the other person sharing a difficulty is a premise for a support step). "no" if contradicted or absent; "unclear" otherwise.
+- supported: for change_own_behavior, "yes" only if the recipient's lines show the behaviour and the advice fits what happened. For new_action and joint_plan, "yes" when the premise lines show the situation it addresses (the step itself need not have happened; e.g. the other person sharing a difficulty is a premise for a support step). A moment named in a conditional ("before offering advice", "when they vent") is hypothetical: do not require it to appear in the transcript and do not answer "no" because it has not happened yet. Answer "no" for a new_action only if the transcript contradicts the situation or the step presupposes something false about either person. "no" if contradicted or absent; "unclear" otherwise.
 - evidence: up to 3 indices supporting your answer.
 Judge meaning, not names: "you" refers to the recipient. Quoting a third party is fine. A correct speaker alone is not enough: the cited lines must show the specific behaviour the advice describes.
 Return only JSON: {"verdicts":[{"id":"...","addressed_to":"...","action_type":"...","behavior_lines":[],"mostly_shown_by":"...","premise_lines":[0],"supported":"...","evidence":[0]}]} with every id exactly once.`;
