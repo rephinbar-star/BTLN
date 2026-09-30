@@ -2,6 +2,8 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
+import { parseTranscript } from "@/lib/ingest/parse";
+import { canonicalizeParsedConversation } from "@/lib/ingest/canonical";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 
 export type AdviceIntegrity = {
@@ -36,10 +38,19 @@ const UNCHECKED = "Your analysis is complete. Some suggestions couldn't be check
 /** Recovery starts on Import: screenshots are not accepted here. */
 const recoveryDraft = (): ConversationDraft => ({ ...emptyConversationDraft(), method: "chat_export" });
 
-export const draftToText = (d: ConversationDraft) =>
-  d.conversation && d.conversation.format !== "screenshots_pending"
-    ? d.conversation.messages.map((m) => `${m.raw_sender ?? "Unknown"}: ${m.content}`).join("\n")
-    : d.text;
+export const draftToText = (d: ConversationDraft) => {
+  if (d.conversation && d.conversation.format !== "screenshots_pending")
+    return d.conversation.messages.map((m) => `${m.raw_sender ?? "Unknown"}: ${m.content}`).join("\n");
+  // Not previewed yet: parse exactly as the shared input would on preview, so the
+  // same chat produces the same text the original analysis received.
+  if (d.text.trim() && (d.method === "paste" || d.method === "chat_export")) {
+    try {
+      const c = canonicalizeParsedConversation(parseTranscript(d.text), d.method, null);
+      return c.messages.map((m) => `${m.raw_sender ?? "Unknown"}: ${m.content}`).join("\n");
+    } catch { return d.text; }
+  }
+  return d.text;
+};
 
 const REASONS: Record<string, { text: string; final?: boolean }> = {
   input_mismatch: { text: "That doesn't match the conversation this report was made from. Use exactly the same file or text. Your free recovery hasn't been used." },
@@ -77,7 +88,6 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview, 
   const canRecover = allowRecovery && unchecked && review?.can_recover === true && review?.recovery === "available" && !closed;
 
   const submit = async () => {
-    console.log("DBG submit", !!preview, busy);
     if (preview) { setMessage("Preview only — nothing was sent."); return; }
     if (!analysisId || busy) return;
     const raw_text = draftToText(draft);
@@ -125,7 +135,7 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview, 
           </p>
           <SharedConversationInput value={draft} onChange={setDraft} compact requireSelf={false} allowScreenshots={false} />
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" className="min-h-[44px]" onClick={submit} disabled={busy} aria-busy={busy}>
+            <Button type="button" size="sm" className="min-h-[44px]" onMouseDown={(e) => e.preventDefault()} onClick={submit} disabled={busy} aria-busy={busy}>
               {busy ? "Checking…" : "Check suggestions"}
             </Button>
             <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" disabled={busy}
