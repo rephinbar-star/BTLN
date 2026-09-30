@@ -51,6 +51,8 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
       const reason = d?.reason ?? "";
       if (reason === "in_flight") setMessage("A check is already running. Give it a moment, then refresh.");
       else if (reason === "too_soon") setMessage("Please wait a few seconds and try again.");
+      else if (reason === "claim_failed" || reason === "finish_failed") setMessage("Something went wrong. Please try again in a moment.");
+      else if (reason === "report_changed") { setExhausted(true); setMessage("This report changed since these suggestions were written, so they'll stay hidden. The rest of your analysis is unchanged."); }
       else { setExhausted(true); setMessage("We couldn't finish checking these suggestions, so they'll stay hidden. The rest of your analysis is unchanged."); }
     } catch {
       setMessage("Something went wrong. Please try again in a moment.");
