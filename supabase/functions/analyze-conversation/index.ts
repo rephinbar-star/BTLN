@@ -879,6 +879,18 @@ ${messagesBlock}`;
   );
   await recordDeepReadDates();
 
+  // Advice review record (server-only). If it can't be stored, nothing pending
+  // is retryable: mark the review unavailable rather than claim it will finish.
+  if (reviewRow) {
+    const { error: revErr } = await supabase.from("advice_reviews").upsert(reviewRow, { onConflict: "analysis_id" });
+    const ai = resultJson?.advice_integrity;
+    if (revErr && ai?.review?.status === "pending") {
+      ai.review = { ...ai.review, status: "unavailable", can_retry: false, terminal_reason: "review_record_unavailable" };
+      ai.note = customerNote(ai.review);
+    }
+  } else {
+    await supabase.from("advice_reviews").delete().eq("analysis_id", analysis_id);
+  }
   const { error: updErr } = await supabase
     .from("analyses")
     .update({
@@ -890,8 +902,10 @@ ${messagesBlock}`;
     })
     .eq("id", analysis_id);
   if (updErr) {
+    await supabase.from("advice_reviews").delete().eq("analysis_id", analysis_id);
     return failAnalysis(`Could not save analysis: ${updErr.message}`);
   }
+  await supabase.rpc("expire_advice_reviews");
   };
 
   // Fire off the heavy pipeline in the background and return immediately.
