@@ -6,6 +6,10 @@ import {
   ADVICE_RECIPIENT_VERSION, ADVICE_SEMANTIC_VERSION, SEMANTIC_MODEL, adviceItems, applySemanticVerdicts, checkRecipient, mergeById, removeItems, rewritePayload, semanticRequest, withholdMisattributed,
   type AdviceStatus, type Msg, type Participant,
 } from "../_shared/adviceRecipients.ts";
+import {
+  ADVICE_REVIEW_VERSION, REVIEW_BACKOFF_MS, REVIEW_EVIDENCE_TTL_MS, REVIEW_MAX_ATTEMPTS, REVIEW_TIMEOUT_MS, classifyVerdict, customerNote, evidenceFingerprint, toPending,
+  type PendingItem, type ReviewState, type ReviewStatus, type ReviewSummary,
+} from "../_shared/adviceReview.ts";
 // Advice semantic check model (SEMANTIC_MODEL): priced in MODEL_RATES (promptBudget.ts); bounded input/output.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 import { assignCoupleType } from "../_shared/assignCoupleType.ts";
