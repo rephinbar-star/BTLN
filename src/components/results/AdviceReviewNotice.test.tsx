@@ -7,7 +7,7 @@ vi.mock("@/lib/session", () => ({ getSessionId: () => "s" }));
 vi.mock("@/lib/ingest/extract", () => ({ extractScreenshotConversation: vi.fn() }));
 vi.mock("@/components/ingest/SharedConversationInput", () => ({
   emptyConversationDraft: () => ({ method: "paste", text: "", screenshots: [], conversation: null, selfParticipantId: null, screenshotSelfSide: null, selfAbsent: false }),
-  SharedConversationInput: ({ value, onChange }: any) => <textarea aria-label="conversation" value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} />,
+  SharedConversationInput: ({ value, onChange, allowScreenshots }: any) => <textarea aria-label="conversation" data-screens={String(allowScreenshots)} data-method={value.method} value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} />,
 }));
 import { AdviceReviewNotice } from "./AdviceReviewNotice";
 
@@ -37,19 +37,20 @@ describe("AdviceReviewNotice", () => {
     expect(screen.queryByRole("button")).toBeNull();
   });
   it("explains why resubmission is needed and that it is free", () => {
-    render(<AdviceReviewNotice integrity={recoverable} preview />);
+    render(<AdviceReviewNotice integrity={recoverable} allowRecovery preview />);
     fireEvent.click(screen.getByRole("button", { name: "Resubmit to recover suggestions" }));
     expect(screen.getByText(/don't keep your conversation/)).toBeTruthy();
     expect(screen.getByText(/no charge, and no report credit/)).toBeTruthy();
   });
   it("preview mode never calls the server", () => {
-    render(<AdviceReviewNotice integrity={recoverable} preview />);
+    render(<AdviceReviewNotice integrity={recoverable} allowRecovery preview />);
     openAndType();
     expect(invoke).not.toHaveBeenCalled();
+    expect(screen.getByText(/Preview only/)).toBeTruthy();
   });
   it("mismatch keeps the flow open and says the recovery wasn't used", async () => {
     invoke.mockResolvedValueOnce({ data: { ok: false, reason: "input_mismatch" }, error: null });
-    render(<AdviceReviewNotice integrity={recoverable} analysisId="a" />);
+    render(<AdviceReviewNotice integrity={recoverable} allowRecovery analysisId="a" />);
     openAndType();
     expect(await screen.findByText(/hasn't been used/)).toBeTruthy();
     expect(screen.getByRole("button", { name: "Check suggestions" })).toBeTruthy();
@@ -57,7 +58,7 @@ describe("AdviceReviewNotice", () => {
   });
   it("used recovery closes the flow with a plain final message", async () => {
     invoke.mockResolvedValueOnce({ data: { ok: false, reason: "recovery_used" }, error: null });
-    render(<AdviceReviewNotice integrity={recoverable} analysisId="a" />);
+    render(<AdviceReviewNotice integrity={recoverable} allowRecovery analysisId="a" />);
     openAndType();
     expect(await screen.findByText(/already been used/)).toBeTruthy();
     expect(screen.queryByRole("button")).toBeNull();
@@ -65,8 +66,21 @@ describe("AdviceReviewNotice", () => {
   it("success refreshes the report", async () => {
     invoke.mockResolvedValueOnce({ data: { ok: true }, error: null });
     const onUpdated = vi.fn();
-    render(<AdviceReviewNotice integrity={recoverable} analysisId="a" onUpdated={onUpdated} />);
+    render(<AdviceReviewNotice integrity={recoverable} allowRecovery analysisId="a" onUpdated={onUpdated} />);
     openAndType();
     await vi.waitFor(() => expect(onUpdated).toHaveBeenCalled());
+  });
+  it("locked or shared views never offer recovery", () => {
+    render(<AdviceReviewNotice integrity={recoverable} />);
+    expect(screen.queryByRole("button", { name: "Resubmit to recover suggestions" })).toBeNull();
+    expect(screen.getByRole("note").textContent).toMatch(/couldn't be checked/);
+  });
+  it("recovery input offers Import and Paste only (no screenshots)", () => {
+    render(<AdviceReviewNotice integrity={recoverable} allowRecovery preview />);
+    fireEvent.click(screen.getByRole("button", { name: "Resubmit to recover suggestions" }));
+    const input = screen.getByLabelText("conversation");
+    expect(input.getAttribute("data-screens")).toBe("false");
+    expect(input.getAttribute("data-method")).toBe("chat_export");
+    expect(screen.getByText(/screenshots can't be recovered/)).toBeTruthy();
   });
 });

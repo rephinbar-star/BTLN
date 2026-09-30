@@ -1035,7 +1035,7 @@ const ReportContent = () => {
                         Unlocked by your subscription
                       </div>
                     )}
-                    <DeepReport result={result} context={context} locked={false} />
+                    <DeepReport result={result} context={context} locked={false} analysisId={analysisId} canRecover={!isSharedView && (isOwner || isAnonymousOwner)} />
                   </>
                 ) : lowConfidence ? (
                   <LowConfidenceGate
@@ -1245,10 +1245,15 @@ export const DeepReport = ({
   result,
   context,
   locked = false,
+  analysisId,
+  canRecover = false,
 }: {
   result: AnalysisResult;
   context: ContextData;
   locked?: boolean;
+  analysisId?: string;
+  /** Owner (signed-in or original guest session) of an unlocked report, not a shared view. */
+  canRecover?: boolean;
 }) => {
   const { name1, name2 } = context;
   const profile1 = result.attachment_profiles?.[name1];
@@ -1455,7 +1460,8 @@ export const DeepReport = ({
       </ReportErrorBoundary>
       <AdviceReviewNotice
         integrity={(result as unknown as { advice_integrity?: AdviceIntegrity }).advice_integrity}
-        analysisId={typeof window !== "undefined" ? window.location.pathname.match(/[0-9a-f-]{36}/i)?.[0] : undefined}
+        analysisId={analysisId}
+        allowRecovery={canRecover && !locked}
       />
 
 

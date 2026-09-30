@@ -2328,6 +2328,7 @@ export type Database = {
           mode: string
           operator_id: string
           purpose: string
+          recovery_probe: Json | null
           secret_hash: string
           state: Json
           status: string
@@ -2349,6 +2350,7 @@ export type Database = {
           mode: string
           operator_id: string
           purpose?: string
+          recovery_probe?: Json | null
           secret_hash: string
           state?: Json
           status?: string
@@ -2370,6 +2372,7 @@ export type Database = {
           mode?: string
           operator_id?: string
           purpose?: string
+          recovery_probe?: Json | null
           secret_hash?: string
           state?: Json
           status?: string

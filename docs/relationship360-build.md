@@ -801,3 +801,13 @@ Supersedes the advice-review-1 manual retry and two-hour evidence retention abov
 - Verified: 275 tests pass. A rolled-back DB self-test and live anonymous endpoint checks passed. Cleanup counts are 0.
 - Blocked: 390/1280 visual review and the operator self-test need authorized sign-in. The same-input live success was checked with an injected model only. Legacy reports can't be recovered. Backups can't be verified.
 - Spend: $0 this work. Rolling 24h is $0.39 of $15. Human quality review is pending. The backend is shared and deployed; the frontend is unpublished.
+
+
+## advice-review-3 — live same-input recovery (packet `70104c03-2085-4024-94d6-fed32264caa8`, follows `1f531865-7787-430c-b7a6-b9ff1858cdba`)
+- Live probe run 68b9f95e / report c002b5e6. Synthetic data, deployed checker, one real call (Claude Sonnet 4.6, $0.022323 actual of $0.056988 reserved). Before: 2 verified, 7 hidden unresolved. After: 9 verified, 0 unresolved. The 2 shown-item hashes and the conclusions hash are unchanged. One recovery was used. Temporary messages were 0 before and after. No billing or credit rows changed.
+- Two earlier probes failed safely. 5a1a5a31 was refused after finalize. 2c90971a hit a missing stage plan, made no model calls and was then configured. Probe total: $0.261390.
+- Limits: the entitlement was waived only inside the operator probe, so this is not proof of the customer entitlement path. The live rejected-item path was not exercised; only tests cover it. There is no authenticated customer E2E.
+- UI: protected fixture review at 1280/390 showed no errors and no overflow. Only Import and Paste are offered. Fixed a lost click: parsing the paste on blur moved the Check suggestions button mid-click. Unparsed paste is now parsed the same way as preview.
+- Published frontend (checked by code inspection only, nothing published): it is an older bundle with no advice-check note or recovery. It shows only the suggestions the backend returns.
+- Inputs: paste and chat import can be recovered. Screenshot-origin reports and legacy reports without a fingerprint cannot.
+- 277 tests pass, typecheck is clean and the production build is OK. Rolling 24h spend is $0.654003 of $15 with 0 open reservations. Human review is pending.

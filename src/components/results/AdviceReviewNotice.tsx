@@ -2,8 +2,9 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
+import { parseTranscript } from "@/lib/ingest/parse";
+import { canonicalizeParsedConversation } from "@/lib/ingest/canonical";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
-import { extractScreenshotConversation } from "@/lib/ingest/extract";
 
 export type AdviceIntegrity = {
   withheld_count?: number;
@@ -27,15 +28,29 @@ type Props = {
   onUpdated?: () => void;
   /** Component review only: never calls the server. */
   preview?: boolean;
+  /** Only the owner of an unlocked report (not shared or locked views) is offered recovery. */
+  allowRecovery?: boolean;
 };
 
 const FALLBACK_HELD = "Some advice was held back because it didn't seem to be meant for the person it was addressed to.";
 const UNCHECKED = "Your analysis is complete. Some suggestions couldn't be checked, so we've left them out.";
 
-export const draftToText = (d: ConversationDraft) =>
-  d.conversation && d.conversation.format !== "screenshots_pending"
-    ? d.conversation.messages.map((m) => `${m.raw_sender ?? "Unknown"}: ${m.content}`).join("\n")
-    : d.text;
+/** Recovery starts on Import: screenshots are not accepted here. */
+const recoveryDraft = (): ConversationDraft => ({ ...emptyConversationDraft(), method: "chat_export" });
+
+export const draftToText = (d: ConversationDraft) => {
+  if (d.conversation && d.conversation.format !== "screenshots_pending")
+    return d.conversation.messages.map((m) => `${m.raw_sender ?? "Unknown"}: ${m.content}`).join("\n");
+  // Not previewed yet: parse exactly as the shared input would on preview, so the
+  // same chat produces the same text the original analysis received.
+  if (d.text.trim() && (d.method === "paste" || d.method === "chat_export")) {
+    try {
+      const c = canonicalizeParsedConversation(parseTranscript(d.text), d.method, null);
+      return c.messages.map((m) => `${m.raw_sender ?? "Unknown"}: ${m.content}`).join("\n");
+    } catch { return d.text; }
+  }
+  return d.text;
+};
 
 const REASONS: Record<string, { text: string; final?: boolean }> = {
   input_mismatch: { text: "That doesn't match the conversation this report was made from. Use exactly the same file or text. Your free recovery hasn't been used." },
@@ -56,9 +71,9 @@ const REASONS: Record<string, { text: string; final?: boolean }> = {
  * optional free resubmission flow. Unknown or older statuses fall back to the
  * server-written note, so older and newer report shapes both render truthfully.
  */
-export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }: Props) {
+export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview, allowRecovery = false }: Props) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<ConversationDraft>(emptyConversationDraft);
+  const [draft, setDraft] = useState<ConversationDraft>(recoveryDraft);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [closed, setClosed] = useState(false);
@@ -70,7 +85,7 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
   const unchecked = status === "unavailable" || status === "pending";
   const note = (status === "pending" ? null : integrity.note) ?? (unchecked ? UNCHECKED : integrity.withheld_count ? FALLBACK_HELD : null);
   if (!note) return null;
-  const canRecover = unchecked && review?.can_recover === true && review?.recovery === "available" && !closed;
+  const canRecover = allowRecovery && unchecked && review?.can_recover === true && review?.recovery === "available" && !closed;
 
   const submit = async () => {
     if (preview) { setMessage("Preview only — nothing was sent."); return; }
@@ -84,13 +99,13 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
       if (error) throw error;
       const d = data as { ok?: boolean; reason?: string; restored?: number };
       if (d?.ok) {
-        setDraft(emptyConversationDraft());
+        setDraft(recoveryDraft());
         (onUpdated ?? (() => window.location.reload()))();
         return;
       }
       const r = REASONS[d?.reason ?? ""];
-      if (r) { setMessage(r.text); if (r.final) { setClosed(true); setOpen(false); setDraft(emptyConversationDraft()); } }
-      else { setMessage("We couldn't finish checking these suggestions, so they'll stay hidden. The rest of your analysis is unchanged."); setClosed(true); setOpen(false); setDraft(emptyConversationDraft()); }
+      if (r) { setMessage(r.text); if (r.final) { setClosed(true); setOpen(false); setDraft(recoveryDraft()); } }
+      else { setMessage("We couldn't finish checking these suggestions, so they'll stay hidden. The rest of your analysis is unchanged."); setClosed(true); setOpen(false); setDraft(recoveryDraft()); }
     } catch {
       setMessage("Something went wrong. Your free recovery hasn't been used if nothing started — please try again in a moment.");
     } finally {
@@ -115,13 +130,16 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
           <p className="text-[12px] text-muted-foreground">
             Free: no charge, and no report credit is used. You get one recovery per report. The conversation is deleted as soon as the check ends.
           </p>
-          <SharedConversationInput value={draft} onChange={setDraft} compact requireSelf={false} extractScreenshots={extractScreenshotConversation} />
+          <p className="text-[12px] text-muted-foreground">
+            Use the same chat export file or pasted text you used the first time. Reports made from screenshots can't be recovered this way.
+          </p>
+          <SharedConversationInput value={draft} onChange={setDraft} compact requireSelf={false} allowScreenshots={false} />
           <div className="flex flex-wrap gap-2">
-            <Button type="button" size="sm" className="min-h-[44px]" onClick={submit} disabled={busy} aria-busy={busy}>
+            <Button type="button" size="sm" className="min-h-[44px]" onMouseDown={(e) => e.preventDefault()} onClick={submit} disabled={busy} aria-busy={busy}>
               {busy ? "Checking…" : "Check suggestions"}
             </Button>
             <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" disabled={busy}
-              onClick={() => { setOpen(false); setDraft(emptyConversationDraft()); setMessage(null); requestAnimationFrame(() => triggerRef.current?.focus()); }}>
+              onClick={() => { setOpen(false); setDraft(recoveryDraft()); setMessage(null); requestAnimationFrame(() => triggerRef.current?.focus()); }}>
               Cancel
             </Button>
           </div>
