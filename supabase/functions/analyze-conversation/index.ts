@@ -7,8 +7,8 @@ import {
   type AdviceStatus, type Msg, type Participant,
 } from "../_shared/adviceRecipients.ts";
 import {
-  ADVICE_REVIEW_VERSION, REVIEW_BACKOFF_MS, REVIEW_EVIDENCE_TTL_MS, REVIEW_MAX_ATTEMPTS, REVIEW_TIMEOUT_MS, classifyVerdict, customerNote, evidenceFingerprint, toPending,
-  type PendingItem, type ReviewState, type ReviewStatus, type ReviewSummary,
+  ADVICE_REVIEW_VERSION, INPUT_FP_VERSION, ORIGINAL_MAX_ATTEMPTS, REVIEW_BACKOFF_MS, REVIEW_TIMEOUT_MS, checkItems, customerNote, evidenceFingerprint, inputFingerprint, toPending,
+  type PendingItem, type ReviewStatus, type ReviewSummary,
 } from "../_shared/adviceReview.ts";
 // Advice semantic check model (SEMANTIC_MODEL): priced in MODEL_RATES (promptBudget.ts); bounded input/output.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
@@ -758,12 +758,11 @@ ${messagesBlock}`;
   }
 
   // Semantic recipient/support review on the FINAL advice (original or
-  // rewritten), per item (advice-review-1, see _shared/adviceReview.ts):
-  // verified items are shown; rejected items are withheld; unresolved items
-  // (timeout, provider error, malformed JSON, missing/duplicate/malformed
-  // verdicts) are hidden — never shown as checked. One automatic retry of the
-  // unresolved items only, while the raw messages still exist; a manual
-  // "Finish checking suggestions" attempt may follow within the shared cap.
+  // rewritten), per item (advice-review-2, see _shared/adviceReview.ts):
+  // verified items are shown; rejected and unresolved items are withheld.
+  // Initial check + at most ONE automatic retry, only while this analysis's
+  // temporary messages exist. No transcript or excerpt is stored for later;
+  // only a keyed one-way fingerprint so the owner can resubmit the same chat.
   const detWithheld = adviceStatuses.filter((s) => s.status === "withheld").length;
   let semantic: { status: "done" | "failed" | "skipped"; checked: number; withheld: number } = { status: "skipped", checked: 0, withheld: 0 };
   let review: ReviewSummary | null = null;
@@ -773,26 +772,20 @@ ${messagesBlock}`;
     if (finalItems.length) {
       const req0 = semanticRequest(finalItems, parts, canon);
       const efp = await evidenceFingerprint(req0);
-      const states = new Map<string, { state: ReviewState; reasons: string[] }>();
-      const attemptsTrace: unknown[] = [];
-      let unresolved = finalItems;
-      let attempts = 0;
-      while (unresolved.length && attempts < 2) {
-        if (attempts > 0) await new Promise((res) => setTimeout(res, REVIEW_BACKOFF_MS));
-        attempts++;
-        const rq = semanticRequest(unresolved, parts, canon);
-        markStage("advice_check");
-        const r = await callOpenRouter({
-          model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
-          messages: [{ role: "system", content: rq.system }, { role: "user", content: rq.user }],
-        }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE, { timeoutMs: REVIEW_TIMEOUT_MS, singleAttempt: true });
-        let parsed: unknown = null;
-        try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null; } catch { parsed = null; }
-        const verdicts = applySemanticVerdicts(unresolved, parsed, rq);
-        for (const it of unresolved) { const v = verdicts.get(it.id); states.set(it.id, { state: classifyVerdict(v), reasons: v?.reasons ?? ["semantic_missing"] }); }
-        attemptsTrace.push({ attempt: attempts, ok: r.ok, provider_status: r.status, parsed: parsed !== null, response: parsed, verdicts: Object.fromEntries(verdicts) });
-        unresolved = unresolved.filter((it) => states.get(it.id)!.state === "unresolved");
-      }
+      const { states, attempts, trace: attemptsTrace } = await checkItems(finalItems, {
+        build: (items) => semanticRequest(items, parts, canon),
+        applyVerdicts: applySemanticVerdicts,
+        maxAttempts: ORIGINAL_MAX_ATTEMPTS,
+        backoffMs: REVIEW_BACKOFF_MS,
+        callModel: async (system, user) => {
+          markStage("advice_check");
+          const r = await callOpenRouter({
+            model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
+            messages: [{ role: "system", content: system }, { role: "user", content: user }],
+          }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE, { timeoutMs: REVIEW_TIMEOUT_MS, singleAttempt: true });
+          try { return r.ok ? extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null : null; } catch { return null; }
+        },
+      });
       const hide = new Set<string>();
       const pending: PendingItem[] = [];
       let rejected = 0, verified = 0;
@@ -808,15 +801,20 @@ ${messagesBlock}`;
         else adviceStatuses.push({ id: it.id, recipient_id: it.recipient_id, status: "withheld", reasons });
       }
       removeItems(resultJson, parts, hide);
-      const status: ReviewStatus = pending.length === 0 ? "complete" : attempts < REVIEW_MAX_ATTEMPTS ? "pending" : "unavailable";
-      review = { version: ADVICE_REVIEW_VERSION, status, verified, rejected, unresolved: pending.length, attempts, max_attempts: REVIEW_MAX_ATTEMPTS, can_retry: status === "pending", terminal_reason: status === "unavailable" ? "attempts_exhausted" : null };
+      const status: ReviewStatus = pending.length === 0 ? "complete" : "unavailable";
+      // Recovery needs a same-input fingerprint; evaluation runs never offer it.
+      const fp = pending.length && !currentTestRun() && raw_text_for_analysis?.trim()
+        ? await inputFingerprint(Deno.env.get("ADVICE_INPUT_FP_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", analysis_id, raw_text_for_analysis)
+        : null;
+      const recovery = status === "unavailable" && fp ? "available" : "not_available";
+      review = { version: ADVICE_REVIEW_VERSION, status, verified, rejected, unresolved: pending.length, attempts, max_attempts: ORIGINAL_MAX_ATTEMPTS, can_retry: false, recovery, can_recover: recovery === "available", terminal_reason: status === "unavailable" ? "attempts_exhausted" : null };
       semantic = { status: pending.length ? "failed" : "done", checked: finalItems.length, withheld: hide.size };
       reviewRow = {
-        analysis_id, status, attempts, max_attempts: REVIEW_MAX_ATTEMPTS, checker_version: ADVICE_SEMANTIC_VERSION,
-        pending: status === "pending" ? pending : null,
-        // Bounded transcript window the check already read; cleared at completion/exhaustion/expiry/deletion.
-        evidence: status === "pending" ? { system: req0.system, transcript: req0.user.split("<advice>")[0], firstIndex: req0.firstIndex, lastIndex: req0.lastIndex, senders: req0.senders } : null,
-        evidence_expires_at: status === "pending" ? new Date(Date.now() + REVIEW_EVIDENCE_TTL_MS).toISOString() : null,
+        analysis_id, status, attempts, max_attempts: ORIGINAL_MAX_ATTEMPTS, checker_version: ADVICE_SEMANTIC_VERSION,
+        // Hidden report suggestions only (never transcript), kept only while a recovery is possible.
+        pending: recovery === "available" ? pending : null,
+        input_fp: recovery === "available" ? fp : null, fp_version: recovery === "available" ? INPUT_FP_VERSION : null,
+        recovery_state: recovery, recovery_attempts: 0, recovery_lease_until: null,
         lease_until: null, last_attempt_at: new Date().toISOString(), terminal_reason: review.terminal_reason, updated_at: new Date().toISOString(),
       };
       if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), attempts: attemptsTrace, states: Object.fromEntries(states) };
@@ -884,9 +882,8 @@ ${messagesBlock}`;
   if (reviewRow) {
     const { error: revErr } = await supabase.from("advice_reviews").upsert(reviewRow, { onConflict: "analysis_id" });
     const ai = resultJson?.advice_integrity;
-    if (revErr && ai?.review?.status === "pending") {
-      ai.review = { ...ai.review, status: "unavailable", can_retry: false, terminal_reason: "review_record_unavailable" };
-      ai.note = customerNote(ai.review);
+    if (revErr && ai?.review?.can_recover) {
+      ai.review = { ...ai.review, recovery: "not_available", can_recover: false, terminal_reason: "review_record_unavailable" };
     }
   } else {
     await supabase.from("advice_reviews").delete().eq("analysis_id", analysis_id);

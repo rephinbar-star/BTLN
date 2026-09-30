@@ -20,12 +20,16 @@ export type Database = {
           attempts: number
           checker_version: string
           created_at: string
-          evidence: Json | null
-          evidence_expires_at: string | null
+          fp_version: string | null
+          input_fp: string | null
           last_attempt_at: string | null
           lease_until: string | null
           max_attempts: number
           pending: Json | null
+          recovery_attempts: number
+          recovery_lease_until: string | null
+          recovery_mismatches: number
+          recovery_state: string
           status: string
           terminal_reason: string | null
           updated_at: string
@@ -35,12 +39,16 @@ export type Database = {
           attempts?: number
           checker_version: string
           created_at?: string
-          evidence?: Json | null
-          evidence_expires_at?: string | null
+          fp_version?: string | null
+          input_fp?: string | null
           last_attempt_at?: string | null
           lease_until?: string | null
           max_attempts?: number
           pending?: Json | null
+          recovery_attempts?: number
+          recovery_lease_until?: string | null
+          recovery_mismatches?: number
+          recovery_state?: string
           status: string
           terminal_reason?: string | null
           updated_at?: string
@@ -50,12 +58,16 @@ export type Database = {
           attempts?: number
           checker_version?: string
           created_at?: string
-          evidence?: Json | null
-          evidence_expires_at?: string | null
+          fp_version?: string | null
+          input_fp?: string | null
           last_attempt_at?: string | null
           lease_until?: string | null
           max_attempts?: number
           pending?: Json | null
+          recovery_attempts?: number
+          recovery_lease_until?: string | null
+          recovery_mismatches?: number
+          recovery_state?: string
           status?: string
           terminal_reason?: string | null
           updated_at?: string
@@ -3008,11 +3020,12 @@ export type Database = {
         }
         Returns: undefined
       }
-      claim_advice_review: {
+      claim_advice_recovery: {
         Args: {
           p_analysis_id: string
+          p_fp_version: string
+          p_input_fp: string
           p_lease_seconds?: number
-          p_min_gap_seconds?: number
         }
         Returns: Json
       }
@@ -3075,13 +3088,12 @@ export type Database = {
         Args: { p_minutes: number }
         Returns: number
       }
-      finish_advice_review: {
+      finish_advice_recovery: {
         Args: {
           p_analysis_id: string
-          p_attempt: number
+          p_attempts: number
           p_base_hash: string
           p_new_result: Json
-          p_remaining: Json
           p_status: string
           p_terminal_reason: string
         }
@@ -3385,10 +3397,6 @@ export type Database = {
           p_platform: string
           p_session_id: string
         }
-        Returns: undefined
-      }
-      release_advice_review: {
-        Args: { p_analysis_id: string; p_attempt: number }
         Returns: undefined
       }
       reserve_prompt_spend:

@@ -25,6 +25,7 @@ import {
 import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF, withPayloadToken } from "../_shared/pipelineCases.ts";
 import { payloadToken } from "../_shared/injectionDisclosure.ts";
 import { ADVICE_SEMANTIC_VERSION, applySemanticVerdicts, SEMANTIC_MODEL, semanticRequest } from "../_shared/adviceRecipients.ts";
+import { INPUT_FP_VERSION, inputFingerprint } from "../_shared/adviceReview.ts";
 import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3, SEMANTIC_FIXTURES_4, EXTERNAL_BENCHMARK_1, REGRESSION_PROSPECTIVE_1 } from "../_shared/adviceSemanticFixtures.ts";
 
 const corsHeaders = {
@@ -929,69 +930,108 @@ Deno.serve(async (req) => {
     return json(200, { job_id: jobId, model: SEMANTIC_MODEL, version: ADVICE_SEMANTIC_VERSION, summary, rows, ledger });
   }
 
-  // No-model DB self-test of advice-review-1: concurrent claims, shared cap, stale finish, expiry, cleanup.
-  // Uses a throwaway synthetic analysis row (session "selftest-advice-review") and deletes it afterwards.
+  // No-model self-test of advice-review-2 (no retained transcript; one same-input recovery per report).
+  // Throwaway synthetic analyses, deleted afterwards. Never calls a model.
   if (action === "advice_review_selftest") {
     const out: Admin = {};
-    const mk = async (extra: Admin = {}) => {
-      const { data: an, error } = await admin.from("analyses").insert({ session_id: crypto.randomUUID(), context_data: { selftest: "advice-review" }, input_method: "paste", status: "complete",
-        result_json: { communication_suggestions: { person1: [], person2: [] }, advice_integrity: { review: { status: "pending", verified: 0, rejected: 0, unresolved: 1, attempts: 2, max_attempts: 3, can_retry: true }, note: "x", withheld_count: 1 } } }).select("id").single();
-      if (error) throw new Error(error.message);
-      await admin.from("advice_reviews").insert({ analysis_id: an.id, status: "pending", attempts: 0, max_attempts: 3, checker_version: ADVICE_SEMANTIC_VERSION,
-        pending: [{ key: "k", text: "t" }], evidence: { transcript: "x" }, evidence_expires_at: new Date(Date.now() + 3600_000).toISOString(), ...extra });
-      return an.id as string;
+    const fpKey = Deno.env.get("ADVICE_INPUT_FP_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const TEXT = "Dev: Are we still on for Friday?\nJo: Yes, sorry, today got away from me.\nDev: No worries.\nJo: Thanks for checking.";
+    const billingCounts = async () => {
+      const n = async (t: string) => (await admin.from(t).select("*", { count: "exact", head: true })).count ?? -1;
+      return { one_time_unlocks: await n("one_time_unlocks"), user_subscriptions: await n("user_subscriptions"), webhook_events: await n("webhook_events"), paywall_intents: await n("paywall_intents"), paid_analyses: (await admin.from("analyses").select("id", { count: "exact", head: true }).eq("is_paid", true)).count ?? -1 };
     };
-    const claim = (id: string, gap = 0) => admin.rpc("claim_advice_review", { p_analysis_id: id, p_lease_seconds: 75, p_min_gap_seconds: gap }).then((r: Admin) => r.data);
+    const before = await billingCounts();
     const ids: string[] = [];
+    const mk = async (o: { recovery?: string; version?: string; paid?: boolean; session?: string; fpText?: string | null } = {}) => {
+      const session = o.session ?? crypto.randomUUID();
+      const { data: an, error } = await admin.from("analyses").insert({ session_id: session, context_data: { name1: "Dev", name2: "Jo", selftest: "advice-review-2" }, input_method: "paste", status: "complete", is_paid: o.paid ?? false,
+        result_json: { communication_suggestions: { person1: ["Verified earlier."], person2: [] }, advice_integrity: { review: { status: "unavailable", verified: 1, rejected: 0, unresolved: 1, attempts: 2, max_attempts: 2, can_retry: false, recovery: o.recovery ?? "available", can_recover: (o.recovery ?? "available") === "available" }, note: "x", withheld_count: 1 } } }).select("id").single();
+      if (error) throw new Error(error.message);
+      ids.push(an.id);
+      const rec = o.recovery ?? "available";
+      const fp = o.fpText === null ? null : await inputFingerprint(fpKey, an.id, o.fpText ?? TEXT);
+      const { error: e2 } = await admin.from("advice_reviews").insert({ analysis_id: an.id, status: "unavailable", attempts: 2, max_attempts: 2, checker_version: o.version ?? ADVICE_SEMANTIC_VERSION,
+        pending: rec === "available" ? [{ key: "k", id: "cs.p2.0", recipient_id: "p2", counterpart_ids: ["p1"], kind: "suggestion", text: "Ask Dev what helps.", field: "cs.person2", value: "Ask Dev what helps." }] : null,
+        input_fp: rec === "available" ? fp : null, fp_version: rec === "available" ? INPUT_FP_VERSION : null, recovery_state: rec });
+      if (e2) throw new Error(e2.message);
+      return { id: an.id as string, session };
+    };
+    const fpOf = (id: string, t = TEXT) => inputFingerprint(fpKey, id, t);
+    const claim = async (id: string, fp: string | null, lease = 150) => (await admin.rpc("claim_advice_recovery", { p_analysis_id: id, p_input_fp: fp, p_fp_version: INPUT_FP_VERSION, p_lease_seconds: lease })).data;
+    const row = async (id: string) => (await admin.from("advice_reviews").select("status,recovery_state,recovery_attempts,recovery_mismatches,pending,input_fp").eq("analysis_id", id).maybeSingle()).data;
+    const endpoint = (body: Admin) => fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/advice-review`, { method: "POST", headers: { "Content-Type": "application/json", apikey: Deno.env.get("SUPABASE_ANON_KEY") ?? "", Authorization: `Bearer ${Deno.env.get("SUPABASE_ANON_KEY") ?? ""}` }, body: JSON.stringify(body) }).then(async (r) => ({ http: r.status, body: await r.json().catch(() => null) }));
     try {
-      // 1. 12 simultaneous claims against one review with 3 attempts free: exactly 1 wins (single-flight lease).
-      const a = await mk(); ids.push(a);
-      const res = await Promise.all(Array.from({ length: 12 }, () => claim(a)));
-      out.concurrent_single_flight = { requests: 12, accepted: res.filter((r: Admin) => r?.ok).length, reasons: res.filter((r: Admin) => !r?.ok).map((r: Admin) => r?.reason) };
-      const { data: ra } = await admin.from("advice_reviews").select("attempts").eq("analysis_id", a).single();
-      out.concurrent_attempts_recorded = ra.attempts;
-      // 2. Shared cap: releases between rounds, 3 rounds of 6 concurrent claims -> at most 3 attempts ever; 4th round terminal.
-      const b = await mk(); ids.push(b);
-      let wins = 0;
-      for (let round = 0; round < 4; round++) {
-        const rr = await Promise.all(Array.from({ length: 6 }, () => claim(b)));
-        const w = rr.find((r: Admin) => r?.ok); if (w) { wins++; await admin.rpc("release_advice_review", { p_analysis_id: b, p_attempt: w.attempt }); }
-      }
-      const { data: rb } = await admin.from("advice_reviews").select("status,attempts,evidence,pending,terminal_reason").eq("analysis_id", b).single();
-      out.shared_cap = { rounds: 4, per_round: 6, accepted: wins, final: { status: rb.status, attempts: rb.attempts, evidence_cleared: rb.evidence === null && rb.pending === null, reason: rb.terminal_reason } };
-      // 3. Stale result: report changes after claim -> finish refused, nothing written, review terminal.
-      const c = await mk(); ids.push(c);
-      const cc = await claim(c);
-      await admin.from("analyses").update({ result_json: { corrected: true } }).eq("id", c);
-      const fin = await admin.rpc("finish_advice_review", { p_analysis_id: c, p_attempt: cc.attempt, p_base_hash: cc.base_hash, p_new_result: { should_not: "apply" }, p_remaining: [], p_status: "complete", p_terminal_reason: null });
-      const { data: ac } = await admin.from("analyses").select("result_json").eq("id", c).single();
-      const { data: rc } = await admin.from("advice_reviews").select("status,terminal_reason,evidence").eq("analysis_id", c).single();
-      out.stale_result = { finish: fin.data, report_untouched: !!(ac.result_json as Admin)?.corrected && !(ac.result_json as Admin)?.should_not, review: { status: rc.status, reason: rc.terminal_reason, evidence_cleared: rc.evidence === null } };
-      // 4. Old attempt number cannot finish after a newer claim.
-      const d = await mk(); ids.push(d);
-      const d1 = await claim(d); await admin.rpc("release_advice_review", { p_analysis_id: d, p_attempt: d1.attempt });
-      const d2 = await claim(d);
-      const late = await admin.rpc("finish_advice_review", { p_analysis_id: d, p_attempt: d1.attempt, p_base_hash: d1.base_hash, p_new_result: { late: true }, p_remaining: [], p_status: "complete", p_terminal_reason: null });
-      out.late_attempt = { first: d1.attempt, second: d2?.attempt, late_finish: late.data };
-      // 5. Expired evidence: claim refused, evidence cleared, customer note set to unavailable.
-      const e = await mk({ evidence_expires_at: new Date(Date.now() - 1000).toISOString() }); ids.push(e);
-      const ce = await claim(e);
-      const { data: re } = await admin.from("advice_reviews").select("status,evidence,pending,terminal_reason").eq("analysis_id", e).single();
-      const { data: ae } = await admin.from("analyses").select("result_json").eq("id", e).single();
-      out.expired_evidence = { claim: ce, status: re.status, evidence_cleared: re.evidence === null && re.pending === null, reason: re.terminal_reason, report_review_status: (ae.result_json as Admin)?.advice_integrity?.review?.status, note: (ae.result_json as Admin)?.advice_integrity?.note };
-      // 6. Backoff gap: immediate second claim after release is refused.
-      const f = await mk(); ids.push(f);
-      const f1 = await claim(f, 5); await admin.rpc("release_advice_review", { p_analysis_id: f, p_attempt: f1.attempt });
-      out.backoff = { first: f1.ok, immediate_second: (await claim(f, 5))?.reason };
-      // 7. Report deletion cascades the review (and its evidence).
-      await admin.from("analyses").delete().eq("id", a);
-      const { data: gone } = await admin.from("advice_reviews").select("analysis_id").eq("analysis_id", a).maybeSingle();
-      out.delete_cascade = gone === null;
+      // 0. Schema: the retry transcript store no longer exists and cannot be repopulated.
+      const { data: cols } = await admin.from("advice_reviews").select("*").limit(1);
+      const probe = await mk({ recovery: "not_available", fpText: null });
+      const { error: evErr } = await admin.from("advice_reviews").update({ evidence: { transcript: "x" } } as Admin).eq("analysis_id", probe.id);
+      const { error: pendErr } = await admin.from("advice_reviews").update({ pending: [{ text: "t" }] }).eq("analysis_id", probe.id);
+      const { error: oldRpc } = await admin.rpc("claim_advice_review", { p_analysis_id: probe.id });
+      const { count: rawRows } = await admin.from("advice_reviews").select("*", { count: "exact", head: true }).not("pending", "is", null).not("recovery_state", "in", "(available,claimed)");
+      out.retention = { evidence_write_refused: !!evErr, pending_without_recovery_refused: !!pendErr, old_retry_rpc_removed: !!oldRpc, columns_sample: cols?.[0] ? Object.keys(cols[0]) : null, rows_with_pending_outside_recovery: rawRows ?? 0 };
+      // 1. Absent fingerprint (legacy/screenshot-less) -> honest refusal.
+      out.absent_fp = await claim(probe.id, await fpOf(probe.id));
+      // 2. Mismatched input -> refused, recovery NOT consumed.
+      const m = await mk();
+      const mm = await claim(m.id, await fpOf(m.id, TEXT + "\nDev: different"));
+      const mr = await row(m.id);
+      out.mismatch = { claim: mm, recovery_state_after: mr?.recovery_state, mismatches: mr?.recovery_mismatches };
+      // 3. 12 simultaneous matching submissions -> exactly one claim; later submissions refused.
+      const fpm = await fpOf(m.id);
+      const res = await Promise.all(Array.from({ length: 12 }, () => claim(m.id, fpm)));
+      out.concurrent = { requests: 12, accepted: res.filter((r: Admin) => r?.ok).length, reasons: [...new Set(res.filter((r: Admin) => !r?.ok).map((r: Admin) => r?.reason))] };
+      const win = res.find((r: Admin) => r?.ok);
+      // 4. Finish complete: verified item restored, earlier verified item preserved, recovery closed.
+      const newResult = JSON.parse(JSON.stringify(win.result)); newResult.communication_suggestions.person2.push("Ask Dev what helps.");
+      const fin = await admin.rpc("finish_advice_recovery", { p_analysis_id: m.id, p_base_hash: win.base_hash, p_new_result: newResult, p_status: "complete", p_attempts: 1, p_terminal_reason: null });
+      const { data: am } = await admin.from("analyses").select("result_json").eq("id", m.id).single();
+      const after = await row(m.id);
+      out.finish_complete = { finish: fin.data, shown: [...(am.result_json as Admin).communication_suggestions.person1, ...(am.result_json as Admin).communication_suggestions.person2], row: { status: after?.status, recovery: after?.recovery_state, attempts: after?.recovery_attempts, pending_cleared: after?.pending === null }, second_claim: await claim(m.id, fpm) };
+      // 5. Stale: report corrected after claim -> finish refused, report untouched, recovery terminal.
+      const s = await mk();
+      const sc = await claim(s.id, await fpOf(s.id));
+      await admin.from("analyses").update({ result_json: { corrected: true } }).eq("id", s.id);
+      const sf = await admin.rpc("finish_advice_recovery", { p_analysis_id: s.id, p_base_hash: sc.base_hash, p_new_result: { should_not: "apply" }, p_status: "complete", p_attempts: 1, p_terminal_reason: null });
+      const { data: as } = await admin.from("analyses").select("result_json").eq("id", s.id).single();
+      const sr = await row(s.id);
+      out.stale = { finish: sf.data, report_untouched: !!(as.result_json as Admin)?.corrected && !(as.result_json as Admin)?.should_not, recovery: sr?.recovery_state, pending_cleared: sr?.pending === null };
+      // 6. Abandoned / crashed job: lease expires -> recovery terminal, hidden items cleared, honest note; late finish refused.
+      const x = await mk();
+      const xc = await claim(x.id, await fpOf(x.id), 1);
+      await new Promise((r) => setTimeout(r, 1600));
+      const late = await admin.rpc("finish_advice_recovery", { p_analysis_id: x.id, p_base_hash: xc.base_hash, p_new_result: { late: true }, p_status: "complete", p_attempts: 1, p_terminal_reason: null });
+      const expired = (await admin.rpc("expire_advice_reviews")).data;
+      const xr = await row(x.id);
+      const { data: ax } = await admin.from("analyses").select("result_json").eq("id", x.id).single();
+      out.abandoned = { late_finish: late.data, expired, recovery: xr?.recovery_state, pending_cleared: xr?.pending === null, report_review: (ax.result_json as Admin)?.advice_integrity?.review?.recovery, note: (ax.result_json as Admin)?.advice_integrity?.note, earlier_verified_kept: (ax.result_json as Admin)?.communication_suggestions?.person1 };
+      // 7. Endpoint controls (anonymous caller, service-to-service fetch; no model is ever reached).
+      const g = await mk({ paid: false });
+      const gp = await mk({ paid: true, version: "advice-semantic-0-selftest" });
+      const other = await mk({ paid: true });
+      await admin.from("analyses").update({ user_id: user.id }).eq("id", other.id);
+      out.endpoint = {
+        report_id_only: await endpoint({ action: "recover", analysis_id: gp.id, raw_text: TEXT }),
+        wrong_session: await endpoint({ action: "recover", analysis_id: gp.id, session_id: crypto.randomUUID(), raw_text: TEXT }),
+        cross_account_owned_row_as_guest: await endpoint({ action: "recover", analysis_id: other.id, session_id: other.session, raw_text: TEXT }),
+        guest_without_access: await endpoint({ action: "recover", analysis_id: g.id, session_id: g.session, raw_text: TEXT }),
+        stale_client_retry: await endpoint({ action: "retry", analysis_id: gp.id, session_id: gp.session }),
+        unreadable_input: await endpoint({ action: "recover", analysis_id: gp.id, session_id: gp.session, raw_text: "hello there" }),
+        mismatched_input: await endpoint({ action: "recover", analysis_id: gp.id, session_id: gp.session, raw_text: TEXT.replace("Friday", "Saturday") }),
+        // Matching input on a report written by an older checker: claim consumed, terminal, no model call.
+        same_input_old_checker: await endpoint({ action: "recover", analysis_id: gp.id, session_id: gp.session, raw_text: TEXT }),
+        then_again: await endpoint({ action: "recover", analysis_id: gp.id, session_id: gp.session, raw_text: TEXT }),
+      };
+      for (const k of Object.keys(out.endpoint)) { const b = out.endpoint[k].body; out.endpoint[k] = { http: out.endpoint[k].http, reason: b?.reason ?? b?.error ?? (b?.ok ? "ok" : null), recovery: b?.review?.recovery ?? null }; }
+      // 8. Report deletion cascades the review row.
+      await admin.from("analyses").delete().eq("id", probe.id);
+      out.delete_cascade = (await row(probe.id)) === null;
     } finally {
       await admin.from("analyses").delete().in("id", ids);
     }
     const { data: left } = await admin.from("advice_reviews").select("analysis_id").in("analysis_id", ids);
     out.fixtures_left = left?.length ?? 0;
+    const afterCounts = await billingCounts();
+    out.billing = { before, after: afterCounts, unchanged: JSON.stringify(before) === JSON.stringify(afterCounts) };
     await audit(admin, user.id, "advice_review_selftest", "advice_reviews", null, out);
     return json(200, out);
   }
