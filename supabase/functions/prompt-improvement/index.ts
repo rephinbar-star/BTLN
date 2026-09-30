@@ -25,7 +25,7 @@ import {
 import { EXPECTED_STAGES, FUNCTION_FOR, PIPELINE_CASES, PIPELINE_CODE_VERSIONS, PIPELINE_REVISION, pipelineRequest, RESULT_REF, withPayloadToken } from "../_shared/pipelineCases.ts";
 import { payloadToken } from "../_shared/injectionDisclosure.ts";
 import { ADVICE_SEMANTIC_VERSION, applySemanticVerdicts, SEMANTIC_MODEL, semanticRequest } from "../_shared/adviceRecipients.ts";
-import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3, SEMANTIC_FIXTURES_4, EXTERNAL_BENCHMARK_1 } from "../_shared/adviceSemanticFixtures.ts";
+import { SEMANTIC_FIXTURES, SEMANTIC_FIXTURES_2, SEMANTIC_FIXTURES_3, SEMANTIC_FIXTURES_4, EXTERNAL_BENCHMARK_1, REGRESSION_PROSPECTIVE_1 } from "../_shared/adviceSemanticFixtures.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
