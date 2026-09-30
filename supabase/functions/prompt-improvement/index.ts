@@ -929,6 +929,36 @@ Deno.serve(async (req) => {
     return json(200, { job_id: jobId, model: SEMANTIC_MODEL, version: ADVICE_SEMANTIC_VERSION, summary, rows, ledger });
   }
 
+  // Tuned regression run (advice-semantic-5+): ext-1 (dataset unchanged; config differs, so labelled
+  // "tuned_regression", never held-out) plus reg-prospective-1. Metered through meteredCall.
+  if (action === "advice_regression_run") {
+    if (!aiKey) return json(503, { error: "Model key unavailable." });
+    const jobId = crypto.randomUUID();
+    const rows: Admin[] = [];
+    const calls: Admin[] = [];
+    for (const set of [{ label: "ext-1 (tuned regression)", B: EXTERNAL_BENCHMARK_1 }, { label: "reg-prospective-1 (regression, authored post ext-1)", B: REGRESSION_PROSPECTIVE_1 }]) {
+      for (const fx of set.B.fixtures) {
+        const req = semanticRequest(fx.items, fx.parts, fx.msgs);
+        const r = await meteredCall(deps, { scope: SCOPE, jobId, kind: "judge", timeoutMs: 60_000, body: {
+          model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
+          messages: [{ role: "system", content: req.system }, { role: "user", content: req.user }] } as Admin });
+        let parsed: unknown = null;
+        try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value; } catch { parsed = null; }
+        calls.push({ set: set.label, fixture: fx.id, ok: r.ok, failure: r.ok ? null : (r.stage === "budget" ? `budget:${r.reason}` : r.reason), parsed: parsed !== null });
+        const v = applySemanticVerdicts(fx.items, parsed, req);
+        for (const i of fx.items) { const x = v.get(i.id)!; rows.push({ set: set.label, ext: i.ext, id: i.id, expect: i.expect, got: x.ok ? "keep" : "withhold", reasons: x.reasons }); }
+      }
+    }
+    const by = (s: string) => rows.filter((r) => r.set.startsWith(s));
+    const sum = (rs: Admin[]) => ({ items: rs.length, keep_total: rs.filter((r) => r.expect === "keep").length, withhold_total: rs.filter((r) => r.expect === "withhold").length,
+      false_accepts: rs.filter((r) => r.expect === "withhold" && r.got === "keep").map((r) => r.ext), false_rejects: rs.filter((r) => r.expect === "keep" && r.got === "withhold").map((r) => `${r.ext}:${r.reasons.join("|")}`),
+      malformed_or_unavailable: rs.filter((r) => r.reasons.some((x: string) => ["semantic_malformed", "semantic_unavailable", "semantic_missing", "semantic_duplicate"].includes(x))).map((r) => r.ext) });
+    const summary = { ext1_tuned: sum(by("ext-1")), reg_prospective_1: sum(by("reg-")), call_failures: calls.filter((c) => !c.ok).map((c) => `${c.fixture}:${c.failure}`) };
+    const { data: ledger } = await admin.from("prompt_spend_ledger").select("reserved_usd,actual_usd,status").eq("job_id", jobId);
+    await audit(admin, user.id, "advice_regression_run", "prompt_spend_ledger", null, { job_id: jobId, version: ADVICE_SEMANTIC_VERSION, label: "tuned_regression_not_held_out", summary, rows });
+    return json(200, { job_id: jobId, version: ADVICE_SEMANTIC_VERSION, label: "tuned_regression_not_held_out", summary, rows, calls, ledger });
+  }
+
   // External benchmark ext-1: frozen immutably (cases + labels + checker config hash) BEFORE any model call.
   if (action === "advice_benchmark_freeze" || action === "advice_benchmark_run") {
     const B = EXTERNAL_BENCHMARK_1;
