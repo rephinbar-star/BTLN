@@ -563,7 +563,7 @@ Deno.serve(async (req) => {
   // function as that account. Every model call inside it reserves spend first.
   // pipeline_finalize: advances multi-step runs, reads the persisted result, checks
   // stage coverage from the spend ledger and stores an immutable result row.
-  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize" || action === "synthetic_as_user") {
+  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize" || action === "synthetic_as_user" || action === "recovery_probe_resubmit") {
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     // Synthetic accounts only. The password is derived server-side from the
@@ -679,7 +679,9 @@ Deno.serve(async (req) => {
         candidate_id: cand?.id ?? null, candidate_addendum: cand?.prompt_text ?? null, baseline_text_hash: baselineHash, case_id: c.id,
         purpose: String(body.purpose ?? "").slice(0, 300), max_calls: maxCalls,
         // Explicit, operator-set evaluation scope: baseline Relationship360 only; never candidates.
-        eval_scope: body.eval_scope === true && key === "relationship360" && variant === "baseline", expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
+        eval_scope: body.eval_scope === true && key === "relationship360" && variant === "baseline",
+        recovery_probe: body.recovery_probe && key === "deep_read_full" && variant === "baseline" && c.id !== "dr-long-10k" ? { keep_verdicts: Math.max(0, Math.min(10, Number(body.recovery_probe.keep_verdicts) || 0)) } : null,
+        expires_at: new Date(Date.now() + 20 * 60_000).toISOString(),
         state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, payload_seed: payloadSeed },
       }).select("id").single();
       if (runErr || !run) return json(500, { error: "Could not create test run." });
@@ -713,6 +715,56 @@ Deno.serve(async (req) => {
       }
       await admin.from("prompt_test_runs").update({ state: { binding, deployed_source: dep.source, model: dep.model, personalization: body.personalization ?? null, payload_seed: payloadSeed, secret, first: { status: r.status, body: r.body, session_id: payload.session_id ?? null } } }).eq("id", run.id);
       return json(r.status < 300 ? 200 : 502, { run_id: run.id, status: r.status, response: r.body });
+    }
+
+    // Same-input recovery probe (advice-review-2): resubmits the run's own synthetic
+    // case text through the deployed advice-review service as the synthetic owner,
+    // inside the same metered run. Returns raw-free before/after evidence only.
+    if (action === "recovery_probe_resubmit") {
+      const runId = String(body.run_id ?? "");
+      const { data: run } = UUID_RE.test(runId) ? await admin.from("prompt_test_runs").select("*").eq("id", runId).maybeSingle() : { data: null };
+      if (!run || !run.recovery_probe) return json(404, { error: "Not a recovery-probe run." });
+      const st = run.state ?? {};
+      const aid = st.first?.body?.analysis_id;
+      if (!UUID_RE.test(String(aid ?? ""))) return json(409, { error: "Run has no report." });
+      const c = withPayloadToken(PIPELINE_CASES.deep_read_full.find((x) => x.id === run.case_id)!, st.payload_seed ? await payloadToken(st.payload_seed) : null);
+      const rawText = String((pipelineRequest("deep_read_full", c) as Admin).raw_text ?? "");
+      const access = await sessionFor(run.target_user_id);
+      if (!access) return json(403, { error: "Synthetic session unavailable." });
+      const h = async (v: unknown) => (await sha256(JSON.stringify(v ?? null))).slice(0, 16);
+      const snap = async () => {
+        const { data: an } = await admin.from("analyses").select("status,is_paid,result_json").eq("id", aid).maybeSingle();
+        const { data: rv } = await admin.from("advice_reviews").select("status,attempts,recovery_state,recovery_attempts,recovery_mismatches,input_fp,pending,terminal_reason").eq("analysis_id", aid).maybeSingle();
+        const r = (an?.result_json ?? {}) as Admin;
+        const cs = r.communication_suggestions ?? {};
+        const shown = [...(cs.person1 ?? []), ...(cs.person2 ?? [])];
+        const rest = { ...r }; delete rest.communication_suggestions; delete rest.remedial_guidance; delete rest.advice_integrity; delete rest.advice_trace;
+        const tables = ["one_time_unlocks", "user_subscriptions", "paywall_intents", "subscription_entitlements"];
+        const billing: Admin = {};
+        for (const t of tables) { const { count, error } = await admin.from(t).select("*", { count: "exact", head: true }).eq("user_id", run.target_user_id); billing[t] = error ? `n/a (${error.message.slice(0, 40)})` : count; }
+        const { count: temp } = await admin.from("messages_temp").select("id", { count: "exact", head: true }).eq("analysis_id", aid);
+        return {
+          analysis_status: an?.status, is_paid: an?.is_paid,
+          shown_count: shown.length, shown_hashes: await Promise.all(shown.map((x: unknown) => h(x))),
+          scripts: (r.remedial_guidance?.scripted_alternatives ?? []).length, steps: (r.remedial_guidance?.specific_steps ?? []).length,
+          conclusions_hash: await h(rest), review_summary: r.advice_integrity?.review ?? null, note: r.advice_integrity?.note ?? null,
+          row: rv ? { status: rv.status, attempts: rv.attempts, recovery_state: rv.recovery_state, recovery_attempts: rv.recovery_attempts, mismatches: rv.recovery_mismatches, has_fingerprint: !!rv.input_fp, hidden_items_retained: Array.isArray(rv.pending) ? rv.pending.length : 0, terminal_reason: rv.terminal_reason } : null,
+          temp_messages: temp ?? null, billing,
+        };
+      };
+      const before = await snap();
+      const { data: ledBefore } = await admin.from("prompt_spend_ledger").select("id").eq("job_id", run.id);
+      const r = await callFn("advice-review", access, `${run.id}.${st.secret}`, { action: "recover", analysis_id: aid, raw_text: rawText });
+      const after = await snap();
+      const { data: led } = await admin.from("prompt_spend_ledger").select("id,stage,kind,model,reserved_usd,actual_usd,status,outcome,created_at").eq("job_id", run.id).order("created_at");
+      const before_ids = new Set((ledBefore ?? []).map((x: Admin) => x.id));
+      const recoveryCalls = (led ?? []).filter((x: Admin) => !before_ids.has(x.id));
+      const evidence = { run_id: run.id, analysis_id: aid, keep_verdicts: run.recovery_probe.keep_verdicts, http: r.status,
+        response: { ok: r.body?.ok, reason: r.body?.reason ?? null, attempts: r.body?.attempts ?? null, probe: r.body?.probe ?? null, review: r.body?.review ?? null },
+        before, after, recovery_calls: recoveryCalls, run_ledger_total: (led ?? []).length };
+      await admin.from("prompt_test_runs").update({ state: { ...st, recovery_probe_result: evidence } }).eq("id", run.id);
+      await audit(admin, user.id, "recovery_probe_resubmit", "prompt_test_runs", run.id, { analysis_id: aid, ok: r.body?.ok ?? null });
+      return json(200, evidence);
     }
 
     // pipeline_finalize
