@@ -46,6 +46,7 @@ describe("AdviceReviewNotice", () => {
     render(<AdviceReviewNotice integrity={recoverable} allowRecovery preview />);
     openAndType();
     expect(invoke).not.toHaveBeenCalled();
+    expect(screen.getByText(/Preview only/)).toBeTruthy();
   });
   it("mismatch keeps the flow open and says the recovery wasn't used", async () => {
     invoke.mockResolvedValueOnce({ data: { ok: false, reason: "input_mismatch" }, error: null });
