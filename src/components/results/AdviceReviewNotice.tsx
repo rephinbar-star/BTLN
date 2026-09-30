@@ -31,6 +31,9 @@ type Props = {
 const FALLBACK_HELD = "Some advice was held back because it didn't seem to be meant for the person it was addressed to.";
 const UNCHECKED = "Your analysis is complete. Some suggestions couldn't be checked, so we've left them out.";
 
+/** Recovery starts on Import: screenshots are not accepted here. */
+const recoveryDraft = (): ConversationDraft => ({ ...emptyConversationDraft(), method: "chat_export" });
+
 export const draftToText = (d: ConversationDraft) =>
   d.conversation && d.conversation.format !== "screenshots_pending"
     ? d.conversation.messages.map((m) => `${m.raw_sender ?? "Unknown"}: ${m.content}`).join("\n")
@@ -57,7 +60,7 @@ const REASONS: Record<string, { text: string; final?: boolean }> = {
  */
 export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }: Props) {
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState<ConversationDraft>(emptyConversationDraft);
+  const [draft, setDraft] = useState<ConversationDraft>(recoveryDraft);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [closed, setClosed] = useState(false);
@@ -83,13 +86,13 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
       if (error) throw error;
       const d = data as { ok?: boolean; reason?: string; restored?: number };
       if (d?.ok) {
-        setDraft(emptyConversationDraft());
+        setDraft(recoveryDraft());
         (onUpdated ?? (() => window.location.reload()))();
         return;
       }
       const r = REASONS[d?.reason ?? ""];
-      if (r) { setMessage(r.text); if (r.final) { setClosed(true); setOpen(false); setDraft(emptyConversationDraft()); } }
-      else { setMessage("We couldn't finish checking these suggestions, so they'll stay hidden. The rest of your analysis is unchanged."); setClosed(true); setOpen(false); setDraft(emptyConversationDraft()); }
+      if (r) { setMessage(r.text); if (r.final) { setClosed(true); setOpen(false); setDraft(recoveryDraft()); } }
+      else { setMessage("We couldn't finish checking these suggestions, so they'll stay hidden. The rest of your analysis is unchanged."); setClosed(true); setOpen(false); setDraft(recoveryDraft()); }
     } catch {
       setMessage("Something went wrong. Your free recovery hasn't been used if nothing started — please try again in a moment.");
     } finally {
@@ -123,7 +126,7 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
               {busy ? "Checking…" : "Check suggestions"}
             </Button>
             <Button type="button" variant="ghost" size="sm" className="min-h-[44px]" disabled={busy}
-              onClick={() => { setOpen(false); setDraft(emptyConversationDraft()); setMessage(null); requestAnimationFrame(() => triggerRef.current?.focus()); }}>
+              onClick={() => { setOpen(false); setDraft(recoveryDraft()); setMessage(null); requestAnimationFrame(() => triggerRef.current?.focus()); }}>
               Cancel
             </Button>
           </div>
