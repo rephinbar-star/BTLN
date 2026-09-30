@@ -77,6 +77,7 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview, 
   const canRecover = allowRecovery && unchecked && review?.can_recover === true && review?.recovery === "available" && !closed;
 
   const submit = async () => {
+    console.log("DBG submit", !!preview, busy);
     if (preview) { setMessage("Preview only — nothing was sent."); return; }
     if (!analysisId || busy) return;
     const raw_text = draftToText(draft);
