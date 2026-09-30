@@ -1456,7 +1456,6 @@ export const DeepReport = ({
       <AdviceReviewNotice
         integrity={(result as unknown as { advice_integrity?: AdviceIntegrity }).advice_integrity}
         analysisId={typeof window !== "undefined" ? window.location.pathname.match(/[0-9a-f-]{36}/i)?.[0] : undefined}
-        preview={locked === undefined ? false : undefined}
       />
 
 
