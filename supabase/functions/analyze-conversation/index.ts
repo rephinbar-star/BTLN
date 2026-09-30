@@ -753,56 +753,83 @@ ${messagesBlock}`;
     resultJson.personalization = report;
   }
 
-  // Semantic recipient/support check on the FINAL advice (original or
-  // rewritten). One bounded call; untrusted data; fail closed per item.
+  // Semantic recipient/support review on the FINAL advice (original or
+  // rewritten), per item (advice-review-1, see _shared/adviceReview.ts):
+  // verified items are shown; rejected items are withheld; unresolved items
+  // (timeout, provider error, malformed JSON, missing/duplicate/malformed
+  // verdicts) are hidden — never shown as checked. One automatic retry of the
+  // unresolved items only, while the raw messages still exist; a manual
+  // "Finish checking suggestions" attempt may follow within the shared cap.
+  const detWithheld = adviceStatuses.filter((s) => s.status === "withheld").length;
   let semantic: { status: "done" | "failed" | "skipped"; checked: number; withheld: number } = { status: "skipped", checked: 0, withheld: 0 };
+  let review: ReviewSummary | null = null;
+  let reviewRow: Record<string, unknown> | null = null;
   if (resultJson && typeof resultJson === "object") {
     const finalItems = adviceItems(resultJson, parts);
     if (finalItems.length) {
-      const req = semanticRequest(finalItems, parts, canon);
-      markStage("advice_check");
-      const call = callOpenRouter({
-        model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
-        messages: [{ role: "system", content: req.system }, { role: "user", content: req.user }],
-      }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE);
-      const r = await Promise.race([call, new Promise<null>((res) => setTimeout(() => res(null), 30_000))]);
-      let parsed: unknown = null;
-      try { if (r && r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null; } catch { parsed = null; }
-      if (!parsed) {
-        // The auxiliary check itself failed (timeout/provider/parse error).
-        // Degrade gracefully: keep the advice (already passed deterministic
-        // recipient checks), surface a note, withhold nothing.
-        semantic = { status: "failed", checked: 0, withheld: 0 };
-        if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), response: null, verdicts: {} };
-      } else {
-        const verdicts = applySemanticVerdicts(finalItems, parsed, req);
-        const bad = new Set<string>();
-        for (const it of finalItems) {
-          const v = verdicts.get(it.id)!;
-          if (v.ok) continue;
-          bad.add(it.id);
-          const st = adviceStatuses.find((x) => x.id === it.id && x.status !== "withheld");
-          if (st) { st.status = "withheld"; st.reasons = [...st.reasons, ...v.reasons]; }
-          else adviceStatuses.push({ id: it.id, recipient_id: it.recipient_id, status: "withheld", reasons: v.reasons });
-        }
-        removeItems(resultJson, parts, bad);
-        semantic = { status: "done", checked: finalItems.length, withheld: bad.size };
-        if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), response: parsed, verdicts: Object.fromEntries(verdicts) };
+      const req0 = semanticRequest(finalItems, parts, canon);
+      const efp = await evidenceFingerprint(req0);
+      const states = new Map<string, { state: ReviewState; reasons: string[] }>();
+      const attemptsTrace: unknown[] = [];
+      let unresolved = finalItems;
+      let attempts = 0;
+      while (unresolved.length && attempts < 2) {
+        if (attempts > 0) await new Promise((res) => setTimeout(res, REVIEW_BACKOFF_MS));
+        attempts++;
+        const rq = semanticRequest(unresolved, parts, canon);
+        markStage("advice_check");
+        const r = await callOpenRouter({
+          model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
+          messages: [{ role: "system", content: rq.system }, { role: "user", content: rq.user }],
+        }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE, { timeoutMs: REVIEW_TIMEOUT_MS, singleAttempt: true });
+        let parsed: unknown = null;
+        try { if (r.ok) parsed = extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null; } catch { parsed = null; }
+        const verdicts = applySemanticVerdicts(unresolved, parsed, rq);
+        for (const it of unresolved) { const v = verdicts.get(it.id); states.set(it.id, { state: classifyVerdict(v), reasons: v?.reasons ?? ["semantic_missing"] }); }
+        attemptsTrace.push({ attempt: attempts, ok: r.ok, provider_status: r.status, parsed: parsed !== null, response: parsed, verdicts: Object.fromEntries(verdicts) });
+        unresolved = unresolved.filter((it) => states.get(it.id)!.state === "unresolved");
       }
+      const hide = new Set<string>();
+      const pending: PendingItem[] = [];
+      let rejected = 0, verified = 0;
+      for (const it of finalItems) {
+        const s = states.get(it.id)!;
+        if (s.state === "verified") { verified++; continue; }
+        hide.add(it.id);
+        if (s.state === "rejected") rejected++;
+        else pending.push(await toPending(resultJson, it, ADVICE_SEMANTIC_VERSION, efp));
+        const reasons = s.state === "unresolved" ? ["review_unresolved", ...s.reasons] : s.reasons;
+        const st = adviceStatuses.find((x) => x.id === it.id && x.status !== "withheld");
+        if (st) { st.status = "withheld"; st.reasons = [...st.reasons, ...reasons]; }
+        else adviceStatuses.push({ id: it.id, recipient_id: it.recipient_id, status: "withheld", reasons });
+      }
+      removeItems(resultJson, parts, hide);
+      const status: ReviewStatus = pending.length === 0 ? "complete" : attempts < REVIEW_MAX_ATTEMPTS ? "pending" : "unavailable";
+      review = { version: ADVICE_REVIEW_VERSION, status, verified, rejected, unresolved: pending.length, attempts, max_attempts: REVIEW_MAX_ATTEMPTS, can_retry: status === "pending", terminal_reason: status === "unavailable" ? "attempts_exhausted" : null };
+      semantic = { status: pending.length ? "failed" : "done", checked: finalItems.length, withheld: hide.size };
+      reviewRow = {
+        analysis_id, status, attempts, max_attempts: REVIEW_MAX_ATTEMPTS, checker_version: ADVICE_SEMANTIC_VERSION,
+        pending: status === "pending" ? pending : null,
+        // Bounded transcript window the check already read; cleared at completion/exhaustion/expiry/deletion.
+        evidence: status === "pending" ? { system: req0.system, transcript: req0.user.split("<advice>")[0], firstIndex: req0.firstIndex, lastIndex: req0.lastIndex, senders: req0.senders } : null,
+        evidence_expires_at: status === "pending" ? new Date(Date.now() + REVIEW_EVIDENCE_TTL_MS).toISOString() : null,
+        lease_until: null, last_attempt_at: new Date().toISOString(), terminal_reason: review.terminal_reason, updated_at: new Date().toISOString(),
+      };
+      if (trace) trace.semantic = { request_items: finalItems.map((i) => ({ id: i.id, recipient_id: i.recipient_id, text: i.text })), attempts: attemptsTrace, states: Object.fromEntries(states) };
     }
   }
   if (resultJson && typeof resultJson === "object") {
-    const withheld = adviceStatuses.filter((s) => s.status === "withheld");
+    const semRejectedOrHidden = review ? review.rejected + review.unresolved : 0;
     resultJson.advice_integrity = {
       version: ADVICE_RECIPIENT_VERSION,
       items: adviceStatuses,
-      withheld_count: withheld.length,
+      withheld_count: detWithheld + semRejectedOrHidden,
+      deterministic_withheld: detWithheld,
       semantic_version: ADVICE_SEMANTIC_VERSION,
       semantic,
-      note: semantic.status === "failed"
-        ? "We could not finish the extra check of who each suggestion is for, so the advice is shown without that review. Treat it with care."
-        : withheld.length ? "Some advice was held back because we could not confirm it was meant for the person it was addressed to." : null,
-      limits: "Rule checks plus a second model review of who each item is for and whether messages support it. This lowers the risk of misdirected advice; it does not prove meaning.",
+      review,
+      note: (review ? customerNote(review) : null) ?? (detWithheld ? "Some advice was held back because it didn't seem to be meant for the person it was addressed to." : null),
+      limits: "Rule checks plus a second model review of who each item is for and whether messages support it. Only items that passed that review are shown. This lowers the risk of misdirected advice; it does not prove meaning.",
     };
     if (trace) { trace.final = { cs: resultJson.communication_suggestions ?? null, rg: resultJson.remedial_guidance ?? null }; resultJson.advice_trace = trace; }
   }
