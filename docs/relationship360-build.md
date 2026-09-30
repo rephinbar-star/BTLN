@@ -782,11 +782,11 @@ Open: authenticated customer check; C2 dispute decision; narrower-wording change
 
 ### 2 C2 (tuned regression — NOT held-out)
 - advice-semantic-6 separates future/conditional coaching from claims about past conduct (general rule, no phrase list). ext-1 first pass (6dacba69, 17/18) unchanged and immutable.
-- v5 cbb… predecessor 551f830f still rejected C2 ($0.0987). v6 cbb26159: ext-1 18/18 incl. C2, 8/8 new prospective cases ($0.0905). Existing suite 4ce3ae3e: 37 items, 0 false accepts/rejects, t1 still ambiguous and kept ($0.1341).
+- v5 run 551f830f still rejected C2 ($0.0987). v6 cbb26159: ext-1 18/18 incl. C2, 8/8 new prospective cases ($0.0905). Existing suite 4ce3ae3e: 37 items, 0 false accepts/rejects, t1 still ambiguous and kept ($0.1341).
 
 ### 3 Report UI
 - Report shows plain notes for pending / unavailable / held-back; "Finish checking suggestions" only while pending; older reports still show the held-back note. 6 component tests.
 - Visual check at 1280/390 BLOCKED: no signed-in operator session available in this sandbox; not retried, no bypass. Demo panel added at /admin/improvement?mode=deep_read_full ("Advice check states — component review") for human visual review at desktop and phone width.
 
-Budget: $0.39 used of $15 (rolling 24h), 0 unreconciled. 270+ tests pass; typecheck clean. Backend functions (analyze-conversation, advice-review, prompt-improvement) are deployed on the shared backend used by the live site; frontend unpublished.
+Budget: $0.39 used of $15 (rolling 24h), 0 unreconciled. 270 tests pass; typecheck clean. Backend functions (analyze-conversation, advice-review, prompt-improvement) are deployed on the shared backend used by the live site; frontend unpublished.
 Open: visual/authenticated review; live outage retry observation; human quality review. Billing, older security warnings, Group Roast separate.
