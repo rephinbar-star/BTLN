@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
-import { extractScreenshotConversation } from "@/lib/ingest/extract";
 
 export type AdviceIntegrity = {
   withheld_count?: number;
@@ -115,7 +114,10 @@ export function AdviceReviewNotice({ integrity, analysisId, onUpdated, preview }
           <p className="text-[12px] text-muted-foreground">
             Free: no charge, and no report credit is used. You get one recovery per report. The conversation is deleted as soon as the check ends.
           </p>
-          <SharedConversationInput value={draft} onChange={setDraft} compact requireSelf={false} extractScreenshots={extractScreenshotConversation} />
+          <p className="text-[12px] text-muted-foreground">
+            Use the same chat export file or pasted text you used the first time. Reports made from screenshots can't be recovered this way.
+          </p>
+          <SharedConversationInput value={draft} onChange={setDraft} compact requireSelf={false} allowScreenshots={false} />
           <div className="flex flex-wrap gap-2">
             <Button type="button" size="sm" className="min-h-[44px]" onClick={submit} disabled={busy} aria-busy={busy}>
               {busy ? "Checking…" : "Check suggestions"}

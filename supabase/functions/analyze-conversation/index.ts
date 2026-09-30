@@ -811,7 +811,9 @@ ${messagesBlock}`;
       removeItems(resultJson, parts, hide);
       const status: ReviewStatus = pending.length === 0 ? "complete" : "unavailable";
       // Recovery needs a same-input fingerprint; evaluation runs never offer it.
-      const fp = pending.length && (!tctx || probe) && raw_text_for_analysis?.trim()
+      // Screenshot-origin reports are not offered recovery: re-reading images is extra
+      // model spend and rarely reproduces identical text, so a match would fail anyway.
+      const fp = pending.length && (!tctx || probe) && input_method !== "screenshot" && raw_text_for_analysis?.trim()
         ? await inputFingerprint(Deno.env.get("ADVICE_INPUT_FP_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", analysis_id, raw_text_for_analysis)
         : null;
       const recovery = status === "unavailable" && fp ? "available" : "not_available";

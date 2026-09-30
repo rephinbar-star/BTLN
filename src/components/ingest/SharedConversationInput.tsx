@@ -24,6 +24,8 @@ type Props = {
   compact?: boolean;
   requireSelf?: boolean;
   pastePlaceholder?: string;
+  /** Hide the screenshots tab (e.g. suggestion recovery, which must not re-read images). */
+  allowScreenshots?: boolean;
   extractScreenshots?: (screenshots: PreparedScreenshot[], selfSide: "left" | "right") => Promise<CanonicalConversation>;
   screenshotMode?: "pair" | "group";
 };
@@ -45,7 +47,7 @@ export const emptyConversationDraft = (): ConversationDraft => ({
   selfAbsent: false,
 });
 
-export function SharedConversationInput({ value, onChange, maxScreenshots = SCREENSHOT_LIMITS.maxCount, compact = false, requireSelf = true, pastePlaceholder = "You: Are we still on for Friday?\nThem: Yes — sorry, today got away from me.", extractScreenshots, screenshotMode = "pair" }: Props) {
+export function SharedConversationInput({ value, onChange, maxScreenshots = SCREENSHOT_LIMITS.maxCount, compact = false, requireSelf = true, pastePlaceholder = "You: Are we still on for Friday?\nThem: Yes — sorry, today got away from me.", extractScreenshots, screenshotMode = "pair", allowScreenshots = true }: Props) {
   const imageInput = useRef<HTMLInputElement>(null);
   const exportInput = useRef<HTMLInputElement>(null);
   const archive = useRef<File | null>(null);
@@ -129,7 +131,7 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Conversation input type">
-        {tabs.map((tab) => <Button key={tab.id} type="button" variant={value.method === tab.id ? "secondary" : "ghost"} className="min-h-11 px-2 text-xs sm:text-sm" role="tab" aria-selected={value.method === tab.id} onClick={() => patch({ method: tab.id })}>{tab.label}</Button>)}
+        {tabs.filter((tab) => allowScreenshots || tab.id !== "screenshots").map((tab) => <Button key={tab.id} type="button" variant={value.method === tab.id ? "secondary" : "ghost"} className="min-h-11 px-2 text-xs sm:text-sm" role="tab" aria-selected={value.method === tab.id} onClick={() => patch({ method: tab.id })}>{tab.label}</Button>)}
       </div>
 
       {value.method === "screenshots" && <div>
