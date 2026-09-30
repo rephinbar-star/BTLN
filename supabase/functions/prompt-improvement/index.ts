@@ -724,6 +724,8 @@ Deno.serve(async (req) => {
       const runId = String(body.run_id ?? "");
       const { data: run } = UUID_RE.test(runId) ? await admin.from("prompt_test_runs").select("*").eq("id", runId).maybeSingle() : { data: null };
       if (!run || !run.recovery_probe) return json(404, { error: "Not a recovery-probe run." });
+      // Must run before pipeline_finalize: finalize scrubs the run secret and closes the run.
+      if (run.status !== "active" || !run.state?.secret) return json(409, { error: "Run is closed; resubmit before finalizing." });
       const st = run.state ?? {};
       const aid = st.first?.body?.analysis_id;
       if (!UUID_RE.test(String(aid ?? ""))) return json(409, { error: "Run has no report." });
@@ -752,6 +754,11 @@ Deno.serve(async (req) => {
           temp_messages: temp ?? null, billing,
         };
       };
+      for (let i = 0; i < 20; i++) {
+        const { data: an0 } = await admin.from("analyses").select("status").eq("id", aid).maybeSingle();
+        if (an0?.status === "complete" || an0?.status === "failed" || an0?.status === "error") break;
+        await new Promise((r) => setTimeout(r, 6000));
+      }
       const before = await snap();
       const { data: ledBefore } = await admin.from("prompt_spend_ledger").select("id").eq("job_id", run.id);
       const r = await callFn("advice-review", access, `${run.id}.${st.secret}`, { action: "recover", analysis_id: aid, raw_text: rawText });
