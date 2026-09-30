@@ -7,7 +7,7 @@ vi.mock("@/lib/session", () => ({ getSessionId: () => "s" }));
 vi.mock("@/lib/ingest/extract", () => ({ extractScreenshotConversation: vi.fn() }));
 vi.mock("@/components/ingest/SharedConversationInput", () => ({
   emptyConversationDraft: () => ({ method: "paste", text: "", screenshots: [], conversation: null, selfParticipantId: null, screenshotSelfSide: null, selfAbsent: false }),
-  SharedConversationInput: ({ value, onChange }: any) => <textarea aria-label="conversation" value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} />,
+  SharedConversationInput: ({ value, onChange, allowScreenshots }: any) => <textarea aria-label="conversation" data-screens={String(allowScreenshots)} data-method={value.method} value={value.text} onChange={(e) => onChange({ ...value, text: e.target.value })} />,
 }));
 import { AdviceReviewNotice } from "./AdviceReviewNotice";
 
@@ -77,8 +77,9 @@ describe("AdviceReviewNotice", () => {
   it("recovery input offers Import and Paste only (no screenshots)", () => {
     render(<AdviceReviewNotice integrity={recoverable} allowRecovery preview />);
     fireEvent.click(screen.getByRole("button", { name: "Resubmit to recover suggestions" }));
-    expect(screen.queryByRole("tab", { name: "Screenshots" })).toBeNull();
-    expect(screen.getByRole("tab", { name: "Import" }).getAttribute("aria-selected")).toBe("true");
+    const input = screen.getByLabelText("conversation");
+    expect(input.getAttribute("data-screens")).toBe("false");
+    expect(input.getAttribute("data-method")).toBe("chat_export");
     expect(screen.getByText(/screenshots can't be recovered/)).toBeTruthy();
   });
 });
