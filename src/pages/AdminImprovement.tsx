@@ -179,6 +179,9 @@ const AdminImprovement = () => {
         {modeInfo && <p className="mt-2 text-[13px] text-muted-foreground">Baseline parity: {modeInfo.parity} — {modeInfo.parity_note}{dash?.baseline_stale[mode] && " · Deployed prompt changed since the baseline snapshot."}</p>}
       </Section>
 
+      {mode === "deep_read_full" && <AdviceStateReview />}
+
+
       <Section title="Feedback signals (last 90 days, consented only)">
         {!dash ? <Muted>Loading…</Muted> : dash.aggregates.length === 0 ? <Muted>No consented ratings yet. Demo ratings are never stored.</Muted> : (
           <ul className="space-y-2 text-[14px]">
