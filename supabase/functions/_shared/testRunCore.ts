@@ -34,6 +34,8 @@ export type MeteredCtx = {
   candidate: Candidate;
   /** Server-set on the run row: only then may earlier evaluation output be used as evidence. */
   evalScope?: boolean;
+  /** Operator-issued recovery probe (baseline Deep Read only): keep real verdicts for the first `keep_verdicts` items, drop the rest, so later items are unresolved; the report is then offered one same-input recovery. */
+  recoveryProbe?: { keep_verdicts: number } | null;
   timeoutMs: number;
   shared: { calls: StageCall[]; seen: Map<string, number>; candidateUsed: string[] };
 };

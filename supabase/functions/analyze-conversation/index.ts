@@ -772,6 +772,11 @@ ${messagesBlock}`;
     if (finalItems.length) {
       const req0 = semanticRequest(finalItems, parts, canon);
       const efp = await evidenceFingerprint(req0);
+      // Test-only fault injection (operator-issued recovery probe inside a metered
+      // synthetic run): real verdicts are kept for the first N items only.
+      const tctx = currentTestRun();
+      const probe = tctx?.kind === "metered" && tctx.variant !== "candidate" ? tctx.recoveryProbe ?? null : null;
+      const keepIds = probe ? new Set(finalItems.slice(0, probe.keep_verdicts).map((i) => i.id)) : null;
       const { states, attempts, trace: attemptsTrace } = await checkItems(finalItems, {
         build: (items) => semanticRequest(items, parts, canon),
         applyVerdicts: applySemanticVerdicts,
@@ -783,7 +788,10 @@ ${messagesBlock}`;
             model: SEMANTIC_MODEL, max_tokens: 1500, temperature: 0, response_format: { type: "json_object" },
             messages: [{ role: "system", content: system }, { role: "user", content: user }],
           }, OPENROUTER_API_KEY, OPENROUTER_HTTP_REFERER, OPENROUTER_X_TITLE, { timeoutMs: REVIEW_TIMEOUT_MS, singleAttempt: true });
-          try { return r.ok ? extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null : null; } catch { return null; }
+          let v: any = null;
+          try { v = r.ok ? extractJsonObject(String(r.data?.choices?.[0]?.message?.content ?? "")).value ?? null : null; } catch { v = null; }
+          if (keepIds && v && Array.isArray(v.verdicts)) v = { ...v, verdicts: v.verdicts.filter((x: any) => keepIds.has(String(x?.id))) };
+          return v;
         },
       });
       const hide = new Set<string>();
@@ -803,7 +811,7 @@ ${messagesBlock}`;
       removeItems(resultJson, parts, hide);
       const status: ReviewStatus = pending.length === 0 ? "complete" : "unavailable";
       // Recovery needs a same-input fingerprint; evaluation runs never offer it.
-      const fp = pending.length && !currentTestRun() && raw_text_for_analysis?.trim()
+      const fp = pending.length && (!tctx || probe) && raw_text_for_analysis?.trim()
         ? await inputFingerprint(Deno.env.get("ADVICE_INPUT_FP_KEY") ?? Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "", analysis_id, raw_text_for_analysis)
         : null;
       const recovery = status === "unavailable" && fp ? "available" : "not_available";

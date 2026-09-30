@@ -58,6 +58,7 @@ export const withTestRun = (fnName: string, handler: (req: Request) => Promise<R
       ? { mode: String(data.mode), addendum: String(data.candidate_addendum), baselineTextHash: String(data.baseline_text_hash) }
       : null,
     evalScope: data.eval_scope === true,
+    recoveryProbe: data.recovery_probe && Number.isInteger(Number(data.recovery_probe.keep_verdicts)) ? { keep_verdicts: Math.max(0, Math.min(10, Number(data.recovery_probe.keep_verdicts))) } : null,
     timeoutMs: 150_000,
     shared: { calls: [], seen: new Map(), candidateUsed: [] },
   };
