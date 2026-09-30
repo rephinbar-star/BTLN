@@ -146,7 +146,11 @@ const AdminImprovement = () => {
             <p className="font-medium">{p.title}</p>
             <p className="text-[12px] text-muted-foreground">Packet {p.id}</p>
             <ul className="mt-2 space-y-2">
-              {(p.items ?? []).map((it: any, idx: number) => {
+              {/* Some engineering packets are recorded as a single summary object, not a result list. */}
+              {!Array.isArray(p.items) && p.items && typeof p.items === "object" && Object.entries(p.items as Record<string, unknown>).map(([k, v]) => (
+                <li key={k} className="text-[13px]"><span className="font-medium">{k.replace(/_/g, " ")}:</span> <span className="text-muted-foreground break-words">{typeof v === "string" ? v : JSON.stringify(v)}</span></li>
+              ))}
+              {(Array.isArray(p.items) ? p.items : []).map((it: any, idx: number) => {
                 if (it.supersedes_packet) return <li key={`s${idx}`} className="text-[13px] text-muted-foreground">Successor to packet {it.supersedes_packet} (earlier results kept unchanged).</li>;
                 if (it.result_id) return (
                   <li key={it.result_id}>
