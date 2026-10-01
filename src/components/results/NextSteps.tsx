@@ -39,7 +39,7 @@ const CROSS: Record<Mode, { to: string; title: string; body: string }> = {
  * repeat the same mode, one relevant cross-sell, and the Prime offer
  * (hidden for members by PrimeOffer itself).
  */
-export const NextSteps = ({ mode }: { mode: Mode }) => {
+export const NextSteps = ({ mode, safety = false }: { mode: Mode; safety?: boolean }) => {
   const repeat = REPEAT[mode];
   const cross = CROSS[mode];
   return (
@@ -52,7 +52,7 @@ export const NextSteps = ({ mode }: { mode: Mode }) => {
         {repeat.label}
         <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
       </Link>
-      <Link
+       {!safety && <Link
         to={cross.to}
         className="flex min-h-[56px] items-start justify-between gap-3 rounded-[20px] border border-btln-line bg-card p-[18px] hover:bg-muted/40"
       >
@@ -61,8 +61,8 @@ export const NextSteps = ({ mode }: { mode: Mode }) => {
           <span className="mt-1 block text-[14px] text-muted-foreground">{cross.body}</span>
         </span>
         <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground" />
-      </Link>
-      <PrimeOffer />
+       </Link>}
+       {!safety && <PrimeOffer />}
     </section>
   );
 };

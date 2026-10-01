@@ -1286,7 +1286,7 @@ export const DeepReport = ({
 
       {/* 1. Communication diagnostic */}
       <ReportErrorBoundary label="communication-diagnostic" inline>
-      <Section title="1 · Communication diagnostic" locked={locked}>
+       <Section title="Communication diagnostic" locked={locked}>
         <div data-pdf-section className="grid grid-cols-2 gap-3">
           <Tile label="Avg reply time" value={safeField(() => textFromUnknown(result.communication_diagnostic?.response_time_asymmetry), "communication_diagnostic.response_time_asymmetry")} />
           <Tile label="Conversations initiated" value={safeField(() => textFromUnknown(result.communication_diagnostic?.initiator_balance), "communication_diagnostic.initiator_balance")} />
@@ -1305,7 +1305,7 @@ export const DeepReport = ({
       {/* 2. Attachment styles */}
       <ReportErrorBoundary label="attachment-styles" inline>
       <Section
-        title="2 · Attachment styles"
+         title="Attachment styles"
         locked={locked}
         helpContent={
           <Popover>
@@ -1370,7 +1370,7 @@ export const DeepReport = ({
       {/* 3. Four Horsemen */}
       <ReportErrorBoundary label="four-horsemen" inline>
       <Section
-        title="3 · The Four Horsemen"
+         title="The Four Horsemen"
         locked={locked}
         helpContent={
           <Popover>
@@ -1449,7 +1449,7 @@ export const DeepReport = ({
 
       {/* 4. Hidden pattern */}
       <ReportErrorBoundary label="hidden-pattern" inline>
-      <Section title="4 · The hidden pattern" locked={locked}>
+       <Section title="The hidden pattern" locked={locked}>
         <div data-pdf-section className="rounded-xl bg-pastel-purple-bg p-4 text-pastel-purple-fg-strong">
           <h4 className="text-[15px] font-semibold">{safeField(() => result.hidden_pattern?.title, "hidden_pattern.title")}</h4>
           <p className="mt-2 text-[14px] leading-relaxed">
@@ -1478,7 +1478,7 @@ export const DeepReport = ({
       {/* 7. Yellow flags */}
       <ReportErrorBoundary label="yellow-flags" inline>
         <FlagListSection
-          title="7 · Things to watch"
+           title="Things to watch"
           flags={result.yellow_flags}
           tone="amber"
           locked={locked}
@@ -1488,7 +1488,7 @@ export const DeepReport = ({
       {/* 8. Red flags */}
       <ReportErrorBoundary label="red-flags" inline>
         <FlagListSection
-          title="8 · Red flags"
+           title="Red flags"
           flags={result.red_flags}
           tone="red"
           locked={locked}
@@ -1497,7 +1497,7 @@ export const DeepReport = ({
 
       {/* 9. Conversation prompts */}
       <ReportErrorBoundary label="conversation-prompts" inline>
-      <Section title="9 · Personalized prompts for this week" locked={locked}>
+       <Section title="Personalized prompts for this week" locked={locked}>
         <div className="space-y-3">
           {(Array.isArray(result.conversation_prompts) ? result.conversation_prompts : []).map((p, i) => (
             <div
@@ -1710,7 +1710,7 @@ const BidsSection = ({
   return (
     <section data-pdf-section className="mt-10">
       <h3 className="flex items-center gap-1.5 text-[18px] font-medium tracking-tight sm:text-[20px]">
-        5 · Bids for connection
+         Bids for connection
         <Popover>
           <PopoverTrigger asChild>
             <button
@@ -1776,7 +1776,7 @@ const LoveLanguagesSection = ({
   return (
     <section data-pdf-section className="mt-10">
       <h3 className="flex items-center gap-1.5 text-[18px] font-medium tracking-tight sm:text-[20px]">
-        6 · Love languages
+         Love languages
         <Popover>
           <PopoverTrigger asChild>
             <button

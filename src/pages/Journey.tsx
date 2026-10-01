@@ -254,6 +254,14 @@ const Journey = () => {
               </section>
             )}
 
+            {optedIn && !needsReconsent && <>
+              <Relationship360Live relationships={relationships} />
+              <nav aria-label="Relationship360 actions" className="mt-4 flex flex-wrap gap-4 text-sm">
+                <a href="#add-conversation" className="min-h-11 content-center underline underline-offset-4">Add conversation</a>
+                <a href="#manage-conversations" className="min-h-11 content-center underline underline-offset-4">Manage included conversations</a>
+              </nav>
+            </>}
+
             {optedIn && !needsReconsent && (
               <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <h2 className="text-[18px] font-semibold text-foreground">Add a relationship</h2>
@@ -323,7 +331,7 @@ const Journey = () => {
             )}
 
             {optedIn && !needsReconsent && (
-              <section className="mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <section id="add-conversation" className="mt-6 scroll-mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <h2 className="text-[18px] font-semibold text-foreground">Add a conversation</h2>
                 <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
                   Start an eligible read with screenshots, a supported chat export, or pasted text. After that read completes, you can include its structured observations here and confirm which participant is you. Relationship360 never profiles a raw upload directly.
@@ -341,6 +349,7 @@ const Journey = () => {
               </p>
             )}
 
+            <div id="manage-conversations" className="scroll-mt-6" />
             {relationships.length === 0
               ? optedIn && !needsReconsent && (
                   <p className="mt-6 text-[14px] text-muted-foreground">
@@ -608,7 +617,6 @@ const Journey = () => {
                   );
                 })}
 
-            {optedIn && !needsReconsent && <Relationship360Live relationships={relationships} />}
           </>
         )}
 

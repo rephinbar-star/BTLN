@@ -29,8 +29,9 @@ export const PrimeOffer = ({ returnTo, className = "" }: Props) => {
           <Sparkles className="h-5 w-5 text-btln-forest" />
         </span>
         <div className="min-w-0">
+           <p className="text-[14px] font-semibold">In development — not available to buy</p>
           <p className="text-[15px] font-medium">
-            Prime — $19.99/month
+             Prime — proposed $19.99/month
           </p>
           <p className="mt-1 text-[14px] leading-relaxed text-muted-foreground">
             Understand who you are in your relationships—and how you're changing.

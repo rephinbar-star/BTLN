@@ -240,7 +240,7 @@ const COLUMNS = [
   { id: "single", label: "Single report · $4.99" },
   { id: "monthly", label: "Monthly · $9.99/mo" },
   { id: "annual", label: "Annual · $49.99/yr" },
-  { id: "prime", label: "Prime · $19.99/mo" },
+  { id: "prime", label: "Prime · proposed $19.99/mo · unavailable" },
 ];
 
 
@@ -337,7 +337,9 @@ export default function Pricing() {
         <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">
           {tier.name}
         </div>
+        {tier.key === "prime" && <p className="mt-2 text-[14px] font-semibold">In development — not available to buy</p>}
         <div className="mt-2 flex items-baseline gap-1">
+          {tier.key === "prime" && <span className="text-[13px] text-muted-foreground">Proposed</span>}
           <span className="text-[36px] font-medium tracking-tight">{tier.price}</span>
           <span className="text-[14px] text-muted-foreground">/{tier.period}</span>
         </div>
@@ -403,6 +405,7 @@ export default function Pricing() {
         className={`relative flex w-full max-w-[600px] flex-col rounded-2xl border border-border bg-card p-5 transition-all duration-200 motion-reduce:transition-none hover:shadow-lg sm:p-6 ${intended === QUICK_TIER.key ? "ring-2 ring-foreground/40" : ""}`}
       >
         <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">Quick Take plan</div>
+        <p className="mt-2 text-[14px] font-semibold">Interactive Mode: In development — not available to buy</p>
         <div className="mt-2 flex items-baseline gap-1">
           <span className="text-[36px] font-medium tracking-tight">$6.99</span>
           <span className="text-[14px] text-muted-foreground">/month</span>
@@ -586,8 +589,8 @@ export default function Pricing() {
             Which plan covers what?
           </h2>
           <p className="mx-auto mt-1 max-w-xl text-center text-[14px] text-muted-foreground">
-            Taken from the access rules the server actually applies. Interactive Mode,
-            Relationship360 and Prime are in development and cannot be purchased yet.
+            Compare what each plan includes. Interactive Mode, Relationship360 and Prime
+            are in development and cannot be purchased yet.
           </p>
 
 

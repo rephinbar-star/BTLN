@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { useLayoutEffect } from "react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
@@ -144,9 +144,12 @@ const App = () => (
           <Route path="/sample" element={<Sample />} />
           <Route path="/examples" element={<ExampleIndex />} />
           <Route path="/examples/quick" element={<ExamplePage kind="quick" />} />
+          <Route path="/examples/quick-take" element={<Navigate to="/examples/quick" replace />} />
           <Route path="/examples/deep" element={<ExamplePage kind="deep" />} />
+          <Route path="/examples/deep-read" element={<Navigate to="/examples/deep" replace />} />
           <Route path="/examples/group-roast" element={<ExamplePage kind="group-roast" />} />
           <Route path="/examples/group" element={<ExamplePage kind="group" />} />
+          <Route path="/examples/group-read" element={<Navigate to="/examples/group" replace />} />
           <Route path="/examples/roast" element={<ExamplePage kind="roast" />} />
           <Route path="/examples/wrapped" element={<ExamplePage kind="wrapped" />} />
           <Route path="/examples/relationship360" element={<ExamplePage kind="journey" />} />
