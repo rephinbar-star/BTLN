@@ -145,7 +145,7 @@ export const HelpMeChoose = ({ source = "pricing_page", variant = "link", suppor
       );
     }
     return (
-      <div className="mt-6 text-center">
+      <div className={supportLine ? "mt-3" : "mt-6 text-center"}>
         <button
           ref={triggerRef}
           type="button"
@@ -157,6 +157,7 @@ export const HelpMeChoose = ({ source = "pricing_page", variant = "link", suppor
         >
           Help me choose
         </button>
+        {supportLine && <p className="mt-1 text-[14px] text-muted-foreground">{supportLine}</p>}
       </div>
     );
   }

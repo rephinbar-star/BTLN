@@ -29,10 +29,10 @@ const MODES = [
       "A friend’s reply feels unexpectedly cold.",
       "A family message touches a nerve and you want to respond thoughtfully.",
     ],
-    cta: "Help me with this text",
+    cta: "Get a Quick Take",
     exampleKind: "quick" as const,
     icon: MessageSquare,
-    tone: "bg-btln-mint",
+    tone: "border-btln-forest/50 bg-btln-mint",
   },
   {
     to: "/deep",
@@ -46,7 +46,7 @@ const MODES = [
       "You’re wondering whether you’re doing most of the work to stay connected.",
       "You want to understand a friendship or family relationship better.",
     ],
-    cta: "Help me understand us",
+    cta: "Get a Deep Read",
     exampleKind: "deep" as const,
     icon: Users,
     tone: "bg-card",
@@ -93,7 +93,7 @@ const SituationCard = ({ mode }: { mode: Mode }) => {
   const Icon = mode.icon;
 
   return (
-    <article className={`rounded-[20px] border border-btln-line p-5 sm:p-6 ${mode.tone}`}>
+    <article className={`rounded-[20px] border p-5 sm:p-6 ${mode.tone} ${mode.exampleKind === "quick" ? "shadow-card" : "border-btln-line"}`}>
       <div className="flex items-center gap-3">
         <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-background/80">
           <Icon className="h-5 w-5 text-btln-forest" aria-hidden="true" />
@@ -223,21 +223,35 @@ const Index = () => {
         <meta property="og:url" content="https://betweenthelines.app/" />
       </Helmet>
       <Header />
-      <main className="mx-auto max-w-2xl px-5 pb-28 pt-2 sm:px-8 md:pb-16">
-        <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[44px]">
-          What brought you here today?
-        </h1>
-        <p className="mt-3 text-[16px] leading-relaxed text-muted-foreground">
-          Find the read that fits your situation.
-        </p>
+      <main className="mx-auto max-w-2xl px-5 pb-10 pt-8 sm:px-8 sm:pt-12">
+        <section aria-labelledby="home-heading">
+          <h1 id="home-heading" className="max-w-xl text-[36px] font-medium leading-[1.08] sm:text-[48px]">
+            What does this text actually mean?
+          </h1>
+          <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground sm:text-[19px]">
+            Screenshot or paste a confusing exchange. Get a clearer read and three ways you could reply.
+          </p>
+          <p className="mt-2 text-[14px] text-muted-foreground">For dating, friends and family.</p>
+          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-1">
+            <Button asChild className="min-h-12 rounded-full px-6">
+              <Link to="/quick" onClick={() => logEvent("cta_clicked", { location: "home_hero_quick" })}>
+                Read this text <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </Button>
+            <SeeExample kind="quick" />
+          </div>
+        </section>
 
-        {/* Optional guide, prominent but never required — the situation cards
-            below stay the direct path. Same guide as on Pricing. */}
-        <HelpMeChoose
-          source="home_page"
-          variant="button"
-          supportLine="Answer a few quick questions to find the right option."
-        />
+        <section className="mt-12 border-t border-btln-line pt-8" aria-labelledby="choose-heading">
+          <h2 id="choose-heading" className="text-[26px] font-medium leading-tight sm:text-[32px]">
+            What brought you here today?
+          </h2>
+          <HelpMeChoose
+            source="home_page"
+            variant="link"
+            supportLine="Answer a few quick questions to find the right option."
+          />
+        </section>
 
         <div className="mt-7 space-y-4">
           {MODES.map((mode) => (
@@ -265,13 +279,12 @@ const Index = () => {
             choose to include, help you recognise patterns over time, and offer practical coaching
             and check-ins.
           </p>
-          <p className="mt-3 text-[13px] font-semibold text-muted-foreground">
-            Relationship360 Preview · In development
-          </p>
+          <p className="mt-3 text-[13px] font-semibold text-muted-foreground">In development — not available to buy</p>
+          <p className="mt-1 text-[13px] text-muted-foreground">Relationship360 preview · Proposed: $19.99/month</p>
 
           <Button asChild className="mt-5 min-h-12 rounded-full px-5">
             <Link to="/prime">
-              Explore Prime — $19.99/month
+              Explore Prime preview
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -303,8 +316,42 @@ const Index = () => {
             </Link>
           </section>
         )}
-
+        <section className="mt-10 border-t border-btln-line pt-7" aria-label="Before you begin">
+          <div className="grid gap-6 sm:grid-cols-3 sm:gap-5">
+            <div>
+              <h2 className="text-[16px] font-medium">Your privacy</h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Your conversations are processed to create your read, not kept as a reusable raw transcript. Reports may include selected excerpts.</p>
+              <Link to="/trust" className="inline-flex min-h-11 items-center text-[14px] font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">How we handle your messages</Link>
+            </div>
+            <div>
+              <h2 className="text-[16px] font-medium">A reflection, not a verdict</h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">It offers possible interpretations and practical next steps; it cannot know someone's intentions.</p>
+            </div>
+            <div>
+              <h2 className="text-[16px] font-medium">See what you get before sharing</h2>
+              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Explore a fictional sample, not a customer story.</p>
+              <Link to="/sample" className="inline-flex min-h-11 items-center text-[14px] font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">See a sample</Link>
+            </div>
+          </div>
+        </section>
       </main>
+      <footer className="border-t border-btln-line px-5 pb-[calc(88px+env(safe-area-inset-bottom))] pt-5 sm:px-8 md:pb-8" aria-label="More information">
+        <div className="mx-auto max-w-2xl">
+          <nav aria-label="Information" className="flex flex-wrap gap-x-5 gap-y-1">
+            {[["About", "/about"], ["See a sample", "/sample"], ["Pricing", "/pricing"], ["Trust", "/trust"], ["Privacy", "/privacy"], ["Terms", "/terms"]].map(([label, to]) => (
+              <Link key={to} to={to} className="inline-flex min-h-11 items-center text-[14px] font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{label}</Link>
+            ))}
+          </nav>
+          <nav aria-label="Comparisons" className="mt-4 border-t border-btln-line pt-4">
+            <p className="text-[13px] text-muted-foreground">Comparisons</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1">
+              {[["ChatGPT", "/compare/chatgpt-vs-betweenthelines"], ["RIZZ", "/compare/rizz-vs-betweenthelines"], ["What Brandon Thinks", "/compare/whatbrandonthinks-vs-betweenthelines"]].map(([label, to]) => (
+                <Link key={to} to={to} className="inline-flex min-h-11 items-center text-[13px] text-muted-foreground underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{label}</Link>
+              ))}
+            </div>
+          </nav>
+        </div>
+      </footer>
       <BottomNav />
     </div>
   );

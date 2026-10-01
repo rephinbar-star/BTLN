@@ -1,5 +1,6 @@
 # Roadmap
 
+- [x] Homepage first batch: Quick Take-first clarity, compact chooser, discovery links, truthful reassurance, mobile/desktop review and unpublished closeout (see docs/homepage-first-batch-closeout.md).
 - [x] Add expandable fictional source conversations to every product example.
 - [x] Reconcile source fixtures with evidence, participants, periods, counts, and statistics.
 - [x] Verify direct-route/menu/dialog parity, accessibility, and 360/390/430 layouts.
