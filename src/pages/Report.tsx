@@ -1066,7 +1066,7 @@ const ReportContent = () => {
             )}
 
             {/* Persistent feedback CTA */}
-            <div data-pdf-exclude="true" className="mt-14 flex flex-col items-center justify-center">
+            <div data-pdf-exclude="true" className="mt-14 flex print:hidden flex-col items-center justify-center">
               <button
                 type="button"
                 onClick={openFeedbackManually}

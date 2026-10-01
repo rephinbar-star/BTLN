@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ['"Plus Jakarta Sans"', "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "system-ui", "sans-serif"],
         display: ["Syne", '"Plus Jakarta Sans"', "system-ui", "sans-serif"],
+        wordmark: ["-apple-system", "BlinkMacSystemFont", '"Inter"', '"Segoe UI"', "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       boxShadow: {

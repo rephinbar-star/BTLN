@@ -59,7 +59,7 @@ export const SubScoreScale = ({ category, labels, earnedIndex, lowConfidence }: 
                 first ? "sm:rounded-l-md" : "sm:border-l-0",
                 last ? "sm:rounded-r-md" : "",
                 isEarned
-                  ? "bg-sage-muted text-white"
+                  ? "bg-sage-muted text-white print:border-2 print:border-foreground print:bg-transparent print:font-bold print:text-foreground"
                   : "bg-muted/40 text-foreground",
               ].join(" ")}
             >

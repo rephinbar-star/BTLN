@@ -12,7 +12,7 @@ type RpcFn = (name: string, args: Record<string, unknown>) => Promise<{
   error: { message: string } | null;
 }>;
 
-const rpc = supabase.rpc as unknown as RpcFn;
+const rpc = supabase.rpc.bind(supabase) as unknown as RpcFn;
 
 export type SubmitFeedbackInput = {
   target: FeedbackTarget;
