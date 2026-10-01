@@ -1,2 +1,486 @@
-<!-- Inert reference placeholder. The full Stitch HTML was supplied in chat, not as an uploaded file;
-     see docs/design/prism-reference.md for the adopted tokens. This file is not routed or served by the app. -->
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/><meta content="mobile_tab" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&amp;family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Syne:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{width:100vw;margin:0;padding:0;background-color:#080a12;color:#e1e1ee;}body{overscroll-behavior:none;}.pb-safe{padding-bottom:env(safe-area-inset-bottom,0px);}.pt-safe{padding-top:env(safe-area-inset-top,0px);}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "border-subtle": "rgba(255, 255, 255, 0.08)", "error": "#ffb4ab", "surface-variant": "#32343e", "on-primary-container": "#340080", "on-secondary": "#67001b", "tertiary-container": "#ca8100", "primary": "#d0bcff", "midnight": "#080a12", "inverse-on-surface": "#2e3039", "coral-glow": "#f43f5e", "surface-container-low": "#191b24", "surface-container": "#1d1f28", "on-surface": "#e1e1ee", "outline-variant": "#494454", "on-primary": "#3c0091", "primary-fixed": "#e9ddff", "tertiary": "#ffb95f", "on-primary-fixed-variant": "#5516be", "surface-container-lowest": "#0c0e16", "inverse-primary": "#6d3bd7", "background": "#11131b", "secondary": "#ffb2b7", "on-secondary-container": "#ffc2c4", "emerald-glow": "#10b981", "obsidian-elevated": "#1a2035", "on-tertiary-fixed": "#2a1700", "surface-container-high": "#282a33", "surface": "#11131b", "surface-bright": "#373942", "secondary-container": "#b50036", "secondary-fixed-dim": "#ffb2b7", "primary-container": "#a078ff", "primary-fixed-dim": "#d0bcff", "obsidian-card": "#131728", "secondary-fixed": "#ffdadb", "on-tertiary-fixed-variant": "#653e00", "surface-tint": "#d0bcff", "tertiary-fixed": "#ffddb8", "on-tertiary-container": "#3e2400", "text-primary": "#edf2f7", "text-secondary": "#94a3b8", "on-error-container": "#ffdad6", "on-tertiary": "#472a00", "on-background": "#e1e1ee", "error-container": "#93000a", "on-surface-variant": "#cbc3d7", "outline": "#958ea0", "amber-glow": "#f59e0b", "obsidian": "#0d111d", "surface-dim": "#11131b", "violet-glow": "#8b5cf6", "on-secondary-fixed": "#40000d", "inverse-surface": "#e1e1ee", "on-error": "#690005", "on-primary-fixed": "#23005c", "surface-container-highest": "#32343e", "tertiary-fixed-dim": "#ffb95f", "on-secondary-fixed-variant": "#92002a" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "space-xl": "1.5rem", "gutter": "0.625rem", "margin": "1rem", "space-lg": "1.25rem", "space-md": "0.875rem", "space-sm": "0.5rem" }, "fontFamily": { "title-sm": ["Syne"], "body-md": ["Plus Jakarta Sans"], "headline-lg": ["Syne"], "body-sm": ["Plus Jakarta Sans"], "body-quote": ["Newsreader"], "label-code": ["JetBrains Mono"], "headline-md": ["Syne"], "label-micro": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"] }, "fontSize": { "title-sm": ["14px", { "lineHeight": "18px", "fontWeight": "700" }], "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }], "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "800" }], "body-sm": ["12px", { "lineHeight": "17px", "fontWeight": "400" }], "body-quote": ["15px", { "lineHeight": "22px", "letterSpacing": "0", "fontWeight": "400" }], "label-code": ["10px", { "lineHeight": "12px", "letterSpacing": "0.05em", "fontWeight": "500" }], "headline-md": ["17px", { "lineHeight": "22px", "letterSpacing": "-0.01em", "fontWeight": "700" }], "label-micro": ["9px", { "lineHeight": "11px", "letterSpacing": "0.2em", "fontWeight": "500" }], "label-caps": ["11px", { "lineHeight": "14px", "letterSpacing": "0.08em", "fontWeight": "600" }] } } } };</script></head><body class="bg-midnight text-on-surface font-body-md flex flex-col min-h-screen"><header class="fixed top-0 w-full z-50 pt-safe bg-midnight/85 backdrop-blur-2xl"><div class="h-20 max-w-[512px] mx-auto px-margin flex items-center justify-between"><div class="flex flex-col gap-1"><div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-primary shadow-[0_0_8px_#8b5cf6]"></span><span class="font-headline-md text-headline-md tracking-tight text-on-surface">BetweenTheLines</span><span class="w-1.5 h-1.5 rounded-full bg-emerald-glow shadow-[0_0_6px_#10b981]"></span></div><div class="flex items-center gap-1.5 bg-obsidian-elevated/70 px-space-xs py-0.5 rounded-full max-w-fit shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.06)]"><span class="material-symbols-outlined text-[11px] text-emerald-glow">shield_with_heart</span><span class="font-label-micro text-label-micro text-text-secondary uppercase">Prism Engine Active • Zero Retention</span></div></div><div class="flex items-center gap-space-sm"><div class="hidden"><span class="font-title-sm text-title-sm">Home</span></div><button class="min-w-[44px] min-h-[44px] flex items-center justify-center p-1 rounded-full bg-obsidian-elevated/80 shadow-[0_0_12px_rgba(139,92,246,0.15)]"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UdxEOpqTHDUOR2FxXxLolxAAn0ieAj6sp8SzxEw6tZkUNZVyy_Xy66wixY340H5MprQbTBwVG_WtFnPOOqKW7C1ZHsDPlDD7GNgM8JECZ7aGb-zJOuetrRvDj_a5N88EULzRfAeFqnL_XEleOPUeJjU1P6C6zkN5sQ_z6Eu9Md7k-CSOjDkD7Tg69LLNL4RW-TfMdIAKJGg7IRbMLtS0-t1csf8VxDAPLAVgrF0fYJSICW-8LKeaLvLsI"/></button></div></div></header><main class="flex flex-col relative w-full max-w-[512px] mx-auto px-margin pt-20 pb-28 bg-midnight"><div class="flex flex-col w-full relative">
+<!-- Ambient Atmospheric Spectral Backdrops -->
+<div class="absolute -top-10 left-1/2 -translate-x-1/2 w-72 h-72 bg-violet-glow/15 blur-[100px] pointer-events-none rounded-full"></div>
+<div class="absolute top-[520px] -right-20 w-64 h-64 bg-emerald-glow/10 blur-[90px] pointer-events-none rounded-full"></div>
+<div class="absolute top-[1100px] -left-20 w-64 h-64 bg-amber-glow/10 blur-[90px] pointer-events-none rounded-full"></div>
+<div class="absolute top-[1650px] right-0 w-72 h-72 bg-coral-glow/10 blur-[100px] pointer-events-none rounded-full"></div>
+<!-- Hero Header Section -->
+<section class="flex flex-col items-center text-center pt-2 pb-6 px-1">
+<!-- Spectral Pill Badge -->
+<div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-obsidian-elevated/90 shadow-[0_0_16px_rgba(139,92,246,0.25)] mb-4">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shadow-[0_0_6px_#8b5cf6]"></span>
+<span class="font-label-micro text-label-micro text-primary uppercase tracking-widest">✦ Multi-Spectral Interpersonal Intelligence</span>
+</div>
+<!-- Main Headline -->
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight max-w-[340px] leading-tight">
+      What brought you <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-emerald-glow to-amber-glow">here today?</span>
+</h1>
+<!-- Subtitle -->
+<p class="font-body-md text-body-md text-text-secondary mt-2.5 max-w-[300px]">
+      Find the read that fits your situation.
+    </p>
+<!-- Guided CTA Selector -->
+<div class="w-full mt-5 flex flex-col items-center">
+<button class="w-full max-w-sm py-3.5 px-6 rounded-full bg-gradient-to-r from-violet-glow via-primary-container to-emerald-glow text-midnight font-title-sm text-title-sm flex items-center justify-center gap-2 shadow-[0_0_24px_rgba(139,92,246,0.35)] active:scale-[0.98] transition-all" id="btn-help-choose">
+<span class="material-symbols-outlined text-[19px]">auto_awesome</span>
+<span>Help me choose</span>
+</button>
+<span class="font-label-caps text-label-caps text-text-secondary mt-2 tracking-normal opacity-80">
+        Answer a few quick questions to find the right option.
+      </span>
+</div>
+</section>
+<!-- Interactive Filter Matrix Quick-Switcher -->
+<div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-2 -mx-margin px-margin mb-3">
+<button class="filter-chip active flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-obsidian-elevated text-primary font-label-code text-label-code shadow-[0_0_10px_rgba(139,92,246,0.25)] whitespace-nowrap" data-filter="all">
+<span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+      All Lenses
+    </button>
+<button class="filter-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-text-secondary font-label-code text-label-code whitespace-nowrap hover:text-on-surface" data-filter="quick">
+<span class="material-symbols-outlined text-[13px] text-primary">chat_bubble</span>
+      Quick 30s
+    </button>
+<button class="filter-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-text-secondary font-label-code text-label-code whitespace-nowrap hover:text-on-surface" data-filter="deep">
+<span class="material-symbols-outlined text-[13px] text-emerald-glow">psychology</span>
+      Dynamic 1-on-1
+    </button>
+<button class="filter-chip flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low text-text-secondary font-label-code text-label-code whitespace-nowrap hover:text-on-surface" data-filter="group">
+<span class="material-symbols-outlined text-[13px] text-amber-glow">groups</span>
+      Group Chat
+    </button>
+</div>
+<!-- CORE READING OFFERINGS -->
+<div class="flex flex-col gap-5 mt-2">
+<!-- CARD 1: QUICK TAKE (Spectral Violet/Indigo Accent) -->
+<article class="reading-card group relative rounded-2xl bg-obsidian-card/90 p-5 shadow-[0_4px_30px_rgba(8,10,18,0.7)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_0_24px_rgba(139,92,246,0.18)]" data-category="quick">
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-primary/10 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Card Header / Meta Badge -->
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary shadow-[0_0_12px_rgba(160,120,255,0.25)]">
+<span class="material-symbols-outlined text-[18px]">chat_bubble</span>
+</div>
+<span class="font-label-caps text-label-caps uppercase tracking-wider text-primary font-bold">Quick Take</span>
+</div>
+<span class="font-label-micro text-label-micro px-2 py-0.5 rounded-full bg-primary-container/15 text-primary shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+          Instant 30s Read
+        </span>
+</div>
+<!-- Headline -->
+<h2 class="font-headline-md text-headline-md text-on-surface leading-snug">
+        What did they mean? What should I say?
+      </h2>
+<!-- Card Copy -->
+<p class="font-body-sm text-body-sm text-text-secondary mt-2.5 leading-relaxed">
+        You've started dating someone. They send a message, and you're not sure whether they're interested, pulling away, or just busy—or how to reply.
+      </p>
+<p class="font-body-sm text-body-sm text-primary/90 mt-2 leading-relaxed font-medium">
+        Quick Take looks at your exchange, explains possible meanings, and gives you three ways to respond.
+      </p>
+<!-- Subtext / Situations Link (Expandable) -->
+<div class="mt-3.5">
+<button class="situation-toggle inline-flex items-center gap-1 font-label-caps text-label-caps text-primary hover:text-on-surface transition-colors" data-target="situations-quick">
+<span class="underline underline-offset-4 decoration-primary/40">More situations</span>
+<span class="material-symbols-outlined text-[14px] transition-transform duration-200">expand_more</span>
+</button>
+<div class="hidden mt-2 p-3 rounded-lg bg-surface-container-low text-text-secondary font-body-sm text-body-sm flex-col gap-1.5 animate-fadeIn" id="situations-quick">
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+<span>Unprompted one-word replies after intense banter</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+<span>Ambiguous rescheduling requests ("super hectic this week!")</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-primary"></span>
+<span>Late-night "thinking of you" texts with mixed subtext</span>
+</div>
+</div>
+</div>
+<!-- CTA Buttons & Example Row -->
+<div class="mt-4 pt-3 flex flex-col gap-2.5">
+<button class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-violet-glow to-primary-container text-midnight font-title-sm text-title-sm flex items-center justify-between shadow-[0_0_18px_rgba(139,92,246,0.3)] active:scale-[0.98] transition-all">
+<span>Help me with this text</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<div class="flex items-center justify-between px-1">
+<button class="example-btn font-label-caps text-label-caps text-text-secondary hover:text-primary transition-colors flex items-center gap-1" data-sample="quick">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span>See Example</span>
+</button>
+<span class="font-label-micro text-label-micro text-text-secondary opacity-60">Prism v2.4 • Ephemeral</span>
+</div>
+</div>
+</article>
+<!-- CARD 2: DEEP READ (Spectral Emerald/Cyan Accent) -->
+<article class="reading-card group relative rounded-2xl bg-obsidian-card/90 p-5 shadow-[0_4px_30px_rgba(8,10,18,0.7)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_0_24px_rgba(16,185,129,0.18)]" data-category="deep">
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-emerald-glow/10 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Card Header / Meta Badge -->
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-emerald-glow/15 flex items-center justify-center text-emerald-glow shadow-[0_0_12px_rgba(16,185,129,0.25)]">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+</div>
+<span class="font-label-caps text-label-caps uppercase tracking-wider text-emerald-glow font-bold">Deep Read</span>
+</div>
+<span class="font-label-micro text-label-micro px-2 py-0.5 rounded-full bg-emerald-glow/15 text-emerald-glow shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+          Full Dynamic Analysis
+        </span>
+</div>
+<!-- Headline -->
+<h2 class="font-headline-md text-headline-md text-on-surface leading-snug">
+        Why does this keep happening between us?
+      </h2>
+<!-- Card Copy -->
+<p class="font-body-sm text-body-sm text-text-secondary mt-2.5 leading-relaxed">
+        You care about someone, but conversations keep ending in the same argument—or you've noticed a change in how you communicate and can't quite explain it.
+      </p>
+<p class="font-body-sm text-body-sm text-emerald-glow/90 mt-2 leading-relaxed font-medium">
+        Deep Read examines the wider conversation to reveal recurring patterns, where you connect, where you get stuck, and practical things to try.
+      </p>
+<!-- Subtext / Situations Link (Expandable) -->
+<div class="mt-3.5">
+<button class="situation-toggle inline-flex items-center gap-1 font-label-caps text-label-caps text-emerald-glow hover:text-on-surface transition-colors" data-target="situations-deep">
+<span class="underline underline-offset-4 decoration-emerald-glow/40">More situations</span>
+<span class="material-symbols-outlined text-[14px] transition-transform duration-200">expand_more</span>
+</button>
+<div class="hidden mt-2 p-3 rounded-lg bg-surface-container-low text-text-secondary font-body-sm text-body-sm flex-col gap-1.5 animate-fadeIn" id="situations-deep">
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-emerald-glow"></span>
+<span>Circular arguments about chores, timing, or emotional effort</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-emerald-glow"></span>
+<span>Silent cold-shouldering following vulnerable admissions</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-emerald-glow"></span>
+<span>Gradual tone flattening over multi-month friendships</span>
+</div>
+</div>
+</div>
+<!-- CTA Buttons & Example Row -->
+<div class="mt-4 pt-3 flex flex-col gap-2.5">
+<button class="w-full py-3 px-4 rounded-xl bg-obsidian-elevated hover:bg-emerald-glow/20 text-on-surface font-title-sm text-title-sm flex items-center justify-between shadow-[0_0_16px_rgba(16,185,129,0.2)] active:scale-[0.98] transition-all">
+<span>Help me understand us</span>
+<span class="material-symbols-outlined text-[18px] text-emerald-glow">arrow_forward</span>
+</button>
+<div class="flex items-center justify-between px-1">
+<button class="example-btn font-label-caps text-label-caps text-text-secondary hover:text-emerald-glow transition-colors flex items-center gap-1" data-sample="deep">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span>See Example</span>
+</button>
+<span class="font-label-micro text-label-micro text-text-secondary opacity-60">Full Thread Audit • 50+ Msgs</span>
+</div>
+</div>
+</article>
+<!-- CARD 3: GROUP ROAST (Spectral Amber/Hot Coral Accent) -->
+<article class="reading-card group relative rounded-2xl bg-obsidian-card/90 p-5 shadow-[0_4px_30px_rgba(8,10,18,0.7)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_0_24px_rgba(245,158,11,0.18)]" data-category="group">
+<div class="absolute -top-12 -right-12 w-32 h-32 bg-amber-glow/10 rounded-full blur-2xl pointer-events-none"></div>
+<!-- Card Header / Meta Badge -->
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-amber-glow/15 flex items-center justify-center text-amber-glow shadow-[0_0_12px_rgba(245,158,11,0.25)]">
+<span class="material-symbols-outlined text-[18px]">celebration</span>
+</div>
+<span class="font-label-caps text-label-caps uppercase tracking-wider text-amber-glow font-bold">Group Roast</span>
+</div>
+<span class="font-label-micro text-label-micro px-2 py-0.5 rounded-full bg-amber-glow/15 text-amber-glow shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]">
+          3+ People
+        </span>
+</div>
+<!-- Headline -->
+<h2 class="font-headline-md text-headline-md text-on-surface leading-snug">
+        Our group chat deserves its own comedy special.
+      </h2>
+<!-- Card Copy -->
+<p class="font-body-sm text-body-sm text-text-secondary mt-2.5 leading-relaxed">
+        One friend organises everything. Another appears only when food is mentioned. Someone sends seventeen messages instead of one. Sound familiar?
+      </p>
+<p class="font-body-sm text-body-sm text-amber-glow/90 mt-2 leading-relaxed font-medium">
+        Upload your group chat and get a playful roast of everyone's role, the group's habits, and the dynamics that make you unmistakably you.
+      </p>
+<div class="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-glow/10 text-amber-glow font-label-micro text-label-micro">
+<span class="material-symbols-outlined text-[12px]">group</span>
+<span>For three or more people.</span>
+</div>
+<!-- Subtext / Situations Link (Expandable) -->
+<div class="mt-3.5">
+<button class="situation-toggle inline-flex items-center gap-1 font-label-caps text-label-caps text-amber-glow hover:text-on-surface transition-colors" data-target="situations-roast">
+<span class="underline underline-offset-4 decoration-amber-glow/40">More situations</span>
+<span class="material-symbols-outlined text-[14px] transition-transform duration-200">expand_more</span>
+</button>
+<div class="hidden mt-2 p-3 rounded-lg bg-surface-container-low text-text-secondary font-body-sm text-body-sm flex-col gap-1.5 animate-fadeIn" id="situations-roast">
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-amber-glow"></span>
+<span>Annual vacation planning chat devolving into total chaos</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-amber-glow"></span>
+<span>Fantasy league / sports banter that crossed into absurdity</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-1 h-1 rounded-full bg-amber-glow"></span>
+<span>College housemate group surviving purely on vintage memes</span>
+</div>
+</div>
+</div>
+<!-- CTA Buttons & Example Row -->
+<div class="mt-4 pt-3 flex flex-col gap-2.5">
+<button class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-glow to-coral-glow text-midnight font-title-sm text-title-sm flex items-center justify-between shadow-[0_0_18px_rgba(245,158,11,0.25)] active:scale-[0.98] transition-all">
+<span>Roast our group</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+<div class="flex items-center justify-between px-1">
+<button class="example-btn font-label-caps text-label-caps text-text-secondary hover:text-amber-glow transition-colors flex items-center gap-1" data-sample="roast">
+<span class="material-symbols-outlined text-[14px]">visibility</span>
+<span>See Example</span>
+</button>
+<span class="font-label-micro text-label-micro text-text-secondary opacity-60">Shareable Card Output</span>
+</div>
+</div>
+</article>
+<!-- CARD 4: PRIME / RELATIONSHIP360 (Spectral Celestial Accent) -->
+<article class="reading-card group relative rounded-2xl bg-gradient-to-b from-obsidian-card to-obsidian-elevated p-5 shadow-[0_4px_30px_rgba(8,10,18,0.7)] backdrop-blur-xl transition-all duration-300 hover:shadow-[0_0_24px_rgba(208,188,255,0.18)]" data-category="prime">
+<div class="absolute -top-10 -right-10 w-36 h-36 bg-gradient-to-br from-primary/20 via-coral-glow/10 to-transparent rounded-full blur-2xl pointer-events-none"></div>
+<!-- Card Header / Meta Badge -->
+<div class="flex items-center justify-between gap-2 mb-3">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-coral-glow/20 flex items-center justify-center text-primary shadow-[0_0_12px_rgba(208,188,255,0.2)]">
+<span class="material-symbols-outlined text-[18px]">all_inclusive</span>
+</div>
+<span class="font-label-caps text-label-caps uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-primary to-coral-glow font-bold">Prime</span>
+</div>
+<span class="font-label-micro text-label-micro px-2.5 py-0.5 rounded-full bg-primary-fixed/10 text-primary-fixed font-semibold tracking-wider uppercase">
+          Preview • In Development
+        </span>
+</div>
+<!-- Headline -->
+<h2 class="font-headline-md text-headline-md text-on-surface leading-snug">
+        Is this a pattern in my relationships?
+      </h2>
+<!-- Card Copy -->
+<p class="font-body-sm text-body-sm text-text-secondary mt-2.5 leading-relaxed">
+        You've noticed something familiar across different relationships—perhaps you avoid difficult conversations, seek reassurance, or keep taking responsibility for everyone else. You want to understand whether the pattern is real and how it changes.
+      </p>
+<p class="font-body-sm text-body-sm text-primary-fixed-dim/90 mt-2 leading-relaxed font-medium">
+        We're building Your Relationship360 to connect insights from conversations you choose to include, help you recognise patterns over time, and offer practical coaching and check-ins.
+      </p>
+<div class="mt-3 flex items-center gap-1.5 text-text-secondary font-label-micro text-label-micro">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-glow animate-ping"></span>
+<span class="uppercase tracking-widest text-text-secondary font-medium">Relationship360 Preview • Early Cohort Opening</span>
+</div>
+<!-- Price & Action CTA -->
+<div class="mt-4 pt-3 flex flex-col gap-2.5">
+<button class="w-full py-3.5 px-4 rounded-xl bg-obsidian-elevated/90 hover:bg-obsidian-card text-on-surface font-title-sm text-title-sm flex items-center justify-between shadow-[0_0_20px_rgba(208,188,255,0.25)] active:scale-[0.98] transition-all">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">diamond</span>
+<span class="text-on-surface">Explore Prime</span>
+<span class="font-label-code text-label-code text-primary font-semibold">— $19.99/mo</span>
+</div>
+<span class="material-symbols-outlined text-[18px] text-primary">arrow_forward</span>
+</button>
+<div class="flex items-center justify-between px-1">
+<span class="font-label-micro text-label-micro text-text-secondary">Cancel anytime • Zero message storage guarantee</span>
+<span class="font-label-micro text-label-micro text-primary flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[11px]">verified_user</span>
+<span>256-Bit Crypt</span>
+</span>
+</div>
+</div>
+</article>
+</div>
+<!-- Trust & Privacy Assurance Banner -->
+<footer class="mt-7 mb-2 p-4 rounded-xl bg-surface-container-lowest/80 backdrop-blur-md flex flex-col gap-2">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-glow text-[18px]">verified</span>
+<span class="font-label-caps text-label-caps text-on-surface uppercase font-semibold">Zero-Retention Prism Protocol</span>
+</div>
+<span class="font-label-micro text-label-micro text-text-secondary bg-surface-container-high px-2 py-0.5 rounded-full">Encrypted RAM Only</span>
+</div>
+<p class="font-body-sm text-body-sm text-text-secondary leading-snug">
+      Your uploaded messages and screenshots are analyzed strictly in volatile memory and purged instantly. No training on user data. No external archiving.
+    </p>
+</footer>
+<!-- Modal Preview Drawer (Interactive Sample Sheet) -->
+<div class="fixed inset-0 z-50 bg-midnight/80 backdrop-blur-xl flex items-end justify-center hidden opacity-0 transition-opacity duration-300" id="sample-modal">
+<div class="w-full max-w-[512px] bg-obsidian-card rounded-t-3xl p-5 shadow-[0_-8px_32px_rgba(0,0,0,0.8)] max-h-[85vh] overflow-y-auto">
+<div class="w-12 h-1 bg-surface-variant rounded-full mx-auto mb-4"></div>
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]" id="modal-icon">chat_bubble</span>
+<h3 class="font-headline-md text-headline-md text-on-surface" id="modal-title">Sample Analysis</h3>
+</div>
+<button class="w-8 h-8 rounded-full bg-surface-variant/50 flex items-center justify-center text-text-secondary hover:text-on-surface" id="modal-close">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Sample Interactive Content Body -->
+<div class="flex flex-col gap-3 font-body-sm text-body-sm text-text-secondary" id="modal-content">
+<!-- Injected via JavaScript -->
+</div>
+<button class="w-full mt-5 py-3 rounded-xl bg-gradient-to-r from-violet-glow to-primary-container text-midnight font-title-sm text-title-sm" id="modal-cta">
+        Try With Your Own Messages
+      </button>
+</div>
+</div>
+</div>
+<script>
+  // Interactive Micro-Interactions: Category Filter
+  const filterChips = document.querySelectorAll('.filter-chip');
+  const cards = document.querySelectorAll('.reading-card');
+
+  filterChips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      filterChips.forEach(c => {
+        c.classList.remove('bg-obsidian-elevated', 'text-primary', 'shadow-[0_0_10px_rgba(139,92,246,0.25)]');
+        c.classList.add('bg-surface-container-low', 'text-text-secondary');
+      });
+      chip.classList.remove('bg-surface-container-low', 'text-text-secondary');
+      chip.classList.add('bg-obsidian-elevated', 'text-primary', 'shadow-[0_0_10px_rgba(139,92,246,0.25)]');
+
+      const filter = chip.getAttribute('data-filter');
+      cards.forEach(card => {
+        if (filter === 'all' || card.getAttribute('data-category') === filter) {
+          card.style.display = 'block';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  // Expandable Situation Dropdowns
+  const toggles = document.querySelectorAll('.situation-toggle');
+  toggles.forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      const targetId = toggle.getAttribute('data-target');
+      const target = document.getElementById(targetId);
+      const icon = toggle.querySelector('.material-symbols-outlined');
+      if (target.classList.contains('hidden')) {
+        target.classList.remove('hidden');
+        target.classList.add('flex');
+        icon.style.transform = 'rotate(180deg)';
+      } else {
+        target.classList.add('hidden');
+        target.classList.remove('flex');
+        icon.style.transform = 'rotate(0deg)';
+      }
+    });
+  });
+
+  // Sample Modal Interaction
+  const modal = document.getElementById('sample-modal');
+  const modalClose = document.getElementById('modal-close');
+  const modalTitle = document.getElementById('modal-title');
+  const modalIcon = document.getElementById('modal-icon');
+  const modalContent = document.getElementById('modal-content');
+  const exampleButtons = document.querySelectorAll('.example-btn');
+
+  const samples = {
+    quick: {
+      title: 'Quick Take: "Hey! Just saw this..."',
+      icon: 'chat_bubble',
+      color: 'text-primary',
+      html: `
+        <div class="p-3 rounded-lg bg-surface-container-low text-text-primary">
+          <p class="font-body-quote italic text-[14px]">"Hey! Just saw this... super hectic week with work and errands. Let's catch up sometime next week though!"</p>
+        </div>
+        <div class="p-3 rounded-lg bg-obsidian-elevated/70">
+          <div class="flex items-center gap-1.5 text-primary font-label-caps text-label-caps uppercase mb-1">
+            <span class="material-symbols-outlined text-[14px]">psychology</span>
+            <span>Decoding The Subtext</span>
+          </div>
+          <p class="font-body-sm text-body-sm text-text-secondary">Low-investment warm demurral. They are keeping a gentle line open without committing to a concrete calendar hold. Notice the lack of a specific day counter-offer.</p>
+        </div>
+        <div class="flex flex-col gap-2 mt-1">
+          <span class="font-label-caps text-label-caps text-on-surface">3 Recommended Strategic Responses:</span>
+          <div class="p-2.5 rounded-lg bg-surface-container-high/60 text-text-primary font-body-sm">
+            <span class="font-bold text-primary">Option A (Low-Stakes Grace):</span> "Sounds wild, good luck surviving it! Shoot me a ping when you resurface next week."
+          </div>
+          <div class="p-2.5 rounded-lg bg-surface-container-high/60 text-text-primary font-body-sm">
+            <span class="font-bold text-emerald-glow">Option B (Direct Anchor):</span> "Understood! I'm grabbing dinner in Soho next Thursday, shout if you want to swing by for an hour."
+          </div>
+          <div class="p-2.5 rounded-lg bg-surface-container-high/60 text-text-primary font-body-sm">
+            <span class="font-bold text-amber-glow">Option C (Warm Boundary):</span> "All good! Hope you get some breathing room soon."
+          </div>
+        </div>
+      `
+    },
+    deep: {
+      title: 'Deep Read: Tension Escalation Pattern',
+      icon: 'psychology',
+      color: 'text-emerald-glow',
+      html: `
+        <div class="p-3 rounded-lg bg-obsidian-elevated/80 flex flex-col gap-2">
+          <div class="flex items-center justify-between text-emerald-glow font-label-caps text-label-caps">
+            <span>Primary Loop: Demand / Withdraw</span>
+            <span class="px-2 py-0.5 rounded bg-emerald-glow/20 text-emerald-glow text-[10px]">89% Recurring</span>
+          </div>
+          <p class="text-text-secondary font-body-sm">Whenever conversation topic shifts toward logistics or domestic workload, Person A initiates with high-density rhetorical questions; Person B responds with curt acknowledgments followed by a 4-hour silence window.</p>
+        </div>
+        <div class="p-3 rounded-lg bg-surface-container-low text-text-secondary flex flex-col gap-1.5">
+          <span class="font-label-caps text-label-caps text-on-surface">Practical Calibration:</span>
+          <p>Replace interrogative opening clauses ("Why is it that whenever...") with immediate concrete requests ("Would you be open to doing X by 7pm?").</p>
+        </div>
+      `
+    },
+    roast: {
+      title: 'Group Roast: "The Sunday Crew"',
+      icon: 'celebration',
+      color: 'text-amber-glow',
+      html: `
+        <div class="p-3 rounded-lg bg-obsidian-elevated/80">
+          <div class="text-amber-glow font-label-caps text-label-caps uppercase mb-1">Archetype Map Identified</div>
+          <div class="space-y-2 mt-2">
+            <div class="flex justify-between items-center"><span class="text-on-surface font-semibold">Liam:</span> <span class="text-text-secondary text-[12px]">The Ghost who suddenly appears exclusively at 1am with Spotify links</span></div>
+            <div class="flex justify-between items-center"><span class="text-on-surface font-semibold">Maya:</span> <span class="text-text-secondary text-[12px]">Aggressive Google Docs itinerary dictator</span></div>
+            <div class="flex justify-between items-center"><span class="text-on-surface font-semibold">Sam:</span> <span class="text-text-secondary text-[12px]">Reacts with thumbs-up to literally life-altering news</span></div>
+          </div>
+        </div>
+        <div class="p-3 rounded-lg bg-surface-container-low text-center">
+          <span class="text-amber-glow font-headline-md text-headline-md block mb-1">"Vibe Toxicity: 4% • Chaotic Good: 96%"</span>
+          <p class="text-text-secondary text-[12px]">Conclusion: Nobody is ever arriving to dinner on time, but no one is leaving the chat either.</p>
+        </div>
+      `
+    }
+  };
+
+  exampleButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const type = btn.getAttribute('data-sample');
+      const data = samples[type] || samples.quick;
+      modalTitle.textContent = data.title;
+      modalIcon.textContent = data.icon;
+      modalIcon.className = `material-symbols-outlined text-[22px] ${data.color}`;
+      modalContent.innerHTML = data.html;
+      modal.classList.remove('hidden');
+      setTimeout(() => modal.classList.remove('opacity-0'), 10);
+    });
+  });
+
+  const closeModal = () => {
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+  };
+
+  modalClose.addEventListener('click', closeModal);
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  // Help Me Choose Smooth Scroll Anchor
+  document.getElementById('btn-help-choose').addEventListener('click', () => {
+    const firstCard = document.querySelector('.reading-card');
+    if (firstCard) {
+      firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      firstCard.classList.add('shadow-[0_0_32px_rgba(139,92,246,0.4)]');
+      setTimeout(() => firstCard.classList.remove('shadow-[0_0_32px_rgba(139,92,246,0.4)]'), 1200);
+    }
+  });
+</script></main><nav class="fixed bottom-0 w-full z-50 pb-safe bg-midnight/85 backdrop-blur-2xl shadow-[0_-4px_24px_rgba(8,10,18,0.7)]" data-active-classes="text-primary [&amp;&gt;div]:bg-primary/10 [&amp;&gt;div]:shadow-[0_0_16px_rgba(139,92,246,0.45)]"><div class="h-16 max-w-[512px] mx-auto px-margin flex items-center justify-around"><a aria-current="page" class="flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] transition-all duration-200 text-primary [&amp;&gt;div]:bg-primary/10 [&amp;&gt;div]:shadow-[0_0_16px_rgba(139,92,246,0.45)]" data-path="home" href="#"><div class="flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200"><span class="material-symbols-outlined text-[20px]">radar</span></div><span class="font-label-micro text-label-micro uppercase tracking-wider">Home</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] text-text-secondary hover:text-on-surface transition-all duration-200" data-path="quick-take" href="#"><div class="flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200"><span class="material-symbols-outlined text-[20px]">chat_bubble</span></div><span class="font-label-micro text-label-micro uppercase tracking-wider">Quick Take</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] text-text-secondary hover:text-on-surface transition-all duration-200" data-path="deep-read" href="#"><div class="flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200"><span class="material-symbols-outlined text-[20px]">psychology</span></div><span class="font-label-micro text-label-micro uppercase tracking-wider">Deep Read</span></a><a class="flex flex-col items-center justify-center gap-1 min-w-[44px] min-h-[44px] text-text-secondary hover:text-on-surface transition-all duration-200" data-path="vault" href="#"><div class="flex items-center justify-center w-8 h-8 rounded-lg transition-all duration-200"><span class="material-symbols-outlined text-[20px]">lock</span></div><span class="font-label-micro text-label-micro uppercase tracking-wider">Vault</span></a></div></nav></body></html>
