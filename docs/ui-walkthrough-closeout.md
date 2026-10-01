@@ -1,6 +1,6 @@
 # Frontend UI walkthrough closeout (private, no publication)
 
-Scope: presentation and routing only. The owner directly walked through the newly published public site: home chooser; Quick intake and one synthetic anonymous completed Quick Take; Deep intake/example; Group Roast/Read intake; Explore; Pricing; Prime and fictional Relationship360 preview; Wrapped; Roast Us; pair types and representative detail; signed-out account/auth; About; Trust. This record does not claim a new customer run, real relationship data, or model execution. No need to inspect every pair type individually.
+Scope: presentation and routing only. The ChatGPT assistant walked through the newly published public site (not the owner directly): home chooser; Quick intake and one synthetic anonymous completed Quick Take; Deep intake/example; Group Roast/Read intake; Explore; Pricing; Prime and fictional Relationship360 preview; Wrapped; Roast Us; pair types and representative detail; signed-out account/auth; About; Trust. This record does not claim a new customer run, real relationship data, or model execution. No need to inspect every pair type individually.
 
 ## Observed defects versus review judgments
 
