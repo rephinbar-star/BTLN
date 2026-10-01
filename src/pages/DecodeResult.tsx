@@ -333,7 +333,7 @@ const DecodeResult = () => {
               <div
                 className={`mt-7 rounded-xl border p-4 ${
                   isSafety
-                    ? "border-sky-300 bg-sky-50 text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100"
+                    ? "border-prism-cyan/50 bg-prism-cyan/10 text-foreground"
                     : "border-prism-amber/50 bg-pastel-amber-bg text-pastel-amber-fg"
                 }`}
                 role="note"
