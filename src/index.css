@@ -288,7 +288,7 @@
 
   @media print {
     .prism-text-gradient { color: hsl(var(--foreground)); background: none; -webkit-text-fill-color: currentColor; }
-    .prism-bloom::before, .prism-bloom::after { display: none; }
+    .prism-bloom { background: none; }
     .prism-card, .prism-chrome { box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
   }
 }
