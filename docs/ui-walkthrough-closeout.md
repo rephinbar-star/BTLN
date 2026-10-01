@@ -1,6 +1,6 @@
 # Frontend UI walkthrough closeout (private, no publication)
 
-Scope: presentation and routing only. The owner directly walked through the newly published public site: home chooser; Quick intake and one synthetic anonymous completed Quick Take; Deep intake/example; Group Roast/Read intake; Explore; Pricing; Prime and fictional Relationship360 preview; Wrapped; Roast Us; pair types and representative detail; signed-out account/auth; About; Trust. This record does not claim a new customer run, real relationship data, or model execution. No need to inspect every pair type individually.
+Scope: presentation and routing only. The ChatGPT assistant walked through the newly published public site (not the owner directly): home chooser; Quick intake and one synthetic anonymous completed Quick Take; Deep intake/example; Group Roast/Read intake; Explore; Pricing; Prime and fictional Relationship360 preview; Wrapped; Roast Us; pair types and representative detail; signed-out account/auth; About; Trust. This record does not claim a new customer run, real relationship data, or model execution. No need to inspect every pair type individually.
 
 ## Observed defects versus review judgments
 
@@ -16,3 +16,13 @@ Scope: presentation and routing only. The owner directly walked through the newl
 ## Verification boundaries
 
 Local browser at 390 and 1280px: alias redirects, deep modal keyboard focus/More/Escape/focus restoration, ten Tab moves contained by the dialog, body scroll lock, Friend stage options, pricing/Prime unavailability and no horizontal overflow; at 320px: screenshot and identity controls visible without horizontal overflow after correction. Screenshots confirmed the phone overlay is full-screen and desktop reading width is bounded. Example and uploaded-image checks used synthetic UI-only data and did not request analysis. Focused tests: 5 files, 24 passed (including chooser branches/availability, category transitions, example source fixture grounding, Quick Take next-step/safety links and existing advice recovery notice); existing recovery tests emitted React `act` warnings. Typecheck exited 0; the managed harness reported a successful build; no manual deployment was run. Authenticated account/Relationship360 customer E2E and live checkout were **not** reviewed; no auth bypass or paid analysis was used. A real protected result was not opened for this local UI review, so result-state integration beyond component tests remains unverified. No human signoff is claimed. Frontend remains unpublished by this work.
+
+## Source-review follow-up (UX candidates for next work, not verified failures)
+
+Code review of `src/pages/Account.tsx`, not a browser-verified customer observation or a billing audit:
+
+- Past reports queries only the `analyses` table; decode, group-read, and group-roast results are not listed. A unified "My reads" view is a UX candidate.
+- The page surfaces customer-facing Webhook events and DB-change counts, which read as developer-facing rather than customer-facing.
+- `MembershipStatus` handles only monthly/annual/single/none; the account plan display is a candidate for a simpler presentation.
+
+Defer implementation until a proper signed-in review; preserve existing permissions and payment behavior when touching this page.

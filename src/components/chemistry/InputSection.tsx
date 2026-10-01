@@ -653,7 +653,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         </div>
 
         <p className="mt-4 text-[12px] text-muted-foreground">
-           Raw transcripts aren't kept as a reusable chat after analysis. Your report may retain selected excerpts; you can manage or delete your report from your account.
+           Your raw messages are deleted after processing. Your report may include selected excerpts; you can manage or delete your report from your account.
         </p>
 
          {/* Relationship type */}
@@ -784,7 +784,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           </button>
           {submitError && <p className="mt-3 text-[12px] text-destructive">{submitError}</p>}
           <p className="mt-4 max-w-md text-center text-[12px] leading-relaxed text-muted-foreground">
-             By continuing, you agree your messages will be processed by AI. Raw transcripts aren't kept as reusable chats after analysis; your report may retain selected excerpts.
+             By continuing, you agree your messages will be processed by AI. Your raw messages are deleted after processing; your report may include selected excerpts.
           </p>
         </div>
       </form>
