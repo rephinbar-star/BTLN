@@ -82,24 +82,23 @@ export const Header = () => {
                   {user ? "My reads and account" : "Log in or register"}
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/explore")}>Explore</DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/explore">Explore</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/pricing">Pricing</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/sample">See a sample</Link></DropdownMenuItem>
               <DropdownMenuLabel className="pt-3 text-xs uppercase text-muted-foreground">Examples</DropdownMenuLabel>
               {/* Two-person "Roast Us" stays reachable via Explore and /roast, and
                   Relationship Wrapped stays reachable via Explore and its routes, but
                   neither is a main-menu entry. Group Roast (3+) remains listed. */}
               {EXAMPLES.filter((example) => example.kind !== "roast" && example.kind !== "wrapped").map((example) => (
-                <DropdownMenuItem key={example.kind} className="min-h-11 pl-5" onSelect={() => navigate(example.route)}>
-                  {example.name}
-                </DropdownMenuItem>
+                <DropdownMenuItem key={example.kind} asChild className="min-h-11 pl-5"><Link to={example.route}>{example.name}</Link></DropdownMenuItem>
               ))}
-              <DropdownMenuItem className="min-h-11 font-medium" onSelect={() => navigate("/examples")}>All examples</DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/pricing")}>Plans and pricing</DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11 font-medium"><Link to="/examples">All examples</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/about")}>About</DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/trust")}>Trust</DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/privacy")}>Privacy</DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/terms")}>Terms</DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => navigate("/guides/whatsapp")}>Guides</DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/about">About</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/trust">Trust</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/privacy">Privacy</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/terms">Terms</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-11"><Link to="/guides/whatsapp">Guides</Link></DropdownMenuItem>
               <DropdownMenuItem className="min-h-11" onSelect={() => { window.location.href = `mailto:${OPERATOR.contactEmail}`; }}>Contact</DropdownMenuItem>
               <DropdownMenuItem className="min-h-11" onSelect={() => setShowFeedback(true)}>Feedback</DropdownMenuItem>
               {user && (
