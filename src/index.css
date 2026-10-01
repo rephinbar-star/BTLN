@@ -154,10 +154,57 @@
     color: hsl(var(--foreground));
   }
 
+  /* Print uses the same light palette as .theme-light (kept in sync). */
   @media print {
-    :root { color-scheme: light; }
-    html, body { background: #fff !important; }
-    body { color: #111; }
+    :root {
+    color-scheme: light;
+    --background: 0 0% 100%;
+    --foreground: 0 0% 7%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 7%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 7%;
+    --elevated: 40 22% 95%;
+    --primary: 0 0% 7%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 40 22% 95%;
+    --secondary-foreground: 0 0% 7%;
+    --muted: 40 22% 95%;
+    --muted-foreground: 0 0% 38%;
+    --accent: 40 22% 95%;
+    --accent-foreground: 0 0% 7%;
+    --olive-deep: 84 20% 30%;
+    --sage-muted: 75 11% 57%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --pastel-pink-bg: 350 100% 96%;
+    --pastel-pink-fg: 345 70% 30%;
+    --pastel-purple-bg: 245 86% 96%;
+    --pastel-purple-fg: 247 47% 24%;
+    --pastel-purple-fg-strong: 248 49% 18%;
+    --pastel-yellow-bg: 48 100% 92%;
+    --pastel-yellow-fg: 35 85% 20%;
+    --pastel-green-bg: 86 47% 91%;
+    --pastel-green-fg: 110 80% 11%;
+    --pastel-green-fg-strong: 162 86% 14%;
+    --pastel-amber-bg: 36 89% 92%;
+    --pastel-amber-fg: 28 91% 13%;
+    --pastel-amber-fg-strong: 36 86% 28%;
+    --pastel-blue-bg: 207 82% 94%;
+    --pastel-blue-fg: 211 86% 27%;
+    --section-soft: 44 18% 93%;
+    --btln-paper: 80 16% 97%;
+    --btln-ink: 169.714 42.169% 16.275%;
+    --btln-muted: 160 9% 37%;
+    --btln-line: 145 14% 88%;
+    --btln-mint: 152 39% 93%;
+    --btln-forest: 157 45% 25%;
+    --btln-peach: 28 88% 92%;
+    --prism-emerald-text: 157 45% 25%;
+    --prism-amber-text: 36 86% 28%;
+    --prism-lavender: 258 49% 30%;
+    }
+    html, body { background: hsl(var(--background)); color: hsl(var(--foreground)); }
   }
 }
 
@@ -238,4 +285,10 @@
   }
 
   .theme-light .prism-text-gradient { color: hsl(var(--foreground)); background: none; }
+
+  @media print {
+    .prism-text-gradient { color: hsl(var(--foreground)); background: none; -webkit-text-fill-color: currentColor; }
+    .prism-bloom::before, .prism-bloom::after { display: none; }
+    .prism-card, .prism-chrome { box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+  }
 }
