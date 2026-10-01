@@ -74,7 +74,7 @@ const ReplyCard = ({
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 text-emerald-600" /> Copied
+              <Check className="h-3.5 w-3.5 text-prism-emerald-text" /> Copied
             </>
           ) : (
             <>
@@ -334,7 +334,7 @@ const DecodeResult = () => {
                 className={`mt-7 rounded-xl border p-4 ${
                   isSafety
                     ? "border-sky-300 bg-sky-50 text-sky-950 dark:border-sky-900 dark:bg-sky-950/40 dark:text-sky-100"
-                    : "border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100"
+                    : "border-prism-amber/50 bg-pastel-amber-bg text-pastel-amber-fg"
                 }`}
                 role="note"
               >

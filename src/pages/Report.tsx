@@ -654,6 +654,7 @@ const ReportContent = () => {
     } catch (e) {
       toast.error("Could not generate PDF.");
     } finally {
+      cardRef.current?.classList.remove("theme-light");
       setDownloadingPdf(false);
     }
   };
@@ -815,7 +816,7 @@ const ReportContent = () => {
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-green-100 text-green-600">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-prism-emerald/15 text-prism-emerald-text">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
@@ -1069,7 +1070,7 @@ const ReportContent = () => {
               <button
                 type="button"
                 onClick={openFeedbackManually}
-                className="rounded-full border border-[#4D5C3E] bg-[#4D5C3E] px-5 py-2.5 text-[14px] font-medium text-white shadow-md transition-colors hover:bg-[#3e4a32] hover:border-[#3e4a32]"
+                className="rounded-full bg-gradient-to-r from-prism-violet to-prism-lavender px-5 py-2.5 text-[14px] font-semibold text-background shadow-glow-violet transition-[filter] hover:brightness-110"
               >
                 Give feedback
               </button>
