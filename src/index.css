@@ -203,8 +203,6 @@
     --prism-emerald-text: 157 45% 25%;
     --prism-amber-text: 36 86% 28%;
     --prism-lavender: 258 49% 30%;
-      /* Darker selected-chip fill on paper so white chip text stays AA. */
-      --sage-muted: 84 20% 30%;
     }
     html, body { background: hsl(var(--background)); color: hsl(var(--foreground)); }
   }
