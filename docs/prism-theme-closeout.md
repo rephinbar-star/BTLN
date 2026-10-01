@@ -13,7 +13,7 @@ Scope: visual presentation only. No backend, auth, entitlement, payment environm
 - Logo on dark backgrounds: unchanged wordmark sits on a light backplate in Header, Processing, ErrorPage and Admin.
 - Exports: Report PNG/PDF capture temporarily adds `theme-light`; Roast/Group/Group Roast share cards set `theme-light`, so they keep their original light design.
 - Hard-coded light colours replaced in Report, Pricing, DecodeResult, FeedbackControl, Account, CheckoutReturn, Hero, HowToHelp, AdminCards and PaymentTestModeBanner.
-- `docs/design/prism-reference.md (verbatim DESIGN.md; adoption notes in docs/design/prism-adoption-notes.md)` and `.html` — inert reference notes. The full HTML came in chat, not as a file, so the `.html` is a pointer.
+- `docs/design/prism-reference.md (verbatim DESIGN.md; adoption notes in docs/design/prism-adoption-notes.md)` and `.html` — inert reference notes. The full HTML came in chat, not as a file, so the `.html` is a pointer. *(Historical — superseded in round 2: both files now hold the full supplied sources verbatim.)*
 
 ## Viewport checks (local Playwright, Chromium)
 375×812: home, pricing, quick, deep, prime, auth, explore and sample show 0px horizontal overflow and no page errors. 320 and 1280 home: 0px overflow. At all three sizes, "Read this text" is fully visible in the first screen alongside the test-payment notice, header and bottom bar. The example dialog closes with Escape. Screenshots are in `docs/prism-theme-screenshots/`.
@@ -21,7 +21,9 @@ Scope: visual presentation only. No backend, auth, entitlement, payment environm
 ## Contrast (WCAG ratios)
 foreground/bg 17.6 · muted text/card 9.0 · primary link/bg 7.2 · emerald text/card 11.0 · amber text/card 11.4 · lavender/card 10.6 · dark text on violet action 4.6 · on coral 5.4 · on amber 9.3 · test-payment notice 9.4 · wordmark on plate 11.3. The wordmark's "The" accent is 3.7: this is the original logo colour, left unchanged as instructed.
 
-## Limits / open items
+## Limits / open items (round 1 — historical)
+
+> Superseded: round 2 tested PDF/PNG downloads and print, saved the full reference files, and confirmed menu focus; round 3 reviewed completed-result components via fictional fixtures. Current open items are listed at the end of this file.
 - Signed-in screens (Account, Journey, Relationship360 live, completed reports, paywall) were checked only through tokens and source edits, not visually. I did not sign in or bypass auth.
 - I did not test PDF or image downloads in a browser. The code path switches to the light palette.
 - (Resolved in round 2: the earlier "focus lands on a container" note was a timing artefact — see below.)
@@ -60,3 +62,27 @@ Screenshots: `docs/prism-theme-screenshots/round2/` (home 375/320/1280, menu, ex
 - Stripe-hosted checkout internals.
 - The managed project screenshot may still show the old published light site; the round-2 images above are the dark-theme evidence.
 - Logo "The" accent remains 3.7:1 (original colour, intentionally kept).
+
+## Round 3 (base 191bfe2) — final bounded checks
+
+### Source changes
+- `src/components/ui/button.tsx`: default and `sm` sizes now 44px high, `icon` 44×44; `lg` and explicit larger heights unchanged.
+- `src/components/relationship360/Relationship360Live.tsx`: reflection textarea `text-base sm:text-[15px]` (16px on phones).
+- `src/pages/DecodeResult.tsx`: safety notice uses `border-prism-cyan/50 bg-prism-cyan/10 text-foreground`; content/logic unchanged.
+- `src/components/chemistry/ShareableCard.tsx`: the existing `assets/logo.png` is wrapped in the existing `wordmark-plate` light backing; image itself unchanged.
+- `src/lib/feedback/api.binding.test.ts`: mocked client whose `rpc` reads `this.rest` like the real one. Bound version passes (`submit_ai_feedback`, `clear_ai_feedback`, same arguments); reverting to the unbound call reproduces "Cannot read properties of undefined (reading 'rest')". Fix kept.
+
+### Browser checks (temporary local page, fictional data, removed afterwards; all non-local requests blocked, 0 attempted)
+- Relationship360Live via its existing `recorded` prop (pattern + evidence, Then & Now, What's working, suggestion, relationship selectors, pending-identity note) and RelationshipMap at 375 and 1280: 0px horizontal overflow, 94 text elements measured, 0 below 4.5:1, no buttons under 44px, no page errors. Reflection textarea 16px at 375 (15px at 1280 by design).
+- ShareableCard on the dark card: logo now sits on a light plate and is readable.
+- GroupRoastShareCard downloads with the same html-to-image call as GroupRoastResult: square 1080×1080 and story 1080×1920 PNGs saved and inspected — original light design, dark text.
+- Home with 44px buttons: "Read this text" bottom at 490/812 (375), 526/640 (320), 477/900 (1280); 0 overflow.
+
+Screenshots: `docs/prism-theme-screenshots/round3/`.
+
+## Current open limitations
+- Real signed-in account: My reads, Journey management, live Relationship360 data loading/build/save, and the Group Roast result page with real data were not viewed — only their presentational components with fictional data.
+- Physical phone: keyboard, photo picker, safe areas and iOS zoom behaviour not checked on a device.
+- Payment provider's hosted checkout screens not reviewed (checkout remains disabled for unavailable plans).
+- Logo "The" accent remains at its original 3.7:1 colour by owner instruction.
+- Frontend remains UNPUBLISHED.
