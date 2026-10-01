@@ -86,7 +86,7 @@ export const ShareableCard = forwardRef<HTMLDivElement, Props>(
         {/* Top row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <img src={logoUrl} alt="BetweenTheLines™" className="h-5 w-auto object-contain" />
+            <span className="wordmark-plate inline-flex items-center rounded-md px-1.5 py-0.5"><img src={logoUrl} alt="BetweenTheLines™" className="h-5 w-auto object-contain" /></span>
           </div>
           <span className="text-[11px] text-muted-foreground">
             {result.coverage?.messages_analyzed ?? result.meta.messages_analyzed} messages analyzed

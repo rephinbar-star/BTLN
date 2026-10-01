@@ -269,7 +269,7 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
                           onChange={(event) => setReflectText(event.target.value)}
                           maxLength={2000}
                           rows={3}
-                          className="mt-2 w-full rounded-xl border border-btln-line bg-background p-3 text-[15px]"
+                          className="mt-2 w-full rounded-xl border border-btln-line bg-background p-3 text-base sm:text-[15px]"
                         />
                         <Button
                           className="mt-2 h-11 rounded-full"
