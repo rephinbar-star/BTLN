@@ -21,6 +21,7 @@ import type { TranscriptCandidate } from "@/lib/ingest/archive";
 import { takeDeepReadHandoff } from "@/lib/ingest/handoff";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 import { extractScreenshotConversation } from "@/lib/ingest/extract";
+import { Button } from "@/components/ui/button";
 
 type FormState = {
   conversation: string;
@@ -44,8 +45,21 @@ const initialState: FormState = {
   theirName: "",
 };
 
+export const CONTEXT_OPTIONS = {
+  romantic: { stage: ["Dating, not exclusive", "Dating, exclusive", "Living together", "Living Apart", "Engaged", "Married", "Other"], goal: ["Just curious", "Trying to understand a pattern", "Red flag check", "Strengthening our communication", "Deciding whether to commit"] },
+  friend: { stage: ["New friends", "Close friends", "Long-distance friends", "Reconnecting", "Other"], goal: ["Just curious", "Trying to understand a pattern", "Red flag check", "Strengthening our communication", "Navigating a change"] },
+  family: { stage: ["Living together", "Living apart", "Reconnecting", "Other"], goal: ["Just curious", "Trying to understand a pattern", "Red flag check", "Strengthening our communication", "Navigating a change"] },
+} as const;
+
+export const contextForCategory = (form: FormState, relationshipType: FormState["relationshipType"]): FormState => ({
+  ...form,
+  relationshipType,
+  stage: CONTEXT_OPTIONS[relationshipType].stage.some((option) => option === form.stage) ? form.stage : "",
+  goal: CONTEXT_OPTIONS[relationshipType].goal.some((option) => option === form.goal) ? form.goal : "",
+});
+
 const fieldClass =
-  "w-full rounded-xl border border-border bg-background px-4 py-3 text-[15px] text-foreground placeholder:text-muted-foreground focus:border-foreground focus:outline-none focus:ring-0";
+  "w-full rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground placeholder:text-muted-foreground focus:border-foreground focus:outline-none focus:ring-0";
 
 const labelClass = "text-[13px] font-medium text-foreground";
 
@@ -189,19 +203,17 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         .maybeSingle();
       const ctx = (data?.context_data ?? null) as Record<string, string> | null;
       if (!ctx || cancelled) return;
-      setForm((prev) => ({
+      const restoredType = ctx.relationship_type === "friend" || ctx.relationship_type === "family" ? ctx.relationship_type : "romantic";
+      setForm((prev) => contextForCategory({
         ...prev,
         yourName: ctx.name1 ?? prev.yourName,
         theirName: ctx.name2 ?? prev.theirName,
-        relationshipType:
-          ctx.relationship_type === "friend" || ctx.relationship_type === "family"
-            ? ctx.relationship_type
-            : "romantic",
+        relationshipType: restoredType,
         stage: ctx.relationship_stage ?? "",
         duration: ctx.duration ?? "",
         goal: ctx.goal ?? "",
         context: ctx.free_text ?? "",
-      }));
+      }, restoredType));
       setRedoInfo({ name1: ctx.name1 ?? "", name2: ctx.name2 ?? "" });
       document.getElementById("input-section")?.scrollIntoView({ behavior: "smooth" });
     })();
@@ -596,7 +608,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               <span className="font-medium">
                 {redoInfo.name1} and {redoInfo.name2}
               </span>
-              . Details are pre-filled — add the conversation again (we never store it) and
+               . Details are pre-filled — add the conversation again (raw chats aren't retained as reusable conversations) and
               we'll run it through the latest analysis.
             </p>
           </div>
@@ -615,7 +627,10 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           <HowToHelp />
         </div>
 
-        <div className="mt-5">
+         <div className="mt-5" id="add-conversation">
+           <h2 className="mb-2 text-xl font-medium">Add conversation</h2>
+           <p className="mb-3 text-sm text-muted-foreground">1 Add messages · 2 Confirm who you are · 3 Get your read</p>
+           <p className="mb-3 text-sm text-muted-foreground">Add screenshots, paste messages, or import a supported chat file. Check the preview and tell us which participant is you before continuing.</p>
           <SharedConversationInput
             value={sharedDraft}
             onChange={(next) => {
@@ -638,13 +653,14 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         </div>
 
         <p className="mt-4 text-[12px] text-muted-foreground">
-          Your messages are deleted immediately after analysis. Nothing is stored.
+           Raw transcripts aren't kept as a reusable chat after analysis. Your report may retain selected excerpts; you can manage or delete your report from your account.
         </p>
 
-        {/* Relationship type */}
-        <div className="mt-5">
-          <label className={labelClass}>Relationship type</label>
-          <div className="mt-1.5 flex gap-2" role="radiogroup" aria-label="Relationship type">
+         {/* Relationship type */}
+         <div className="mt-8 border-t border-border pt-6">
+           <h2 className="mb-4 text-xl font-medium">Relationship context</h2>
+           <p className={labelClass} id="relationship-type-label">Relationship type</p>
+           <div className="mt-1.5 grid grid-cols-3 gap-1 sm:gap-2" role="radiogroup" aria-labelledby="relationship-type-label">
             {([
               { value: "romantic", label: "Romantic" },
               { value: "friend", label: "Friend" },
@@ -652,20 +668,20 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             ] as const).map((opt) => {
               const active = form.relationshipType === opt.value;
               return (
-                <button
+                 <Button
                   key={opt.value}
                   type="button"
                   role="radio"
                   aria-checked={active}
-                  onClick={() => update("relationshipType", opt.value)}
-                  className={`flex-1 rounded-full border px-4 py-2.5 text-[14px] font-medium transition-colors ${
+                   onClick={() => { setForm((prev) => contextForCategory(prev, opt.value)); setFieldErrors((prev) => ({ ...prev, stage: undefined, goal: undefined })); }}
+                   className={`min-h-11 min-w-0 rounded-full border px-1 py-2.5 text-[14px] font-medium transition-colors sm:px-4 ${
                     active
                       ? "border-foreground bg-foreground text-background"
                       : "border-border bg-background text-foreground hover:bg-muted"
                   }`}
                 >
                   {opt.label}
-                </button>
+                 </Button>
               );
             })}
           </div>
@@ -674,26 +690,22 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         {/* Dropdowns */}
         <div className="mt-5 flex flex-col gap-4">
           <div>
-            <label className={labelClass}>Relationship stage</label>
+             <label htmlFor="deep-stage" className={labelClass}>{form.relationshipType === "romantic" ? "Relationship stage" : form.relationshipType === "friend" ? "Friendship stage" : "Family relationship stage"}</label>
             <select
+               id="deep-stage" aria-invalid={!!fieldErrors.stage} aria-describedby={fieldErrors.stage ? "deep-stage-error" : undefined}
               value={form.stage}
               onChange={(e) => update("stage", e.target.value)}
               className={`${fieldClass} mt-1.5 appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-[length:12px] bg-[position:right_1rem_center] bg-no-repeat pr-10`}
             >
               <option value="">Select…</option>
-              <option>Dating, not exclusive</option>
-              <option>Dating, exclusive</option>
-              <option>Living together</option>
-              <option>Living Apart</option>
-              <option>Engaged</option>
-              <option>Married</option>
-              <option>Other</option>
+               {CONTEXT_OPTIONS[form.relationshipType].stage.map((option) => <option key={option}>{option}</option>)}
             </select>
-            {fieldErrors.stage && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.stage}</p>}
+             {fieldErrors.stage && <p id="deep-stage-error" className="mt-1 text-[12px] text-destructive">{fieldErrors.stage}</p>}
           </div>
           <div>
-            <label className={labelClass}>How long have you been together or have known each other</label>
+             <label htmlFor="deep-duration" className={labelClass}>{form.relationshipType === "romantic" ? "How long have you been together?" : "How long have you known each other?"}</label>
             <select
+               id="deep-duration" aria-invalid={!!fieldErrors.duration} aria-describedby={fieldErrors.duration ? "deep-duration-error" : undefined}
               value={form.duration}
               onChange={(e) => update("duration", e.target.value)}
               className={`${fieldClass} mt-1.5 appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-[length:12px] bg-[position:right_1rem_center] bg-no-repeat pr-10`}
@@ -707,27 +719,25 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               <option>2–5 years</option>
               <option>5+ years</option>
             </select>
-            {fieldErrors.duration && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.duration}</p>}
+             {fieldErrors.duration && <p id="deep-duration-error" className="mt-1 text-[12px] text-destructive">{fieldErrors.duration}</p>}
           </div>
           <div>
-            <label className={labelClass}>What are you hoping to learn?</label>
+             <label htmlFor="deep-goal" className={labelClass}>What are you hoping to learn?</label>
             <select
+               id="deep-goal" aria-invalid={!!fieldErrors.goal} aria-describedby={fieldErrors.goal ? "deep-goal-error" : undefined}
               value={form.goal}
               onChange={(e) => update("goal", e.target.value)}
               className={`${fieldClass} mt-1.5 appearance-none bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2212%22 height=%2212%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23666%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%226 9 12 15 18 9%22/></svg>')] bg-[length:12px] bg-[position:right_1rem_center] bg-no-repeat pr-10`}
             >
               <option value="">Select…</option>
-              <option>Just curious</option>
-              <option>Trying to understand a pattern</option>
-              <option>Red flag check</option>
-              <option>Strengthening our communication</option>
-              <option>Deciding whether to commit</option>
+               {CONTEXT_OPTIONS[form.relationshipType].goal.map((option) => <option key={option}>{option}</option>)}
             </select>
-            {fieldErrors.goal && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.goal}</p>}
+             {fieldErrors.goal && <p id="deep-goal-error" className="mt-1 text-[12px] text-destructive">{fieldErrors.goal}</p>}
           </div>
           <div>
-            <label className={labelClass}>Anything we should know? (optional)</label>
+             <label htmlFor="deep-context" className={labelClass}>Anything we should know? (optional)</label>
             <input
+               id="deep-context"
               type="text"
               value={form.context}
               onChange={(e) => update("context", e.target.value)}
@@ -738,25 +748,27 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
 
           {/* Names */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Your name</label>
+             <div>
+               <label htmlFor="deep-your-name" className={labelClass}>Your name or label</label>
               <input
+                 id="deep-your-name" aria-invalid={!!fieldErrors.yourName} aria-describedby={fieldErrors.yourName ? "deep-your-name-error" : undefined}
                 type="text"
                 value={form.yourName}
                 onChange={(e) => update("yourName", e.target.value)}
                 className={`${fieldClass} mt-1.5`}
               />
-              {fieldErrors.yourName && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.yourName}</p>}
+               {fieldErrors.yourName && <p id="deep-your-name-error" className="mt-1 text-[12px] text-destructive">{fieldErrors.yourName}</p>}
             </div>
             <div>
-              <label className={labelClass}>Their name</label>
+               <label htmlFor="deep-their-name" className={labelClass}>Their name or label</label>
               <input
+                 id="deep-their-name" aria-invalid={!!fieldErrors.theirName} aria-describedby={fieldErrors.theirName ? "deep-their-name-error" : undefined}
                 type="text"
                 value={form.theirName}
                 onChange={(e) => update("theirName", e.target.value)}
                 className={`${fieldClass} mt-1.5`}
               />
-              {fieldErrors.theirName && <p className="mt-1 text-[12px] text-destructive">{fieldErrors.theirName}</p>}
+               {fieldErrors.theirName && <p id="deep-their-name-error" className="mt-1 text-[12px] text-destructive">{fieldErrors.theirName}</p>}
             </div>
           </div>
         </div>
@@ -772,7 +784,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           </button>
           {submitError && <p className="mt-3 text-[12px] text-destructive">{submitError}</p>}
           <p className="mt-4 max-w-md text-center text-[12px] leading-relaxed text-muted-foreground">
-            By continuing, you agree your messages will be processed by AI and deleted immediately after.
+             By continuing, you agree your messages will be processed by AI. Raw transcripts aren't kept as reusable chats after analysis; your report may retain selected excerpts.
           </p>
         </div>
       </form>

@@ -281,7 +281,7 @@ const DecodeResult = () => {
             <h1 className="text-[22px] font-medium tracking-tight">That didn't work</h1>
             <p className="mt-2 text-[14px] text-muted-foreground">{errorMsg}</p>
             <Link
-              to="/"
+               to="/quick"
               className="mt-6 inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background"
             >
               Try again <ArrowRight className="h-4 w-4" />
@@ -431,31 +431,8 @@ const DecodeResult = () => {
 
             {user && decodeId && <InteractiveModePanel decodeId={decodeId} />}
 
-            <div className="mt-12 rounded-xl border border-border bg-muted/30 p-5">
-              <p className="text-[15px] font-medium">
-                Want the Deep Read — attachment styles, the patterns, your pair type?
-              </p>
-              <p className="mt-1 text-[14px] text-muted-foreground">
-                Upload a longer conversation and get the deep report — patterns, attachment styles, and
-                what keeps repeating. We need at least 20 or 30 text exchanges for the deep report.
-              </p>
-              <Link
-                to="/deep"
-                onClick={() => track("deep_report_upsell_click", {} as never)}
-                className="mt-4 inline-flex items-center gap-2 text-[14px] font-medium underline-offset-4 hover:underline"
-              >
-                Get the Deep Read <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-
-            <div className="mt-8 text-center">
-              <Link to="/" className="text-[14px] text-muted-foreground hover:text-foreground">
-                Get a take on another text →
-              </Link>
-            </div>
-
             {user && (
-              <div className="mt-3 text-center">
+               <div className="mt-8 text-center">
                 <Link
                   to="/account"
                   className="text-[13px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
@@ -468,7 +445,7 @@ const DecodeResult = () => {
         )}
       </main>
       </FeedbackProvider>
-      <NextSteps mode="quick" />
+       {status === "complete" && result && <NextSteps mode="quick" safety={isSafety} />}
     </div>
   );
 };

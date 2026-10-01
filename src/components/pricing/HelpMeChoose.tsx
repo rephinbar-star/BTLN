@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { PRICING_BTN } from "@/lib/pricing/button";
 import { track } from "@/lib/analytics";
+import { EXAMPLES } from "@/lib/examples/catalog";
 
 /**
  * Optional three-question guide. No sign-in, no private message text, no
@@ -18,6 +19,7 @@ type Rec = {
   example?: { to: string; label: string };
   availability?: string;
 };
+const exampleRoute = (kind: (typeof EXAMPLES)[number]["kind"]) => EXAMPLES.find((entry) => entry.kind === kind)?.route ?? "/examples";
 
 const REC: Record<string, Rec> = {
   quick_single: {
@@ -25,58 +27,58 @@ const REC: Record<string, Rec> = {
     reason: "One message, one read: what it may mean and three ways to reply.",
     price: "First read free, then the Quick Take plan at $6.99/month.",
     primary: { to: "/quick", label: "Start a Quick Take" },
-    example: { to: "/examples/quick-take", label: "See Example" },
+    example: { to: exampleRoute("quick"), label: "See Example" },
   },
   quick_interactive: {
     title: "Quick Take + Interactive Mode",
     reason:
-      "You want help as the conversation continues, not just on one message. Interactive Mode adds ongoing exchanges on top of Quick Take.",
+      "You want help as the conversation continues, not just on one message. Interactive Mode is planned to add ongoing exchanges on top of Quick Take.",
     price: "$6.99/month + $2.99/month = $9.98/month combined.",
     primary: {
       to: "/pricing?plan=BTLN_decode_monthly&interactive=1#sec-quick",
       label: "See Quick Take + Interactive Mode",
     },
-    example: { to: "/examples/quick-take", label: "See Example" },
+    example: { to: exampleRoute("quick"), label: "See Quick Take example" },
     availability:
-      "Interactive Mode is being built and cannot be bought yet. Your selection will be shown on the Quick Take card; base Quick Take works today.",
+      "In development — not available to buy. The example shows Quick Take only; base Quick Take works today.",
   },
   deep_one: {
     title: "Single report",
     reason: "One Deep Read of one conversation between two people.",
     price: "$4.99 one-time, attached to the report you start.",
     primary: { to: "/deep", label: "Start a Deep Read" },
-    example: { to: "/examples/deep-read", label: "See Example" },
+    example: { to: exampleRoute("deep"), label: "See Example" },
   },
   deep_ongoing: {
     title: "Monthly full-report plan",
     reason: "Deep Reads, Group Reads and Group Roasts whenever you want them.",
     price: "$9.99/month, or $49.99/year if you prefer yearly billing.",
     primary: { to: "/pricing#sec-reports", label: "See the full-report plan" },
-    example: { to: "/examples/deep-read", label: "See Example" },
+    example: { to: exampleRoute("deep"), label: "See Example" },
   },
   group_roast: {
     title: "Group Roast",
     reason: "A playful roast of your group chat, grounded in what was actually said.",
     price: "$4.99 one-time for that roast, or the $9.99/month plan.",
     primary: { to: "/group-roast", label: "Start a Group Roast" },
-    example: { to: "/examples/group-roast", label: "See Example" },
+    example: { to: exampleRoute("group-roast"), label: "See Example" },
   },
   group_read: {
     title: "Group Read",
     reason: "A serious read of the group: who holds it together and who drifts.",
     price: "$4.99 one-time for that report, or the $9.99/month plan.",
     primary: { to: "/group", label: "Start a Group Read" },
-    example: { to: "/examples/group-read", label: "See Example" },
+    example: { to: exampleRoute("group"), label: "See Example" },
   },
   prime: {
     title: "Prime",
     reason:
-      "You want your own patterns across relationships over time. Prime covers every mode plus Relationship360 and Interactive Mode.",
+      "You want your own patterns across relationships over time. Prime is planned to cover every mode plus Relationship360 and Interactive Mode.",
     price: "$19.99/month.",
-    primary: { to: "/examples/relationship360", label: "See the Relationship360 preview" },
+    primary: { to: exampleRoute("journey"), label: "See the fictional Relationship360 preview" },
     example: { to: "/prime", label: "What's in Prime" },
     availability:
-      "Relationship360 is still in development, so Prime cannot be purchased yet. The preview is fictional.",
+      "In development — not available to buy. $19.99/month is proposed, not an active renewal. The preview is fictional.",
   },
 };
 
@@ -243,10 +245,10 @@ export const HelpMeChoose = ({ source = "pricing_page", variant = "link", suppor
         <>
           <h2 className="text-[17px] font-medium">{rec.title}</h2>
           <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">{rec.reason}</p>
-          <p className="mt-2 text-[14px] font-medium">{rec.price}</p>
           {rec.availability && (
-            <p className="mt-2 text-[13px] text-muted-foreground">{rec.availability}</p>
+            <p className="mt-2 text-[14px] font-medium text-foreground">{rec.availability}</p>
           )}
+          <p className="mt-2 text-[14px] font-medium">{rec.price}</p>
           <Link to={rec.primary.to} className={`mt-4 ${PRICING_BTN}`}>
             {rec.primary.label}
           </Link>

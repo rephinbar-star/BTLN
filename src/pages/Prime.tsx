@@ -31,7 +31,7 @@ const Prime = () => {
         <title>BTLN Prime — understand who you are in your relationships</title>
         <meta
           name="description"
-          content="Prime is $19.99 a month: every BetweenTheLines feature plus your private Relationship360 across your own conversations."
+          content="Prime is in development and cannot be purchased yet. Preview the proposed $19.99/month plan and private Relationship360."
         />
         <link rel="canonical" href="https://betweenthelines.app/prime" />
       </Helmet>
@@ -48,13 +48,13 @@ const Prime = () => {
         <SeeExample kind="journey" />
 
         <div className="mt-7 rounded-[20px] border-2 border-btln-forest bg-btln-mint/50 p-[18px]">
+          <p className="mb-3 text-[15px] font-semibold">In development — not available to buy</p>
           <div className="flex items-baseline justify-between gap-4">
             <span className="text-[17px] font-medium">BTLN Prime</span>
-            <span className="text-[17px] font-medium">$19.99/month</span>
+            <span className="text-[17px] font-medium">Proposed $19.99/month</span>
           </div>
           <p className="mt-2 text-[14px] text-muted-foreground">
-            Renews monthly at $19.99 until you cancel. Cancel any time from your account —
-            you keep access until the end of the period you've paid for.
+            This is a proposed price, not an active renewal contract. Prime cannot be purchased yet.
           </p>
           <ul className="mt-4 flex flex-col gap-2">
             {INCLUDED.map((i) => (
