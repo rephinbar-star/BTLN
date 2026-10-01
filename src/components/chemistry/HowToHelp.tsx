@@ -109,10 +109,10 @@ const ScreenshotAnimation = () => {
         </div>
       </div>
       {/* Flash overlay */}
-      <div className="pointer-events-none absolute inset-0 animate-[flash_3s_ease-in-out_infinite] bg-white/60" />
+      <div className="pointer-events-none absolute inset-0 animate-[flash_3s_ease-in-out_infinite] bg-foreground/10" />
       {/* Shutter button */}
       <div className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 animate-[shutter_3s_ease-in-out_infinite]">
-        <div className="h-6 w-6 rounded-full border-2 border-pastel-amber-fg-strong bg-white/80" />
+        <div className="h-6 w-6 rounded-full border-2 border-pastel-amber-fg-strong bg-background/80" />
       </div>
       <style>{`
         @keyframes flash {

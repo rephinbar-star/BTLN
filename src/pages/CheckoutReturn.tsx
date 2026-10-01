@@ -91,7 +91,7 @@ export default function CheckoutReturn() {
         </>
       ) : (
         <>
-          <CheckCircle2 className="h-12 w-12 text-green-500" />
+          <CheckCircle2 className="h-12 w-12 text-prism-emerald-text" />
           <h1 className="mt-6 text-[28px] font-medium tracking-tight sm:text-[36px]">
              Payment verified
           </h1>

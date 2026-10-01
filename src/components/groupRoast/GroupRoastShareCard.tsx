@@ -13,7 +13,7 @@ export const GroupRoastShareCard = forwardRef<HTMLDivElement, Props>(
     <div
       ref={ref}
       style={{ width: 1080, height: format === "square" ? 1080 : 1920 }}
-      className="flex flex-col justify-between overflow-hidden bg-btln-paper p-20 text-btln-ink"
+      className="theme-light flex flex-col justify-between overflow-hidden bg-btln-paper p-20 text-btln-ink"
     >
       <div>
         <BrandWordmark className="origin-top-left scale-[2]" />

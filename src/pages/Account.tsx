@@ -318,8 +318,8 @@ const Account = () => {
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
                   verified
-                    ? "bg-emerald-100 text-emerald-700"
-                    : "bg-amber-100 text-amber-800"
+                    ? "bg-pastel-green-bg text-pastel-green-fg"
+                    : "bg-pastel-amber-bg text-pastel-amber-fg"
                 }`}
               >
                 {verified ? "verified" : "unverified"}
@@ -393,7 +393,7 @@ const Account = () => {
                                 ? "text-destructive"
                                 : ev.status === "skipped" || ev.status === "ignored"
                                   ? "text-muted-foreground"
-                                  : "text-emerald-700"
+                                  : "text-prism-emerald-text"
                             }
                           >
                             {ev.status}

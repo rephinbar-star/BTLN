@@ -32,7 +32,10 @@ const MODES = [
     cta: "Get a Quick Take",
     exampleKind: "quick" as const,
     icon: MessageSquare,
-    tone: "border-btln-forest/50 bg-btln-mint",
+    tone: "prism-card border-prism-violet/50 shadow-glow-violet",
+    accent: "text-prism-lavender",
+    chip: "bg-prism-violet/15 text-prism-lavender",
+    action: "bg-gradient-to-r from-prism-violet to-prism-lavender text-background hover:brightness-110",
   },
   {
     to: "/deep",
@@ -49,7 +52,10 @@ const MODES = [
     cta: "Get a Deep Read",
     exampleKind: "deep" as const,
     icon: Users,
-    tone: "bg-card",
+    tone: "prism-card border-prism-emerald/35",
+    accent: "text-prism-emerald-text",
+    chip: "bg-prism-emerald/15 text-prism-emerald-text",
+    action: "border border-prism-emerald/50 bg-elevated text-foreground hover:bg-prism-emerald/15",
   },
   {
     to: "/group-roast",
@@ -67,7 +73,10 @@ const MODES = [
     cta: "Roast our group",
     exampleKind: "group-roast" as const,
     icon: UsersRound,
-    tone: "bg-btln-peach",
+    tone: "prism-card border-prism-amber/35",
+    accent: "text-prism-amber-text",
+    chip: "bg-prism-amber/15 text-prism-amber-text",
+    action: "bg-gradient-to-r from-prism-amber to-prism-coral text-background hover:brightness-110",
   },
 ];
 
@@ -85,6 +94,9 @@ type Mode = {
   exampleKind: ExampleKind;
   icon: LucideIcon;
   tone: string;
+  accent: string;
+  chip: string;
+  action: string;
 };
 
 const SituationCard = ({ mode }: { mode: Mode }) => {
@@ -93,18 +105,18 @@ const SituationCard = ({ mode }: { mode: Mode }) => {
   const Icon = mode.icon;
 
   return (
-    <article className={`rounded-[20px] border p-5 sm:p-6 ${mode.tone} ${mode.exampleKind === "quick" ? "shadow-card" : "border-btln-line"}`}>
+    <article className={`relative overflow-hidden rounded-[20px] border p-5 sm:p-6 ${mode.tone}`}>
       <div className="flex items-center gap-3">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-background/80">
-          <Icon className="h-5 w-5 text-btln-forest" aria-hidden="true" />
+        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${mode.chip}`}>
+          <Icon className="h-5 w-5" aria-hidden="true" />
         </span>
-        <p className="text-[13px] font-semibold uppercase text-btln-forest">{mode.label}</p>
+        <p className={`font-mono text-[12px] font-semibold uppercase tracking-[0.08em] ${mode.accent}`}>{mode.label}</p>
       </div>
 
-      <h2 className="mt-4 text-[24px] font-medium leading-tight sm:text-[27px]">{mode.title}</h2>
+      <h2 className="mt-4 font-display text-[22px] font-bold leading-tight tracking-[-0.01em] sm:text-[26px]">{mode.title}</h2>
       <div className="mt-4 space-y-3 text-[15px] leading-6">
-        <p>{mode.scenario}</p>
-        <p className="font-medium text-btln-forest">{mode.benefit}</p>
+        <p className="text-muted-foreground">{mode.scenario}</p>
+        <p className={`font-medium ${mode.accent}`}>{mode.benefit}</p>
         {mode.note && <p className="text-[14px] font-semibold">{mode.note}</p>}
       </div>
 
@@ -114,7 +126,7 @@ const SituationCard = ({ mode }: { mode: Mode }) => {
         onClick={() => setExpanded((current) => !current)}
         aria-expanded={expanded}
         aria-controls={detailsId}
-        className="mt-2 min-h-11 px-0 text-foreground underline underline-offset-4"
+        className={`mt-2 min-h-11 px-0 underline underline-offset-4 ${mode.accent}`}
       >
         {expanded ? "Fewer situations" : "More situations"}
       </Button>
@@ -127,8 +139,8 @@ const SituationCard = ({ mode }: { mode: Mode }) => {
         </ul>
       </div>
 
-      <div className="mt-5 flex flex-col items-start gap-1 sm:flex-row sm:items-center sm:gap-5">
-        <Button asChild className="min-h-12 rounded-full px-5">
+      <div className="mt-5 flex flex-col items-stretch gap-1">
+        <Button asChild className={`min-h-12 w-full justify-between rounded-xl px-5 text-[15px] font-semibold shadow-none ${mode.action}`}>
           <Link
             to={mode.to}
             onClick={() => logEvent("cta_clicked", { location: `home_${mode.label}` })}
@@ -223,17 +235,18 @@ const Index = () => {
         <meta property="og:url" content="https://betweenthelines.app/" />
       </Helmet>
       <Header />
-      <main className="mx-auto max-w-2xl px-5 pb-10 pt-8 sm:px-8 sm:pt-12">
-        <section aria-labelledby="home-heading">
-          <h1 id="home-heading" className="max-w-xl text-[36px] font-medium leading-[1.08] sm:text-[48px]">
-            What does this text actually mean?
+      <main className="relative mx-auto max-w-2xl overflow-x-clip px-5 pb-10 pt-8 sm:px-8 sm:pt-12">
+        <div aria-hidden="true" className="prism-bloom pointer-events-none absolute inset-x-0 top-0 -z-0 h-[420px]" />
+        <section aria-labelledby="home-heading" className="relative flex flex-col items-center text-center">
+          <h1 id="home-heading" className="max-w-xl font-display text-[34px] font-extrabold leading-[1.08] tracking-[-0.02em] sm:text-[48px]">
+            What does this text <span className="prism-text-gradient">actually mean?</span>
           </h1>
           <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground sm:text-[19px]">
             Screenshot or paste a confusing exchange. Get a clearer read and three ways you could reply.
           </p>
           <p className="mt-2 text-[14px] text-muted-foreground">For dating, friends and family.</p>
-          <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-1">
-            <Button asChild className="min-h-12 rounded-full px-6">
+          <div className="mt-5 flex w-full max-w-sm flex-col items-center gap-1">
+            <Button asChild className="min-h-12 w-full rounded-xl bg-gradient-to-r from-prism-violet to-prism-lavender px-6 text-[15px] font-semibold text-background shadow-glow-violet hover:brightness-110">
               <Link to="/quick" onClick={() => logEvent("cta_clicked", { location: "home_hero_quick" })}>
                 Read this text <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
@@ -242,8 +255,8 @@ const Index = () => {
           </div>
         </section>
 
-        <section className="mt-12 border-t border-btln-line pt-8" aria-labelledby="choose-heading">
-          <h2 id="choose-heading" className="text-[26px] font-medium leading-tight sm:text-[32px]">
+        <section className="relative mt-12 border-t border-btln-line pt-8 text-center" aria-labelledby="choose-heading">
+          <h2 id="choose-heading" className="font-display text-[24px] font-bold leading-tight sm:text-[32px]">
             What brought you here today?
           </h2>
           <HelpMeChoose
@@ -259,22 +272,22 @@ const Index = () => {
           ))}
         </div>
 
-        <section className="mt-9 border-y border-btln-line py-7" aria-labelledby="prime-heading">
+        <section className="prism-card relative mt-9 overflow-hidden rounded-[20px] border border-prism-lavender/30 p-5 sm:p-6" aria-labelledby="prime-heading">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-btln-mint">
-              <Sparkles className="h-5 w-5 text-btln-forest" aria-hidden="true" />
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-prism-lavender/15">
+              <Sparkles className="h-5 w-5 text-prism-lavender" aria-hidden="true" />
             </span>
-            <p className="text-[13px] font-semibold text-btln-forest">PRIME</p>
+            <p className="font-mono text-[12px] font-semibold tracking-[0.08em] text-prism-lavender">PRIME</p>
           </div>
-          <h2 id="prime-heading" className="mt-4 text-[24px] font-medium leading-tight sm:text-[27px]">
+          <h2 id="prime-heading" className="mt-4 font-display text-[22px] font-bold leading-tight sm:text-[27px]">
             Is this a pattern in my relationships?
           </h2>
-          <p className="mt-4 text-[15px] leading-6">
+          <p className="mt-4 text-[15px] leading-6 text-muted-foreground">
             You’ve noticed something familiar across different relationships—perhaps you avoid
             difficult conversations, seek reassurance, or keep taking responsibility for everyone
             else. You want to understand whether the pattern is real and how it changes.
           </p>
-          <p className="mt-3 text-[15px] font-medium leading-6 text-btln-forest">
+          <p className="mt-3 text-[15px] font-medium leading-6 text-prism-lavender">
             We’re building Your Relationship360 to connect insights from conversations you
             choose to include, help you recognise patterns over time, and offer practical coaching
             and check-ins.
@@ -282,7 +295,7 @@ const Index = () => {
           <p className="mt-3 text-[13px] font-semibold text-muted-foreground">In development — not available to buy</p>
           <p className="mt-1 text-[13px] text-muted-foreground">Relationship360 preview · Proposed: $19.99/month</p>
 
-          <Button asChild className="mt-5 min-h-12 rounded-full px-5">
+          <Button asChild className="mt-5 min-h-12 w-full justify-between rounded-xl border border-prism-lavender/40 bg-elevated px-5 text-[15px] font-semibold text-foreground shadow-none hover:bg-prism-lavender/15">
             <Link to="/prime">
               Explore Prime preview
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -298,7 +311,7 @@ const Index = () => {
                 <li key={r.id}>
                   <Link
                     to={`/report/${r.id}`}
-                    className="flex min-h-[56px] items-center justify-between gap-3 rounded-[20px] border border-btln-line bg-card p-[18px] hover:bg-muted/40"
+                    className="flex min-h-[56px] items-center justify-between gap-3 rounded-[16px] border border-btln-line bg-card p-[18px] hover:bg-muted"
                   >
                     <span className="text-[15px]">
                       Your read from {new Date(r.created_at).toLocaleDateString()}

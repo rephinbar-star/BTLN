@@ -15,7 +15,7 @@ export const GroupOverallCard = forwardRef<HTMLDivElement, OverallProps>(
     <div
       ref={ref}
       style={{ width: 1080, height: 1920 }}
-      className="flex flex-col justify-between bg-card p-20 text-foreground"
+      className="theme-light flex flex-col justify-between bg-card p-20 text-foreground"
     >
       <div>
         <p className="text-[34px] uppercase tracking-[0.3em] text-muted-foreground">

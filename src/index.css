@@ -2,91 +2,162 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Chemistry — Light, warm, confident. Pastel category accents. */
+/* Prism — dark midnight shell, obsidian cards, spectral channel accents.
+   Reference: docs/design/prism-reference.md (visual only). */
 
 @layer base {
   :root {
+    color-scheme: dark;
+
+    --background: 229 38% 5%;          /* #080a12 midnight */
+    --foreground: 210 38% 95%;         /* #EDF2F7 */
+
+    --card: 229 36% 12%;               /* #131728 obsidian card */
+    --card-foreground: 210 38% 95%;
+
+    --popover: 226 34% 16%;            /* #1a2035 elevated */
+    --popover-foreground: 210 38% 95%;
+
+    --elevated: 226 34% 16%;
+
+    --primary: 255 92% 76%;            /* light violet, AA on midnight */
+    --primary-foreground: 229 38% 5%;
+
+    --secondary: 226 34% 16%;
+    --secondary-foreground: 210 38% 95%;
+
+    --muted: 226 30% 15%;
+    --muted-foreground: 214 24% 74%;   /* brightened #94A3B8 for AA */
+
+    --accent: 226 34% 19%;
+    --accent-foreground: 210 38% 95%;
+
+    --accent-brand: 263 100% 87%;      /* #d0bcff lavender */
+    --accent-brand-foreground: 229 38% 5%;
+
+    --olive-deep: 158 64% 62%;
+    --sage-muted: 160 30% 32%;
+
+    --destructive: 350 89% 66%;
+    --destructive-foreground: 229 38% 5%;
+
+    --border: 226 26% 22%;
+    --input: 226 26% 26%;
+    --ring: 258 90% 76%;
+
+    --radius: 0.75rem;
+
+    /* Spectral channels */
+    --prism-violet: 258 90% 66%;       /* #8B5CF6 */
+    --prism-cyan: 189 94% 43%;         /* #06B6D4 */
+    --prism-emerald: 160 84% 39%;      /* #10B981 */
+    --prism-emerald-text: 156 72% 62%;
+    --prism-amber: 38 92% 50%;         /* #F59E0B */
+    --prism-amber-text: 43 96% 64%;
+    --prism-coral: 350 89% 60%;        /* #F43F5E */
+    --prism-lavender: 263 100% 87%;    /* #d0bcff */
+
+    /* Legacy pastel pairs, remapped to dark tint bg + light fg */
+    --pastel-pink-bg: 345 38% 17%;
+    --pastel-pink-fg: 350 90% 84%;
+    --pastel-purple-bg: 258 38% 19%;
+    --pastel-purple-fg: 258 90% 86%;
+    --pastel-purple-fg-strong: 258 95% 91%;
+    --pastel-yellow-bg: 42 45% 15%;
+    --pastel-yellow-fg: 45 95% 76%;
+    --pastel-green-bg: 160 40% 14%;
+    --pastel-green-fg: 152 68% 72%;
+    --pastel-green-fg-strong: 152 72% 62%;
+    --pastel-amber-bg: 35 45% 15%;
+    --pastel-amber-fg: 38 92% 74%;
+    --pastel-amber-fg-strong: 38 95% 60%;
+    --pastel-blue-bg: 205 45% 16%;
+    --pastel-blue-fg: 195 85% 76%;
+
+    --section-soft: 229 34% 9%;
+
+    /* Legacy btln aliases mapped onto the dark shell.
+       Wordmark colours are the ORIGINAL logo values — never change. */
+    --btln-paper: 229 38% 5%;
+    --btln-ink: 210 38% 95%;
+    --btln-wordmark: 169.714 42.169% 16.275%; /* #183B35 */
+    --btln-wordmark-accent: 151.071 25.455% 43.137%; /* #528A6F */
+    --btln-muted: 214 24% 74%;
+    --btln-line: 226 26% 20%;
+    --btln-mint: 258 36% 20%;
+    --btln-forest: 156 72% 62%;
+    --btln-peach: 28 45% 15%;
+
+    --wordmark-plate: 80 16% 96%;
+
+    --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.05) inset, 0 8px 30px -12px hsl(229 60% 2% / 0.8);
+
+    --sidebar-background: 229 36% 9%;
+    --sidebar-foreground: 210 38% 92%;
+    --sidebar-primary: 255 92% 76%;
+    --sidebar-primary-foreground: 229 38% 5%;
+    --sidebar-accent: 226 34% 16%;
+    --sidebar-accent-foreground: 210 38% 95%;
+    --sidebar-border: 226 26% 20%;
+    --sidebar-ring: 258 90% 76%;
+  }
+
+  /* Original light palette, used deliberately for print, PDF and image
+     exports so downloads stay legible on white paper. */
+  .theme-light {
+    color-scheme: light;
     --background: 0 0% 100%;
     --foreground: 0 0% 7%;
-
     --card: 0 0% 100%;
     --card-foreground: 0 0% 7%;
-
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 7%;
-
+    --elevated: 40 22% 95%;
     --primary: 0 0% 7%;
     --primary-foreground: 0 0% 100%;
-
     --secondary: 40 22% 95%;
     --secondary-foreground: 0 0% 7%;
-
     --muted: 40 22% 95%;
-    --muted-foreground: 0 0% 42%;
-
+    --muted-foreground: 0 0% 38%;
     --accent: 40 22% 95%;
     --accent-foreground: 0 0% 7%;
-
-    --accent-brand: 17 52% 50%;
-    --accent-brand-foreground: 0 0% 100%;
-
     --olive-deep: 84 20% 30%;
     --sage-muted: 75 11% 57%;
-
-    --destructive: 0 75% 45%;
-    --destructive-foreground: 0 0% 100%;
-
     --border: 0 0% 90%;
     --input: 0 0% 90%;
-    --ring: 0 0% 7%;
-
-    --radius: 0.875rem;
-
-    /* Chemistry pastel accents (HSL approximations) */
     --pastel-pink-bg: 350 100% 96%;
     --pastel-pink-fg: 345 70% 30%;
-
     --pastel-purple-bg: 245 86% 96%;
     --pastel-purple-fg: 247 47% 24%;
     --pastel-purple-fg-strong: 248 49% 18%;
-
     --pastel-yellow-bg: 48 100% 92%;
     --pastel-yellow-fg: 35 85% 20%;
-
     --pastel-green-bg: 86 47% 91%;
     --pastel-green-fg: 110 80% 11%;
     --pastel-green-fg-strong: 162 86% 14%;
-
     --pastel-amber-bg: 36 89% 92%;
     --pastel-amber-fg: 28 91% 13%;
     --pastel-amber-fg-strong: 36 86% 28%;
-
     --pastel-blue-bg: 207 82% 94%;
     --pastel-blue-fg: 211 86% 27%;
-
     --section-soft: 44 18% 93%;
+    --btln-paper: 80 16% 97%;
+    --btln-ink: 169.714 42.169% 16.275%;
+    --btln-muted: 160 9% 37%;
+    --btln-line: 145 14% 88%;
+    --btln-mint: 152 39% 93%;
+    --btln-forest: 157 45% 25%;
+    --btln-peach: 28 88% 92%;
+    --prism-emerald-text: 157 45% 25%;
+    --prism-amber-text: 36 86% 28%;
+    --prism-lavender: 258 49% 30%;
+    color: hsl(var(--foreground));
+  }
 
-    /* Mobile prototype v1 palette (docs/design/BTLN-Mobile-Prototype-v1.html) */
-    --btln-paper: 80 16% 97%;      /* #F7F8F5 */
-    --btln-ink: 169.714 42.169% 16.275%; /* #183B35 */
-    --btln-wordmark: 169.714 42.169% 16.275%; /* #183B35 */
-    --btln-wordmark-accent: 151.071 25.455% 43.137%; /* #528A6F */
-    --btln-muted: 160 9% 37%;      /* #576963 */
-    --btln-line: 145 14% 88%;      /* #DCE4DE */
-    --btln-mint: 152 39% 93%;      /* #E5F3EC */
-    --btln-forest: 157 45% 25%;    /* #235B47 */
-    --btln-peach: 28 88% 92%;      /* #FCE8D7 */
-
-    --shadow-card: 0 1px 2px hsl(0 0% 0% / 0.04), 0 8px 24px -12px hsl(0 0% 0% / 0.08);
-
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 240 5.9% 10%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 240 4.8% 95.9%;
-    --sidebar-accent-foreground: 240 5.9% 10%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+  @media print {
+    :root { color-scheme: light; }
+    html, body { background: #fff !important; }
+    body { color: #111; }
   }
 }
 
@@ -100,10 +171,71 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", system-ui, sans-serif;
-    font-feature-settings: "ss01", "cv11";
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "ss01";
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
   }
+
+  h1, h2, h3 {
+    @apply font-display;
+  }
+
+  input, select, textarea {
+    color-scheme: dark;
+  }
+
+  input:-webkit-autofill,
+  textarea:-webkit-autofill {
+    -webkit-text-fill-color: hsl(var(--foreground));
+    box-shadow: 0 0 0 1000px hsl(var(--card)) inset;
+    caret-color: hsl(var(--foreground));
+  }
+
+  :focus-visible {
+    outline-color: hsl(var(--ring));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+  }
+}
+
+@layer components {
+  .prism-card {
+    background-color: hsl(var(--card) / 0.92);
+    box-shadow: var(--shadow-card);
+  }
+
+  .prism-bloom {
+    background:
+      radial-gradient(18rem 14rem at 50% 0%, hsl(var(--prism-violet) / 0.2), transparent 70%),
+      radial-gradient(14rem 12rem at 95% 30%, hsl(var(--prism-coral) / 0.08), transparent 70%),
+      radial-gradient(14rem 12rem at 5% 60%, hsl(var(--prism-emerald) / 0.07), transparent 70%);
+  }
+
+  .prism-text-gradient {
+    background-image: linear-gradient(90deg, hsl(var(--prism-lavender)), hsl(var(--prism-emerald-text)) 55%, hsl(var(--prism-amber-text)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Compact neutral backplate so the original dark-green wordmark stays readable. */
+  .wordmark-plate {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 0.75rem;
+    background-color: hsl(var(--wordmark-plate));
+    padding: 0.3rem 0.7rem;
+    box-shadow: 0 0 18px -6px hsl(var(--prism-violet) / 0.5);
+  }
+
+  .prism-chrome {
+    background-color: hsl(var(--background) / 0.85);
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+  }
+
+  .theme-light .prism-text-gradient { color: hsl(var(--foreground)); background: none; }
 }

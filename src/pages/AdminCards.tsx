@@ -369,7 +369,7 @@ const AdminCards = () => {
               <div className="flex flex-wrap items-center gap-4 text-sm">
                 <span className="font-medium">Last batch:</span>
                 <span>Total {results.length}</span>
-                <span className="text-emerald-600">✓ {succeeded.length} succeeded</span>
+                <span className="text-prism-emerald-text">✓ {succeeded.length} succeeded</span>
                 {skipped.length > 0 && (
                   <span className="text-muted-foreground">↺ {skipped.length} skipped</span>
                 )}
@@ -386,7 +386,7 @@ const AdminCards = () => {
                     key={r.filename}
                     className={cn(
                       "py-0.5",
-                      r.status === "success" && "text-emerald-700",
+                      r.status === "success" && "text-prism-emerald-text",
                       r.status === "failed" && "text-destructive",
                       r.status === "skipped" && "text-muted-foreground",
                       (r.status === "compressing" || r.status === "uploading") && "text-primary",
@@ -474,7 +474,7 @@ const AdminCards = () => {
                           return (
                             <td key={rel} className="p-3 text-center" title={fname ?? ""}>
                               {url ? (
-                                <span className="text-emerald-600">✓</span>
+                                <span className="text-prism-emerald-text">✓</span>
                               ) : (
                                 <span className="text-muted-foreground/50">✗</span>
                               )}

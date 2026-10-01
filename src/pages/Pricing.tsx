@@ -349,7 +349,7 @@ export default function Pricing() {
         <ul className="mt-6 flex flex-1 flex-col gap-2.5">
           {tier.features.map((feature) => (
             <li key={feature} className="flex items-start gap-2 text-[14px]">
-              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden />
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-prism-emerald-text" aria-hidden />
               <span>{feature}</span>
             </li>
           ))}
@@ -417,7 +417,7 @@ export default function Pricing() {
         <ul className="mt-4 space-y-2.5">
           {QUICK_TIER.features.map((feature) => (
             <li key={feature} className="flex items-start gap-2 text-[14px]">
-              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden />
+              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-prism-emerald-text" aria-hidden />
               <span>{feature}</span>
             </li>
           ))}
@@ -455,7 +455,7 @@ export default function Pricing() {
               "Record what happened next and reflect on how the exchange unfolded.",
             ].map((benefit) => (
               <li key={benefit} className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-600" aria-hidden />
+                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-prism-emerald-text" aria-hidden />
                 <span>{benefit}</span>
               </li>
             ))}

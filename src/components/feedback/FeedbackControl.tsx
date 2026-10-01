@@ -125,7 +125,7 @@ export const FeedbackControl = ({
           } ${className ?? ""}`}
         >
           <ThumbsUp
-            className={`h-4 w-4 ${state === "up" ? "text-emerald-600" : ""}`}
+            className={`h-4 w-4 ${state === "up" ? "text-prism-emerald-text" : ""}`}
             aria-hidden
             {...(state === "up" ? { fill: "currentColor" } : {})}
           />
