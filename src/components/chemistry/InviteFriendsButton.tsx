@@ -18,7 +18,7 @@ export const InviteFriendsButton = ({ className = "" }: { className?: string }) 
       <Button
         type="button"
         onClick={() => void share()}
-        className={`w-full max-w-[280px] rounded-full ${className}`}
+        className={`w-full max-w-[280px] rounded-full print:hidden ${className}`}
       >
         <Mail className="h-5 w-5" /> Share with friends
       </Button>
