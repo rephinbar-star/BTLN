@@ -13,12 +13,33 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', "-apple-system", "BlinkMacSystemFont", '"Segoe UI"', "system-ui", "sans-serif"],
+        display: ["Syne", '"Plus Jakarta Sans"', "system-ui", "sans-serif"],
+        mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+      },
+      boxShadow: {
+        "glow-violet": "0 0 22px -6px hsl(var(--prism-violet) / 0.55)",
+        "glow-emerald": "0 0 22px -6px hsl(var(--prism-emerald) / 0.5)",
+        "glow-amber": "0 0 22px -6px hsl(var(--prism-amber) / 0.5)",
+      },
       colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background))",
-        foreground: "hsl(var(--foreground))",
+        elevated: "hsl(var(--elevated) / <alpha-value>)",
+        prism: {
+          violet: "hsl(var(--prism-violet) / <alpha-value>)",
+          cyan: "hsl(var(--prism-cyan) / <alpha-value>)",
+          emerald: "hsl(var(--prism-emerald) / <alpha-value>)",
+          "emerald-text": "hsl(var(--prism-emerald-text) / <alpha-value>)",
+          amber: "hsl(var(--prism-amber) / <alpha-value>)",
+          "amber-text": "hsl(var(--prism-amber-text) / <alpha-value>)",
+          coral: "hsl(var(--prism-coral) / <alpha-value>)",
+          lavender: "hsl(var(--prism-lavender) / <alpha-value>)",
+        },
+        border: "hsl(var(--border) / <alpha-value>)",
+        input: "hsl(var(--input) / <alpha-value>)",
+        ring: "hsl(var(--ring) / <alpha-value>)",
+        background: "hsl(var(--background) / <alpha-value>)",
+        foreground: "hsl(var(--foreground) / <alpha-value>)",
         "section-soft": "hsl(var(--section-soft))",
         pastel: {
           "pink-bg": "hsl(var(--pastel-pink-bg))",
@@ -38,7 +59,7 @@ export default {
           "blue-fg": "hsl(var(--pastel-blue-fg))",
         },
         primary: {
-          DEFAULT: "hsl(var(--primary))",
+          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -50,7 +71,7 @@ export default {
           foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
-          DEFAULT: "hsl(var(--muted))",
+          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
           foreground: "hsl(var(--muted-foreground))",
         },
         accent: {
@@ -62,22 +83,22 @@ export default {
         "olive-deep": "hsl(var(--olive-deep))",
         "sage-muted": "hsl(var(--sage-muted))",
         btln: {
-          paper: "hsl(var(--btln-paper))",
-          ink: "hsl(var(--btln-ink))",
+          paper: "hsl(var(--btln-paper) / <alpha-value>)",
+          ink: "hsl(var(--btln-ink) / <alpha-value>)",
           wordmark: "hsl(var(--btln-wordmark))",
           "wordmark-accent": "hsl(var(--btln-wordmark-accent))",
-          muted: "hsl(var(--btln-muted))",
-          line: "hsl(var(--btln-line))",
-          mint: "hsl(var(--btln-mint))",
-          forest: "hsl(var(--btln-forest))",
-          peach: "hsl(var(--btln-peach))",
+          muted: "hsl(var(--btln-muted) / <alpha-value>)",
+          line: "hsl(var(--btln-line) / <alpha-value>)",
+          mint: "hsl(var(--btln-mint) / <alpha-value>)",
+          forest: "hsl(var(--btln-forest) / <alpha-value>)",
+          peach: "hsl(var(--btln-peach) / <alpha-value>)",
         },
         popover: {
           DEFAULT: "hsl(var(--popover))",
           foreground: "hsl(var(--popover-foreground))",
         },
         card: {
-          DEFAULT: "hsl(var(--card))",
+          DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground))",
         },
         sidebar: {
