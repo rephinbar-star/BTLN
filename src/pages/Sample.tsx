@@ -21,7 +21,7 @@ export default function Sample() {
       <p className="text-sm font-medium text-muted-foreground">Fictional demonstration</p>
       <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">See a sample read</h1>
       <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">These examples are synthetic. They show the report format, not a real person or guaranteed outcome.</p>
-      <Button asChild variant="outline" className="mt-5 min-h-11 rounded-full"><Link to="/examples/deep">Open the complete Deep Read example</Link></Button>
+      <Button asChild variant="outline" className="mt-5 min-h-11 rounded-full"><Link to="/examples/deep">Open the Deep Read report excerpt</Link></Button>
       <div className="mt-8 flex flex-wrap gap-2" role="tablist" aria-label="Sample relationship type">
         {(Object.keys(samples) as SampleKey[]).map((key) => <Button key={key} variant={kind === key ? "default" : "outline"} role="tab" aria-selected={kind === key} onClick={() => setKind(key)}>{samples[key].label}</Button>)}
       </div>
