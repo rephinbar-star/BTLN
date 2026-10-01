@@ -556,6 +556,8 @@ const ReportContent = () => {
       }
 
       const node = cardRef.current;
+      // Exports use the original light palette so downloads stay legible on white.
+      node.classList.add("theme-light");
       const rect = node.getBoundingClientRect();
       const captureWidth = Math.ceil(rect.width);
       const captureHeight = Math.ceil(rect.height);
@@ -587,6 +589,7 @@ const ReportContent = () => {
     } catch (e) {
       toast.error("Could not generate image.");
     } finally {
+      cardRef.current?.classList.remove("theme-light");
       setDownloading(false);
     }
   };
@@ -604,6 +607,8 @@ const ReportContent = () => {
       }
 
       const node = cardRef.current;
+      // Exports use the original light palette so downloads stay legible on white.
+      node.classList.add("theme-light");
       const rect = node.getBoundingClientRect();
       const captureWidth = Math.ceil(rect.width);
       const captureHeight = Math.ceil(rect.height);
