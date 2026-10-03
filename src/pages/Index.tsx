@@ -238,7 +238,7 @@ const Index = () => {
       <main className="relative mx-auto max-w-2xl overflow-x-clip px-5 pb-10 pt-8 sm:px-8 sm:pt-12">
         <div aria-hidden="true" className="prism-bloom pointer-events-none absolute inset-x-0 top-0 -z-0 h-[420px]" />
         <section aria-labelledby="home-heading" className="relative flex flex-col items-center text-center">
-          <h1 id="home-heading" className="max-w-xl font-display text-[34px] font-extrabold leading-[1.08] tracking-[-0.02em] sm:text-[48px]">
+          <h1 id="home-heading" className="max-w-xl font-display text-[34px] font-bold leading-[1.08] tracking-[-0.02em] sm:text-[48px]">
             What does this text <span className="prism-text-gradient">actually mean?</span>
           </h1>
           <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground sm:text-[19px]">
