@@ -397,6 +397,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         : "Choose which side of the screenshots is you, then tap “Preview extracted messages”.";
     } else if (!reviewed && sharedDraft.method === "screenshots") {
       banner = "Upload at least one screenshot.";
+    } else if (!sharedDraft.selfAbsent && !sharedDraft.selfParticipantId) {
+      banner = "Confirm which participant is you before continuing.";
     } else if (form.conversation.trim().length < 100) {
       if (mode === "file") banner = "Upload a chat file with at least 100 characters of conversation.";
       else errors.conversation = "Paste at least 100 characters of conversation.";
@@ -434,8 +436,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     // below the confident-read threshold, warn the user before submitting.
     // Screenshots: count isn't known until server-side OCR, so we skip
     // this gate here — the report page handles low-confidence output.
-    if (mode === "paste" || mode === "file") {
-      const { total } = truncateConversation(form.conversation, MAX_MESSAGES);
+    if (sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending") {
+      const total = sharedDraft.conversation.messages.length;
       if (total < MIN_CONFIDENT_MESSAGES) {
         setLowConfidenceConfirm({ total });
         return;
@@ -624,13 +626,12 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
 
         {/* How-to help */}
         <div className="mt-3">
-          <HowToHelp />
+          <details className="text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer content-center">How can I add my chat?</summary><HowToHelp /></details>
         </div>
 
          <div className="mt-5" id="add-conversation">
            <h2 className="mb-2 text-xl font-medium">Add conversation</h2>
            <p className="mb-3 text-sm text-muted-foreground">1 Add messages · 2 Confirm who you are · 3 Get your read</p>
-           <p className="mb-3 text-sm text-muted-foreground">Add screenshots, paste messages, or import a supported chat file. Check the preview and tell us which participant is you before continuing.</p>
           <SharedConversationInput
             value={sharedDraft}
             onChange={(next) => {
@@ -645,7 +646,6 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                   yourName: self?.display_name ?? prev.yourName,
                   theirName: other?.display_name ?? prev.theirName,
                 }));
-                setMode("paste");
               }
             }}
             extractScreenshots={extractScreenshotConversation}
