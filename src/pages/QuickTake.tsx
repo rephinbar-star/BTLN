@@ -22,7 +22,7 @@ const QuickTake = () => (
         <div className="mt-4 md:hidden"><SeeExample kind="quick" /></div>
       </div>
       <p className="mt-6 text-[13px] text-muted-foreground">
-        Nothing you paste is kept in your browser. Your first read needs no signup.
+        Your raw messages are deleted after processing. Your report may include selected excerpts. Your first read needs no signup.
       </p>
       </div>
     </main>
