@@ -431,18 +431,6 @@ const GroupRoastStart = () => {
                       </span>
                       <button
                         type="button"
-                        onClick={() => { setSelfId(p.id); setSelfAbsent(false); }}
-                        aria-pressed={selfId === p.id}
-                        className={`rounded-full border px-3 py-1 text-[13px] ${
-                          selfId === p.id
-                            ? "border-foreground bg-foreground text-background"
-                            : "border-border text-muted-foreground hover:text-foreground"
-                        }`}
-                      >
-                        This is me
-                      </button>
-                      <button
-                        type="button"
                         onClick={() => setMergeSource(mergeSource === p.id ? null : p.id)}
                         aria-pressed={mergeSource === p.id}
                         className={`rounded-full border px-3 py-1 text-[13px] ${
