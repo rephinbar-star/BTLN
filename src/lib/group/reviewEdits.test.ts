@@ -13,6 +13,8 @@ describe("group review edits", () => {
     const resumed = parsedFromCanonical(merged);
     expect(resumed.participants.map((person) => person.display_name)).toEqual(["Samantha", alex.display_name]);
     expect(resumed.messages[1].participant_id).toBe(sam.id);
+    expect(resumed.messages[0].raw_sender).toBe("Samantha");
+    expect(resumed.messages[1].raw_sender).toBe("Samantha");
     expect(resumed.messages[1].ts).toBe(original.messages[1].ts);
     expect(merged.messages[1].provenance.sourceOrder).toBe(original.messages[1].provenance.sourceOrder);
   });
