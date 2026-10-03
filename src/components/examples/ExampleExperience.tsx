@@ -10,13 +10,14 @@ import { deepContext, deepResult, groupResult, groupStats, groupRoastResult, qui
 import { EXAMPLES, type ExampleKind } from "@/lib/examples/catalog";
 import { groupMessages, pairMessages, quickMessages, wrappedMessages } from "@/lib/examples/sourceFixtures";
 import { Relationship360Preview } from "@/components/relationship360/Relationship360Preview";
+import { ModeIntro } from "@/components/ingest/ModeIntro";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => <section className="border-t border-btln-line py-7"><h2 className="text-xl font-semibold">{title}</h2><div className="mt-3 space-y-3 text-[15px] leading-7">{children}</div></section>;
 const Evidence = ({ children }: { children: React.ReactNode }) => <blockquote className="min-w-0 break-words border-l-2 border-btln-sage pl-4 font-quote text-[15px] italic leading-[22px] text-muted-foreground">“{children}”</blockquote>;
 export const ExampleContent = ({ kind, compact = false }: { kind: ExampleKind; compact?: boolean }) => {
   const meta = EXAMPLES.find((entry) => entry.kind === kind) ?? EXAMPLES[0];
   return <div className={compact ? "mx-auto max-w-3xl px-5 pb-28 pt-5 sm:px-8" : "mx-auto max-w-3xl px-5 pb-28 pt-8 sm:px-8"}>
-    <div className="mb-6"><p className="text-sm font-semibold text-btln-forest">Fictional example</p><h1 className="mt-1 text-3xl font-semibold">{meta.name}</h1><p className="mt-3 text-muted-foreground">{kind === "deep" ? "A fictional excerpt of the Deep Read report, not the complete production experience. No customer information is used." : kind === "journey" ? "An illustrative preview using fictional data, not a real account profile." : "Fictional conversation data illustrates the sections below. No customer information is used."}</p>{kind === "journey" && <p className="mt-3 font-semibold">Illustrative preview — feature in development</p>}</div>
+    {kind === "journey" ? <div className="mb-6"><ModeIntro kind="relationship" example /><p className="mt-3 text-sm text-muted-foreground">Illustrative preview using fictional data, not a real account profile.</p></div> : <div className="mb-6"><p className="text-sm font-semibold text-btln-forest">Fictional example</p><h1 className="mt-1 text-3xl font-semibold">{meta.name}</h1><p className="mt-3 text-muted-foreground">{kind === "deep" ? "A fictional excerpt of the Deep Read report, not the complete production experience. No customer information is used." : "Fictional conversation data illustrates the sections below. No customer information is used."}</p></div>}
     {kind === "journey" ? <Relationship360Preview /> : <SourceConversation messages={kind === "quick" ? quickMessages : kind === "deep" || kind === "roast" ? pairMessages : kind === "wrapped" ? wrappedMessages : groupMessages} />}
 
     {kind === "deep" && <DeepReport result={deepResult} context={deepContext} locked={false} />}
