@@ -27,6 +27,7 @@ import {
 import { setDeepReadHandoff } from "@/lib/ingest/handoff";
 import { useAuth } from "@/hooks/useAuth";
 import { SeeExample } from "@/components/examples/ExampleExperience";
+import { ModeIntro } from "@/components/ingest/ModeIntro";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 import { extractScreenshotConversation } from "@/lib/ingest/extract";
 import { parsedFromCanonical } from "@/lib/ingest/canonical";
@@ -284,25 +285,19 @@ const GroupRoastStart = () => {
         <meta name="robots" content="noindex" />
       </Helmet>
       <Header />
-      <main className="mx-auto max-w-3xl px-5 pb-20 pt-10 sm:px-8">
-        <p className="text-sm text-muted-foreground">Group Roast</p>
-        <h1 className="mt-3 text-[30px] font-medium leading-tight tracking-tight sm:text-[38px]">
-          Who is carrying the group—and who is creating the chaos?
-        </h1>
-        <p className="mt-4 text-[17px] leading-relaxed text-muted-foreground">
-          For group chats with 3 or more people. Upload or paste a supported export, confirm the
-          cast and dates, then see a useful preview before choosing whether to unlock the full
-          roast. Raw messages are deleted after the run.
-        </p>
-        <SeeExample kind="group-roast" />
+      <main className="mx-auto max-w-5xl px-5 pb-20 pt-5 sm:px-8 md:pt-12">
+        <div className="md:grid md:grid-cols-2 md:items-start md:gap-8">
+          <div><ModeIntro kind="group" /><div className="mt-4 hidden md:block"><SeeExample kind="group-roast" /></div></div>
+          <div className="min-w-0">
 
         {step === "input" && (
-          <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+          <section className="mt-6 rounded-lg border border-border bg-card p-5 shadow-sm md:mt-0 sm:p-6">
+            <h2 className="mb-4 text-xl font-bold">Add your messages</h2>
             <SharedConversationInput
               value={sharedDraft}
               onChange={(next) => {
                 setSharedDraft(next);
-                if (next.conversation && next.conversation.format !== "screenshots_pending") {
+                if (next.conversation && next.conversation.format !== "screenshots_pending" && (next.selfParticipantId || next.selfAbsent)) {
                   const result = parsedFromCanonical(next.conversation);
                   setParsed({
                     ...result,
@@ -324,6 +319,9 @@ const GroupRoastStart = () => {
             />
           </section>
         )}
+          </div>
+        </div>
+        <div className="mt-4 md:hidden"><SeeExample kind="group-roast" /></div>
 
         {step === "confirm" && parsed && coverage && (
           <section className="mt-8 space-y-6">
