@@ -406,7 +406,7 @@ const GroupRoastStart = () => {
                         onChange={(e) =>
                           { const conversation = sharedDraft.conversation; if (conversation) { const updated = renameReviewedParticipant(conversation, p.id, e.target.value); syncReviewedGroup(updated); lastReviewed.current = updated; } }
                         }
-                        className={`min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-[15px] ${
+                        className={`min-h-11 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-base ${
                           isExcluded ? "opacity-40 line-through" : ""
                         }`}
                       />
@@ -417,7 +417,7 @@ const GroupRoastStart = () => {
                         type="button"
                         onClick={() => setMergeSource(mergeSource === p.id ? null : p.id)}
                         aria-pressed={mergeSource === p.id}
-                        className={`rounded-full border px-3 py-1 text-[13px] ${
+                        className={`min-h-11 rounded-full border px-3 py-1 text-[13px] ${
                           mergeSource === p.id
                             ? "border-foreground bg-foreground text-background"
                             : "border-border text-muted-foreground hover:text-foreground"
@@ -434,7 +434,7 @@ const GroupRoastStart = () => {
                           else next.add(p.id);
                           setExcluded(next);
                         }}
-                        className="rounded-full border border-border p-1.5 text-muted-foreground hover:text-foreground"
+                        className="flex h-11 w-11 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-foreground"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
@@ -449,7 +449,7 @@ const GroupRoastStart = () => {
                             setExcluded(next);
                             setMergeSource(null);
                           }}
-                          className="rounded-full bg-muted px-3 py-1 text-[13px] font-medium"
+                          className="min-h-11 rounded-full bg-muted px-3 py-1 text-[13px] font-medium"
                         >
                           Merge into this
                         </button>
