@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Replace the homepage with the approved illustrated four-mode layout and shared example.
+- [ ] Verify cards, navigation, accessibility, responsive views, and document the unpublished closeout.
+
 - [x] Homepage first batch: Quick Take-first clarity, compact chooser, discovery links, truthful reassurance, mobile/desktop review and unpublished closeout (see docs/homepage-first-batch-closeout.md).
 - [x] Add expandable fictional source conversations to every product example.
 - [x] Reconcile source fixtures with evidence, participants, periods, counts, and statistics.
