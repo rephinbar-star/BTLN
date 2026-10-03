@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { FeedbackModal } from "./FeedbackModal";
 import { OPERATOR } from "@/config/operator";
 import { BrandWordmark } from "./BrandWordmark";
-import { EXAMPLES } from "@/lib/examples/catalog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -78,33 +77,27 @@ export const Header = () => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="max-h-[calc(100vh-76px)] w-60 overflow-y-auto p-2">
               {!loading && (
-                <DropdownMenuItem className="min-h-11" onSelect={() => navigate(user ? "/account" : "/auth?mode=signin")}>
+                <DropdownMenuItem className="min-h-12" onSelect={() => navigate(user ? "/account" : "/auth?mode=signin")}>
                   {user ? "My reads and account" : "Log in or register"}
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/explore">Explore</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/pricing">Pricing</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/sample">See a sample</Link></DropdownMenuItem>
-              <DropdownMenuLabel className="pt-3 text-xs uppercase text-muted-foreground">Examples</DropdownMenuLabel>
-              {/* Two-person "Roast Us" stays reachable via Explore and /roast, and
-                  Relationship Wrapped stays reachable via Explore and its routes, but
-                  neither is a main-menu entry. Group Roast (3+) remains listed. */}
-              {EXAMPLES.filter((example) => example.kind !== "roast" && example.kind !== "wrapped").map((example) => (
-                <DropdownMenuItem key={example.kind} asChild className="min-h-11 pl-5"><Link to={example.route}>{example.name}</Link></DropdownMenuItem>
-              ))}
-              <DropdownMenuItem asChild className="min-h-11 font-medium"><Link to="/examples">All examples</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/explore">Explore</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/pricing">Pricing</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/examples">Examples</Link></DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/about">About</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/trust">Trust</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/privacy">Privacy</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/terms">Terms</Link></DropdownMenuItem>
-              <DropdownMenuItem asChild className="min-h-11"><Link to="/guides/whatsapp">Guides</Link></DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => { window.location.href = `mailto:${OPERATOR.contactEmail}`; }}>Contact</DropdownMenuItem>
-              <DropdownMenuItem className="min-h-11" onSelect={() => setShowFeedback(true)}>Feedback</DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/about">About</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/trust">Privacy &amp; trust</Link></DropdownMenuItem>
+              <DropdownMenuItem className="min-h-12" onSelect={() => { window.location.href = `mailto:${OPERATOR.contactEmail}`; }}>Contact</DropdownMenuItem>
+              <DropdownMenuItem className="min-h-12" onSelect={() => setShowFeedback(true)}>Feedback</DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className="pt-2 text-xs uppercase text-muted-foreground">More information</DropdownMenuLabel>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/privacy">Privacy</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/terms">Terms</Link></DropdownMenuItem>
+              <DropdownMenuItem asChild className="min-h-12"><Link to="/guides/whatsapp">Guides</Link></DropdownMenuItem>
               {user && (
                 <>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem className="min-h-11" onSelect={() => void signOut().then(() => navigate("/"))}>
+                  <DropdownMenuItem className="min-h-12" onSelect={() => void signOut().then(() => navigate("/"))}>
                     Sign out
                   </DropdownMenuItem>
                 </>

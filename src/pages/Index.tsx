@@ -1,159 +1,54 @@
 import { useEffect, useState } from "react";
 import { Helmet } from "react-helmet-async";
 import { Link, Navigate, useLocation } from "react-router-dom";
-import { ArrowRight, MessageSquare, Sparkles, Users, UsersRound, type LucideIcon } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { BottomNav } from "@/components/nav/BottomNav";
-import { SeeExample } from "@/components/examples/ExampleExperience";
-import { HelpMeChoose } from "@/components/pricing/HelpMeChoose";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import type { ExampleKind } from "@/lib/examples/catalog";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
+import quickArt from "@/assets/home-modes/quick-take.webp.asset.json";
+import deepArt from "@/assets/home-modes/deep-read.webp.asset.json";
+import groupArt from "@/assets/home-modes/group-roast.webp.asset.json";
+import relationshipArt from "@/assets/home-modes/relationship360.webp.asset.json";
 
 const SESSION_KEY = "chemistry_landing_viewed";
 const REF_KEY = "btln_ref_visit_fired";
 
-const MODES = [
-  {
-    to: "/quick",
-    label: "Quick Take",
-    title: "What did they mean? What should I say?",
-    scenario:
-      "You’ve started dating someone. They send a message, and you’re not sure whether they’re interested, pulling away, or just busy—or how to reply.",
-    benefit:
-      "Quick Take looks at your exchange, explains possible meanings, and gives you three ways to respond.",
-    extras: [
-      "A friend’s reply feels unexpectedly cold.",
-      "A family message touches a nerve and you want to respond thoughtfully.",
-    ],
-    cta: "Get a Quick Take",
-    exampleKind: "quick" as const,
-    icon: MessageSquare,
-    tone: "prism-card border-prism-violet/50 shadow-glow-violet",
-    accent: "text-prism-lavender",
-    chip: "bg-prism-violet/15 text-prism-lavender",
-    action: "bg-gradient-to-r from-prism-violet to-prism-lavender text-background hover:brightness-110",
-  },
-  {
-    to: "/deep",
-    label: "Deep Read",
-    title: "Why does this keep happening between us?",
-    scenario:
-      "You care about someone, but conversations keep ending in the same argument—or you’ve noticed a change in how you communicate and can’t quite explain it.",
-    benefit:
-      "Deep Read examines the wider conversation to reveal recurring patterns, where you connect, where you get stuck, and practical things to try.",
-    extras: [
-      "You’re wondering whether you’re doing most of the work to stay connected.",
-      "You want to understand a friendship or family relationship better.",
-    ],
-    cta: "Get a Deep Read",
-    exampleKind: "deep" as const,
-    icon: Users,
-    tone: "prism-card border-prism-emerald/35",
-    accent: "text-prism-emerald-text",
-    chip: "bg-prism-emerald/15 text-prism-emerald-text",
-    action: "border border-prism-emerald/50 bg-elevated text-foreground hover:bg-prism-emerald/15",
-  },
-  {
-    to: "/group-roast",
-    label: "Group Roast",
-    title: "Our group chat deserves its own comedy special.",
-    scenario:
-      "One friend organises everything. Another appears only when food is mentioned. Someone sends seventeen messages instead of one. Sound familiar?",
-    benefit:
-      "Upload your group chat and get a playful roast of everyone’s role, the group’s habits, and the dynamics that make you unmistakably you.",
-    note: "For three or more people.",
-    extras: [
-      "A family chat with strong opinions and questionable memes.",
-      "A work or hobby group with its own cast of characters.",
-    ],
-    cta: "Roast our group",
-    exampleKind: "group-roast" as const,
-    icon: UsersRound,
-    tone: "prism-card border-prism-amber/35",
-    accent: "text-prism-amber-text",
-    chip: "bg-prism-amber/15 text-prism-amber-text",
-    action: "bg-gradient-to-r from-prism-amber to-prism-coral text-background hover:brightness-110",
-  },
-];
-
 type RecentRead = { id: string; created_at: string };
 
-type Mode = {
-  to: string;
-  label: string;
-  title: string;
-  scenario: string;
-  benefit: string;
-  note?: string;
-  extras: string[];
-  cta: string;
-  exampleKind: ExampleKind;
-  icon: LucideIcon;
-  tone: string;
-  accent: string;
-  chip: string;
-  action: string;
-};
-
-const SituationCard = ({ mode }: { mode: Mode }) => {
-  const [expanded, setExpanded] = useState(false);
-  const detailsId = `home-${mode.exampleKind}-situations`;
-  const Icon = mode.icon;
-
-  return (
-    <article className={`relative overflow-hidden rounded-[20px] border p-5 sm:p-6 ${mode.tone}`}>
-      <div className="flex items-center gap-3">
-        <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${mode.chip}`}>
-          <Icon className="h-5 w-5" aria-hidden="true" />
-        </span>
-        <p className={`font-mono text-[12px] font-semibold uppercase tracking-[0.08em] ${mode.accent}`}>{mode.label}</p>
-      </div>
-
-      <h2 className="mt-4 font-display text-[22px] font-bold leading-tight tracking-[-0.01em] sm:text-[26px]">{mode.title}</h2>
-      <div className="mt-4 space-y-3 text-[15px] leading-6">
-        <p className="text-muted-foreground">{mode.scenario}</p>
-        <p className={`font-medium ${mode.accent}`}>{mode.benefit}</p>
-        {mode.note && <p className="text-[14px] font-semibold">{mode.note}</p>}
-      </div>
-
-      <Button
-        type="button"
-        variant="link"
-        onClick={() => setExpanded((current) => !current)}
-        aria-expanded={expanded}
-        aria-controls={detailsId}
-        className={`mt-2 min-h-11 px-0 underline underline-offset-4 ${mode.accent}`}
-      >
-        {expanded ? "Fewer situations" : "More situations"}
-      </Button>
-
-      <div id={detailsId} hidden={!expanded}>
-        <ul className="space-y-2 border-l-2 border-btln-line pl-4 text-[14px] leading-6 text-muted-foreground">
-          {mode.extras.map((extra) => (
-            <li key={extra}>{extra}</li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-5 flex flex-col items-stretch gap-1">
-        <Button asChild className={`min-h-12 w-full justify-between rounded-xl px-5 text-[15px] font-semibold shadow-none ${mode.action}`}>
-          <Link
-            to={mode.to}
-            onClick={() => logEvent("cta_clicked", { location: `home_${mode.label}` })}
-          >
-            {mode.cta}
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
-          </Link>
-        </Button>
-        <SeeExample kind={mode.exampleKind} />
-      </div>
-    </article>
-  );
-};
+const modes = [
+  {
+    to: "/quick", label: "Quick Take", title: "Decode a text",
+    description: <>Possible meanings.<br />Three ways to reply.</>,
+    action: "Get a Quick Take", art: quickArt,
+    tone: "border-prism-lavender/70 bg-prism-violet/10 shadow-glow-violet",
+    accent: "text-prism-lavender", actionTone: "border-prism-lavender bg-prism-lavender text-background",
+    tag: "home_quick",
+  },
+  {
+    to: "/deep", label: "Deep Read", title: "Understand a relationship",
+    description: <>Patterns in a two-person chat.<span className="hidden lg:inline"><br />Practical next steps.</span></>,
+    action: "Get a Deep Read", art: deepArt,
+    tone: "border-btln-line bg-card", accent: "text-prism-emerald-text",
+    actionTone: "border-btln-line bg-elevated text-foreground", tag: "home_deep",
+  },
+  {
+    to: "/group-roast", label: "Group Roast", title: "Roast a group chat",
+    description: <>The cast. The chaos.<br />Three or more people.</>,
+    action: "Roast our group", art: groupArt,
+    tone: "border-btln-line bg-card", accent: "text-prism-amber-text",
+    actionTone: "border-btln-line bg-elevated text-foreground", tag: "home_group_roast",
+  },
+  {
+    to: "/prime", label: "Relationship360", title: "Understand your patterns",
+    description: <>Insights and coaching over time.</>,
+    status: "Prime preview · In development", action: "Explore preview", art: relationshipArt,
+    tone: "border-btln-line bg-card", accent: "text-prism-lavender",
+    actionTone: "border-btln-line bg-elevated text-foreground", tag: "home_relationship360_preview",
+  },
+];
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -211,159 +106,95 @@ const Index = () => {
   }
 
   if (authLoading) {
-    return (
-      <div className="min-h-screen bg-btln-paper text-foreground">
-        <Header />
-      </div>
-    );
+    return <div className="min-h-screen bg-background text-foreground"><Header /></div>;
   }
 
   return (
-    <div className="min-h-screen bg-btln-paper text-foreground">
+    <div className="min-h-screen bg-background text-foreground">
       <Helmet>
         <title>BetweenTheLines™ — AI relationship analysis from your texts</title>
-        <meta
-          name="description"
-          content="Read one text, a whole two-person conversation, or your group chat. Your first read needs no signup."
-        />
+        <meta name="description" content="Read one text, a whole two-person conversation, or your group chat. Your first read needs no signup." />
         <link rel="canonical" href="https://betweenthelines.app/" />
         <meta property="og:title" content="BetweenTheLines™ — AI relationship analysis from your texts" />
-        <meta
-          property="og:description"
-          content="Paste your texts and get a clear read on what's being said, the patterns underneath, and what to try next."
-        />
+        <meta property="og:description" content="Paste your texts and get a clear read on what's being said, the patterns underneath, and what to try next." />
         <meta property="og:url" content="https://betweenthelines.app/" />
       </Helmet>
       <Header />
-      <main className="relative mx-auto max-w-2xl overflow-x-clip px-5 pb-10 pt-8 sm:px-8 sm:pt-12">
-        <div aria-hidden="true" className="prism-bloom pointer-events-none absolute inset-x-0 top-0 -z-0 h-[420px]" />
-        <section aria-labelledby="home-heading" className="relative flex flex-col items-center text-center">
-          <h1 id="home-heading" className="max-w-xl font-display text-[34px] font-bold leading-[1.08] tracking-[-0.02em] sm:text-[48px]">
-            What does this text <span className="prism-text-gradient">actually mean?</span>
+      <main className="relative mx-auto w-full max-w-[1088px] px-3 pb-4 pt-6 min-[361px]:px-5 md:px-8 md:pt-9">
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 -z-0 h-[340px] bg-[radial-gradient(ellipse_at_50%_0%,hsl(var(--prism-violet)/0.18),transparent_65%)]" />
+        <section aria-labelledby="home-heading" className="relative mx-auto mb-6 max-w-[620px] text-center md:mb-8">
+          <h1 id="home-heading" className="font-display text-[30px] font-bold leading-[1.12] min-[361px]:text-[34px] md:text-[46px] md:leading-[1.08]">
+            What does this text <span className="text-prism-lavender">actually mean?</span>
           </h1>
-          <p className="mt-4 max-w-xl text-[17px] leading-relaxed text-muted-foreground sm:text-[19px]">
-            Screenshot or paste a confusing exchange. Get a clearer read and three ways you could reply.
+          <p className="mt-4 text-[15px] leading-7 text-muted-foreground md:text-[16px]">
+            AI insights for your conversations.<br />A clearer read. A way forward.
           </p>
-          <p className="mt-2 text-[14px] text-muted-foreground">For dating, friends and family.</p>
-          <div className="mt-5 flex w-full max-w-sm flex-col items-center gap-1">
-            <Button asChild className="min-h-12 w-full rounded-xl bg-gradient-to-r from-prism-violet to-prism-lavender px-6 text-[15px] font-semibold text-background shadow-glow-violet hover:brightness-110">
-              <Link to="/quick" onClick={() => logEvent("cta_clicked", { location: "home_hero_quick" })}>
-                Read this text <ArrowRight className="h-4 w-4" aria-hidden="true" />
-              </Link>
-            </Button>
-            <SeeExample kind="quick" />
-          </div>
         </section>
 
-        <section className="relative mt-12 border-t border-btln-line pt-8 text-center" aria-labelledby="choose-heading">
-          <h2 id="choose-heading" className="font-display text-[24px] font-bold leading-tight sm:text-[32px]">
-            What brought you here today?
-          </h2>
-          <HelpMeChoose
-            source="home_page"
-            variant="link"
-            supportLine="Answer a few quick questions to find the right option."
-          />
-        </section>
-
-        <div className="mt-7 space-y-4">
-          {MODES.map((mode) => (
-            <SituationCard key={mode.to} mode={mode} />
-          ))}
-        </div>
-
-        <section className="prism-card relative mt-9 overflow-hidden rounded-[20px] border border-prism-lavender/30 p-5 sm:p-6" aria-labelledby="prime-heading">
-          <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-prism-lavender/15">
-              <Sparkles className="h-5 w-5 text-prism-lavender" aria-hidden="true" />
-            </span>
-            <p className="font-mono text-[12px] font-semibold tracking-[0.08em] text-prism-lavender">PRIME</p>
-          </div>
-          <h2 id="prime-heading" className="mt-4 font-display text-[22px] font-bold leading-tight sm:text-[27px]">
-            Is this a pattern in my relationships?
-          </h2>
-          <p className="mt-4 text-[15px] leading-6 text-muted-foreground">
-            You’ve noticed something familiar across different relationships—perhaps you avoid
-            difficult conversations, seek reassurance, or keep taking responsibility for everyone
-            else. You want to understand whether the pattern is real and how it changes.
-          </p>
-          <p className="mt-3 text-[15px] font-medium leading-6 text-prism-lavender">
-            We’re building Your Relationship360 to connect insights from conversations you
-            choose to include, help you recognise patterns over time, and offer practical coaching
-            and check-ins.
-          </p>
-          <p className="mt-3 text-[13px] font-semibold text-muted-foreground">In development — not available to buy</p>
-          <p className="mt-1 text-[13px] text-muted-foreground">Relationship360 preview · Proposed: $19.99/month</p>
-
-          <Button asChild className="mt-5 min-h-12 w-full justify-between rounded-xl border border-prism-lavender/40 bg-elevated px-5 text-[15px] font-semibold text-foreground shadow-none hover:bg-prism-lavender/15">
-            <Link to="/prime">
-              Explore Prime preview
-              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+        <section aria-label="Choose a read" className="relative grid gap-3 md:grid-cols-2 lg:grid-cols-4 lg:gap-4">
+          {modes.map((mode, index) => (
+            <Link
+              key={mode.to}
+              to={mode.to}
+              onClick={() => logEvent("cta_clicked", { location: mode.tag })}
+              aria-label={`${mode.label}: ${mode.title}${mode.status ? `. ${mode.status}` : ""}`}
+              className={`group grid min-h-[116px] grid-cols-[96px_minmax(0,1fr)] overflow-hidden rounded-[17px] border transition-[background-color,border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-prism-lavender focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transform-none min-[361px]:min-h-[120px] min-[361px]:grid-cols-[112px_minmax(0,1fr)] md:flex md:min-h-0 md:flex-col ${mode.tone}`}
+            >
+              <img src={mode.art.url} alt="" width={560} height={560} loading={index === 0 ? "eager" : "lazy"} decoding="async" className="m-1 h-[96px] w-[96px] self-center rounded-[11px] object-cover min-[361px]:h-[112px] min-[361px]:w-[112px] md:m-0 md:aspect-square md:h-auto md:w-full md:rounded-none" />
+              <span className="flex min-w-0 flex-col justify-center px-3 py-3 min-[361px]:px-4 md:flex-1 md:justify-start md:px-4 md:py-4">
+                <span className="flex items-start justify-between gap-1">
+                  <span className={`min-w-0 break-words font-mono text-[11px] font-medium leading-5 min-[361px]:text-[12px] ${mode.accent}`}>{mode.label}</span>
+                  <ArrowRight aria-hidden="true" className={`h-4 w-4 shrink-0 ${mode.accent}`} />
+                </span>
+                <span className="mt-1 block font-display text-[18px] font-bold leading-[1.18] min-[361px]:text-[19px] md:min-h-[3.6em] md:text-[21px]">{mode.title}</span>
+                <span className="mt-2 block text-[12px] leading-[1.55] text-muted-foreground md:mt-2 md:text-[13px]">{mode.description}</span>
+                {mode.status && <span className="mt-2 block text-[11px] leading-4 text-prism-lavender md:mt-auto md:pt-3">{mode.status}</span>}
+                <span aria-hidden="true" className={`mt-auto hidden min-h-11 items-center justify-between gap-2 rounded-[10px] border px-3 text-[13px] font-semibold md:flex ${mode.actionTone}`}>
+                  {mode.action}<ArrowRight className="h-4 w-4 shrink-0" />
+                </span>
+              </span>
             </Link>
-          </Button>
+          ))}
         </section>
+
+        <details className="group mx-auto mt-5 max-w-xl text-center">
+          <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-2 text-[14px] text-prism-lavender underline-offset-4 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring [&::-webkit-details-marker]:hidden">
+            See what you get <ChevronDown aria-hidden="true" className="h-4 w-4 transition-transform group-open:rotate-180 motion-reduce:transition-none" />
+          </summary>
+          <div className="mt-2 rounded-[14px] border border-btln-line bg-card p-5 text-left">
+            <p className="font-mono text-[11px] font-semibold text-prism-lavender">FICTIONAL QUICK TAKE</p>
+            <blockquote className="mt-3 font-quote text-[20px] italic leading-7">“I've just got a lot going on right now.”</blockquote>
+            <p className="mt-2 text-[14px] leading-6 text-muted-foreground">This could be a genuine explanation or a way to create distance. This message alone cannot settle which.</p>
+            <p className="mt-2 text-[14px] leading-6 text-muted-foreground">One possible reply: “I understand. Would you like me to check in next week, or would you prefer some space?”</p>
+            <Link to="/examples" className="mt-2 inline-flex min-h-11 items-center gap-1 text-[14px] text-prism-lavender underline underline-offset-4">Browse full examples <ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
+          </div>
+        </details>
+
+        <p className="mt-3 text-center text-[12px] leading-6 text-muted-foreground">
+          <span className="block sm:inline">First Quick Take free. No signup to start.</span>
+          <span className="block sm:ml-3 sm:inline">Insights, not certainty.</span>
+        </p>
 
         {user && recent && recent.length > 0 && (
-          <section className="mt-8">
-            <h2 className="text-[18px] font-medium tracking-tight">Pick up where you left off</h2>
-            <ul className="mt-3 flex flex-col gap-3">
+          <section className="mx-auto mt-8 max-w-xl border-t border-btln-line pt-5">
+            <h2 className="font-display text-[18px] font-bold">Pick up where you left off</h2>
+            <ul className="mt-3 flex flex-col gap-2">
               {recent.map((r) => (
-                <li key={r.id}>
-                  <Link
-                    to={`/report/${r.id}`}
-                    className="flex min-h-[56px] items-center justify-between gap-3 rounded-[16px] border border-btln-line bg-card p-[18px] hover:bg-muted"
-                  >
-                    <span className="text-[15px]">
-                      Your read from {new Date(r.created_at).toLocaleDateString()}
-                    </span>
-                    <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  </Link>
-                </li>
+                <li key={r.id}><Link to={`/report/${r.id}`} className="flex min-h-[56px] items-center justify-between gap-3 rounded-xl border border-btln-line bg-card px-4 hover:bg-elevated">
+                  <span className="text-[15px]">Your read from {new Date(r.created_at).toLocaleDateString()}</span><ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Link></li>
               ))}
             </ul>
-            <Link
-              to="/account"
-              className="mt-3 inline-flex min-h-[44px] items-center text-[14px] text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-            >
-              All of my reads →
-            </Link>
+            <Link to="/account" className="mt-2 inline-flex min-h-11 items-center text-[14px] text-prism-lavender underline underline-offset-4">All of my reads →</Link>
           </section>
         )}
-        <section className="mt-10 border-t border-btln-line pt-7" aria-label="Before you begin">
-          <div className="grid gap-6 sm:grid-cols-3 sm:gap-5">
-            <div>
-              <h2 className="text-[16px] font-medium">Your privacy</h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Your conversations are processed to create your read, not kept as a reusable raw transcript. Reports may include selected excerpts.</p>
-              <Link to="/trust" className="inline-flex min-h-11 items-center text-[14px] font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">How we handle your messages</Link>
-            </div>
-            <div>
-              <h2 className="text-[16px] font-medium">A reflection, not a verdict</h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">It offers possible interpretations and practical next steps; it cannot know someone's intentions.</p>
-            </div>
-            <div>
-              <h2 className="text-[16px] font-medium">See what you get before sharing</h2>
-              <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Explore a fictional sample, not a customer story.</p>
-              <Link to="/sample" className="inline-flex min-h-11 items-center text-[14px] font-medium underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">See a sample</Link>
-            </div>
-          </div>
-        </section>
       </main>
-      <footer className="border-t border-btln-line px-5 pb-[calc(88px+env(safe-area-inset-bottom))] pt-5 sm:px-8 md:pb-8" aria-label="More information">
-        <div className="mx-auto max-w-2xl">
-          <nav aria-label="Information" className="flex flex-wrap gap-x-5 gap-y-1">
-            {[["About", "/about"], ["See a sample", "/sample"], ["Pricing", "/pricing"], ["Trust", "/trust"], ["Privacy", "/privacy"], ["Terms", "/terms"]].map(([label, to]) => (
-              <Link key={to} to={to} className="inline-flex min-h-11 items-center text-[14px] font-medium underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{label}</Link>
-            ))}
-          </nav>
-          <nav aria-label="Comparisons" className="mt-4 border-t border-btln-line pt-4">
-            <p className="text-[13px] text-muted-foreground">Comparisons</p>
-            <div className="flex flex-wrap gap-x-5 gap-y-1">
-              {[["ChatGPT", "/compare/chatgpt-vs-betweenthelines"], ["RIZZ", "/compare/rizz-vs-betweenthelines"], ["What Brandon Thinks", "/compare/whatbrandonthinks-vs-betweenthelines"]].map(([label, to]) => (
-                <Link key={to} to={to} className="inline-flex min-h-11 items-center text-[13px] text-muted-foreground underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{label}</Link>
-              ))}
-            </div>
-          </nav>
-        </div>
+      <footer className="mx-auto max-w-[1040px] border-t border-btln-line px-4 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-3" aria-label="More information">
+        <nav aria-label="Information" className="flex flex-wrap justify-center gap-x-5 text-[12px] text-muted-foreground">
+          <Link to="/pricing" className="inline-flex min-h-11 items-center hover:text-foreground hover:underline">Pricing</Link>
+          <Link to="/trust" className="inline-flex min-h-11 items-center hover:text-foreground hover:underline">Privacy &amp; trust</Link>
+          <Link to="/about" className="inline-flex min-h-11 items-center hover:text-foreground hover:underline">About</Link>
+        </nav>
       </footer>
       <BottomNav />
     </div>
