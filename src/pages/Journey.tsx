@@ -251,8 +251,8 @@ const Journey = () => {
 
             {optedIn && !needsReconsent && <Relationship360Live relationships={relationships} />}
 
+            <details id="manage-conversations" className="mt-7 rounded-lg border border-border bg-card px-4 py-2"><summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">Manage relationships and included reads</summary>
             {optedIn && !needsReconsent && (
-              <details id="manage-conversations" className="mt-7 rounded-lg border border-border bg-card px-4 py-2"><summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">Manage relationships and included reads</summary>
               <section className="mt-4 p-2">
                 <h2 className="text-[18px] font-semibold text-foreground">Add a relationship</h2>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -594,16 +594,15 @@ const Journey = () => {
                     </section>
                   );
                 })}
-              </details>
-              )}
+            </details>
               {optedIn && !needsReconsent && <section id="add-conversation" className="mt-6 scroll-mt-6 rounded-lg border border-border bg-card p-4"><AddReadLinks /></section>}
           </>
         )}
 
         {/* Privacy controls stay available whether or not Relationship360 is on. */}
         {!loading && (
-          <section className="mt-10 rounded-[20px] border border-btln-line bg-btln-mint p-5">
-            <h2 className="text-[16px] font-semibold text-foreground">Privacy controls</h2>
+          <details className="mt-8 rounded-lg border border-border bg-card px-4 py-2">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">Privacy controls · Export, turn off or delete</summary>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
               Relationship360 stores structured observations and the reports you linked — never the
               raw chat you uploaded, which follows the deletion rules already described in your
@@ -646,7 +645,7 @@ const Journey = () => {
                 Delete my Relationship360 data
               </Button>
             </div>
-          </section>
+          </details>
         )}
       </main>
 
