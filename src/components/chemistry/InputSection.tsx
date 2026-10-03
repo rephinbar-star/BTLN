@@ -21,6 +21,8 @@ import type { TranscriptCandidate } from "@/lib/ingest/archive";
 import { takeDeepReadHandoff } from "@/lib/ingest/handoff";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 import { extractScreenshotConversation } from "@/lib/ingest/extract";
+import { parseTranscript } from "@/lib/ingest/parse";
+import { canonicalizeParsedConversation } from "@/lib/ingest/canonical";
 import { Button } from "@/components/ui/button";
 
 type FormState = {
@@ -229,6 +231,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     if (!handed) return;
     const t = truncateConversation(handed, MAX_MESSAGES);
     setForm((prev) => ({ ...prev, conversation: t.text }));
+    try {
+      setSharedDraft({ ...emptyConversationDraft(), method: "paste", text: t.text, conversation: canonicalizeParsedConversation(parseTranscript(t.text), "paste", "group-handoff") });
+    } catch { /* Keep the handoff text available for correction and review. */ }
     setMode("paste");
     setLoadedFileName("your import");
     if (t.truncated) {
@@ -389,7 +394,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     let banner: string | undefined;
 
     // The shared input owns uploads. Only a reviewed transcript can be analyzed.
-    const reviewed = sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending";
+    const reviewed = sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method;
     const pendingShots = sharedDraft.method === "screenshots" && sharedDraft.screenshots.length > 0;
     if (!reviewed && pendingShots) {
       banner = sharedDraft.screenshotSelfSide
@@ -399,6 +404,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
       banner = "Upload at least one screenshot.";
     } else if (!sharedDraft.selfAbsent && !sharedDraft.selfParticipantId) {
       banner = "Confirm which participant is you before continuing.";
+    } else if (!reviewed) {
+      banner = "Review your messages before continuing.";
     } else if (form.conversation.trim().length < 100) {
       if (mode === "file") banner = "Upload a chat file with at least 100 characters of conversation.";
       else errors.conversation = "Paste at least 100 characters of conversation.";
@@ -643,8 +650,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                 setForm((prev) => ({
                   ...prev,
                   conversation: next.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? "",
-                  yourName: self?.display_name ?? prev.yourName,
-                  theirName: other?.display_name ?? prev.theirName,
+                  yourName: prev.yourName || (next.selfParticipantId ? self?.display_name ?? "" : ""),
+                  theirName: prev.theirName || (next.selfParticipantId ? other?.display_name ?? "" : ""),
                 }));
               }
             }}

@@ -14,7 +14,7 @@ export const DecodeInput = () => {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const hasInput = Boolean(draft.conversation && draft.conversation.format !== "screenshots_pending");
+  const hasInput = Boolean(draft.conversation && draft.conversation.format !== "screenshots_pending" && draft.conversation.sourceKind === draft.method);
   const identityConfirmed = draft.selfAbsent || Boolean(draft.selfParticipantId);
 
   const onSubmit = async () => {

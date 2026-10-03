@@ -297,7 +297,7 @@ const GroupRoastStart = () => {
               value={sharedDraft}
               onChange={(next) => {
                 setSharedDraft(next);
-                if (next.conversation && next.conversation.format !== "screenshots_pending" && (next.selfParticipantId || next.selfAbsent)) {
+                if (next.conversation && next.conversation.format !== "screenshots_pending" && next.conversation.sourceKind === next.method && (next.selfParticipantId || next.selfAbsent)) {
                   const result = parsedFromCanonical(next.conversation);
                   setParsed({
                     ...result,
