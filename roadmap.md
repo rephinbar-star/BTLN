@@ -71,8 +71,8 @@
 - [ ] Owner: C2 dispute; narrower wording for partly supported advice
 
 ## Approved four-mode fidelity refinement (unpublished)
-- [ ] Match approved hero sizes and art layout; preserve homepage and assets.
-- [ ] One progressive shared input/review/identity flow across Quick, Deep and Group; preserve backend handlers and handoffs.
-- [ ] Compact Deep context and Group context with secondary controls disclosed.
-- [ ] Shared concise Relationship360 example/live dashboard with honest evidence and reachable management/privacy.
-- [ ] Browser checks at 375/1280, focused tests, type/build and updated closeout.
+- [x] Match approved hero sizes and art layout; preserve homepage and assets.
+- [x] One progressive shared input/review/identity flow across Quick, Deep and Group; preserve backend handlers and handoffs.
+- [x] Compact Deep context and Group context with secondary controls disclosed.
+- [x] Shared concise Relationship360 example/live dashboard with honest evidence and reachable management/privacy.
+- [x] Browser checks at 375/1280, focused tests, typecheck and updated closeout; opted-in live account and OCR/model flows remain untested.
