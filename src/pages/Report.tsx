@@ -1442,7 +1442,7 @@ export const DeepReport = ({
                     <span className="font-semibold uppercase tracking-wide text-foreground">
                       {x.label}:
                     </span>{" "}
-                    <span className="italic text-muted-foreground">
+                    <span className="break-words font-quote text-[15px] italic leading-[22px] text-muted-foreground">
                       &quot;{evidenceText(x.h)}&quot;
                     </span>
                   </div>
@@ -1674,7 +1674,7 @@ const EvidenceQuotes = ({
           </div>
           <div className="mt-2 space-y-1">
             {b.quotes.map((q, i) => (
-              <p key={i} className="text-[13px] italic leading-relaxed text-muted-foreground">
+              <p key={i} className="min-w-0 break-words font-quote text-[15px] italic leading-[22px] text-muted-foreground">
                 "{q}"
               </p>
             ))}
@@ -1889,7 +1889,7 @@ const FlagListSection = ({
                   <span className="font-medium">In summary (not a quote):</span> {ev}
                 </p>
               ) : (
-                <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
+                <p className="mt-2 min-w-0 break-words font-quote text-[15px] italic leading-[22px] opacity-80">
                   {/^["\u201C]/.test(ev.trim()) ? ev : <>&quot;{ev}&quot;</>}
                 </p>
               ))}
@@ -1937,7 +1937,7 @@ export const FreeInsights = ({ result }: { result: AnalysisResult }) => {
               <p className="mt-2 text-[14px] leading-relaxed">{greenDesc}</p>
             )}
             {greenEvidence && (
-              <p className="mt-2 text-[13px] italic leading-relaxed opacity-80">
+              <p className={`mt-2 min-w-0 break-words leading-relaxed opacity-80 ${(greenObj as { evidence_kind?: string } | null)?.evidence_kind === "paraphrase" ? "text-[13px]" : "font-quote text-[15px] italic leading-[22px]"}`}>
                 {(greenObj as { evidence_kind?: string } | null)?.evidence_kind === "paraphrase" ? <>In summary (not a quote): {greenEvidence}</> : <>&quot;{greenEvidence}&quot;</>}
               </p>
             )}
