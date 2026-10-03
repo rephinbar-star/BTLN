@@ -320,40 +320,9 @@ const GroupRoastStart = () => {
               <p className="mt-2 text-sm text-muted-foreground">{selectedParticipants.length} people selected · {includedMessageCount.toLocaleString()} messages selected</p>
               <p className="mt-1 text-xs text-muted-foreground">{FORMAT_LABEL[parsed.format]} · {parsed.date_range.start ? `${dayOf(parsed.date_range.start)} – ${dayOf(parsed.date_range.end)}` : "Dates not provided"}</p>
               <ul className="mt-4 flex flex-wrap gap-2">{parsed.participants.filter((person) => !excluded.has(person.id)).map((person) => <li key={person.id} className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-muted/40 px-3 text-sm"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-prism-amber/20 font-mono text-xs text-prism-amber-text">{person.display_name.slice(0, 1).toUpperCase()}</span>{person.display_name}</li>)}</ul>
-              {parsed.ambiguous_dates && (
-                <div className="mt-4 rounded-xl border border-border p-4">
-                  <p className="text-[14px] font-medium">Is 03/04 the 3rd of April, or March 4th?</p>
-                  <p className="mt-1 text-[13px] text-muted-foreground">
-                    This export doesn't say. Pick the one that matches your phone.
-                  </p>
-                  <div className="mt-3 flex gap-2">
-                    {[
-                      { label: "Day first (3 April)", value: true },
-                      { label: "Month first (March 4)", value: false },
-                    ].map((o) => (
-                      <button
-                        key={String(o.value)}
-                        type="button"
-                        aria-pressed={dayFirst === o.value}
-                        onClick={() => {
-                          setDayFirst(o.value);
-                          doParse(lastRaw.current || text, { dayFirst: o.value });
-                        }}
-                        disabled={!lastRaw.current && !text}
-                        className={`rounded-full border px-3 py-1.5 text-[13px] ${
-                          dayFirst === o.value
-                            ? "border-foreground bg-foreground text-background"
-                            : "border-border text-muted-foreground hover:text-foreground"
-                        } disabled:opacity-40`}
-                      >
-                        {o.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {parsed.ambiguous_dates && <p className="mt-3 text-sm text-muted-foreground">Date order was confirmed when you checked your messages. Go back to change it.</p>}
 
-              {(!selfId && !selfAbsent) && <p role="alert" className="mt-3 text-sm text-destructive">After changing dates or participants, reconfirm which person is you in Edit group below.</p>}
+              {(!selfId && !selfAbsent) && <p role="alert" className="mt-3 text-sm text-destructive">After changing participants, go back to Check messages to confirm who you are.</p>}
             </div>
 
             {parsed.date_range.start && (
