@@ -170,7 +170,7 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
       {notices.length > 0 && <ul className="space-y-1 text-xs text-muted-foreground">{notices.map((notice) => <li key={notice}>{notice}</li>)}</ul>}
       {error && <p role="alert" className="flex items-start gap-2 text-sm text-destructive"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />{error}</p>}
 
-      {preview && preview.format !== "screenshots_pending" && <section className="rounded-lg border border-border bg-muted/30 p-4" aria-label="Conversation preview">
+      {preview && preview.sourceKind === value.method && preview.format !== "screenshots_pending" && <section className="rounded-lg border border-border bg-muted/30 p-4" aria-label="Conversation preview">
         <h3 className="text-sm font-semibold">Conversation preview</h3>
         <dl className="mt-2 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4"><div><dt className="text-muted-foreground">Source</dt><dd>{String(preview.format).replace(/_/g, " ")}</dd></div><div><dt className="text-muted-foreground">People</dt><dd>{preview.participants.length}</dd></div><div><dt className="text-muted-foreground">Messages</dt><dd>{preview.messages.length.toLocaleString()}</dd></div><div><dt className="text-muted-foreground">Dates</dt><dd>{preview.dateRange.start ? `${preview.dateRange.start.slice(0, 10)} – ${preview.dateRange.end?.slice(0, 10)}` : "Not provided"}</dd></div></dl>
         {preview.ambiguousDates && <p className="mt-2 text-xs text-muted-foreground">Some dates can be read in more than one locale. Confirm the date order in the next step.</p>}

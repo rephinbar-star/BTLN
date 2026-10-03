@@ -402,10 +402,10 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         : "Choose which side of the screenshots is you, then tap “Preview extracted messages”.";
     } else if (!reviewed && sharedDraft.method === "screenshots") {
       banner = "Upload at least one screenshot.";
-    } else if (!sharedDraft.selfAbsent && !sharedDraft.selfParticipantId) {
-      banner = "Confirm which participant is you before continuing.";
     } else if (!reviewed) {
       banner = "Review your messages before continuing.";
+    } else if (!sharedDraft.selfAbsent && !sharedDraft.selfParticipantId) {
+      banner = "Confirm which participant is you before continuing.";
     } else if (form.conversation.trim().length < 100) {
       if (mode === "file") banner = "Upload a chat file with at least 100 characters of conversation.";
       else errors.conversation = "Paste at least 100 characters of conversation.";
