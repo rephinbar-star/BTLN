@@ -30,7 +30,9 @@ import { SeeExample } from "@/components/examples/ExampleExperience";
 import { ModeIntro } from "@/components/ingest/ModeIntro";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 import { extractScreenshotConversation } from "@/lib/ingest/extract";
-import { parsedFromCanonical } from "@/lib/ingest/canonical";
+import { parsedFromCanonical, type CanonicalConversation } from "@/lib/ingest/canonical";
+import { renameReviewedParticipant, mergeReviewedParticipants } from "@/lib/group/reviewEdits";
+import { inputKey, saveReview } from "@/lib/ingest/reviewDraft";
 
 const MIN_PARTICIPANTS = LIMITS.GROUP_MIN_PARTICIPANTS;
 const MAX_PARTICIPANTS = LIMITS.GROUP_MAX_PARTICIPANTS;
@@ -63,6 +65,7 @@ const GroupRoastStart = () => {
   const [text, setText] = useState("");
   const [sharedDraft, setSharedDraft] = useState<ConversationDraft>(emptyConversationDraft);
   const lastRaw = useRef("");
+  const lastReviewedId = useRef<string | null>(null);
   const [parsed, setParsed] = useState<ParseResult | null>(null);
   const [category, setCategory] = useState<GroupCategory>("friends");
   const [selfId, setSelfId] = useState<string | null>(null);
@@ -127,6 +130,14 @@ const GroupRoastStart = () => {
         : [],
     [parsed],
   );
+
+  const syncReviewedGroup = (conversation: CanonicalConversation) => {
+    const key = inputKey(sharedDraft.method, sharedDraft.method === "paste" ? sharedDraft.text : sharedDraft.importedText ?? "", sharedDraft.method === "chat_export" ? sharedDraft.importSourceName ?? null : null, sharedDraft.screenshots.map((shot) => shot.id), sharedDraft.screenshotSelfSide, sharedDraft.selfAbsent);
+    setSharedDraft({ ...sharedDraft, conversation, reviewCache: saveReview(sharedDraft.reviewCache, sharedDraft.method, key, conversation), selfParticipantId: null, selfAbsent: false });
+    const result = parsedFromCanonical(conversation);
+    setParsed({ ...result, format: result.format === "whatsapp_ios" || result.format === "whatsapp_android" ? "whatsapp" : result.format === "imessage_csv" || result.format === "imessage_txt" ? "imessage" : "attributed_text" });
+    setSelfId(null); setSelfAbsent(false);
+  };
 
   const doParse = (raw: string, opts?: { dayFirst?: boolean }) => {
     setError(null);
@@ -302,9 +313,13 @@ const GroupRoastStart = () => {
               setParsed({ ...result, format: result.format === "whatsapp_ios" || result.format === "whatsapp_android" ? "whatsapp" : result.format === "imessage_csv" || result.format === "imessage_txt" ? "imessage" : "attributed_text" });
               setText(conversation.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n"));
               setDayFirst(result.day_first);
-              setExcluded(new Set(result.participants.filter((person) => person.looks_like_system).map((person) => person.id)));
+              if (!parsed || sharedDraft.conversation?.id !== lastReviewedId.current) {
+                setExcluded(new Set(result.participants.filter((person) => person.looks_like_system).map((person) => person.id)));
+                setFromDay(""); setToDay("");
+              }
+              lastReviewedId.current = conversation.id;
               setSelfId(sharedDraft.selfParticipantId); setSelfAbsent(sharedDraft.selfAbsent);
-              setFromDay(""); setToDay(""); setStep("confirm");
+              setStep("confirm");
             }} nextLabel="Continue" guidance="Keep the names visible in each screenshot."
             extractScreenshots={(screenshots, side) => extractScreenshotConversation(screenshots, side, "group")}
             screenshotMode="group" pastePlaceholder={SAMPLE} />
@@ -389,7 +404,7 @@ const GroupRoastStart = () => {
                         aria-label={`Name for ${p.display_name}`}
                         value={p.display_name}
                         onChange={(e) =>
-                          { setParsed({ ...parsed, participants: parsed.participants.map((x) => x.id === p.id ? { ...x, display_name: e.target.value } : x) }); setSelfId(null); setSelfAbsent(false); }
+                          { const conversation = sharedDraft.conversation; if (conversation) { const updated = renameReviewedParticipant(conversation, p.id, e.target.value); syncReviewedGroup(updated); lastReviewedId.current = updated.id; } }
                         }
                         className={`min-w-0 flex-1 rounded-lg border border-border bg-background px-3 py-2 text-[15px] ${
                           isExcluded ? "opacity-40 line-through" : ""
@@ -428,8 +443,7 @@ const GroupRoastStart = () => {
                           type="button"
                           onClick={() => {
                             const merged = mergeParticipants(parsed, p.id, mergeSource);
-                            setParsed(merged);
-                            setSelfId(null); setSelfAbsent(false);
+                            if (sharedDraft.conversation) { const updated = mergeReviewedParticipants(sharedDraft.conversation, p.id, mergeSource); syncReviewedGroup(updated); lastReviewedId.current = updated.id; } else setParsed(merged);
                             const next = new Set(excluded);
                             next.delete(mergeSource);
                             setExcluded(next);
@@ -493,7 +507,7 @@ const GroupRoastStart = () => {
                           <button
                             key={p.id}
                             type="button"
-                            onClick={() => setParsed(assignUnattributed(parsed, m.order, p.id))}
+                            onClick={() => { const conversation = sharedDraft.conversation; if (conversation) { const updated = { ...conversation, messages: conversation.messages.map((message) => message.order === m.order ? { ...message, participant_id: p.id, raw_sender: p.display_name, provenance: { ...message.provenance, confidence: "confirmed" as const } } : message), participants: conversation.participants.map((person) => person.id === p.id ? { ...person, message_count: person.message_count + 1 } : person) }; syncReviewedGroup(updated); lastReviewedId.current = updated.id; } else setParsed(assignUnattributed(parsed, m.order, p.id)); }}
                             className="rounded-full border border-border px-3 py-1 text-[13px] text-muted-foreground hover:text-foreground"
                           >
                             {p.display_name}
@@ -574,7 +588,7 @@ const GroupRoastStart = () => {
               <button
                 type="button"
                 onClick={submit}
-                disabled={submitting || (!selfId && !selfAbsent) || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS || includedMessageCount < MIN_MESSAGES}
+                disabled={submitting || (!selfId && !selfAbsent) || (selfId !== null && !selectedParticipants.some((person) => person.id === selfId)) || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS || includedMessageCount < MIN_MESSAGES}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
