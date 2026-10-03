@@ -8,10 +8,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
-import quickArt from "@/assets/home-modes/quick-take.webp";
-import deepArt from "@/assets/home-modes/deep-read.webp";
-import groupArt from "@/assets/home-modes/group-roast.webp";
-import relationshipArt from "@/assets/home-modes/relationship360.webp";
+import quickArt from "@/assets/home-modes/quick-take.webp.asset.json";
+import deepArt from "@/assets/home-modes/deep-read.webp.asset.json";
+import groupArt from "@/assets/home-modes/group-roast.webp.asset.json";
+import relationshipArt from "@/assets/home-modes/relationship360.webp.asset.json";
 
 const SESSION_KEY = "chemistry_landing_viewed";
 const REF_KEY = "btln_ref_visit_fired";
@@ -140,7 +140,7 @@ const Index = () => {
               aria-label={`${mode.label}: ${mode.title}${mode.status ? `. ${mode.status}` : ""}`}
               className={`group grid min-h-[116px] grid-cols-[96px_minmax(0,1fr)] overflow-hidden rounded-[17px] border transition-[background-color,border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-prism-lavender focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transform-none min-[361px]:min-h-[120px] min-[361px]:grid-cols-[112px_minmax(0,1fr)] md:flex md:min-h-0 md:flex-col ${mode.tone}`}
             >
-              <img src={mode.art} alt="" width={560} height={560} loading={index === 0 ? "eager" : "lazy"} decoding="async" className="m-1 h-[96px] w-[96px] self-center rounded-[11px] object-cover min-[361px]:h-[112px] min-[361px]:w-[112px] md:m-0 md:aspect-square md:h-auto md:w-full md:rounded-none" />
+              <img src={mode.art.url} alt="" width={560} height={560} loading={index === 0 ? "eager" : "lazy"} decoding="async" className="m-1 h-[96px] w-[96px] self-center rounded-[11px] object-cover min-[361px]:h-[112px] min-[361px]:w-[112px] md:m-0 md:aspect-square md:h-auto md:w-full md:rounded-none" />
               <span className="flex min-w-0 flex-col justify-center px-3 py-3 min-[361px]:px-4 md:flex-1 md:justify-start md:px-4 md:py-4">
                 <span className="flex items-start justify-between gap-1">
                   <span className={`min-w-0 break-words font-mono text-[11px] font-medium leading-5 min-[361px]:text-[12px] ${mode.accent}`}>{mode.label}</span>
