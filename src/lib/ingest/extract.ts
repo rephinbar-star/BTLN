@@ -21,8 +21,7 @@ export async function extractScreenshotConversation(
   const parsed = parseTranscript(String(data.transcript));
   const self = parsed.participants.find((person) => person.display_name === "You");
   if (self) self.is_self = true;
-  const conversation = canonicalizeParsedConversation(parsed, "paste", `screenshot-preview:${requestId}`);
-  conversation.sourceKind = "screenshots";
+  const conversation = canonicalizeParsedConversation(parsed, "screenshots", `screenshot-preview:${requestId}`);
   conversation.warnings = [...conversation.warnings, ...(Array.isArray(data.warnings) ? data.warnings : [])];
   return conversation;
 }
