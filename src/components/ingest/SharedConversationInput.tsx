@@ -58,13 +58,14 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
   const [failedFiles, setFailedFiles] = useState<File[]>([]);
   const [editingPreview, setEditingPreview] = useState(false);
   const [previewText, setPreviewText] = useState("");
+  const reviewHeading = useRef<HTMLHeadingElement>(null);
   useEffect(() => () => { archive.current = null; }, []);
   const patch = (next: Partial<ConversationDraft>) => onChange({ ...value, ...next });
   const parseText = (text: string, kind: "paste" | "chat_export", sourceName: string | null) => {
     try {
       const parsed = parseTranscript(text);
       patch({ method: kind, ...(kind === "paste" ? { text } : { importedText: text, importSourceName: sourceName }), conversation: canonicalizeParsedConversation(parsed, kind, sourceName), selfParticipantId: null, screenshotSelfSide: null, selfAbsent: false });
-      setError(null); onReview?.();
+      setError(null); onReview?.(); queueMicrotask(() => reviewHeading.current?.focus());
     } catch (cause) {
       patch({ method: kind, ...(kind === "paste" ? { text } : { importedText: text }), conversation: null, selfParticipantId: null, selfAbsent: false });
       setError(cause instanceof UnsupportedFormatError ? cause.message : "We couldn't read that conversation.");
@@ -114,14 +115,14 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
     if (!value.screenshotSelfSide && !value.selfAbsent) return setError("Choose a side before reading screenshots. This is not your final identity confirmation.");
     if (!extractScreenshots) return setError("Screenshot reading isn't available here.");
     setProcessing(true); setError(null);
-    try { const conversation = await extractScreenshots(value.screenshots, value.screenshotSelfSide ?? "right"); patch({ conversation, selfParticipantId: null, selfAbsent: false }); onReview?.(); }
+    try { const conversation = await extractScreenshots(value.screenshots, value.screenshotSelfSide ?? "right"); patch({ conversation, selfParticipantId: null, selfAbsent: false }); onReview?.(); queueMicrotask(() => reviewHeading.current?.focus()); }
     catch (cause) { setError(cause instanceof Error ? cause.message : "We couldn't preview those screenshots."); }
     finally { setProcessing(false); }
   };
   return <div className="space-y-4">
     {reviewed && preview ? <section aria-label="Conversation review" className="space-y-4">
       <Button type="button" variant="ghost" className="min-h-11 px-0" onClick={() => { setEditingPreview(false); onBack?.(); }}><ArrowLeft className="h-4 w-4" /> Change messages</Button>
-      <h2 className="font-display text-[22px] font-bold">Look right?</h2>
+      <h2 ref={reviewHeading} tabIndex={-1} className="font-display text-[22px] font-bold">Look right?</h2>
       <p className="text-sm text-muted-foreground">Check the text and names before continuing. {preview.messages.length.toLocaleString()} messages · {preview.participants.length} people.</p>
       {preview.ambiguousDates && <p className="text-sm text-muted-foreground">Some dates can be read in more than one locale. Confirm date order before your read.</p>}
       <ol className="space-y-2" aria-label="Message sample">{preview.messages.slice(0, 3).map((message) => <li key={message.id} className="max-w-[90%] min-w-0 break-words rounded-xl border border-border bg-muted/40 px-3 py-2"><span className="block text-xs font-semibold">{message.raw_sender ?? "Sender unclear"}</span><span className="font-quote text-[15px] italic leading-[22px]">{message.content}</span></li>)}</ol>

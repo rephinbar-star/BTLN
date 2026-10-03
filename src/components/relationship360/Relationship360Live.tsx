@@ -103,7 +103,7 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
   const savePrivateNote = async () => {
     if (recorded || !privateNote.trim()) return;
     try {
-      await saveReflection({ relationshipId, kind: "personal_note", text: privateNote.trim() });
+      await saveReflection({ relationshipId, kind: "reflection", text: privateNote.trim() });
       setPrivateNote("");
       toast({ title: "Saved privately" });
       await load();

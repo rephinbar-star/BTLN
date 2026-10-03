@@ -234,6 +234,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     setForm((prev) => ({ ...prev, conversation: t.text }));
     try {
       setSharedDraft({ ...emptyConversationDraft(), method: "paste", text: t.text, conversation: canonicalizeParsedConversation(parseTranscript(t.text), "paste", "group-handoff") });
+      setIntakeStep("review");
     } catch { /* Keep the handoff text available for correction and review. */ }
     setMode("paste");
     setLoadedFileName("your import");
@@ -625,6 +626,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         )}
 
         <div id="add-conversation">
+          <p className="mb-4 font-mono text-[11px] text-prism-emerald-text">{intakeStep === "input" ? "1 Messages · 2 Check · 3 About you" : intakeStep === "review" ? "1 Messages · 2 Check · 3 About you" : "1 Messages · 2 Check · 3 About you"}</p>
           {intakeStep !== "context" ? <SharedConversationInput
             value={sharedDraft}
             onChange={(next) => {
@@ -657,8 +659,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
            <p className={labelClass} id="relationship-type-label">Relationship type</p>
            <div className="mt-1.5 grid grid-cols-3 gap-1 sm:gap-2" role="radiogroup" aria-labelledby="relationship-type-label">
             {([
-              { value: "romantic", label: "Romantic" },
-              { value: "friend", label: "Friend" },
+              { value: "romantic", label: "Dating" },
+              { value: "friend", label: "Friends" },
               { value: "family", label: "Family" },
             ] as const).map((opt) => {
               const active = form.relationshipType === opt.value;
