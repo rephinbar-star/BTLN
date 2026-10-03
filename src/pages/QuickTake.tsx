@@ -26,6 +26,7 @@ const QuickTake = () => (
       </div>
     </main>
   </div>
+  </div>
 );
 
 export default QuickTake;

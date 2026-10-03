@@ -692,6 +692,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               );
             })}
           </div>
+        </div>
         {/* Dropdowns */}
         <div className="mt-5 flex flex-col gap-4">
           <div>
