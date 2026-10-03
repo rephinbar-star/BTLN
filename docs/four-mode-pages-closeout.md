@@ -11,7 +11,7 @@
 
 - Local Chromium at **375×812** and **1280×900** after fonts loaded: Quick, Deep, Group and fictional Relationship360 illustrations appeared (560px intrinsic art), mode headings and interaction steps appeared, no horizontal overflow and no page errors. The four initial and context/example screenshots were inspected. The user account's `/journey` was visited at both sizes using a locally minted session: consent-required state and reachable management/privacy sections rendered without errors or overflow; consent was **not** granted or altered.
 - Fictional 24-message pastes retained across tab switches in all three input modes. Review showed all 24 messages and unselected identity. Move/edit cleared identity and required reconfirmation; Deep and Group proceeded to compact contexts. A two-person Group chat showed the Deep Read handoff and disabled Group submit. Unsupported XML import produced a clear file-type error. A dated three-person TXT import required locale selection before continuing, then enabled the Group action with 30 messages at both widths. These checks did **not** press the final analysis actions.
-- **104 focused tests passed in 10 files** (ingest, Group parser, Deep category context, relationship coverage/adapters/attribution/dates/preview and Journey identity). `tsgo -p tsconfig.app.json --noEmit` passed. The managed preview build result is recorded in the runtime build log.
+- **115 focused tests passed in 11 files** (ingest, Group parser, Deep category context, relationship coverage/adapters/attribution/dates/preview and Journey identity). `tsgo -p tsconfig.app.json --noEmit` passed. The managed preview build log ends in `build OK`.
 
 ## Limits
 
