@@ -12,6 +12,7 @@ export const DecodeInput = () => {
   const [draft, setDraft] = useState<ConversationDraft>(emptyConversationDraft);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [stage, setStage] = useState<"input" | "review">("input");
   const navigate = useNavigate();
 
   const hasInput = Boolean(draft.conversation && draft.conversation.format !== "screenshots_pending" && draft.conversation.sourceKind === draft.method);
@@ -47,15 +48,10 @@ export const DecodeInput = () => {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-card p-5 shadow-sm sm:p-6">
-      <h2 className="mb-4 text-xl font-bold">Add your messages</h2>
-      <SharedConversationInput value={draft} onChange={setDraft} maxScreenshots={10} extractScreenshots={extractScreenshotConversation} />
-      {!identityConfirmed && hasInput && <p className="mt-3 text-sm text-destructive">Confirm which participant or screenshot side is you before continuing.</p>}
+    <div className="rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6">
+      <p className="mb-4 font-mono text-[11px] text-prism-lavender">{stage === "input" ? "Messages" : "Messages  /  Check"}</p>
+      <SharedConversationInput value={draft} onChange={(next) => { setDraft(next); if (next.conversation?.id !== draft.conversation?.id && stage === "review" && !next.conversation) setStage("input"); }} maxScreenshots={10} extractScreenshots={extractScreenshotConversation} accent="quick" stage={stage} onReview={() => setStage("review")} onBack={() => setStage("input")} onNext={() => void onSubmit()} nextLabel={submitting ? "Starting…" : "Get my Quick Take"} guidance="Include a few messages before and after." />
       {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}
-      <Button type="button" onClick={() => void onSubmit()} disabled={!hasInput || !identityConfirmed || submitting} className="mt-5 min-h-11 w-full rounded-full">
-        {submitting && <Loader2 className="h-4 w-4 animate-spin" />} Get my take <ArrowRight className="h-4 w-4" />
-      </Button>
-      <p className="mt-3 text-center text-xs text-muted-foreground">First take is free. Upload type does not change access. Raw messages and screenshots are processed for this take and are not kept as conversation history.</p>
     </div>
   );
 };

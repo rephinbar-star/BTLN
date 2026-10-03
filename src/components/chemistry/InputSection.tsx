@@ -168,6 +168,7 @@ type InputSectionProps = {
 export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
   const [form, setForm] = useState<FormState>(initialState);
   const [sharedDraft, setSharedDraft] = useState<ConversationDraft>(emptyConversationDraft);
+  const [intakeStep, setIntakeStep] = useState<"input" | "review" | "context">("input");
   const [mode, setMode] = useState<InputMode>("screenshots");
   const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
   const [pendingMode, setPendingMode] = useState<InputMode | null>(null);
@@ -607,7 +608,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
 
       <form
         onSubmit={handleSubmit}
-        className="mx-auto mt-10 max-w-[720px] rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-card)] sm:p-8"
+        className="mx-auto mt-6 max-w-[720px] rounded-lg border border-border bg-card p-4 shadow-[var(--shadow-card)] sm:mt-0 sm:p-6"
       >
         {redoInfo && (
           <div className="mb-5 flex items-start gap-2 rounded-xl bg-pastel-blue-bg px-4 py-3 text-[13px] text-pastel-blue-fg">
@@ -623,52 +624,36 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           </div>
         )}
 
-        {/* How many messages Q&A */}
-        <QACard
-          icon={Info}
-          question="How many messages should I paste?"
-          answer="For best results: paste or upload (screenshots) at least 50 messages. More is better — the analysis gets sharper with 100+ messages spanning a few weeks. Below 30 messages, we can only give you a rough read."
-          tone="blue"
-        />
-
-        {/* How-to help */}
-        <div className="mt-3">
-          <details className="text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer content-center">How can I add my chat?</summary><HowToHelp /></details>
-        </div>
-
-         <div className="mt-5" id="add-conversation">
-           <h2 className="mb-2 text-xl font-medium">Add conversation</h2>
-           <p className="mb-3 text-sm text-muted-foreground">1 Add messages · 2 Confirm who you are · 3 Get your read</p>
-          <SharedConversationInput
+        <div id="add-conversation">
+          {intakeStep !== "context" ? <SharedConversationInput
             value={sharedDraft}
             onChange={(next) => {
-              const previousNames = sharedDraft.conversation?.participants ?? [];
-              const previousSelf = previousNames.find((person) => person.id === sharedDraft.selfParticipantId)?.display_name;
-              const previousOther = previousNames.find((person) => person.id !== sharedDraft.selfParticipantId)?.display_name;
+              const previousSelf = sharedDraft.conversation?.participants.find((person) => person.id === sharedDraft.selfParticipantId)?.display_name;
+              const previousOther = sharedDraft.conversation?.participants.find((person) => person.id !== sharedDraft.selfParticipantId)?.display_name;
               setSharedDraft(next);
               if (next.conversation && next.conversation.format !== "screenshots_pending") {
                 const names = next.conversation.participants;
                 const self = names.find((person) => person.id === next.selfParticipantId);
                 const other = names.find((person) => person.id !== next.selfParticipantId);
-                setForm((prev) => ({
-                  ...prev,
+                setForm((prev) => ({ ...prev,
                   conversation: next.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? "",
                   yourName: (!prev.yourName || (previousSelf && prev.yourName === previousSelf)) && next.selfParticipantId ? self?.display_name ?? "" : prev.yourName,
                   theirName: (!prev.theirName || (previousOther && prev.theirName === previousOther)) && next.selfParticipantId ? other?.display_name ?? "" : prev.theirName,
                 }));
               }
             }}
-            extractScreenshots={extractScreenshotConversation}
-          />
+            stage={intakeStep} accent="deep" onReview={() => setIntakeStep("review")} onBack={() => setIntakeStep("input")}
+            onNext={() => setIntakeStep("context")} nextLabel="Continue" guidance="A fuller chat gives a fuller picture."
+            extractScreenshots={extractScreenshotConversation} maxScreenshots={MAX_SCREENSHOTS}
+          /> : <Button type="button" variant="ghost" className="min-h-11 px-0" onClick={() => setIntakeStep("review")}>← Back to messages</Button>}
+          {intakeStep === "input" && <details className="mt-3 text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer content-center">How much chat should I add?</summary><p>Aim for 50 or more messages across a few weeks. Under 30? You can still continue, but the read will be less reliable.</p><HowToHelp /></details>}
         </div>
 
-        <p className="mt-4 text-[12px] text-muted-foreground">
-           Your raw messages are deleted after processing. Your report may include selected excerpts; you can manage or delete your report from your account.
-        </p>
-
          {/* Relationship type */}
-         {sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-8 border-t border-border pt-6">
-           <h2 className="mb-4 text-xl font-medium">Relationship context</h2>
+         {intakeStep === "context" && sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-4">
+           <h2 className="font-display text-[22px] font-bold">A little about you two</h2>
+           <p className="mt-1 text-sm text-muted-foreground">Help us read your chat in context.</p>
+           
            <p className={labelClass} id="relationship-type-label">Relationship type</p>
            <div className="mt-1.5 grid grid-cols-3 gap-1 sm:gap-2" role="radiogroup" aria-labelledby="relationship-type-label">
             {([
@@ -783,14 +768,14 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         </div>}
 
         {/* Submit */}
-        {sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-7 flex flex-col items-center">
-          <button
+        {intakeStep === "context" && sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-7 flex flex-col items-center">
+          <Button
             type="submit"
             disabled={submitting}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 sm:w-auto sm:min-w-[280px]"
+            className="min-h-12 w-full bg-prism-emerald text-background"
           >
-            {submitting ? "Starting…" : "Read Between The Lines"} <ArrowRight className="h-4 w-4" />
-          </button>
+            {submitting ? "Starting…" : "Get my Deep Read"} <ArrowRight className="h-4 w-4" />
+          </Button>
           {submitError && <p className="mt-3 text-[12px] text-destructive">{submitError}</p>}
           <p className="mt-4 max-w-md text-center text-[12px] leading-relaxed text-muted-foreground">
              By continuing, you agree your messages will be processed by AI. Your raw messages are deleted after processing; your report may include selected excerpts.

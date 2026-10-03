@@ -20,9 +20,7 @@ const QuickTake = () => (
       <div className="min-w-0 mt-6 md:mt-0">
         <DecodeInput />
         <div className="mt-4 md:hidden"><SeeExample kind="quick" /></div>
-      <p className="mt-6 text-[13px] text-muted-foreground">
-        Your raw messages are deleted after processing. Your report may include selected excerpts. Your first read needs no signup.
-      </p>
+      <p className="mt-6 text-center text-xs text-muted-foreground">Your raw messages are deleted after processing. Your report may include selected excerpts.</p>
       </div>
     </main>
   </div>
