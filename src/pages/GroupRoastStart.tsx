@@ -59,7 +59,7 @@ const GroupRoastStart = () => {
   /** Kept only in memory, never persisted. */
   const pendingZip = useRef<File | null>(null);
 
-  const [step, setStep] = useState<"input" | "confirm">("input");
+  const [step, setStep] = useState<"input" | "review" | "confirm">("input");
   const [text, setText] = useState("");
   const [sharedDraft, setSharedDraft] = useState<ConversationDraft>(emptyConversationDraft);
   const lastRaw = useRef("");
@@ -290,85 +290,36 @@ const GroupRoastStart = () => {
           <div><ModeIntro kind="group" /><div className="mt-4 hidden md:block"><SeeExample kind="group-roast" /></div></div>
           <div className="min-w-0">
 
-        {step === "input" && (
-          <section className="mt-6 rounded-lg border border-border bg-card p-5 shadow-sm md:mt-0 sm:p-6">
-            <h2 className="mb-4 text-xl font-bold">Add your messages</h2>
-            <SharedConversationInput
-              value={sharedDraft}
-              onChange={(next) => {
-                setSharedDraft(next);
-                if (next.conversation && next.conversation.format !== "screenshots_pending" && next.conversation.sourceKind === next.method && (next.selfParticipantId || next.selfAbsent)) {
-                  const result = parsedFromCanonical(next.conversation);
-                  lastRaw.current = next.conversation.sourceKind === "chat_export" ? next.importedText ?? "" : next.conversation.sourceKind === "paste" ? next.text : "";
-                  setParsed({
-                    ...result,
-                    format: result.format === "whatsapp_ios" || result.format === "whatsapp_android" ? "whatsapp" : result.format === "imessage_csv" || result.format === "imessage_txt" ? "imessage" : "attributed_text",
-                  });
-                  setText(next.conversation.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n"));
-                  setDayFirst(result.day_first);
-                  setExcluded(new Set(result.participants.filter((person) => person.looks_like_system).map((person) => person.id)));
-                  setSelfId(next.selfParticipantId);
-                  setSelfAbsent(next.selfAbsent);
-                  setFromDay("");
-                  setToDay("");
-                  setStep("confirm");
-                }
-              }}
-              extractScreenshots={(screenshots, side) => extractScreenshotConversation(screenshots, side, "group")}
-              screenshotMode="group"
-              pastePlaceholder={SAMPLE}
-            />
-          </section>
-        )}
+        {(step === "input" || step === "review") && <section className="mt-6 rounded-lg border border-border bg-card p-4 shadow-sm sm:p-6 md:mt-0">
+          <p className="mb-4 font-mono text-[11px] text-prism-amber-text">{step === "input" ? "Messages  /  Check  /  Your group" : "Messages  /  Check  /  Your group"}</p>
+          <SharedConversationInput value={sharedDraft} onChange={(next) => setSharedDraft(next)}
+            stage={step} accent="group" onReview={() => setStep("review")} onBack={() => setStep("input")}
+            onNext={() => {
+              const conversation = sharedDraft.conversation;
+              if (!conversation || conversation.format === "screenshots_pending" || conversation.sourceKind !== sharedDraft.method || (!sharedDraft.selfParticipantId && !sharedDraft.selfAbsent)) return;
+              const result = parsedFromCanonical(conversation);
+              lastRaw.current = conversation.sourceKind === "chat_export" ? sharedDraft.importedText ?? "" : conversation.sourceKind === "paste" ? sharedDraft.text : "";
+              setParsed({ ...result, format: result.format === "whatsapp_ios" || result.format === "whatsapp_android" ? "whatsapp" : result.format === "imessage_csv" || result.format === "imessage_txt" ? "imessage" : "attributed_text" });
+              setText(conversation.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n"));
+              setDayFirst(result.day_first);
+              setExcluded(new Set(result.participants.filter((person) => person.looks_like_system).map((person) => person.id)));
+              setSelfId(sharedDraft.selfParticipantId); setSelfAbsent(sharedDraft.selfAbsent);
+              setFromDay(""); setToDay(""); setStep("confirm");
+            }} nextLabel="Continue" guidance="Keep the names visible in each screenshot."
+            extractScreenshots={(screenshots, side) => extractScreenshotConversation(screenshots, side, "group")}
+            screenshotMode="group" pastePlaceholder={SAMPLE} />
+        </section>}
           </div>
         </div>
         <div className="mt-4 md:hidden"><SeeExample kind="group-roast" /></div>
 
         {step === "confirm" && parsed && coverage && (
-          <section className="mt-8 space-y-6">
-            <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-              <h2 className="text-[18px] font-medium">Here's what we read</h2>
-              <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-[14px] sm:grid-cols-3">
-                <div>
-                  <dt className="text-muted-foreground">Source</dt>
-                  <dd>{FORMAT_LABEL[parsed.format]}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Messages found</dt>
-                  <dd className="tabular-nums">{parsed.messages.length.toLocaleString()}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">People found</dt>
-                  <dd className="tabular-nums">{parsed.participants.length}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Dates covered</dt>
-                  <dd>
-                    {parsed.date_range.start
-                      ? `${dayOf(parsed.date_range.start)} → ${dayOf(parsed.date_range.end)}`
-                      : "No dates in this export"}
-                  </dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">No sender</dt>
-                  <dd className="tabular-nums">{parsed.unattributed_count}</dd>
-                </div>
-                <div>
-                  <dt className="text-muted-foreground">Attachments / system</dt>
-                  <dd className="tabular-nums">
-                    {parsed.attachment_count} / {parsed.system_count}
-                  </dd>
-                </div>
-              </dl>
-
-              {parsed.warnings.length > 0 && (
-                <ul className="mt-3 space-y-1 text-[13px] text-muted-foreground">
-                  {parsed.warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              )}
-
+          <section className="mt-6 space-y-4">
+            <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+              <h2 className="font-display text-[22px] font-bold">Meet your group</h2>
+              <p className="mt-2 text-sm text-muted-foreground">{selectedParticipants.length} people selected · {includedMessageCount.toLocaleString()} messages selected</p>
+              <p className="mt-1 text-xs text-muted-foreground">{FORMAT_LABEL[parsed.format]} · {parsed.date_range.start ? `${dayOf(parsed.date_range.start)} – ${dayOf(parsed.date_range.end)}` : "Dates not provided"}</p>
+              <ul className="mt-4 flex flex-wrap gap-2">{parsed.participants.filter((person) => !excluded.has(person.id)).map((person) => <li key={person.id} className="flex min-h-11 items-center gap-2 rounded-full border border-border bg-muted/40 px-3 text-sm"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-prism-amber/20 font-mono text-xs text-prism-amber-text">{person.display_name.slice(0, 1).toUpperCase()}</span>{person.display_name}</li>)}</ul>
               {parsed.ambiguous_dates && (
                 <div className="mt-4 rounded-xl border border-border p-4">
                   <p className="text-[14px] font-medium">Is 03/04 the 3rd of April, or March 4th?</p>
@@ -402,17 +353,13 @@ const GroupRoastStart = () => {
                 </div>
               )}
 
-              {parsed.messages_with_time > 0 && (
-                <p className="mt-3 text-[13px] text-muted-foreground">
-                  Times come from the export with no timezone attached, so we read them exactly as
-                  written.
-                </p>
-              )}
+              {(!selfId && !selfAbsent) && <p role="alert" className="mt-3 text-sm text-destructive">After changing dates or participants, reconfirm which person is you in Edit group below.</p>}
             </div>
 
             {parsed.date_range.start && (
-              <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-                <h2 className="text-[18px] font-medium">Which stretch should we read?</h2>
+              <details className="rounded-lg border border-border bg-card px-4 py-2 sm:px-6">
+                <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">Date range and coverage</summary>
+                <p className="text-sm text-muted-foreground">Which stretch should we read?</p>
                 <div className="mt-3 flex flex-wrap items-center gap-3 text-[14px]">
                   <label className="flex items-center gap-2">
                     From
@@ -457,10 +404,10 @@ const GroupRoastStart = () => {
                     order; unticking leaves them out entirely).
                   </label>
                 )}
-              </div>
+              </details>
             )}
 
-            <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
+            <details className="rounded-lg border border-border bg-card px-4 py-2 sm:px-6">
               <h2 className="flex items-center gap-2 text-[18px] font-medium">
                 <Users className="h-4 w-4" /> We found {parsed.participants.length} people
               </h2>
@@ -566,7 +513,7 @@ const GroupRoastStart = () => {
                   exclude the ones you don't need, so you decide who's left out.
                 </p>
               )}
-            </div>
+            </details>
 
              {selectedParticipants.length === 2 && (
               <div className="rounded-2xl border border-border bg-muted/40 p-5">
@@ -586,10 +533,8 @@ const GroupRoastStart = () => {
             )}
 
             {unattributed.length > 0 && (
-              <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-                <h2 className="text-[18px] font-medium">
-                  {unattributed.length} lines have no clear sender
-                </h2>
+              <details className="rounded-lg border border-border bg-card px-4 py-2 sm:px-6">
+                <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">Assign {unattributed.length} lines with no clear sender</summary>
                 <p className="mt-1 text-[14px] text-muted-foreground">
                   We won't guess who wrote them. Assign them, or leave them out.
                 </p>
@@ -617,11 +562,11 @@ const GroupRoastStart = () => {
                     Showing the first 10. The rest stay out of the analysis.
                   </p>
                 )}
-              </div>
+              </details>
             )}
 
-            <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-              <h2 className="text-[18px] font-medium">What kind of group is this?</h2>
+            <div className="rounded-lg border border-border bg-card p-4 sm:p-6">
+              <h3 className="text-sm font-semibold">What kind of group is this?</h3>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(Object.keys(GROUP_CATEGORY_LABEL) as GroupCategory[]).map((c) => (
                   <button
@@ -687,7 +632,7 @@ const GroupRoastStart = () => {
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Roast this group <ArrowRight className="h-4 w-4" />
+                Roast my group <ArrowRight className="h-4 w-4" />
               </button>
             </div>
             <p className="text-center text-[12px] text-muted-foreground">
