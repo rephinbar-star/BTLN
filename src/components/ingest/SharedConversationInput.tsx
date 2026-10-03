@@ -112,7 +112,7 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
     if (total > SCREENSHOT_LIMITS.maxTotalBytes) {
       setError("Those screenshots exceed the 8 MB processed total. Remove some or upload a shorter exchange.");
     } else {
-      patch({ method: "screenshots", screenshots, conversation: canonicalScreenshotConversation(screenshots.map((item) => item.name)), selfParticipantId: null, selfAbsent: false });
+      patch({ method: "screenshots", screenshots, conversation: canonicalScreenshotConversation(screenshots.map((item) => item.name)), selfParticipantId: null, screenshotSelfSide: null, selfAbsent: false });
       if (files.length > room) setError(`Only the first ${room} fit within the ${maxScreenshots}-screenshot limit.`);
       else if (failure) setError(failure.reason instanceof ScreenshotValidationError ? failure.reason.message : "One screenshot couldn't be read. Save it as PNG, JPG or WebP and retry.");
     }
@@ -125,14 +125,14 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
     if (target < 0 || target >= value.screenshots.length) return;
     const screenshots = [...value.screenshots];
     [screenshots[index], screenshots[target]] = [screenshots[target], screenshots[index]];
-    patch({ screenshots, conversation: canonicalScreenshotConversation(screenshots.map((item) => item.name)), selfParticipantId: null, selfAbsent: false });
+    patch({ screenshots, conversation: canonicalScreenshotConversation(screenshots.map((item) => item.name)), selfParticipantId: null, screenshotSelfSide: null, selfAbsent: false });
   };
 
   const preview = value.conversation;
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1" role="tablist" aria-label="Conversation input type">
-        {tabs.filter((tab) => allowScreenshots || tab.id !== "screenshots").map((tab) => <Button key={tab.id} type="button" variant={value.method === tab.id ? "secondary" : "ghost"} className="flex min-h-12 min-w-0 flex-col gap-1 whitespace-normal px-1 py-2 text-[11px] sm:text-sm" role="tab" aria-selected={value.method === tab.id} onClick={() => patch({ method: tab.id, selfParticipantId: null, selfAbsent: false })}>{tab.id === "screenshots" ? <ImagePlus className="h-4 w-4" /> : tab.id === "chat_export" ? <FileText className="h-4 w-4" /> : <ClipboardPaste className="h-4 w-4" />}{tab.label}</Button>)}
+        {tabs.filter((tab) => allowScreenshots || tab.id !== "screenshots").map((tab) => <Button key={tab.id} type="button" variant={value.method === tab.id ? "secondary" : "ghost"} className="flex min-h-12 min-w-0 flex-col gap-1 whitespace-normal px-1 py-2 text-[11px] sm:text-sm" role="tab" aria-selected={value.method === tab.id} onClick={() => patch({ method: tab.id, selfParticipantId: null, screenshotSelfSide: null, selfAbsent: false })}>{tab.id === "screenshots" ? <ImagePlus className="h-4 w-4" /> : tab.id === "chat_export" ? <FileText className="h-4 w-4" /> : <ClipboardPaste className="h-4 w-4" />}{tab.label}</Button>)}
       </div>
 
       {value.method === "screenshots" && <div>
@@ -148,7 +148,7 @@ export function SharedConversationInput({ value, onChange, maxScreenshots = SCRE
               <div className="flex shrink-0">
                 <Button type="button" size="icon" variant="ghost" className="h-11 w-11" disabled={index === 0} aria-label={`Move ${shot.name} earlier`} title="Move earlier" onClick={() => move(index, -1)}><ArrowUp className="h-4 w-4" /></Button>
                 <Button type="button" size="icon" variant="ghost" className="h-11 w-11" disabled={index === value.screenshots.length - 1} aria-label={`Move ${shot.name} later`} title="Move later" onClick={() => move(index, 1)}><ArrowDown className="h-4 w-4" /></Button>
-                <Button type="button" size="icon" variant="ghost" className="h-11 w-11" aria-label={`Remove ${shot.name}`} title="Remove" onClick={() => { const screenshots = value.screenshots.filter((item) => item.id !== shot.id); patch({ screenshots, conversation: screenshots.length ? canonicalScreenshotConversation(screenshots.map((item) => item.name)) : null, selfParticipantId: null, selfAbsent: false }); }}><Trash2 className="h-4 w-4" /></Button>
+                <Button type="button" size="icon" variant="ghost" className="h-11 w-11" aria-label={`Remove ${shot.name}`} title="Remove" onClick={() => { const screenshots = value.screenshots.filter((item) => item.id !== shot.id); patch({ screenshots, conversation: screenshots.length ? canonicalScreenshotConversation(screenshots.map((item) => item.name)) : null, selfParticipantId: null, screenshotSelfSide: null, selfAbsent: false }); }}><Trash2 className="h-4 w-4" /></Button>
               </div>
             </div>
           </li>)}
