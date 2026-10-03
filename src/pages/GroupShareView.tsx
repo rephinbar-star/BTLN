@@ -148,7 +148,7 @@ const GroupShareView = () => {
                   {c.headline && <p className="mt-2 text-[16px]">{c.headline}</p>}
                   {c.why && <p className="mt-2 text-[15px] text-muted-foreground">{c.why}</p>}
                   {c.evidence && (
-                    <p className="mt-2 border-l-2 border-border pl-3 text-[14px] italic text-muted-foreground">
+                    <p className="mt-2 min-w-0 break-words border-l-2 border-border pl-3 font-quote text-[15px] italic leading-[22px] text-muted-foreground">
                       {c.evidence}
                     </p>
                   )}

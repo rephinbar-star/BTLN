@@ -133,7 +133,7 @@ export const WhatYouGet = () => {
               <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
                 Quoted evidence — Jordan
               </div>
-              <div className="mt-2 space-y-1.5 text-[14px] italic text-foreground">
+              <div className="mt-2 space-y-1.5 font-quote text-[15px] italic leading-[22px] text-foreground">
                 <p>&ldquo;yeah idk lol, can we talk about this later&rdquo;</p>
                 <p>&ldquo;i&apos;m not really a feelings guy you know that&rdquo;</p>
               </div>

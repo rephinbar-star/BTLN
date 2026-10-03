@@ -12,7 +12,7 @@ import { groupMessages, pairMessages, quickMessages, wrappedMessages } from "@/l
 import { Relationship360Preview } from "@/components/relationship360/Relationship360Preview";
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => <section className="border-t border-btln-line py-7"><h2 className="text-xl font-semibold">{title}</h2><div className="mt-3 space-y-3 text-[15px] leading-7">{children}</div></section>;
-const Evidence = ({ children }: { children: React.ReactNode }) => <blockquote className="border-l-2 border-btln-sage pl-4 text-muted-foreground">“{children}”</blockquote>;
+const Evidence = ({ children }: { children: React.ReactNode }) => <blockquote className="min-w-0 break-words border-l-2 border-btln-sage pl-4 font-quote text-[15px] italic leading-[22px] text-muted-foreground">“{children}”</blockquote>;
 export const ExampleContent = ({ kind, compact = false }: { kind: ExampleKind; compact?: boolean }) => {
   const meta = EXAMPLES.find((entry) => entry.kind === kind) ?? EXAMPLES[0];
   return <div className={compact ? "mx-auto max-w-3xl px-5 pb-28 pt-5 sm:px-8" : "mx-auto max-w-3xl px-5 pb-28 pt-8 sm:px-8"}>

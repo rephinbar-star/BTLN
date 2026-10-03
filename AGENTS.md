@@ -7,3 +7,4 @@
 - Deep Read quotations are checked verbatim against canonical messages by `_shared/quoteIntegrity.ts` before temp messages are deleted; unquoted evidence is labelled paraphrase — so invented wording is never shown as a quote.
 
 - Test-run output is tagged server-side in `evaluation_artifacts`; candidate output is quarantined and never staged into Journey, other test output is eligible only inside a server-issued test run — so evaluation data can never leak into real profiles or aggregates.
+- Literal source-message and verified quoted-evidence displays use the shared Newsreader `font-quote` family, while paraphrases and generated prose retain the UI font — so typography never implies that interpretation is a verbatim quote.

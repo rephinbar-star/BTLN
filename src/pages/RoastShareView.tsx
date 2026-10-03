@@ -88,7 +88,7 @@ const RoastShareView = () => {
 
             {snapshot.receipt?.quote && (
               <div className="mt-6 rounded-2xl border border-border bg-muted/30 p-5">
-                <p className="border-l-2 border-border pl-3 text-[16px] italic">
+                <p className="min-w-0 break-words border-l-2 border-border pl-3 font-quote text-[16px] italic leading-relaxed">
                   “{snapshot.receipt.quote}”
                 </p>
                 {snapshot.receipt.note && (
