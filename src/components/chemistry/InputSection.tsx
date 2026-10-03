@@ -397,9 +397,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     const reviewed = sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method;
     const pendingShots = sharedDraft.method === "screenshots" && sharedDraft.screenshots.length > 0;
     if (!reviewed && pendingShots) {
-      banner = sharedDraft.screenshotSelfSide
-        ? "Tap “Preview extracted messages” to read your screenshots before analyzing."
-        : "Choose which side of the screenshots is you, then tap “Preview extracted messages”.";
+      banner = sharedDraft.screenshotSelfSide || sharedDraft.selfAbsent
+        ? "Tap “Review messages” to read your screenshots before analyzing."
+        : "Choose which side of the screenshots is you, then tap “Review messages”.";
     } else if (!reviewed && sharedDraft.method === "screenshots") {
       banner = "Upload at least one screenshot.";
     } else if (!reviewed) {
@@ -664,7 +664,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         </p>
 
          {/* Relationship type */}
-         <div className="mt-8 border-t border-border pt-6">
+         {sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-8 border-t border-border pt-6">
            <h2 className="mb-4 text-xl font-medium">Relationship context</h2>
            <p className={labelClass} id="relationship-type-label">Relationship type</p>
            <div className="mt-1.5 grid grid-cols-3 gap-1 sm:gap-2" role="radiogroup" aria-labelledby="relationship-type-label">
@@ -779,9 +779,10 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             </div>
           </div>
         </div>
+         }
 
         {/* Submit */}
-        <div className="mt-7 flex flex-col items-center">
+        {sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-7 flex flex-col items-center">
           <button
             type="submit"
             disabled={submitting}
@@ -794,6 +795,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
              By continuing, you agree your messages will be processed by AI. Your raw messages are deleted after processing; your report may include selected excerpts.
           </p>
         </div>
+        }
       </form>
 
       <AlertDialog open={pendingMode !== null} onOpenChange={(open) => !open && setPendingMode(null)}>
