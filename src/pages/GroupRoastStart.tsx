@@ -299,6 +299,7 @@ const GroupRoastStart = () => {
                 setSharedDraft(next);
                 if (next.conversation && next.conversation.format !== "screenshots_pending" && next.conversation.sourceKind === next.method && (next.selfParticipantId || next.selfAbsent)) {
                   const result = parsedFromCanonical(next.conversation);
+                  lastRaw.current = next.conversation.sourceKind === "chat_export" ? next.importedText ?? "" : next.conversation.sourceKind === "paste" ? next.text : "";
                   setParsed({
                     ...result,
                     format: result.format === "whatsapp_ios" || result.format === "whatsapp_android" ? "whatsapp" : result.format === "imessage_csv" || result.format === "imessage_txt" ? "imessage" : "attributed_text",
@@ -656,6 +657,12 @@ const GroupRoastStart = () => {
               </p>
             )}
 
+            {includedMessageCount < MIN_MESSAGES && (
+              <p className="text-[14px] text-muted-foreground" role="status">
+                Group Roast needs at least {MIN_MESSAGES} selected messages; {includedMessageCount} are selected now.
+              </p>
+            )}
+
             {error && (
               <p className="flex items-start gap-2 text-[14px] text-destructive">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" /> {error}
@@ -676,7 +683,7 @@ const GroupRoastStart = () => {
               <button
                 type="button"
                 onClick={submit}
-                disabled={submitting || (!selfId && !selfAbsent) || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS}
+                disabled={submitting || (!selfId && !selfAbsent) || selectedParticipants.length < MIN_PARTICIPANTS || selectedParticipants.length > MAX_PARTICIPANTS || includedMessageCount < MIN_MESSAGES}
                 className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-7 py-3.5 text-base font-medium text-background transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
