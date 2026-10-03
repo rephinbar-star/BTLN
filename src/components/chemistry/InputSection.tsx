@@ -692,7 +692,6 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               );
             })}
           </div>
-        </div>
         {/* Dropdowns */}
         <div className="mt-5 flex flex-col gap-4">
           <div>
@@ -778,7 +777,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             </div>
           </div>
         </div>
-         }
+        </div>}
 
         {/* Submit */}
         {sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-7 flex flex-col items-center">
