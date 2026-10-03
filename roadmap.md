@@ -1,5 +1,8 @@
 # Roadmap
 
+- [ ] Implement approved Quick Take, Deep Read, Group Roast and Relationship360 layouts with shared intake safeguards.
+- [ ] Verify responsive pages, universal intake and fictional profile; document limits.
+
 - [x] Replace the homepage with the approved illustrated four-mode layout and shared example.
 - [x] Verify cards, navigation, accessibility, responsive views, and document the unpublished closeout.
 
