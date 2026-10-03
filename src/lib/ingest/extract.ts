@@ -19,8 +19,6 @@ export async function extractScreenshotConversation(
   });
   if (error || !data?.transcript) throw new Error(data?.error ?? error?.message ?? "We couldn't read those screenshots.");
   const parsed = parseTranscript(String(data.transcript));
-  const self = parsed.participants.find((person) => person.display_name === "You");
-  if (self) self.is_self = true;
   const conversation = canonicalizeParsedConversation(parsed, "screenshots", `screenshot-preview:${requestId}`);
   conversation.warnings = [...conversation.warnings, ...(Array.isArray(data.warnings) ? data.warnings : [])];
   return conversation;
