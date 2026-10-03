@@ -7,6 +7,7 @@ import { BottomNav } from "@/components/nav/BottomNav";
 import { Button } from "@/components/ui/button";
 import { SeeExample } from "@/components/examples/ExampleExperience";
 import { Relationship360Live } from "@/components/relationship360/Relationship360Live";
+import { ModeIntro } from "@/components/ingest/ModeIntro";
 import { RelationshipGrouping } from "@/components/relationship360/RelationshipGrouping";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -202,16 +203,9 @@ const Journey = () => {
       </Helmet>
       <Header />
 
-      <main className="mx-auto max-w-2xl px-5 pb-24 pt-8">
-        <h1 className="text-[28px] font-semibold leading-tight text-foreground sm:text-[34px]">
-          Your Relationship360
-        </h1>
-        <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-          Understand who you are in your relationships—and get insights and coaching for self
-          improvement. Relationship360 is private to your account. Nothing is added unless you add
-          it yourself, and there is no share link for it.
-        </p>
-        <SeeExample kind="journey" />
+      <main className="mx-auto max-w-4xl px-5 pb-24 pt-5 sm:px-8">
+        <ModeIntro kind="relationship" />
+        <div className="mt-3"><SeeExample kind="journey" /></div>
 
         {loading ? (
           <div className="mt-12 flex justify-center">
@@ -333,9 +327,7 @@ const Journey = () => {
             {optedIn && !needsReconsent && (
               <section id="add-conversation" className="mt-6 scroll-mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
                 <h2 className="text-[18px] font-semibold text-foreground">Add a conversation</h2>
-                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                  Start an eligible read with screenshots, a supported chat export, or pasted text. After that read completes, you can include its structured observations here and confirm which participant is you. Relationship360 never profiles a raw upload directly.
-                </p>
+                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Only completed, saved reads contribute after you confirm who you are. Raw uploads are not profiled here.</p>
                 <Button asChild variant="outline" className="mt-4 h-12 w-full rounded-full">
                   <Link to="/deep?from=relationship360"><Upload className="h-4 w-4" /> Add through Deep Read</Link>
                 </Button>

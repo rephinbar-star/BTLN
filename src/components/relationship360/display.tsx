@@ -34,7 +34,7 @@ export const R360Overview = ({
 }: {
   headline: string;
   takeaways: { id: string; label: string }[];
-  counts: { sources: number; relationships: number; periods: number };
+  counts: { sources: number; relationships: number; periods?: number };
 }) => (
   <section className="min-w-0" data-r360-narrative>
     <h2 className="text-[22px] font-medium leading-tight tracking-[-0.5px] sm:text-[26px]">{headline}</h2>
@@ -49,8 +49,8 @@ export const R360Overview = ({
     )}
     <p className="mt-3 text-[14px] text-muted-foreground">
       Built from {counts.sources} included {counts.sources === 1 ? "conversation" : "conversations"} across{" "}
-      {counts.relationships} {counts.relationships === 1 ? "relationship" : "relationships"} and {counts.periods}{" "}
-      {counts.periods === 1 ? "period" : "periods"}.
+      {counts.relationships} {counts.relationships === 1 ? "relationship" : "relationships"}
+      {counts.periods != null ? ` and ${counts.periods} ${counts.periods === 1 ? "period" : "periods"}` : ""}.
     </p>
   </section>
 );

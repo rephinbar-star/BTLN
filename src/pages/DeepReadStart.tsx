@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/chemistry/Header";
 import { InputSection } from "@/components/chemistry/InputSection";
 import { SeeExample } from "@/components/examples/ExampleExperience";
+import { ModeIntro } from "@/components/ingest/ModeIntro";
 
 const DeepReadStart = () => (
   <div className="min-h-screen bg-btln-paper text-foreground">
@@ -14,17 +15,8 @@ const DeepReadStart = () => (
       <link rel="canonical" href="https://betweenthelines.app/deep" />
     </Helmet>
     <Header />
-    <main className="mx-auto max-w-3xl px-5 pb-20 pt-4 sm:px-8">
-      <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[40px]">
-        The two of us
-      </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-        Does the same thing keep happening between you? Bring a chat export, a paste, or
-        screenshots. You'll get attachment-style signals, the Gottman Four Horsemen check,
-        Five Love Languages discovery and practical next steps — read as communication
-        patterns, not a clinical assessment.
-      </p>
-      <SeeExample kind="deep" />
+    <main className="mx-auto max-w-5xl px-0 pb-20 pt-4 md:grid md:grid-cols-2 md:items-start md:gap-8 md:px-8 md:pt-12">
+      <div className="px-5 sm:px-8 md:px-0"><ModeIntro kind="deep" /><div className="mt-4"><SeeExample kind="deep" /></div></div>
       <InputSection hideIntro />
     </main>
   </div>

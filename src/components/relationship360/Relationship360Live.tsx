@@ -195,7 +195,6 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
               counts={{
                 sources: coverage?.sources ?? 0,
                 relationships: coverage?.relationships ?? 0,
-                periods: 1,
               }}
             />
             {content.narrative && (

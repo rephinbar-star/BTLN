@@ -14,8 +14,8 @@ export const DecodeInput = () => {
   const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
 
-  const hasInput = Boolean(draft.conversation && draft.conversation.format !== "screenshots_pending");
-  const identityConfirmed = draft.selfAbsent || (draft.method === "screenshots" ? Boolean(draft.screenshotSelfSide) : Boolean(draft.selfParticipantId));
+  const hasInput = Boolean(draft.conversation && draft.conversation.format !== "screenshots_pending" && draft.conversation.sourceKind === draft.method);
+  const identityConfirmed = draft.selfAbsent || Boolean(draft.selfParticipantId);
 
   const onSubmit = async () => {
     if (!hasInput || !identityConfirmed || submitting) return;
@@ -35,9 +35,7 @@ export const DecodeInput = () => {
     const input: Record<string, unknown> = {
       name1: selected?.display_name ?? "You",
       name2: other?.display_name ?? "Them",
-      identity_confirmation: draft.selfAbsent ? { absent: true } : draft.method === "screenshots"
-        ? { self_side: draft.screenshotSelfSide, participant_id: draft.selfParticipantId }
-        : { participant_id: draft.selfParticipantId, conversation_id: draft.conversation?.id },
+      identity_confirmation: draft.selfAbsent ? { absent: true } : { participant_id: draft.selfParticipantId, conversation_id: draft.conversation?.id, ...(draft.conversation?.sourceKind === "screenshots" ? { self_side: draft.screenshotSelfSide } : {}) },
       ingestion: draft.conversation,
     };
     input.raw_text = draft.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? draft.text;
@@ -50,6 +48,7 @@ export const DecodeInput = () => {
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 shadow-sm sm:p-6">
+      <h2 className="mb-4 text-xl font-bold">Add your messages</h2>
       <SharedConversationInput value={draft} onChange={setDraft} maxScreenshots={10} extractScreenshots={extractScreenshotConversation} />
       {!identityConfirmed && hasInput && <p className="mt-3 text-sm text-destructive">Confirm which participant or screenshot side is you before continuing.</p>}
       {error && <p role="alert" className="mt-3 text-sm text-destructive">{error}</p>}

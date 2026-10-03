@@ -1,0 +1,19 @@
+# Four-mode pages — unpublished closeout
+
+## Changed
+
+- `src/components/ingest/ModeIntro.tsx`, `src/pages/QuickTake.tsx`, `src/pages/DeepReadStart.tsx`, `src/pages/GroupRoastStart.tsx`, `src/pages/Journey.tsx`, `src/components/examples/ExampleExperience.tsx`: approved mode heroes, existing four WebP asset references, responsive layouts and fictional Relationship360 hero. No homepage, wordmark or pair-type artwork change.
+- `src/components/ingest/SharedConversationInput.tsx`, `src/lib/ingest/extract.ts`, `src/components/chemistry/DecodeInput.tsx`, `src/components/chemistry/InputSection.tsx`, `src/pages/GroupRoastStart.tsx`: common Screenshots / Import / Paste text review, separate retained paste/import drafts, screenshot ordering and retry, editable canonical preview and explicit self selection before the existing mode handlers. Deep context appears after review and self confirmation; changing a reviewed transcript or method clears that confirmation. Existing Group Roast selection, date and participant controls remain.
+- `src/components/relationship360/Relationship360Live.tsx`, `src/components/relationship360/display.tsx`: real profile's scope, coverage, evidence, insight/introspection, suggestions and reflections remain tied to stored observations; the overview no longer claims an unsupported count of periods. `roadmap.md` records completion of this UI batch.
+
+## Local verification
+
+- Chromium after `document.fonts.ready` at 375×812 and 1280×900: `/quick`, `/deep`, `/group-roast`, `/examples/relationship360` loaded their intended 560px-wide existing artwork; Syne headings computed correctly; document overflow was **0px** for each; no page errors. Screenshots of these views were inspected. Signed-out `/journey` correctly redirected to sign-in.
+- At 375px each intake started on Screenshots; tab order was Screenshots, Import, Paste text. Pasted text survived method switching; import of a small fictional `.txt` produced a reviewed conversation and survived switching away and back. Invalid PDF was rejected with a PNG/JPG/WebP explanation. Synthetic image selection displayed preview, side selection and screenshot ordering controls; changing method reset side choice but retained the image. Screenshot OCR was **not** invoked to avoid a model call.
+- Review of fictional pasted messages exposed editable transcript and speaker correction; no identity was selected automatically. Saving corrections reset self confirmation. Deep context was hidden before a participant choice and shown afterward; Group Roast exposed participant selection and disabled analysis for four selected messages with a visible 10-message threshold. No submit or purchase was initiated.
+- With a locally minted account session, `/journey` displayed the consent-required state, privacy controls and dedicated read handoff; user consent was **not** changed. The fictional `/examples/relationship360` loaded and identified itself as fictional. Focus, touch sizing and narrow-layout checks were browser inspected, not physical-device tested.
+- Focused tests: **45 passed** (canonical ingestion, group parsing, Deep context). Build and TypeScript checks are performed by the managed project harness; no production deployment or publication was requested.
+
+## Remaining limits
+
+The authenticated opted-in live dashboard, saved-read inclusion, screenshot OCR extraction, backend analysis, payment/checkout and account-specific result pages were not exercised in this presentation pass. The Deep Read read-after-submit and Group Roast handoff were reviewed in source; no real customer flow, server mutation, or human signoff is claimed. The app remains unpublished.

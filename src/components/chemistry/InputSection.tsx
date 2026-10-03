@@ -21,6 +21,8 @@ import type { TranscriptCandidate } from "@/lib/ingest/archive";
 import { takeDeepReadHandoff } from "@/lib/ingest/handoff";
 import { SharedConversationInput, emptyConversationDraft, type ConversationDraft } from "@/components/ingest/SharedConversationInput";
 import { extractScreenshotConversation } from "@/lib/ingest/extract";
+import { parseTranscript } from "@/lib/ingest/parse";
+import { canonicalizeParsedConversation } from "@/lib/ingest/canonical";
 import { Button } from "@/components/ui/button";
 
 type FormState = {
@@ -229,6 +231,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     if (!handed) return;
     const t = truncateConversation(handed, MAX_MESSAGES);
     setForm((prev) => ({ ...prev, conversation: t.text }));
+    try {
+      setSharedDraft({ ...emptyConversationDraft(), method: "paste", text: t.text, conversation: canonicalizeParsedConversation(parseTranscript(t.text), "paste", "group-handoff") });
+    } catch { /* Keep the handoff text available for correction and review. */ }
     setMode("paste");
     setLoadedFileName("your import");
     if (t.truncated) {
@@ -389,14 +394,18 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     let banner: string | undefined;
 
     // The shared input owns uploads. Only a reviewed transcript can be analyzed.
-    const reviewed = sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending";
+    const reviewed = sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method;
     const pendingShots = sharedDraft.method === "screenshots" && sharedDraft.screenshots.length > 0;
     if (!reviewed && pendingShots) {
-      banner = sharedDraft.screenshotSelfSide
-        ? "Tap “Preview extracted messages” to read your screenshots before analyzing."
-        : "Choose which side of the screenshots is you, then tap “Preview extracted messages”.";
+      banner = sharedDraft.screenshotSelfSide || sharedDraft.selfAbsent
+        ? "Tap “Review messages” to read your screenshots before analyzing."
+        : "Choose which side of the screenshots is you, then tap “Review messages”.";
     } else if (!reviewed && sharedDraft.method === "screenshots") {
       banner = "Upload at least one screenshot.";
+    } else if (!reviewed) {
+      banner = "Review your messages before continuing.";
+    } else if (!sharedDraft.selfAbsent && !sharedDraft.selfParticipantId) {
+      banner = "Confirm which participant is you before continuing.";
     } else if (form.conversation.trim().length < 100) {
       if (mode === "file") banner = "Upload a chat file with at least 100 characters of conversation.";
       else errors.conversation = "Paste at least 100 characters of conversation.";
@@ -434,8 +443,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
     // below the confident-read threshold, warn the user before submitting.
     // Screenshots: count isn't known until server-side OCR, so we skip
     // this gate here — the report page handles low-confidence output.
-    if (mode === "paste" || mode === "file") {
-      const { total } = truncateConversation(form.conversation, MAX_MESSAGES);
+    if (sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending") {
+      const total = sharedDraft.conversation.messages.length;
       if (total < MIN_CONFIDENT_MESSAGES) {
         setLowConfidenceConfirm({ total });
         return;
@@ -624,16 +633,18 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
 
         {/* How-to help */}
         <div className="mt-3">
-          <HowToHelp />
+          <details className="text-sm text-muted-foreground"><summary className="min-h-11 cursor-pointer content-center">How can I add my chat?</summary><HowToHelp /></details>
         </div>
 
          <div className="mt-5" id="add-conversation">
            <h2 className="mb-2 text-xl font-medium">Add conversation</h2>
            <p className="mb-3 text-sm text-muted-foreground">1 Add messages · 2 Confirm who you are · 3 Get your read</p>
-           <p className="mb-3 text-sm text-muted-foreground">Add screenshots, paste messages, or import a supported chat file. Check the preview and tell us which participant is you before continuing.</p>
           <SharedConversationInput
             value={sharedDraft}
             onChange={(next) => {
+              const previousNames = sharedDraft.conversation?.participants ?? [];
+              const previousSelf = previousNames.find((person) => person.id === sharedDraft.selfParticipantId)?.display_name;
+              const previousOther = previousNames.find((person) => person.id !== sharedDraft.selfParticipantId)?.display_name;
               setSharedDraft(next);
               if (next.conversation && next.conversation.format !== "screenshots_pending") {
                 const names = next.conversation.participants;
@@ -642,10 +653,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                 setForm((prev) => ({
                   ...prev,
                   conversation: next.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? "",
-                  yourName: self?.display_name ?? prev.yourName,
-                  theirName: other?.display_name ?? prev.theirName,
+                  yourName: (!prev.yourName || (previousSelf && prev.yourName === previousSelf)) && next.selfParticipantId ? self?.display_name ?? "" : prev.yourName,
+                  theirName: (!prev.theirName || (previousOther && prev.theirName === previousOther)) && next.selfParticipantId ? other?.display_name ?? "" : prev.theirName,
                 }));
-                setMode("paste");
               }
             }}
             extractScreenshots={extractScreenshotConversation}
@@ -657,7 +667,7 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         </p>
 
          {/* Relationship type */}
-         <div className="mt-8 border-t border-border pt-6">
+         {sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-8 border-t border-border pt-6">
            <h2 className="mb-4 text-xl font-medium">Relationship context</h2>
            <p className={labelClass} id="relationship-type-label">Relationship type</p>
            <div className="mt-1.5 grid grid-cols-3 gap-1 sm:gap-2" role="radiogroup" aria-labelledby="relationship-type-label">
@@ -685,8 +695,6 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
               );
             })}
           </div>
-        </div>
-
         {/* Dropdowns */}
         <div className="mt-5 flex flex-col gap-4">
           <div>
@@ -772,9 +780,10 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
             </div>
           </div>
         </div>
+        </div>}
 
         {/* Submit */}
-        <div className="mt-7 flex flex-col items-center">
+        {sharedDraft.conversation && sharedDraft.conversation.format !== "screenshots_pending" && sharedDraft.conversation.sourceKind === sharedDraft.method && (sharedDraft.selfParticipantId || sharedDraft.selfAbsent) && <div className="mt-7 flex flex-col items-center">
           <button
             type="submit"
             disabled={submitting}
@@ -787,22 +796,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
              By continuing, you agree your messages will be processed by AI. Your raw messages are deleted after processing; your report may include selected excerpts.
           </p>
         </div>
+        }
       </form>
-
-      <AlertDialog open={pendingMode !== null} onOpenChange={(open) => !open && setPendingMode(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Switch input method?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Switching tabs will clear your current input. Continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmModeChange}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       <AlertDialog
         open={lowConfidenceConfirm !== null}
