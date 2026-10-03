@@ -300,7 +300,7 @@ const RoastResult = () => {
             <h2 className="text-[13px] font-semibold uppercase tracking-wide text-muted-foreground">
               The receipt
             </h2>
-            <p className="mt-2 border-l-2 border-border pl-3 text-[16px] italic">
+            <p className="mt-2 min-w-0 break-words border-l-2 border-border pl-3 font-quote text-[16px] italic leading-relaxed">
               “{result.receipt.quote}”
             </p>
             {result.receipt.note && (

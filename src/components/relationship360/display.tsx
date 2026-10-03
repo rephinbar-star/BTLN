@@ -130,10 +130,10 @@ const EvidenceList = ({ items }: { items: ResolvedEvidence[] }) => (
   <ul className="mt-3 space-y-3">
     {items.map((item, index) => (
       <li key={`${item.sourceId}-${index}`} className="min-w-0 border-l-2 border-btln-sage pl-4">
-        <p className="min-w-0 whitespace-pre-wrap break-words text-[15px] leading-6">
-          {item.sender}: “{item.text}”
+        <p className="min-w-0 whitespace-pre-wrap break-words text-[15px] leading-[22px]">
+          <span className="font-sans font-semibold">{item.sender}:</span> <span className="font-quote italic">“{item.text}”</span>
         </p>
-        <p className="mt-1 text-[12px] text-muted-foreground">
+        <p className="mt-1 font-mono text-[12px] text-muted-foreground">
           {item.product} · {item.sourceLabel} · {item.observedRange}
         </p>
       </li>

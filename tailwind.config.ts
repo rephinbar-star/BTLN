@@ -18,6 +18,7 @@ export default {
         display: ["Syne", '"Plus Jakarta Sans"', "system-ui", "sans-serif"],
         wordmark: ["-apple-system", "BlinkMacSystemFont", '"Inter"', '"Segoe UI"', "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
+        quote: ['"Newsreader"', "Georgia", "Times New Roman", "serif"],
       },
       boxShadow: {
         "glow-violet": "0 0 22px -6px hsl(var(--prism-violet) / 0.55)",
