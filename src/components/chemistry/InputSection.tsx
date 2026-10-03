@@ -642,6 +642,9 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
           <SharedConversationInput
             value={sharedDraft}
             onChange={(next) => {
+              const previousNames = sharedDraft.conversation?.participants ?? [];
+              const previousSelf = previousNames.find((person) => person.id === sharedDraft.selfParticipantId)?.display_name;
+              const previousOther = previousNames.find((person) => person.id !== sharedDraft.selfParticipantId)?.display_name;
               setSharedDraft(next);
               if (next.conversation && next.conversation.format !== "screenshots_pending") {
                 const names = next.conversation.participants;
@@ -650,8 +653,8 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
                 setForm((prev) => ({
                   ...prev,
                   conversation: next.conversation?.messages.map((message) => `${message.raw_sender ?? "Unknown"}: ${message.content}`).join("\n") ?? "",
-                  yourName: prev.yourName || (next.selfParticipantId ? self?.display_name ?? "" : ""),
-                  theirName: prev.theirName || (next.selfParticipantId ? other?.display_name ?? "" : ""),
+                  yourName: (!prev.yourName || (previousSelf && prev.yourName === previousSelf)) && next.selfParticipantId ? self?.display_name ?? "" : prev.yourName,
+                  theirName: (!prev.theirName || (previousOther && prev.theirName === previousOther)) && next.selfParticipantId ? other?.display_name ?? "" : prev.theirName,
                 }));
               }
             }}
