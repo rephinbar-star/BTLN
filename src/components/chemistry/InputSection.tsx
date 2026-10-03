@@ -796,21 +796,6 @@ export const InputSection = ({ hideIntro = false }: InputSectionProps = {}) => {
         }
       </form>
 
-      <AlertDialog open={pendingMode !== null} onOpenChange={(open) => !open && setPendingMode(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Switch input method?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Switching tabs will clear your current input. Continue?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmModeChange}>Continue</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <AlertDialog
         open={lowConfidenceConfirm !== null}
         onOpenChange={(open) => !open && setLowConfidenceConfirm(null)}
