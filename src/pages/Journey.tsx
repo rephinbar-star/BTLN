@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { SeeExample } from "@/components/examples/ExampleExperience";
 import { Relationship360Live } from "@/components/relationship360/Relationship360Live";
 import { ModeIntro } from "@/components/ingest/ModeIntro";
+import { AddReadLinks } from "@/components/relationship360/DashboardSections";
 import { RelationshipGrouping } from "@/components/relationship360/RelationshipGrouping";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -248,16 +249,11 @@ const Journey = () => {
               </section>
             )}
 
-            {optedIn && !needsReconsent && <>
-              <Relationship360Live relationships={relationships} />
-              <nav aria-label="Relationship360 actions" className="mt-4 flex flex-wrap gap-4 text-sm">
-                <a href="#add-conversation" className="min-h-11 content-center underline underline-offset-4">Add conversation</a>
-                <a href="#manage-conversations" className="min-h-11 content-center underline underline-offset-4">Manage included conversations</a>
-              </nav>
-            </>}
+            {optedIn && !needsReconsent && <Relationship360Live relationships={relationships} />}
 
+            <details id="manage-conversations" className="mt-7 rounded-lg border border-border bg-card px-4 py-2"><summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">Manage relationships and included reads</summary>
             {optedIn && !needsReconsent && (
-              <section className="mt-8 rounded-2xl border border-border bg-card p-5 shadow-sm">
+              <section className="mt-4 p-2">
                 <h2 className="text-[18px] font-semibold text-foreground">Add a relationship</h2>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {RELATIONSHIP_KINDS.map((k) => (
@@ -324,16 +320,6 @@ const Journey = () => {
               </p>
             )}
 
-            {optedIn && !needsReconsent && (
-              <section id="add-conversation" className="mt-6 scroll-mt-6 rounded-2xl border border-border bg-card p-5 shadow-sm">
-                <h2 className="text-[18px] font-semibold text-foreground">Add a conversation</h2>
-                <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Only completed, saved reads contribute after you confirm who you are. Raw uploads are not profiled here.</p>
-                <Button asChild variant="outline" className="mt-4 h-12 w-full rounded-full">
-                  <Link to="/deep?from=relationship360"><Upload className="h-4 w-4" /> Add through Deep Read</Link>
-                </Button>
-              </section>
-            )}
-
             {!optedIn && relationships.length > 0 && (
               <p className="mt-8 text-[14px] leading-relaxed text-muted-foreground">
                 Relationship360 is off, so nothing new is added. What you already included is below
@@ -341,7 +327,7 @@ const Journey = () => {
               </p>
             )}
 
-            <div id="manage-conversations" className="scroll-mt-6" />
+            
             {relationships.length === 0
               ? optedIn && !needsReconsent && (
                   <p className="mt-6 text-[14px] text-muted-foreground">
@@ -608,14 +594,15 @@ const Journey = () => {
                     </section>
                   );
                 })}
-
+            </details>
+              {optedIn && !needsReconsent && <section id="add-conversation" className="mt-6 scroll-mt-6 rounded-lg border border-border bg-card p-4"><AddReadLinks /></section>}
           </>
         )}
 
         {/* Privacy controls stay available whether or not Relationship360 is on. */}
         {!loading && (
-          <section className="mt-10 rounded-[20px] border border-btln-line bg-btln-mint p-5">
-            <h2 className="text-[16px] font-semibold text-foreground">Privacy controls</h2>
+          <details className="mt-8 rounded-lg border border-border bg-card px-4 py-2">
+            <summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">Privacy controls · Export, turn off or delete</summary>
             <p className="mt-2 text-[13px] leading-relaxed text-muted-foreground">
               Relationship360 stores structured observations and the reports you linked — never the
               raw chat you uploaded, which follows the deletion rules already described in your
@@ -658,7 +645,7 @@ const Journey = () => {
                 Delete my Relationship360 data
               </Button>
             </div>
-          </section>
+          </details>
         )}
       </main>
 

@@ -16,8 +16,8 @@ const DeepReadStart = () => (
     </Helmet>
     <Header />
     <main className="mx-auto max-w-5xl px-0 pb-20 pt-4 md:grid md:grid-cols-2 md:items-start md:gap-8 md:px-8 md:pt-12">
-      <div className="px-5 sm:px-8 md:px-0"><ModeIntro kind="deep" /><div className="mt-4"><SeeExample kind="deep" /></div></div>
-      <InputSection hideIntro />
+      <div className="px-5 sm:px-8 md:px-0"><ModeIntro kind="deep" /><div className="mt-4 hidden md:block"><SeeExample kind="deep" /></div></div>
+      <div className="min-w-0"><InputSection hideIntro /><div className="px-5 md:hidden"><SeeExample kind="deep" /></div></div>
     </main>
   </div>
 );

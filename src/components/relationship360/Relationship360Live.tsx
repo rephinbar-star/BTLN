@@ -5,11 +5,11 @@ import { useToast } from "@/hooks/use-toast";
 import { FeedbackProvider } from "@/components/feedback/FeedbackProvider";
 import {
   R360Card,
-  R360Overview,
   R360PatternDetail,
   R360RecommendationCard,
   R360WhatsWorking,
 } from "@/components/relationship360/display";
+import { DashboardPanel, DashboardPattern, DashboardScope } from "@/components/relationship360/DashboardSections";
 import { QUESTION_LABELS } from "@/lib/relationship360/select";
 import {
   buildLive,
@@ -40,8 +40,7 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
   const [status, setStatus] = useState<LiveStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [building, setBuilding] = useState(false);
-  const [reflectFor, setReflectFor] = useState<string | null>(null);
-  const [reflectText, setReflectText] = useState("");
+  const [privateNote, setPrivateNote] = useState("");
 
   const load = useCallback(async () => {
     if (recorded) { setStatus(recorded); setLoading(false); return; }
@@ -101,6 +100,16 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
     }
   };
 
+  const savePrivateNote = async () => {
+    if (recorded || !privateNote.trim()) return;
+    try {
+      await saveReflection({ relationshipId, kind: "reflection", text: privateNote.trim() });
+      setPrivateNote("");
+      toast({ title: "Saved privately" });
+      await load();
+    } catch (error) { toast({ title: "Could not save your note", description: error instanceof Error ? error.message : undefined, variant: "destructive" }); }
+  };
+
   const submitReflection = async (recommendationId: string, outcome: "used" | "not_used") => {
     if (recorded) return;
     try {
@@ -108,11 +117,9 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
         relationshipId,
         recommendationId,
         kind: "action_outcome",
-        text: reflectText.trim() || (outcome === "used" ? "I used this." : "I have not used this yet."),
+        text: outcome === "used" ? "I used this." : "I have not used this yet.",
         outcome,
       });
-      setReflectFor(null);
-      setReflectText("");
       toast({ title: "Saved privately", description: "Stored as your own account of what happened, separate from observed evidence." });
       await load();
     } catch (error) {
@@ -156,29 +163,7 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
         {LIVE_STATE_COPY[state]}
       </p>
 
-      {relationships.length > 0 && (
-        <div className="mt-4 flex flex-wrap gap-2" role="group" aria-label="Relationships">
-          <button
-            type="button"
-            aria-pressed={relationshipId === null}
-            onClick={() => setRelationshipId(null)}
-            className={`min-h-11 rounded-full border px-4 text-[14px] ${relationshipId === null ? "border-foreground bg-foreground text-background" : "border-btln-line text-muted-foreground"}`}
-          >
-            Everyone
-          </button>
-          {relationships.map((rel) => (
-            <button
-              key={rel.id}
-              type="button"
-              aria-pressed={relationshipId === rel.id}
-              onClick={() => setRelationshipId(rel.id)}
-              className={`min-h-11 rounded-full border px-4 text-[14px] ${relationshipId === rel.id ? "border-foreground bg-foreground text-background" : "border-btln-line text-muted-foreground"}`}
-            >
-              {rel.label}
-            </button>
-          ))}
-        </div>
-      )}
+      <DashboardScope value={relationshipId ?? "all"} onChange={(value) => setRelationshipId(value === "all" ? null : value)} options={[{ value: "all", label: "All relationships" }, ...relationships.map((rel) => ({ value: rel.id, label: rel.label }))]} />
 
       {status && status.counts.pending > 0 && (
         <p className="mt-3 text-[13px] text-muted-foreground">
@@ -188,121 +173,26 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
 
       {content && status?.summary && (
         <FeedbackProvider sourceKind="relationship360" sourceId={status.summary.id} demo={!!recorded}>
-          <div className="mt-6">
-            <R360Overview
-              headline={content.headline}
-              takeaways={content.takeaways}
-              counts={{
-                sources: coverage?.sources ?? 0,
-                relationships: coverage?.relationships ?? 0,
-              }}
-            />
-            {content.narrative && (
-              <R360Card className="mt-4">
-                <p className="whitespace-pre-wrap text-[15px] leading-relaxed">{content.narrative}</p>
-              </R360Card>
-            )}
-            {(coverage as { evaluation_scope?: string | null } | null)?.evaluation_scope && (
-              <p className="mt-3 rounded-md border border-border bg-muted px-3 py-2 text-[12px] text-foreground">
-                Test build: this was made in an operator evaluation run and includes test conversations. It is not an ordinary Relationship360.
-              </p>
-            )}
-            <p className="mt-3 text-[12px] text-muted-foreground">
-              Built {new Date(status.summary.generated_at).toLocaleString()} from {coverage?.observations ?? 0} stored observations. No raw messages are kept.
-              {(coverage as { recent_window_observations?: number } | null)?.recent_window_observations
-                ? ` ${(coverage as { recent_window_observations: number }).recent_window_observations} of them come from long conversations where only the most recent 400 messages were read closely, so they describe that recent stretch, not the whole history.`
-                : ""}
-              {(() => {
-                // omitted_observations is the total left out (size cap and call budget combined).
-                const n = (coverage as { omitted_observations?: number } | null)?.omitted_observations ?? 0;
-                return n > 0 ? ` ${n} further observations were left out to keep this build within its size limit.` : "";
-              })()}
-            </p>
-
-            <SourceCoverage sources={status.sources} observations={observations} cited={!!recorded} />
-
-            <ThenNow comparison={comparison} />
-
-            {patterns.map((pattern) => (
-              <R360PatternDetail
-                key={pattern.id}
-                pattern={pattern}
-                evidence={evidenceFor(pattern.evidence.map((ref) => ref.sourceId))}
-                questionLabel={QUESTION_LABELS[pattern.question]}
-              />
-            ))}
-
-            <R360WhatsWorking
-              items={(content.working ?? []).map((item) => ({ ...item, evidence: [] })) as R360Working[]}
-              evidenceFor={(item) =>
-                evidenceFor((content.working ?? []).find((w) => w.id === item.id)?.evidence ?? [])
-              }
-            />
-
-            <section className="mt-8 min-w-0">
-              <h3 className="text-[18px] font-medium">Suggestions for next time</h3>
-              {content.recommendations.length === 0 ? (
-                <p className="mt-2 text-[14px] text-muted-foreground">
-                  Nothing here needs changing on this evidence. What is working is above.
-                </p>
-              ) : (
-                content.recommendations.map((rec) => (
-                  <div key={rec.id}>
-                    <R360RecommendationCard
-                      recommendation={{ ...rec, evidence: [] } as R360Recommendation}
-                      evidence={evidenceFor(rec.evidence)}
-                      onCheckIn={(value) => {
-                        setReflectFor(rec.id);
-                        setReflectText("");
-                        void submitReflection(rec.id, value === "yes" ? "used" : "not_used");
-                      }}
-                    />
-                    {reflectFor === rec.id && (
-                      <R360Card className="mt-2">
-                        <label className="text-[14px] font-medium" htmlFor={`reflect-${rec.id}`}>
-                          What happened? (private, self-reported)
-                        </label>
-                        <textarea
-                          id={`reflect-${rec.id}`}
-                          value={reflectText}
-                          onChange={(event) => setReflectText(event.target.value)}
-                          maxLength={2000}
-                          rows={3}
-                          className="mt-2 w-full rounded-xl border border-btln-line bg-background p-3 text-base sm:text-[15px]"
-                        />
-                        <Button
-                          className="mt-2 h-11 rounded-full"
-                          disabled={!reflectText.trim()}
-                          onClick={() => void submitReflection(rec.id, "used")}
-                        >
-                          Save privately
-                        </Button>
-                      </R360Card>
-                    )}
-                  </div>
-                ))
-              )}
-            </section>
-
-            {(status.reflections ?? []).length > 0 && (
-              <section className="mt-8 min-w-0">
-                <h3 className="text-[18px] font-medium">Your own notes</h3>
-                <p className="mt-1 text-[13px] text-muted-foreground">
-                  Self-reported by you. These are kept apart from observed evidence and never treated as proof that anything changed.
-                </p>
-                <ul className="mt-3 space-y-2">
-                  {status.reflections.map((reflection) => (
-                    <li key={reflection.id} className="rounded-xl border border-btln-line p-3">
-                      <p className="text-[14px] leading-relaxed">{reflection.response_text}</p>
-                      <p className="mt-1 text-[12px] text-muted-foreground">
-                        {new Date(reflection.self_reported_at).toLocaleDateString()}
-                        {reflection.outcome ? ` · ${reflection.outcome.replace("_", " ")}` : ""}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+          <div className="mt-5 space-y-4">
+            <details className="rounded-lg border border-border bg-card px-4 py-2"><summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">{coverage?.sources ?? status.sources?.length ?? 0} reads · Source coverage</summary><SourceCoverage sources={status.sources} observations={observations} cited={!!recorded} /><p className="pb-3 text-xs text-muted-foreground">{coverage?.observations ?? observations.length} stored observations · Built {new Date(status.summary.generated_at).toLocaleDateString()}. No raw messages are kept.</p></details>
+            <div className="grid gap-4 md:grid-cols-[1.1fr_.9fr] md:items-start"><div className="space-y-4">
+              {patterns.length ? <DashboardPattern title={patterns[0].title} statement={patterns[0].statement} sources={[...new Set(patterns[0].evidence.map((ref) => observations.find((item) => item.id === ref.sourceId)?.journey_source_id).filter((id): id is string => Boolean(id)))].flatMap((id) => { const source = status.sources?.find((item) => item.id === id); return source ? [{ id, label: describeSource(source, observations.filter((item) => item.journey_source_id === id).length, !!recorded).kind, href: "#manage-conversations" }] : []; })}>
+                <details className="mt-3"><summary className="min-h-11 cursor-pointer content-center underline underline-offset-4">Read the evidence and limits</summary><R360PatternDetail pattern={patterns[0]} evidence={evidenceFor(patterns[0].evidence.map((ref) => ref.sourceId))} questionLabel={QUESTION_LABELS[patterns[0].question]} /></details>
+              </DashboardPattern> : <DashboardPanel heading="What keeps showing up"><p className="text-muted-foreground">Not enough source-backed patterns yet.</p></DashboardPanel>}
+              <DashboardPanel heading="Insights">{patterns.slice(1, 3).map((pattern) => <details key={pattern.id} className="border-b border-border py-2"><summary className="min-h-11 cursor-pointer content-center font-semibold">{pattern.title}</summary><R360PatternDetail pattern={pattern} evidence={evidenceFor(pattern.evidence.map((ref) => ref.sourceId))} questionLabel={QUESTION_LABELS[pattern.question]} /></details>)}{patterns.length < 2 && <p className="text-muted-foreground">No further source-backed patterns yet.</p>}</DashboardPanel>
+            </div><div className="space-y-4">
+              <DashboardPanel heading="Suggested next steps">{content.recommendations.length ? content.recommendations.slice(0, 2).map((rec) => <R360RecommendationCard key={rec.id} recommendation={{ ...rec, evidence: [] } as R360Recommendation} evidence={evidenceFor(rec.evidence)} onCheckIn={(value) => void submitReflection(rec.id, value === "yes" ? "used" : "not_used")} />) : <p className="text-muted-foreground">No source-backed next steps yet.</p>}</DashboardPanel>
+              <DashboardPanel heading="Introspection"><p>{patterns[0]?.introspection?.openingQuestion ?? "What would you like to understand about these exchanges?"}</p><p className="mt-2 text-xs text-muted-foreground">A question for reflection, not a claim about anyone’s intentions.</p><label htmlFor="r360-private-note" className="mt-4 block">Private optional note</label><textarea id="r360-private-note" value={privateNote} onChange={(event) => setPrivateNote(event.target.value)} maxLength={2000} rows={3} className="mt-2 w-full rounded-md border border-input bg-background p-3 text-base" /><Button className="mt-2 min-h-11" variant="outline" disabled={!privateNote.trim() || !!recorded} onClick={() => void savePrivateNote()}>Save privately</Button></DashboardPanel>
+            </div></div>
+            <details className="rounded-lg border border-border px-4 py-2"><summary className="min-h-11 cursor-pointer content-center text-sm font-semibold">More evidence, changes over time and your notes</summary>
+              {content.narrative && <p className="mt-3 whitespace-pre-wrap text-sm">{content.narrative}</p>}
+              {(coverage as { evaluation_scope?: string | null } | null)?.evaluation_scope && <p className="mt-3 text-xs">Test build: operator evaluation, not an ordinary Relationship360.</p>}
+              <ThenNow comparison={comparison} />
+              {patterns.slice(3).map((pattern) => <R360PatternDetail key={pattern.id} pattern={pattern} evidence={evidenceFor(pattern.evidence.map((ref) => ref.sourceId))} questionLabel={QUESTION_LABELS[pattern.question]} />)}
+              <R360WhatsWorking items={(content.working ?? []).map((item) => ({ ...item, evidence: [] })) as R360Working[]} evidenceFor={(item) => evidenceFor((content.working ?? []).find((w) => w.id === item.id)?.evidence ?? [])} />
+              {content.recommendations.slice(2).map((rec) => <R360RecommendationCard key={rec.id} recommendation={{ ...rec, evidence: [] } as R360Recommendation} evidence={evidenceFor(rec.evidence)} onCheckIn={(value) => void submitReflection(rec.id, value === "yes" ? "used" : "not_used")} />)}
+              {(status.reflections ?? []).length > 0 && <section className="mt-5"><h3 className="font-semibold">Your own notes · self-reported</h3><ul className="mt-2 space-y-2">{status.reflections.map((reflection) => <li key={reflection.id} className="rounded-md border border-border p-3 text-sm"><p>{reflection.response_text}</p><p className="text-xs text-muted-foreground">{new Date(reflection.self_reported_at).toLocaleDateString()}</p></li>)}</ul></section>}
+            </details>
           </div>
         </FeedbackProvider>
       )}
