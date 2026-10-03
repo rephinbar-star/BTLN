@@ -2,6 +2,7 @@ import { Helmet } from "react-helmet-async";
 import { Header } from "@/components/chemistry/Header";
 import { DecodeInput } from "@/components/chemistry/DecodeInput";
 import { SeeExample } from "@/components/examples/ExampleExperience";
+import { ModeIntro } from "@/components/ingest/ModeIntro";
 
 const QuickTake = () => (
   <div className="min-h-screen bg-btln-paper text-foreground">
@@ -14,21 +15,16 @@ const QuickTake = () => (
       <link rel="canonical" href="https://betweenthelines.app/quick" />
     </Helmet>
     <Header />
-    <main className="mx-auto max-w-2xl px-5 pb-20 pt-4 sm:px-8">
-      <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[40px]">
-        One text
-      </h1>
-      <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">
-        Stuck on what they meant—or what to say back? Add the screenshot or paste the message.
-        You'll get the likely read, what's going on underneath, and three replies you could send.
-      </p>
-      <SeeExample kind="quick" />
-      <div className="mt-6">
+    <main className="mx-auto max-w-5xl px-5 pb-20 pt-4 sm:px-8 md:grid md:grid-cols-2 md:items-start md:gap-10 md:pt-12">
+      <div><ModeIntro kind="quick" /><div className="mt-4 hidden md:block"><SeeExample kind="quick" /></div></div>
+      <div className="min-w-0 mt-6 md:mt-0">
         <DecodeInput />
+        <div className="mt-4 md:hidden"><SeeExample kind="quick" /></div>
       </div>
       <p className="mt-6 text-[13px] text-muted-foreground">
         Nothing you paste is kept in your browser. Your first read needs no signup.
       </p>
+      </div>
     </main>
   </div>
 );
