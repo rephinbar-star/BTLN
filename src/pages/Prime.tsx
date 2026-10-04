@@ -1,127 +1,80 @@
 import { Helmet } from "react-helmet-async";
-import { Link, useSearchParams } from "react-router-dom";
-import { Check, Info } from "lucide-react";
+import { Link } from "react-router-dom";
+import { ArrowRight, MessagesSquare, Route, ScanFace } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
-import { useMembership } from "@/hooks/useMembership";
-import { SeeExample } from "@/components/examples/ExampleExperience";
+import { Footer } from "@/components/chemistry/Footer";
+import { Button } from "@/components/ui/button";
+import relationshipArt from "@/assets/home-modes/relationship360.webp.asset.json";
 
-const INCLUDED = [
-  "Quick Take, Deep Read and Group Read in one place",
-  "Group Roast, including the standalone version as it lands",
-  "Relationship Wrapped recaps for the periods you import",
-  "Relationship360: your private, opt-in view across your own reads",
+const steps = [
+  { icon: MessagesSquare, label: "Add a read" },
+  { icon: ScanFace, label: "Notice a pattern" },
+  { icon: Route, label: "Choose a next step" },
 ];
 
-const TIMELINE = [
-  { when: "Month 1", what: "Your first reads land, and the pattern list starts." },
-  { when: "Month 2", what: "A second conversation gives something to compare against." },
-  { when: "Month 3", what: "A review points out what's repeating and what changed." },
-];
-
-const Prime = () => {
-  const [params] = useSearchParams();
-  const raw = params.get("return_to");
-  // Only allow same-site returns.
-  const returnTo = raw && raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
-  const { isMember, loading } = useMembership();
-
-  return (
-    <div className="min-h-screen bg-btln-paper text-foreground">
-      <Helmet>
-        <title>BTLN Prime — understand who you are in your relationships</title>
-        <meta
-          name="description"
-          content="Prime is in development and cannot be purchased yet. Preview the proposed $19.99/month plan and private Relationship360."
-        />
-        <link rel="canonical" href="https://betweenthelines.app/prime" />
-      </Helmet>
-      <Header />
-      <main className="mx-auto max-w-2xl px-5 pb-24 pt-4 sm:px-8">
-        <h1 className="text-[33px] font-medium leading-[1.08] tracking-[-1.15px] sm:text-[42px]">
-          Understand who you are in your relationships—and get insights and coaching for self improvement.
-        </h1>
-        <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">
-          See the patterns in how you communicate, respond, and connect—with practical coaching
-          that develops as you add more conversations.
-        </p>
-
-        <SeeExample kind="journey" />
-
-        <div className="mt-7 rounded-[20px] border-2 border-btln-forest bg-btln-mint/50 p-[18px]">
-          <p className="mb-3 text-[15px] font-semibold">In development — not available to buy</p>
-          <div className="flex items-baseline justify-between gap-4">
-            <span className="text-[17px] font-medium">BTLN Prime</span>
-            <span className="text-[17px] font-medium">Proposed $19.99/month</span>
-          </div>
-          <p className="mt-2 text-[14px] text-muted-foreground">
-            This is a proposed price, not an active renewal contract. Prime cannot be purchased yet.
+const Prime = () => (
+  <div className="prime-page min-h-screen bg-background text-foreground">
+    <Helmet>
+      <title>BTLN Prime — understand who you are in your relationships</title>
+      <meta name="description" content="Prime is in development and cannot be purchased yet. Preview the proposed $19.99/month plan and private Relationship360." />
+      <link rel="canonical" href="https://betweenthelines.app/prime" />
+    </Helmet>
+    <Header />
+    <main className="prime-ambient mx-auto max-w-[1000px] px-[18px] pb-7 pt-6 md:px-[30px] md:pb-10 md:pt-9">
+      <section className="grid grid-cols-[minmax(0,1fr)_95px] items-center gap-2 min-[361px]:grid-cols-[minmax(0,1fr)_130px] md:mb-7 md:grid-cols-[minmax(0,1fr)_300px] md:gap-7">
+        <div className="min-w-0">
+          <p className="mb-2 font-mono text-[11px] font-medium uppercase leading-[1.5] text-prism-lavender">Relationship360 · Prime preview</p>
+          <h1 className="max-w-[15ch] font-display text-[26px] font-bold leading-[1.12] min-[361px]:text-[28px] md:text-[39px]">See how you connect.</h1>
+          <p className="mt-3 text-[14px] leading-[1.65] text-muted-foreground">
+            Your conversations, connected.<br />Insights and coaching for you.
           </p>
-          <ul className="mt-4 flex flex-col gap-2">
-            {INCLUDED.map((i) => (
-              <li key={i} className="flex items-start gap-2 text-[15px]">
-                <Check className="mt-1 h-4 w-4 shrink-0 text-btln-forest" /> {i}
+          <Button asChild className="mt-5 min-h-12 max-w-full whitespace-normal bg-prime-action px-4 py-2 text-[14px] font-bold text-prime-action-foreground hover:bg-prime-action/90 md:px-[18px]">
+            <Link to="/examples/relationship360">See a profile example <ArrowRight aria-hidden="true" className="h-4 w-4" /></Link>
+          </Button>
+          <p className="mt-3 text-[12px] leading-5 text-muted-foreground">In development · Not available to buy yet.</p>
+        </div>
+        <img src={relationshipArt.url} alt="" aria-hidden="true" width={300} height={300} className="h-auto w-[95px] object-contain min-[361px]:w-[130px] md:w-[300px]" />
+      </section>
+
+      <div className="mt-6 grid gap-4 md:mt-0 md:grid-cols-2 md:items-start md:gap-[22px]">
+        <section aria-labelledby="prime-picture" className="min-w-0 rounded-[17px] border border-prime-line bg-prime-panel p-[17px] md:p-5">
+          <h2 id="prime-picture" className="font-display text-[20px] font-bold leading-[1.25] md:text-[22px]">A fuller picture of you.</h2>
+          <p className="mt-3 text-[14px] leading-[1.65] text-muted-foreground">One read explores a conversation. Relationship360 connects what shows up across your reads.</p>
+          <ol className="mt-[22px] grid grid-cols-3 gap-2.5 md:gap-3">
+            {steps.map(({ icon: Icon, label }) => (
+              <li key={label} className="min-w-0 rounded-[13px] bg-prime-step px-2 py-[15px] text-center">
+                <Icon aria-hidden="true" className="mx-auto mb-2 h-[26px] w-[26px] text-prism-lavender" />
+                <span className="block text-[12px] leading-[1.5]">{label}</span>
               </li>
             ))}
-          </ul>
-          {!loading && isMember ? (
-            <p className="mt-5 rounded-2xl bg-background px-4 py-3 text-[14px]">
-              You're already on a paid plan. Prime will be shown as an option in your
-              account when it opens — you won't be charged twice or asked to buy it here.
-            </p>
-          ) : (
-            <>
-              <button
-                type="button"
-                disabled
-                aria-disabled="true"
-                className="mt-5 inline-flex min-h-[52px] w-full items-center justify-center rounded-full bg-foreground px-6 text-[15px] font-medium text-background opacity-40"
-              >
-                Prime isn't open yet
-              </button>
-              <p className="mt-3 flex items-start gap-2 text-[13px] text-muted-foreground">
-                <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                Prime is in testing. Billing for it isn't switched on, so nothing can be
-                charged from this page yet. Today's plans and single reports are unchanged
-                and still work on the pricing page.
-              </p>
-            </>
-          )}
-        </div>
+          </ol>
+        </section>
 
-        <h2 className="mt-10 text-[20px] font-medium tracking-tight">
-          How it builds up <span className="text-muted-foreground">(sample)</span>
-        </h2>
-        <p className="mt-2 text-[14px] text-muted-foreground">
-          An illustration of the shape, not real data from anyone's account.
-        </p>
-        <ol className="mt-4 flex flex-col gap-3">
-          {TIMELINE.map((t) => (
-            <li key={t.when} className="rounded-[20px] border border-btln-line bg-card p-[18px]">
-              <span className="text-[13px] font-medium text-btln-forest">{t.when}</span>
-              <p className="mt-1 text-[15px]">{t.what}</p>
-            </li>
-          ))}
-        </ol>
-
-        <h2 className="mt-10 text-[20px] font-medium tracking-tight">Your privacy</h2>
-        <ul className="mt-3 flex flex-col gap-2 text-[15px] text-muted-foreground">
-          <li>Relationship360 is off until you switch it on, and private to your account.</li>
-          <li>You choose which of your own reads are included, one at a time.</li>
-          <li>You can correct, exclude or delete anything, including all of it.</li>
-          <li>There is no public Relationship360 link, and raw chats aren't kept in your browser.</li>
-        </ul>
-
-
-        <p className="mt-8 text-[14px] text-muted-foreground">
-          Want today's options instead?{" "}
-          <Link to="/pricing" className="underline underline-offset-4 hover:text-foreground">
-            See plans and pricing
-          </Link>
-          .
-        </p>
-      </main>
-    </div>
-  );
-};
+        <section aria-labelledby="prime-choice" className="min-w-0 rounded-[17px] border border-prime-line bg-prime-panel p-[17px] md:p-5">
+          <h2 id="prime-choice" className="font-display text-[20px] font-bold leading-[1.25] md:text-[22px]">Your reads. Your choice.</h2>
+          <p className="mt-3 text-[14px] leading-[1.65] text-muted-foreground">Confirm which person is you.<br />Choose what contributes to your profile.</p>
+          <details className="prime-disclosure mt-[18px] border-t border-prime-line">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-[13px] text-muted-foreground focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+              How privacy and inclusion work <span aria-hidden="true" className="prime-disclosure-mark text-[20px] leading-none">+</span>
+            </summary>
+            <ul className="mb-3 ml-5 list-disc space-y-2 text-[13px] leading-[1.65] text-muted-foreground">
+              <li>Relationship360 starts off. You choose when to turn it on.</li>
+              <li>You can choose automatic inclusion of eligible saved reads after confirming your identity.</li>
+              <li>You can correct, exclude, remove or delete sources.</li>
+              <li>Your profile stays private to your account.</li>
+            </ul>
+          </details>
+          <details className="prime-disclosure mt-3 border-t border-prime-line">
+            <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 py-2 text-[13px] text-muted-foreground focus-visible:rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring [&::-webkit-details-marker]:hidden">
+              What is planned for Prime? <span aria-hidden="true" className="prime-disclosure-mark text-[20px] leading-none">+</span>
+            </summary>
+            <p className="mb-3 text-[13px] leading-[1.65] text-muted-foreground">All read modes, Interactive Mode and Relationship360. Proposed price: $19.99/month. The plan and price are previews, not an active subscription.</p>
+          </details>
+        </section>
+      </div>
+    </main>
+    <Footer />
+  </div>
+);
 
 export default Prime;

@@ -27,6 +27,13 @@ export default {
       },
       colors: {
         elevated: "hsl(var(--elevated) / <alpha-value>)",
+        prime: {
+          panel: "hsl(var(--prime-panel) / <alpha-value>)",
+          line: "hsl(var(--prime-line) / <alpha-value>)",
+          step: "hsl(var(--prime-step) / <alpha-value>)",
+          action: "hsl(var(--prime-action) / <alpha-value>)",
+          "action-foreground": "hsl(var(--prime-action-foreground))",
+        },
         prism: {
           violet: "hsl(var(--prism-violet) / <alpha-value>)",
           cyan: "hsl(var(--prism-cyan) / <alpha-value>)",
