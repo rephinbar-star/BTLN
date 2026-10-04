@@ -30,4 +30,4 @@ Implemented the approved presentation for `/prime` only. The page keeps the shar
 - Verification used the managed local browser rather than physical phones.
 - The local preview's existing test-payment banner was visible during screenshots; it is outside the `/prime` page implementation.
 - No account, model, checkout, payment, consent, or subscription action was run.
-- The approved future Relationship360 Q&A and checkout-readiness ideas were not implemented.
+- The proposed Relationship360 Q&A and checkout-readiness ideas were not implemented; they have not been approved for implementation.
