@@ -43,7 +43,7 @@ describe("Relationship360 questions — gates", () => {
   it("notes come only from selected, existing relationships and never when excluded", () => {
     const all: AskNote[] = [...notes, { id: "n2", relationship_id: u(100), response_text: "a", self_reported_at: "2026-09-01T00:00:00Z", excluded_at: "x" }, { id: "n3", relationship_id: null, response_text: "b", self_reported_at: "2026-09-02T00:00:00Z" }, { id: "n4", relationship_id: u(555), response_text: "c", self_reported_at: "2026-09-03T00:00:00Z" }];
     expect(selectNotes(all, sources, rels).map((n) => n.id)).toEqual(["n1"]);
-    expect(selectNotes(all, [sources[0]], rels)).toEqual([]);
+    expect(selectNotes(all, [sources[1]], rels)).toEqual([]);
   });
   it("observations are limited to selected sources and bounded", () => {
     const many = Array.from({ length: 200 }, (_, i) => ob(`x${i}`, (i % 2) + 1));
