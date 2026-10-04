@@ -76,19 +76,18 @@
 
     --section-soft: 229 34% 9%;
 
-    /* Legacy btln aliases mapped onto the dark shell.
-       Wordmark colours are the ORIGINAL logo values — never change. */
+    /* Legacy btln aliases mapped onto the dark shell. */
     --btln-paper: 229 38% 5%;
     --btln-ink: 210 38% 95%;
-    --btln-wordmark: 169.714 42.169% 16.275%; /* #183B35 */
-    --btln-wordmark-accent: 151.071 25.455% 43.137%; /* #528A6F */
+    --btln-wordmark: 152 76% 80%; /* Aurora mint #A7F3D0 */
+    --btln-wordmark-accent: 253 95% 85%; /* Aurora lavender #C4B5FD */
     --btln-muted: 214 24% 74%;
     --btln-line: 226 26% 20%;
     --btln-mint: 258 36% 20%;
     --btln-forest: 156 72% 62%;
     --btln-peach: 28 45% 15%;
 
-    --wordmark-plate: 80 16% 96%;
+    --export-logo-backing: 80 16% 96%;
 
     --shadow-card: 0 1px 0 hsl(0 0% 100% / 0.05) inset, 0 8px 30px -12px hsl(229 60% 2% / 0.8);
 
@@ -143,6 +142,8 @@
     --section-soft: 44 18% 93%;
     --btln-paper: 80 16% 97%;
     --btln-ink: 169.714 42.169% 16.275%;
+    --btln-wordmark: 169.714 42.169% 16.275%;
+    --btln-wordmark-accent: 151.071 25.455% 43.137%;
     --btln-muted: 160 9% 37%;
     --btln-line: 145 14% 88%;
     --btln-mint: 152 39% 93%;
@@ -195,6 +196,8 @@
     --section-soft: 44 18% 93%;
     --btln-paper: 80 16% 97%;
     --btln-ink: 169.714 42.169% 16.275%;
+    --btln-wordmark: 169.714 42.169% 16.275%;
+    --btln-wordmark-accent: 151.071 25.455% 43.137%;
     --btln-muted: 160 9% 37%;
     --btln-line: 145 14% 88%;
     --btln-mint: 152 39% 93%;
@@ -268,14 +271,9 @@
     color: transparent;
   }
 
-  /* Compact neutral backplate so the original dark-green wordmark stays readable. */
-  .wordmark-plate {
-    display: inline-flex;
-    align-items: center;
-    border-radius: 0.75rem;
-    background-color: hsl(var(--wordmark-plate));
-    padding: 0.3rem 0.7rem;
-    box-shadow: 0 0 18px -6px hsl(var(--prism-violet) / 0.5);
+  /* The legacy image logo is dark artwork; keep its own light backing on dark share cards. */
+  .export-logo-backing {
+    background-color: hsl(var(--export-logo-backing));
   }
 
   .prism-chrome {

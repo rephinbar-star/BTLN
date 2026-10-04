@@ -266,7 +266,7 @@ const Processing = () => {
         <meta property="og:url" content="https://betweenthelines.app/processing" />
         <meta name="robots" content="noindex" />
       </Helmet>
-      <span className="wordmark-plate"><BrandWordmark /></span>
+      <BrandWordmark />
 
       <h1 className="sr-only">Analyzing your conversation</h1>
 

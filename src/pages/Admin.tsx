@@ -352,7 +352,7 @@ const Dashboard = ({ onSignOut }: { onSignOut: () => void }) => {
         <header className="flex flex-wrap items-end justify-between gap-4 border-b border-border pb-6">
           <div>
             <h1 className="flex items-baseline gap-2">
-              <span className="wordmark-plate"><BrandWordmark /></span>
+              <BrandWordmark />
               <span className="text-sm font-medium text-muted-foreground">Admin</span>
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">

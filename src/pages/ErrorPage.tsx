@@ -27,7 +27,7 @@ const ErrorPage = () => {
         <meta property="og:url" content="https://betweenthelines.app/error" />
         <meta name="robots" content="noindex" />
       </Helmet>
-      <span className="wordmark-plate"><BrandWordmark /></span>
+      <BrandWordmark />
       <h1 className="mt-8 text-[28px] font-medium tracking-tight sm:text-[36px]">
         Something went wrong.
       </h1>
