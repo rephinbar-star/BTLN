@@ -46,6 +46,8 @@ import RizzCompare from "./pages/compare/RizzCompare";
 import Wrapped from "./pages/Wrapped";
 import BrandonCompare from "./pages/compare/BrandonCompare";
 import Journey from "./pages/Journey";
+import JourneyQuestions from "./pages/JourneyQuestions";
+import JourneyQuestionsExample from "./pages/JourneyQuestionsExample";
 import QuickTake from "./pages/QuickTake";
 import DeepReadStart from "./pages/DeepReadStart";
 import Explore from "./pages/Explore";
@@ -134,6 +136,15 @@ const App = () => (
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/journey/questions"
+            element={
+              <ProtectedRoute>
+                <JourneyQuestions />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/examples/relationship360/questions" element={<JourneyQuestionsExample />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/trust" element={<Trust />} />
           <Route path="/privacy" element={<Privacy />} />

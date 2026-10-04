@@ -93,7 +93,7 @@ describe("checkout readiness", () => {
     for (const b of bad) {
       const v = validateSanitizedCatalog(b);
       expect(v.ok).toBe(false);
-      if (!v.ok) {
+      if (v.ok === false) {
         const r = evaluate({ checkoutSource: src, catalog: null, catalogError: v.reason, now, sourceRevision: "x" });
         expect(r.overall).toBe("UNKNOWN");
         expect(JSON.stringify(r)).not.toMatch(/script|LEAKY|evil|nope/);
