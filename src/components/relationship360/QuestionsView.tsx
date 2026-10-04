@@ -5,6 +5,7 @@ import { SUGGESTED_QUESTIONS } from "@/lib/relationship360/ask";
 import relationshipArt from "@/assets/home-modes/relationship360.webp.asset.json";
 
 export type QuestionSource = { id: string; label: string; detail: string };
+export type QuestionNote = { id: string; label: string; excerpt: string };
 
 const ICONS = [Repeat2, TrendingUp, Compass];
 
@@ -53,6 +54,9 @@ export function QuestionsView(props: {
   sources: QuestionSource[];
   selected: string[];
   onToggleSource?: (id: string) => void;
+  notes?: QuestionNote[];
+  selectedNotes?: string[];
+  onToggleNote?: (id: string) => void;
   sourceSummary: string;
   result: AskResult | null;
   askedQuestion: string;
@@ -120,7 +124,17 @@ export function QuestionsView(props: {
                     <span className="min-w-0"><span className="block">{s.label}</span><span className="block font-mono text-[10px] text-muted-foreground">{s.detail}</span></span>
                   </label>
                 ))}
-                <p className="pt-1 text-[12px] text-muted-foreground">Saved private notes from the selected relationships may be used as your own reflection.</p>
+              </fieldset>
+              <fieldset className="mt-3 space-y-1 border-t border-prime-line pt-3">
+                <legend className="mb-1 text-[12px] text-muted-foreground">Private notes (self-report, not conversation evidence). Only notes from the selected reads’ relationships can be used. Unticking does not change your profile.</legend>
+                {(props.notes ?? []).length === 0 ? (
+                  <p className="text-[12px] text-muted-foreground">No private notes from the selected relationships.</p>
+                ) : (props.notes ?? []).map((n) => (
+                  <label key={n.id} className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-1 text-[13px]">
+                    <input type="checkbox" className="h-5 w-5 shrink-0 accent-[hsl(var(--primary))]" checked={(props.selectedNotes ?? []).includes(n.id)} disabled={!props.onToggleNote} onChange={() => props.onToggleNote?.(n.id)} />
+                    <span className="min-w-0"><span className="block">{n.label} · <span className="text-muted-foreground">self-report</span></span><span className="block truncate text-[12px] text-muted-foreground">{n.excerpt}</span></span>
+                  </label>
+                ))}
               </fieldset>
             </details>
           </form>
