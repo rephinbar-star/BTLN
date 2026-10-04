@@ -4,12 +4,12 @@ import { Link } from "react-router-dom";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
 import { Button } from "@/components/ui/button";
-import { QuestionsView, type QuestionSource } from "@/components/relationship360/QuestionsView";
+import { QuestionsView, type QuestionNote, type QuestionSource } from "@/components/relationship360/QuestionsView";
 import { getLiveStatus, type LiveStatus } from "@/lib/relationship360/live";
 import { askPatterns, askScopeKey, type AskResult } from "@/lib/relationship360/ask";
 
 const KIND: Record<string, string> = { quick_take: "Quick Take", deep_read: "Deep Read", group_read: "Group Read", group_roast: "Group Roast" };
-type SourceMeta = { id: string; source_kind: string; relationship_id?: string; relationship_label?: string | null; observed_period_start?: string | null; observed_period_end?: string | null };
+type SourceMeta = { id: string; version?: string | null; source_kind: string; relationship_id?: string; relationship_label?: string | null; observed_period_start?: string | null; observed_period_end?: string | null };
 
 const Shell = ({ children }: { children: React.ReactNode }) => (
   <div className="prime-page min-h-screen bg-background text-foreground">
@@ -42,7 +42,9 @@ export default function JourneyQuestions() {
   const [askedQuestion, setAskedQuestion] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
+  const [noteChoice, setNoteChoice] = useState<Record<string, boolean>>({});
   const seq = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
   const answerScope = useRef<string | null>(null);
 
   const refresh = useCallback(async () => {
@@ -63,23 +65,38 @@ export default function JourneyQuestions() {
     setSelected((cur) => { const kept = cur.filter((id) => eligibleIds.includes(id)); return kept.length ? kept : eligibleIds.slice(0, 12); });
   }, [eligibleIds]);
 
+  // Notes eligible for this question: from the selected reads' relationships, newest first, capped.
+  const relIds = useMemo(() => new Set(sources.filter((s) => selected.includes(s.id)).map((s) => s.relationship_id)), [sources, selected]);
+  const eligibleNotes = useMemo(() => (status?.reflections ?? [])
+    .filter((r) => r.relationship_id && relIds.has(r.relationship_id)).slice(0, 8), [status, relIds]);
+  // Default: eligible notes ticked; any note can be unticked for this question only.
+  const selectedNotes = eligibleNotes.filter((n) => noteChoice[n.id] !== false).map((n) => n.id);
+
   const scope = askScopeKey({
-    selected, eligible: eligibleIds, consentCurrent: !!status?.consent_current, optedIn: !!status?.opted_in,
-    notes: (status?.reflections ?? []).map((r) => r.id),
+    optedIn: !!status?.opted_in, consentCurrent: !!status?.consent_current,
+    sources: sources.map((s) => ({ id: s.id, version: s.version ?? null })), selected,
+    notes: (status?.reflections ?? []).map((r) => ({ id: r.id, updated_at: r.updated_at ?? null, response_text: r.response_text })),
+    selectedNotes,
   });
-  // Any scope change cancels in-flight answers and clears a visible one.
+  const invalidate = useCallback(() => {
+    seq.current += 1; abortRef.current?.abort(); abortRef.current = null;
+    answerScope.current = null; setResult(null); setAsking(false); setError(null);
+  }, []);
+  // Any scope change (refresh, reads, notes, identity, content versions) cancels and clears.
   useEffect(() => {
-    if (answerScope.current !== null && answerScope.current !== scope) {
-      seq.current += 1; answerScope.current = null; setResult(null); setAsking(false); setError(null);
-    }
-  }, [scope]);
+    if (answerScope.current !== null && answerScope.current !== scope) invalidate();
+  }, [scope, invalidate]);
+  useEffect(() => () => abortRef.current?.abort(), []);
+  const onQuestion = (q: string) => { setQuestion(q); if (answerScope.current !== null || asking) invalidate(); };
 
   const ask = async () => {
+    abortRef.current?.abort();
+    const ctrl = new AbortController(); abortRef.current = ctrl;
     const id = ++seq.current;
     answerScope.current = scope;
     setAsking(true); setError(null); setResult(null); setAskedQuestion(question.trim());
     try {
-      const r = await askPatterns(question.trim(), selected);
+      const r = await askPatterns(question.trim(), selected, selectedNotes, ctrl.signal);
       if (id !== seq.current) return;
       setResult(r);
     } catch (e) {
@@ -102,21 +119,24 @@ export default function JourneyQuestions() {
     label: `${KIND[s.source_kind] ?? "Read"}${s.relationship_label ? ` · ${s.relationship_label}` : ""}`,
     detail: s.observed_period_start ? `${s.observed_period_start.slice(0, 10)}${s.observed_period_end && s.observed_period_end.slice(0, 10) !== s.observed_period_start.slice(0, 10) ? ` – ${s.observed_period_end.slice(0, 10)}` : ""}` : "Date not recorded",
   }));
-  const relIds = new Set(sources.filter((s) => selected.includes(s.id)).map((s) => s.relationship_id));
-  const noteCount = (status.reflections ?? []).filter((r) => r.relationship_id && relIds.has(r.relationship_id)).length;
+  const qn: QuestionNote[] = eligibleNotes.map((n) => ({ id: n.id, label: `My reflection · ${n.self_reported_at.slice(0, 10)}`, excerpt: n.response_text.slice(0, 120) }));
+  const noteCount = selectedNotes.length;
 
   return (
     <Shell>
       <QuestionsView
         question={question}
-        onQuestion={setQuestion}
+        onQuestion={onQuestion}
         onAsk={() => void ask()}
         asking={asking}
         canAsk={question.trim().length >= 3 && selected.length > 0}
         sources={qs}
         selected={selected}
         onToggleSource={(id) => setSelected((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : cur.length >= 12 ? cur : [...cur, id]))}
-        sourceSummary={`Based on ${selected.length} read${selected.length === 1 ? "" : "s"} and up to ${noteCount} note${noteCount === 1 ? "" : "s"}`}
+        notes={qn}
+        selectedNotes={selectedNotes}
+        onToggleNote={(id) => setNoteChoice((c) => ({ ...c, [id]: c[id] === false }))}
+        sourceSummary={`Based on ${selected.length} read${selected.length === 1 ? "" : "s"} and ${noteCount} note${noteCount === 1 ? "" : "s"}`}
         result={result}
         askedQuestion={askedQuestion}
         error={error}
