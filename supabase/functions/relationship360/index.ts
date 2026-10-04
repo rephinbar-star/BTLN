@@ -21,7 +21,11 @@ import { estimateInputTokens, maxCostUsd } from "../_shared/promptBudget.ts";
 import { withTestRun } from "../_shared/testRun.ts";
 import { codeBaseline } from "../_shared/modeEval.ts";
 import { currentTestRun, inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
-import { relationship360System } from "../_shared/modePrompts.ts";
+import { relationship360System, RELATIONSHIP360_ASK_SYSTEM } from "../_shared/modePrompts.ts";
+import {
+  ASK_LIMITS, buildAskContext, isEligibleSource, selectNotes, selectObservations, selectSources, validateAskOutput, validateQuestion,
+  type AskNote, type AskObservation, type AskSource,
+} from "../_shared/r360AskCore.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 import { callOpenRouter } from "../_shared/extractMessages.ts";
 import { loadCoachingPreferences, coachingPreferenceInstruction } from "../_shared/coachingPreferences.ts";
@@ -153,7 +157,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   if (userError || !user) return json(401, { error: "Sign in required" });
 
   const payload = await req.json().catch(() => null);
-  const action = payload?.action === "build" ? "build" : payload?.action === "reflect" ? "reflect" : "status";
+  const action = payload?.action === "build" ? "build" : payload?.action === "reflect" ? "reflect" : payload?.action === "ask" ? "ask" : "status";
   const relationshipId: string | null = typeof payload?.relationship_id === "string" && UUID_RE.test(payload.relationship_id)
     ? payload.relationship_id
     : null;
@@ -257,6 +261,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     .select("id,status,kind,relationship_id,error_message,created_at,updated_at,attempt_count")
     .eq("user_id", user.id)
     .is("evaluation_run_id", null) // isolated test builds are never shown or reused by the ordinary view
+    .neq("kind", "question_answer") // question usage rows are not profile builds
     .order("created_at", { ascending: false })
     .limit(10);
   if (jobsError) return json(500, { error: "Could not read your update history." });
@@ -274,6 +279,96 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     const eligibleIds = new Set(eligible.map((s) => s.id));
     return ((data ?? []) as ObservationRow[]).filter((o) => eligibleIds.has(o.journey_source_id));
   };
+
+  // -------------------------------------------------------------------- ask --
+  // Ephemeral question about the person's own included evidence. Nothing about
+  // the question or answer is stored; only a content-free usage row counts calls.
+  if (action === "ask") {
+    if (!prime) return json(402, { error: "Relationship360 is part of Prime." });
+    if (!profile?.opted_in_at) return json(403, { error: "Turn Relationship360 on first." });
+    if (!profile.activation_consent_at || (profile.consent_version ?? 0) < CURRENT_CONSENT_VERSION) {
+      return json(403, { error: "Confirm the current Relationship360 consent first." });
+    }
+    const q = validateQuestion(payload?.question);
+    if (!q.ok) return json(400, { error: q.error });
+    const allEligible = ((allSources ?? []) as AskSource[]).filter((s) => isEligibleSource(s, evalScope));
+    const pick = selectSources(allEligible, payload?.source_ids);
+    if (!pick.ok) return json(400, { error: pick.error });
+    const selected = pick.selected;
+    const sourceMap = new Map(selected.map((s) => [s.id, s]));
+    const relMap = new Map(relationships.map((r) => [r.id, { id: r.id, label: r.label, is_confirmed: !!r.is_confirmed }]));
+
+    const { data: obsRows, error: obsError } = await admin.from("journey_observations")
+      .select("id,journey_source_id,subject_kind,subject_label,observation_type,statement,evidence_refs,confidence,observed_period_start,observed_period_end,created_at")
+      .eq("user_id", user.id).is("excluded_at", null).in("journey_source_id", selected.map((s) => s.id).length ? selected.map((s) => s.id) : ["00000000-0000-0000-0000-000000000000"])
+      .order("created_at", { ascending: false }).limit(ASK_LIMITS.maxObservations * 4);
+    if (obsError) return json(500, { error: "Could not read your stored observations." });
+    const obs = selectObservations((obsRows ?? []) as AskObservation[], selected);
+    const zero = { sources: 0, dated: 0, notes: 0 };
+    // No evidence, no model call.
+    if (obs.length === 0) return json(200, { state: "no_evidence", support: zero });
+
+    const { data: noteRows, error: noteError } = await admin.from("journey_reflections")
+      .select("id,relationship_id,response_text,self_reported_at,excluded_at")
+      .eq("user_id", user.id).is("excluded_at", null).order("self_reported_at", { ascending: false }).limit(50);
+    if (noteError) return json(500, { error: "Could not read your notes." });
+    const notes = selectNotes((noteRows ?? []) as AskNote[], selected, relMap);
+
+    // Usage control: content-free row per question, rolling 24h cap.
+    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
+    const usageQuery = admin.from("journey_jobs").select("id", { count: "exact", head: true })
+      .eq("user_id", user.id).eq("kind", "question_answer").gte("created_at", since);
+    const { count: used, error: usageError } = await (evalScope ? usageQuery.eq("evaluation_run_id", evalScope) : usageQuery.is("evaluation_run_id", null));
+    if (usageError) return json(500, { error: "Could not check your question allowance." });
+    if ((used ?? 0) >= ASK_LIMITS.dailyQuestions) return json(429, { error: `You can ask up to ${ASK_LIMITS.dailyQuestions} questions a day. Please try again later.` });
+
+    const ctx = buildAskContext(q.question, obs, notes, sourceMap, relMap);
+    const estimated = maxCostUsd(MODEL, estimateInputTokens([{ content: RELATIONSHIP360_ASK_SYSTEM }, { content: ctx.text }]), ASK_LIMITS.maxOutputTokens) ?? Infinity;
+    if (estimated > CALL_BUDGET_USD) return json(429, { error: "That question covers too much at once. Choose fewer reads." });
+
+    const { data: usageRow, error: usageInsertError } = await admin.from("journey_jobs").insert({
+      user_id: user.id, relationship_id: null, kind: "question_answer", status: "pending",
+      started_from_version: profile.data_version ?? 0, evaluation_run_id: evalScope,
+      usage_json: { sources: selected.length, observations: obs.length, notes: notes.length },
+    }).select("id").single();
+    if (usageInsertError || !usageRow) return json(500, { error: "Could not start your question." });
+    const finish = (status: string, error_message: string | null = null) =>
+      admin.from("journey_jobs").update({ status, error_message, completed_at: new Date().toISOString() }).eq("id", usageRow.id);
+
+    markStage("ask");
+    const response = await callOpenRouter({
+      model: MODEL,
+      max_tokens: ASK_LIMITS.maxOutputTokens,
+      response_format: { type: "json_object" },
+      messages: [{ role: "system", content: RELATIONSHIP360_ASK_SYSTEM }, { role: "user", content: ctx.text }],
+    }, aiKey ?? "", "https://betweenthelines.app", "BetweenTheLines Relationship360 Questions", { timeoutMs: 90_000, singleAttempt: true });
+    if (!response.ok) {
+      await finish("failed", `provider ${response.status}`);
+      return json(response.status === 429 ? 429 : 502, { error: response.status === 429 ? "The answering service is busy. Please try again shortly." : "We could not get an answer right now. Nothing was saved." });
+    }
+    // deno-lint-ignore no-explicit-any
+    const rawText = (response.data as any)?.choices?.[0]?.message?.content ?? "";
+    let parsed: unknown;
+    try { parsed = extractJsonObject(String(rawText)).value; } catch {
+      await finish("failed", "unreadable output");
+      return json(502, { error: "The answer could not be read. Nothing was saved." });
+    }
+    const answer = validateAskOutput(parsed, ctx.back, obs, notes, sourceMap, relMap);
+
+    // Commit-time recheck: consent, opt-in and eligibility must still hold.
+    const [{ data: p2 }, { data: s2 }] = await Promise.all([
+      admin.from("journey_profiles").select("opted_in_at,activation_consent_at,consent_version").eq("user_id", user.id).maybeSingle(),
+      admin.from("journey_sources").select("id,relationship_id,source_kind,subject_participant,identity_status,excluded_at,quarantined_at,evaluation_run_id")
+        .eq("user_id", user.id).in("id", selected.map((s) => s.id)),
+    ]);
+    const stillEligible = new Set(((s2 ?? []) as AskSource[]).filter((s) => isEligibleSource(s, evalScope)).map((s) => s.id));
+    if (!p2?.opted_in_at || !p2.activation_consent_at || (p2.consent_version ?? 0) < CURRENT_CONSENT_VERSION || selected.some((s) => !stillEligible.has(s.id))) {
+      await finish("cancelled", "scope changed");
+      return json(409, { error: "Your included sources or consent changed while answering. Ask again." });
+    }
+    await finish("complete");
+    return json(200, answer);
+  }
 
   // ----------------------------------------------------------------- status --
   if (action === "status") {
@@ -317,7 +412,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
       // Source-level coverage from stored metadata for eligible (non-evaluation, non-quarantined) sources only.
       sources: eligible.map((s) => {
         const x = s as unknown as Record<string, unknown>;
-        return { id: s.id, source_kind: s.source_kind, dated_count: x.dated_count ?? null, undated_count: x.undated_count ?? null, date_provenance: x.date_provenance ?? null, date_precision: x.date_precision ?? null, observed_period_start: s.observed_period_start, observed_period_end: s.observed_period_end };
+        return { id: s.id, source_kind: s.source_kind, relationship_id: s.relationship_id, relationship_label: relById.get(s.relationship_id)?.label ?? null, dated_count: x.dated_count ?? null, undated_count: x.undated_count ?? null, date_provenance: x.date_provenance ?? null, date_precision: x.date_precision ?? null, observed_period_start: s.observed_period_start, observed_period_end: s.observed_period_end };
       }),
       reflections: reflections ?? [],
     });
