@@ -3430,6 +3430,16 @@ export type Database = {
             }
             Returns: Json
           }
+      reserve_question_usage: {
+        Args: {
+          p_eval_run: string
+          p_limit: number
+          p_started_version: number
+          p_usage: Json
+          p_user: string
+        }
+        Returns: string
+      }
       reset_coaching_personalization: { Args: never; Returns: number }
       resolve_analysis_share: { Args: { p_token_hash: string }; Returns: Json }
       resolve_group_roast_share: {
