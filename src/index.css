@@ -284,6 +284,23 @@
     backdrop-filter: blur(16px);
   }
 
+  /* Prime's approved preview palette stays local to its landing page. */
+  .prime-page {
+    --prime-panel: 228 27% 12%;
+    --prime-line: 228 25% 22%;
+    --prime-step: 234 25% 15%;
+    --prime-action: 261 67% 78%;
+    --prime-action-foreground: 229 38% 5%;
+    background-color: hsl(var(--background));
+  }
+
+  .prime-ambient {
+    background: radial-gradient(ellipse at 77% 0%, hsl(var(--prism-violet) / 0.12), transparent 54%);
+  }
+
+  .prime-disclosure[open] .prime-disclosure-mark { font-size: 0; }
+  .prime-disclosure[open] .prime-disclosure-mark::after { content: "−"; font-size: 20px; }
+
   .theme-light .prism-text-gradient { color: hsl(var(--foreground)); background: none; }
 
   @media print {
