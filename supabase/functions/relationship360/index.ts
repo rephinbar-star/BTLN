@@ -381,7 +381,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
   if (action === "status") {
     const { data: reflections, error: reflectionError } = await admin
       .from("journey_reflections")
-      .select("id,recommendation_id,reflection_kind,response_text,outcome,self_reported_at,relationship_id")
+      .select("id,recommendation_id,reflection_kind,response_text,outcome,self_reported_at,relationship_id,updated_at")
       .eq("user_id", user.id)
       .is("excluded_at", null)
       .order("self_reported_at", { ascending: false })
@@ -402,6 +402,17 @@ Deno.serve(withTestRun("relationship360", async (req) => {
       ? eligible.filter((s) => new Date(s.updated_at ?? 0).getTime() > generatedAt).length
       : 0;
 
+    // Content-sensitive per-source version so the question page can drop stale answers
+    // when identity, dates or observation text change (no content is returned).
+    const versionRows = eligible.length ? (await admin.from("journey_observations")
+      .select("journey_source_id,id,version,updated_at,excluded_at").eq("user_id", user.id)
+      .in("journey_source_id", eligible.map((s) => s.id)).limit(2000)).data ?? [] : [];
+    const sourceVersion = new Map<string, string>();
+    for (const s of eligible) {
+      const x = s as unknown as Record<string, unknown>;
+      const rows = versionRows.filter((r) => r.journey_source_id === s.id).map((r) => `${r.id}:${r.version ?? ""}:${r.updated_at ?? ""}:${r.excluded_at ?? ""}`);
+      sourceVersion.set(s.id, await fingerprint([`${s.identity_status}:${s.subject_participant ?? ""}:${s.subject_participant_id ?? ""}:${s.updated_at ?? ""}:${x.date_provenance ?? ""}`, ...rows]));
+    }
     return json(200, {
       prime,
       opted_in: Boolean(profile?.opted_in_at),
@@ -419,7 +430,7 @@ Deno.serve(withTestRun("relationship360", async (req) => {
       // Source-level coverage from stored metadata for eligible (non-evaluation, non-quarantined) sources only.
       sources: eligible.map((s) => {
         const x = s as unknown as Record<string, unknown>;
-        return { id: s.id, source_kind: s.source_kind, relationship_id: s.relationship_id, relationship_label: relById.get(s.relationship_id)?.label ?? null, dated_count: x.dated_count ?? null, undated_count: x.undated_count ?? null, date_provenance: x.date_provenance ?? null, date_precision: x.date_precision ?? null, observed_period_start: s.observed_period_start, observed_period_end: s.observed_period_end };
+        return { id: s.id, version: sourceVersion.get(s.id) ?? null, source_kind: s.source_kind, relationship_id: s.relationship_id, relationship_label: relById.get(s.relationship_id)?.label ?? null, dated_count: x.dated_count ?? null, undated_count: x.undated_count ?? null, date_provenance: x.date_provenance ?? null, date_precision: x.date_precision ?? null, observed_period_start: s.observed_period_start, observed_period_end: s.observed_period_end };
       }),
       reflections: reflections ?? [],
     });
