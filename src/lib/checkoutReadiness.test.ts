@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { evaluate, extractAllowedLookupKeys, sanitizeCatalog, type SanitizedPrice } from "./core";
+import { evaluate, extractAllowedLookupKeys, sanitizeCatalog, type SanitizedPrice } from "../../scripts/checkout-readiness/core";
 
 const src = readFileSync("supabase/functions/create-checkout/index.ts", "utf8");
 const now = new Date("2026-10-04T00:30:00Z");
