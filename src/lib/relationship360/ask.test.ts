@@ -142,7 +142,7 @@ describe("Relationship360 questions — explicit note selection", () => {
     expect(pickNotes(all, sources, rels, [u(3)]).ok).toBe(false); // excluded
     expect(pickNotes(all, sources, rels, [u(4)]).ok).toBe(false); // not an owned relationship
     expect(pickNotes(all, sources, rels, [u(99)]).ok).toBe(false); // unknown / other owner
-    expect(pickNotes(all, [sources[1]], rels, [u(1)]).ok).toBe(false); // relationship not selected
+    expect(pickNotes(all, [sources[0]], rels, [u(1)]).ok).toBe(false); // relationship not selected
     expect(pickNotes(all, sources, rels, ["n1"]).ok).toBe(false);
     expect(pickNotes(all, sources, rels, "x").ok).toBe(false);
     expect(pickNotes(all, sources, rels, Array.from({ length: 9 }, (_, i) => u(i + 1))).ok).toBe(false);
