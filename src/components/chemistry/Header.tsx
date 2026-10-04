@@ -19,6 +19,8 @@ const backTarget = (pathname: string, returnTo: string | null) => {
   if (pathname === "/prime" && returnTo?.startsWith("/") && !returnTo.startsWith("//")) return returnTo;
   if (pathname === "/explore" || pathname === "/account") return "/";
   if (pathname === "/journey") return "/explore";
+  if (pathname === "/journey/questions") return "/journey";
+  if (pathname === "/examples/relationship360/questions") return "/examples/relationship360";
   if (pathname === "/quick" || pathname === "/deep" || pathname === "/group-roast") return "/";
   if (pathname === "/group") return "/explore";
   if (pathname === "/roast") return "/explore";
