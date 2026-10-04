@@ -1,6 +1,6 @@
 import { Helmet } from "react-helmet-async";
 import { Link } from "react-router-dom";
-import { ArrowRight, MessagesSquare, Route, ScanHeart } from "lucide-react";
+import { ArrowRight, MessagesSquare, Route, ScanFace } from "lucide-react";
 import { Header } from "@/components/chemistry/Header";
 import { Footer } from "@/components/chemistry/Footer";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import relationshipArt from "@/assets/home-modes/relationship360.webp.asset.json
 
 const steps = [
   { icon: MessagesSquare, label: "Add a read" },
-  { icon: ScanHeart, label: "Notice a pattern" },
+  { icon: ScanFace, label: "Notice a pattern" },
   { icon: Route, label: "Choose a next step" },
 ];
 
