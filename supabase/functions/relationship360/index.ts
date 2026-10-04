@@ -23,7 +23,7 @@ import { codeBaseline } from "../_shared/modeEval.ts";
 import { currentTestRun, inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { relationship360System, RELATIONSHIP360_ASK_SYSTEM } from "../_shared/modePrompts.ts";
 import {
-  ASK_LIMITS, buildAskContext, isEligibleSource, selectNotes, selectObservations, selectSources, validateAskOutput, validateQuestion,
+  ASK_LIMITS, buildAskContext, isEligibleSource, pickNotes, askScopeParts, selectObservations, selectSources, validateAskOutput, validateQuestion,
   type AskNote, type AskObservation, type AskSource,
 } from "../_shared/r360AskCore.ts";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
@@ -291,49 +291,61 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     }
     const q = validateQuestion(payload?.question);
     if (!q.ok) return json(400, { error: q.error });
-    const allEligible = ((allSources ?? []) as AskSource[]).filter((s) => isEligibleSource(s, evalScope));
-    const pick = selectSources(allEligible, payload?.source_ids);
-    if (!pick.ok) return json(400, { error: pick.error });
-    const selected = pick.selected;
-    const sourceMap = new Map(selected.map((s) => [s.id, s]));
     const relMap = new Map(relationships.map((r) => [r.id, { id: r.id, label: r.label, is_confirmed: !!r.is_confirmed }]));
+    const NONE = "00000000-0000-0000-0000-000000000000";
 
-    const { data: obsRows, error: obsError } = await admin.from("journey_observations")
-      .select("id,journey_source_id,subject_kind,subject_label,observation_type,statement,evidence_refs,confidence,observed_period_start,observed_period_end,created_at")
-      .eq("user_id", user.id).is("excluded_at", null).in("journey_source_id", selected.map((s) => s.id).length ? selected.map((s) => s.id) : ["00000000-0000-0000-0000-000000000000"])
-      .order("created_at", { ascending: false }).limit(ASK_LIMITS.maxObservations * 4);
-    if (obsError) return json(500, { error: "Could not read your stored observations." });
-    const obs = selectObservations((obsRows ?? []) as AskObservation[], selected);
+    // One server read of the whole question scope. Used before the model call and
+    // again before releasing the answer; any difference withholds the answer.
+    const loadScope = async (requestedSources: unknown, requestedNotes: unknown) => {
+      const [{ data: p, error: pe }, { data: srcRows, error: se }] = await Promise.all([
+        admin.from("journey_profiles").select("opted_in_at,activation_consent_at,consent_version").eq("user_id", user.id).maybeSingle(),
+        admin.from("journey_sources").select("id,relationship_id,source_kind,subject_participant,subject_participant_id,identity_status,excluded_at,quarantined_at,evaluation_run_id,updated_at,date_provenance,observed_period_start,observed_period_end")
+          .eq("user_id", user.id).is("quarantined_at", null),
+      ]);
+      if (pe || se) return { ok: false as const, status: 500, error: "Could not read your included conversations." };
+      if (!p?.opted_in_at || !p.activation_consent_at || (p.consent_version ?? 0) < CURRENT_CONSENT_VERSION) return { ok: false as const, status: 403, error: "Confirm the current Relationship360 consent first." };
+      const eligibleAsk = ((srcRows ?? []) as AskSource[]).filter((s) => isEligibleSource(s, evalScope) && relMap.has(s.relationship_id));
+      const pick = selectSources(eligibleAsk, requestedSources);
+      if (!pick.ok) return { ok: false as const, status: 400, error: pick.error };
+      const selected = pick.selected;
+      const ids = selected.map((s) => s.id);
+      const [{ data: obsRows, error: oe }, { data: noteRows, error: ne }] = await Promise.all([
+        admin.from("journey_observations")
+          .select("id,journey_source_id,subject_kind,subject_label,observation_type,statement,evidence_refs,confidence,observed_period_start,observed_period_end,created_at,version,updated_at,corrected_at")
+          .eq("user_id", user.id).is("excluded_at", null).in("journey_source_id", ids.length ? ids : [NONE])
+          .order("created_at", { ascending: false }).limit(ASK_LIMITS.maxObservations * 4),
+        admin.from("journey_reflections").select("id,relationship_id,response_text,self_reported_at,excluded_at,updated_at")
+          .eq("user_id", user.id).is("excluded_at", null).order("self_reported_at", { ascending: false }).limit(50),
+      ]);
+      if (oe || ne) return { ok: false as const, status: 500, error: "Could not read your stored observations." };
+      const obs = selectObservations((obsRows ?? []) as AskObservation[], selected);
+      const np = pickNotes((noteRows ?? []) as AskNote[], selected, relMap, requestedNotes);
+      if (!np.ok) return { ok: false as const, status: 400, error: np.error };
+      const fp = await fingerprint(askScopeParts(p, selected, obs, np.notes));
+      return { ok: true as const, selected, obs, notes: np.notes, fp };
+    };
+
+    const first = await loadScope(payload?.source_ids, payload?.note_ids);
+    if (!first.ok) return json(first.status, { error: first.error });
+    const { selected, obs, notes } = first;
+    const sourceMap = new Map(selected.map((s) => [s.id, s]));
     const zero = { sources: 0, dated: 0, notes: 0 };
-    // No evidence, no model call.
+    // No evidence, no model call (and no usage consumed).
     if (obs.length === 0) return json(200, { state: "no_evidence", support: zero });
-
-    const { data: noteRows, error: noteError } = await admin.from("journey_reflections")
-      .select("id,relationship_id,response_text,self_reported_at,excluded_at")
-      .eq("user_id", user.id).is("excluded_at", null).order("self_reported_at", { ascending: false }).limit(50);
-    if (noteError) return json(500, { error: "Could not read your notes." });
-    const notes = selectNotes((noteRows ?? []) as AskNote[], selected, relMap);
-
-    // Usage control: content-free row per question, rolling 24h cap.
-    const since = new Date(Date.now() - 24 * 3600 * 1000).toISOString();
-    const usageQuery = admin.from("journey_jobs").select("id", { count: "exact", head: true })
-      .eq("user_id", user.id).eq("kind", "question_answer").gte("created_at", since);
-    const { count: used, error: usageError } = await (evalScope ? usageQuery.eq("evaluation_run_id", evalScope) : usageQuery.is("evaluation_run_id", null));
-    if (usageError) return json(500, { error: "Could not check your question allowance." });
-    if ((used ?? 0) >= ASK_LIMITS.dailyQuestions) return json(429, { error: `You can ask up to ${ASK_LIMITS.dailyQuestions} questions a day. Please try again later.` });
 
     const ctx = buildAskContext(q.question, obs, notes, sourceMap, relMap);
     const estimated = maxCostUsd(MODEL, estimateInputTokens([{ content: RELATIONSHIP360_ASK_SYSTEM }, { content: ctx.text }]), ASK_LIMITS.maxOutputTokens) ?? Infinity;
     if (estimated > CALL_BUDGET_USD) return json(429, { error: "That question covers too much at once. Choose fewer reads." });
 
-    const { data: usageRow, error: usageInsertError } = await admin.from("journey_jobs").insert({
-      user_id: user.id, relationship_id: null, kind: "question_answer", status: "pending",
-      started_from_version: profile.data_version ?? 0, evaluation_run_id: evalScope,
-      usage_json: { sources: selected.length, observations: obs.length, notes: notes.length },
-    }).select("id").single();
-    if (usageInsertError || !usageRow) return json(500, { error: "Could not start your question." });
+    // Atomic, server-only allowance: count + content-free insert under a per-account lock.
+    const { data: usageId, error: usageError } = await admin.rpc("reserve_question_usage", {
+      p_user: user.id, p_eval_run: evalScope, p_limit: ASK_LIMITS.dailyQuestions, p_started_version: profile.data_version ?? 0,
+      p_usage: { sources: selected.length, observations: obs.length, notes: notes.length },
+    });
+    if (usageError) return json(500, { error: "Could not check your question allowance." });
+    if (!usageId) return json(429, { error: `You can ask up to ${ASK_LIMITS.dailyQuestions} questions a day. Please try again later.` });
     const finish = (status: string, error_message: string | null = null) =>
-      admin.from("journey_jobs").update({ status, error_message, completed_at: new Date().toISOString() }).eq("id", usageRow.id);
+      admin.from("journey_jobs").update({ status, error_message, completed_at: new Date().toISOString() }).eq("id", usageId as string);
 
     markStage("ask");
     const response = await callOpenRouter({
@@ -355,16 +367,11 @@ Deno.serve(withTestRun("relationship360", async (req) => {
     }
     const answer = validateAskOutput(parsed, ctx.back, obs, notes, sourceMap, relMap);
 
-    // Commit-time recheck: consent, opt-in and eligibility must still hold.
-    const [{ data: p2 }, { data: s2 }] = await Promise.all([
-      admin.from("journey_profiles").select("opted_in_at,activation_consent_at,consent_version").eq("user_id", user.id).maybeSingle(),
-      admin.from("journey_sources").select("id,relationship_id,source_kind,subject_participant,identity_status,excluded_at,quarantined_at,evaluation_run_id")
-        .eq("user_id", user.id).in("id", selected.map((s) => s.id)),
-    ]);
-    const stillEligible = new Set(((s2 ?? []) as AskSource[]).filter((s) => isEligibleSource(s, evalScope)).map((s) => s.id));
-    if (!p2?.opted_in_at || !p2.activation_consent_at || (p2.consent_version ?? 0) < CURRENT_CONSENT_VERSION || selected.some((s) => !stillEligible.has(s.id))) {
+    // Release-time recheck of consent, identity, sources, observation content and notes.
+    const again = await loadScope(selected.map((s) => s.id), notes.map((n) => n.id));
+    if (!again.ok || again.fp !== first.fp) {
       await finish("cancelled", "scope changed");
-      return json(409, { error: "Your included sources or consent changed while answering. Ask again." });
+      return json(409, { error: "Your included sources, notes or consent changed while answering. Ask again." });
     }
     await finish("complete");
     return json(200, answer);
