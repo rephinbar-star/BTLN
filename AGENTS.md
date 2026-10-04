@@ -8,6 +8,7 @@
 
 - Test-run output is tagged server-side in `evaluation_artifacts`; candidate output is quarantined and never staged into Journey, other test output is eligible only inside a server-issued test run — so evaluation data can never leak into real profiles or aggregates.
 - Literal source-message and verified quoted-evidence displays use the shared Newsreader `font-quote` family, while paraphrases and generated prose retain the UI font — so typography never implies that interpretation is a verbatim quote.
+- The shared wordmark uses semantic dark-surface color tokens with light-export overrides; the legacy image logo retains a separate backing — so on-screen branding and white exports both remain legible without a header plate.
 - Development requests for hosted asset pointers proxy through the project's preview origin — so the local Vite preview renders the same CDN artwork without bundling binaries or affecting production asset URLs.
 - Shared conversation intake owns the raw-input/review/identity progression; modes supply only their subsequent context or submission action — so corrections reset identity consistently without changing analysis payloads.
 - Relationship360 dashboard presentation shares scope, evidence-linked patterns and coaching primitives across fictional and live views; fictional counts never populate the real profile — so source coverage remains honest.

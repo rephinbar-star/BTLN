@@ -63,7 +63,7 @@ export const Header = () => {
             aria-label="BetweenTheLines home"
             className="justify-self-center rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <span className="wordmark-plate"><BrandWordmark /></span>
+            <BrandWordmark />
           </Link>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
