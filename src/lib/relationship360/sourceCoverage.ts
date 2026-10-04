@@ -6,6 +6,8 @@
 export type R360SourceMeta = {
   id: string;
   source_kind: string;
+  /** Server content version (identity, dates, observation versions). Older servers omit it. */
+  version?: string | null;
   dated_count: number | null;
   undated_count: number | null;
   date_provenance: string | null; // parsed | user_supplied | unknown

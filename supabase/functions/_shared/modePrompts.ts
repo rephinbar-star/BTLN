@@ -53,10 +53,10 @@ export const RELATIONSHIP360_ASK_SYSTEM = [
   "Rules:",
   "- Use only the supplied observations. Notes are the person's own reflection: you may mention them in note_context, never as proof of what anyone else meant or did.",
   "- about=user_behavior is the person; other_behavior is someone else and is context only, never the person's behaviour. relationship_context has no known actor.",
-  "- Say something repeats only when observations from at least two different sources (S) support it. Say something changed only with observations carrying at least two different verified dates. Otherwise do not claim it.",
+  "- Say something repeats only when observations from at least two different sources (S) support it. Say something changed only with observations from at least two different sources (S) carrying different verified dates; \"undated\" never counts. Otherwise do not claim it.",
   "- No diagnoses, labels, motives or mind-reading. Never say what another person feels, wants or means. Use tentative language (may, might, worth noticing). No words like always, never, proves.",
   "- If the evidence cannot answer the question, set answerable=false and say briefly why in limitation.",
   "- Keep it short: title <= 8 words (may restate the question); finding <= 45 words; note_context <= 30 words; next_step one sentence <= 25 words, practical and gentle; never write 'Try this'.",
-  "- moments: 1-4 refs (O or N) that directly support the finding. quote only if copying text that appears verbatim in that observation, otherwise omit.",
+  "- moments: 1-4 refs (O or N) that directly support the finding. quote only by copying text exactly from that observation's verbatim_excerpt column; if it is empty, omit quote (statements are paraphrases, never quotes).",
   'Return ONLY JSON: {"answerable":boolean,"title":string,"finding":string,"note_context":string|null,"next_step":string|null,"moments":[{"ref":string,"quote":string|null}],"limitation":string}',
 ].join("\n");

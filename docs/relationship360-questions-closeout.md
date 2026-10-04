@@ -1,57 +1,91 @@
-# Relationship360 Questions — closeout (2026-10-04)
+# Relationship360 Questions — final closeout (2026-10-04)
 
-The approved "Ask about your patterns." design is implemented. Unpublished; no Stripe, pricing, logo or icon changes, and no gateway migration (the existing OpenRouter integration and `openai/gpt-6-astra` are reused).
+This covers the approved "Ask about your patterns." design, with the review gaps closed. The app is unpublished. Stripe, pricing, logo, icons and the model provider are unchanged: it still uses the existing OpenRouter integration with `openai/gpt-6-astra`.
 
 ## Behaviour
-- **Entry:** the opted-in Relationship360 dashboard (`/journey`) shows "Ask about my patterns". It opens the protected `/journey/questions`, with the shared Header and Footer/BottomNav, and the Header back arrow works normally.
-- **Live page:** heading, benefit line, question field (16px), three suggested questions, one Ask button, and an "included reads" disclosure with per-question checkboxes. Ticking boxes narrows the reads used for that one question and never changes profile inclusion. Desktop puts the question on the left and the answer on the right; mobile stacks them.
-- **Answer:** a title, a short finding, optional note context labelled as the person's own reflection, a suggested next step, and expandable supporting moments. Conversation moments show the stored observation, labelled as a paraphrase. A Newsreader quote appears only when it matches a retained evidence excerpt exactly. Note moments are labelled "Your note — self-reported, not conversation evidence."
-- **Explicit states:** loading, signed out (redirected to sign-in with return_to), not Prime, Relationship360 off, consent not current, no included reads, no stored observations (no model call), abstained ("We can’t answer that honestly…" with the reason), and error messages for service failure, unreadable output, the daily limit, or a scope change during answering.
-- **Fictional demo:** `/examples/relationship360/questions` uses an isolated fixture with the banner "Fictional example · No live data or AI calls". It makes no network calls or writes.
+- **Entry:** the opted-in Relationship360 dashboard (`/journey`) links to the protected page `/journey/questions`.
+- **Header back arrow:** on `/journey/questions` it goes to `/journey`. On the fictional `/examples/relationship360/questions` it goes to `/examples/relationship360`. Every other route keeps its previous back target.
+- **Controls:** one question field, three suggested questions and one Ask button. An "included reads" disclosure holds:
+  - one checkbox per eligible read;
+  - one checkbox per eligible private note, labelled "self-report, not conversation evidence".
+- **Note checkboxes:**
+  - Eligible notes are the owner's current, non-excluded notes from the selected reads' relationships, newest 8.
+  - They start ticked, and any or all of them can be unticked.
+  - The summary line shows the actual numbers sent, for example "Based on 2 reads and 0 notes".
+  - Ticking or unticking never changes the profile.
+- **Stale answers:** the visible answer, or one still in flight, is cleared and its request cancelled when any of these change:
+  - the question text (this matches the demo);
+  - the read or note selection;
+  - a status refresh that changes consent, opt-in, or a source's server content version (identity, dates, observation versions or exclusions);
+  - the text, edit time or existence of any note.
+- **How cancelling works:** an `AbortController` cancels the request, and a sequence counter also ignores any late result. The scope key keeps only a short digest of note text. It is never logged or saved.
+- **Quotes and dates:** a quote is shown in Newsreader only under the rule described in the Server section. Otherwise the moment is shown as a labelled paraphrase. A date is shown only when it is verified; otherwise the moment says "Date not recorded".
+- **States:** loading, signed out, not Prime, off, consent not current, no included reads, no stored observations, abstained, and errors (service, unreadable output, daily limit, scope changed).
 
-## Server (`relationship360` function, new `ask` action)
-- The existing bearer validation is used (no token, anon key or forged token → 401). The function then checks Prime, opt-in and current consent (version 2).
-- Only owned sources with confirmed identity that are not excluded, quarantined or test-run output are eligible. Requested `source_ids` may only narrow that set; unknown, other-owner, deleted or ineligible ids reject the request (400). Client counts and content are never trusted.
-- Notes come only from the selected, existing relationships. Excluded notes are never used.
-- Limits: question 3–300 characters; up to 12 reads; 60 observations (fair share per read); 8 notes of 600 characters; observation statements 400 characters; 900 output tokens; a per-call cost bound of $0.58; one provider attempt with a 90-second timeout.
-- Usage control: 10 questions per rolling 24 hours per account, counted with content-free `journey_jobs` rows (`kind = question_answer`). These rows are excluded from the dashboard's job state.
-- Validation: model refs are mapped back server-side, and unknown refs are dropped. Notes alone, or no valid conversation ref, cause an abstain. Certainty, diagnosis and mind-reading wording causes an abstain. Change wording needs two distinct verified dates, and pattern wording needs two distinct reads.
-- Commit-time recheck: if consent, opt-in or eligibility of any selected read changed during the call, the answer is withheld (409).
-- Untrusted question, observation and note text is fenced, with angle brackets stripped so it cannot close a fence. The prompt is `RELATIONSHIP360_ASK_SYSTEM` in `_shared/modePrompts.ts`.
-- Nothing about the question or answer is persisted or logged; only the content-free usage row is written.
-- Client: any change in selection, eligible reads, consent, opt-in or notes cancels in-flight answers and clears the visible one. Status is re-checked whenever the tab becomes visible again.
-- Metering: inside a server-issued test run, the call goes through `meteredOpenRouter`/`meteredCall` as stage `ask` (max 1 call per run).
+## Server (`relationship360`, `ask` action)
+- **Access:** the bearer token must be valid (no token, anon key or forged token → 401). The account must then have Prime, be opted in and have consent version 2.
+- **Scope read:** `loadScope` reads the profile, sources, observations and notes once.
+  - Eligible reads are owned, have confirmed identity, belong to an owned relationship, and are not excluded, quarantined or test output.
+  - `source_ids` may only narrow that set.
+  - `note_ids` may only narrow the eligible notes, and an empty list means no notes. An id that is unknown, belongs to someone else, is excluded, or comes from an unselected relationship rejects the request (400).
+- **Fingerprint:** a server fingerprint (`askScopeParts`, SHA-256) covers:
+  - consent and opt-in;
+  - each selected source's identity (participant and participant id), exclusion, quarantine, update time, date provenance and period;
+  - each selected observation's id, version, update and correction times, actor, date, statement and evidence;
+  - each selected note's id, update time, relationship and text.
+- **Release check:** after the model call the scope is read again with the same ids. If anything differs, or the scope is no longer valid, the answer is withheld (409) and the usage row is marked cancelled.
+- **Atomic daily limit:** the server-only function `reserve_question_usage` takes a per-account transaction lock (separate for each test-run scope), counts the last 24 hours and inserts a content-free `journey_jobs` row in one step. It returns nothing when the limit of 10 is reached.
+  - Execute rights are granted to `service_role` only and revoked from public, anon and authenticated users.
+  - No evidence means no reservation and no model call.
+- **Dates:** a date is verified only when the source's stored `date_provenance` is `parsed` or `ocr_confirmed` (the shared intake rule) and the observation's day is valid and inside the source period.
+  - Unknown, `user_supplied`, missing or out-of-range dates are sent and shown as undated.
+  - A change claim needs at least two different reads whose verified days differ. Two dated observations from one read always abstain.
+- **Quotes:** excerpts count as verbatim only for observations from the attributed Deep Read schema (`deep_read.*`), where ingestion copies the excerpt from the supplied message itself. Only those excerpts go to the model, in a `verbatim_excerpt` column. A returned quote is kept only if it is contained in such an excerpt. Older generated evidence strings are never shown as quotes.
+- **Abstaining:** answers abstain on certainty, diagnosis or mind-reading wording, on notes-only support, and when no valid conversation reference remains. Untrusted text is fenced.
+- **Storage:** nothing about the question or answer is saved or logged. Only the content-free usage row is written.
 
-## Migration
-- `journey_jobs_kind_check` now also allows `question_answer`.
-- Added a partial usage index.
-- Added the `prompt_stage_plan` row `relationship360/ask` (1 call per run).
+## Operator tooling (prompt-improvement, owner/operator only)
+- `question_quota_probe`: runs N reservations at once for a synthetic `@btln-test.dev` account under a fresh isolated scope tag, reports the result, and deletes its rows. No model is called.
+- `pipeline_start` with `r360_action: "ask"`: sends a fixed question through the existing metered test run (stage `ask`, at most 1 call) for a synthetic account.
 
-## Files
-- `supabase/functions/_shared/r360AskCore.ts` (new, pure rules)
-- `supabase/functions/_shared/modePrompts.ts` (`RELATIONSHIP360_ASK_SYSTEM`)
-- `supabase/functions/relationship360/index.ts` (`ask` action; status sources now include relationship id and label; question rows excluded from job state)
-- `src/lib/relationship360/ask.ts`, `src/lib/relationship360/ask.test.ts`
-- `src/components/relationship360/QuestionsView.tsx`
-- `src/pages/JourneyQuestions.tsx`, `src/pages/JourneyQuestionsExample.tsx`
-- `src/App.tsx` (routes)
-- `src/components/relationship360/Relationship360Live.tsx` (entry link)
-- `src/lib/checkoutReadiness.test.ts` (type-narrowing fix only)
-- `AGENTS.md`
-- the migration
+## Migrations
+- Earlier: added the `question_answer` job kind, a usage index, and stage plan `relationship360/ask` = 1.
+- New: `reserve_question_usage` (security definer, service-role-only execute).
 
 ## Evidence
-- **Tests:** `bunx vitest run src/lib/relationship360 src/lib/checkoutReadiness.test.ts` — 60 of 60 passed. They cover the eligibility gates (pending, no self, excluded, quarantined, test output), selection tampering, note separation, observation bounds, question limits, fence injection, citation and quote validity, notes-only and unknown-ref abstains, certainty/diagnosis/mind-reading abstains, change and pattern support rules, and the stale-scope key.
-- **Typecheck:** `tsgo -p tsconfig.app.json` is clean.
-- **Deployed function, signed-out requests:** no bearer → 401; anon key → 401; forged user token → 401.
-- **Browser, fictional demo at 320, 375, 768 and 1280:** no horizontal overflow; Syne loaded with the heading computed in Syne; artwork loaded; textarea 16px; no main controls under 44px. A supporting moment opens with the keyboard (Enter). Switching suggested questions clears the fixture answer honestly. No page errors.
-- **Browser, signed out:** `/journey/questions` redirects to `/auth?return_to=%2Fjourney%2Fquestions`.
-- **Browser, signed in as the owner's own account (`--self`):** the "not Prime" state is shown with the example link, and "Back to Relationship360" goes to `/journey`.
+- **Tests:** `bunx vitest run src/lib/relationship360 src/lib/checkoutReadiness.test.ts` — 79 of 79 passed. New tests cover:
+  - explicit note narrowing, an empty note list, and tampered, excluded, foreign or out-of-scope notes;
+  - the trusted-date rule (unknown, user_supplied, missing, invalid, out of range);
+  - a change claim from a single read with two dates abstaining;
+  - two reads on the same day abstaining;
+  - non-verbatim evidence never becoming a quote;
+  - fingerprint sensitivity to consent, identity, statement, version, evidence and note text, and its stability across ordering;
+  - the client key's sensitivity to versions, note text and note choice, and that it holds no note text.
+- **Typecheck:** `tsgo -p tsconfig.app.json` is clean, and the app build is OK.
+- **Atomic limit on the deployed database:**
+  - 20 simultaneous reservations with a limit of 10: exactly 10 granted, 10 refused, 0 errors, 10 rows written.
+  - 25 simultaneous with a limit of 3: exactly 3 granted, 22 refused. Probe rows were deleted afterwards.
+  - Direct REST calls to the function with the owner's token and with the anon key: `42501 permission denied`.
+- **Metered smoke test (one real model call):** run `ab1702ae-3f21-405a-bd26-2c485119aa97`, synthetic account A, baseline, eval scope.
+  - Result `answered`, using 9 reads, 60 observations and 0 notes. Synthetic A's notes are not linked to the selected relationships.
+  - All 4 returned refs exist, belong to synthetic A, are not excluded, and map to their stated source.
+  - The two dated moments come from sources with `parsed` provenance and days inside the source period.
+  - One moment from a `user_supplied` source was correctly shown as undated.
+  - No quotes were returned, so none were shown.
+  - The usage row was tagged with the run id and marked complete.
+- **Browser at 320, 375, 768 and 1280:**
+  - Signed in as the owner's own account against the real server: the "not Prime" state, and back goes to `/journey`.
+  - The fictional demo, where back goes to `/examples/relationship360`.
+  - Layouts for reads and notes, answered (quote in Newsreader), abstained, no evidence, error and loading, shown with fictional data served by the browser test, not by the server.
+  - With every note unticked the request carried `note_ids: []` and the summary read "0 notes".
+  - Editing the question cleared the answer. Changing a note while loading cancelled the request and the late answer was never shown.
+  - No horizontal overflow at any width.
 
 ## Costs
-- No model calls were made in this verification: $0 spent and $0 reserved.
+- One metered call: $0.0671 actual, $0.1856 reserved, reconciled. The quota probes made no model calls.
 
-## Limitations (not observed)
-- A real answer from the model, end to end, was not exercised. The owner account is not Prime or opted in. Synthetic test accounts need per-account session approval, which the tool requires and I did not bypass. No server-issued test run was started, because that would need the operator workflow with an eligible synthetic profile.
-- As a result, server-side validation of real model citations, the 429/409 paths, and the populated live answer, loading and empty layouts on a real account are verified only by unit tests and the fictional demo.
-- Prime is not purchasable, so in practice only accounts with existing Prime or Relationship360 entitlements can reach the live answer.
+## Limitations
+- A valid citation id only proves the moment exists in the person's included, verified scope. It does not prove the finding's interpretation is true. Answers stay framed as reflections.
+- The owner account is not Prime, and no entitlement was granted. No synthetic browser session was created. A populated live page on a real Prime account was therefore not seen in the browser; the populated layouts were checked with fictional data served by the browser test.
+- The smoke test covered one question with no notes in scope and no quote returned. Server handling of notes and quotes on real model output is covered by unit tests only.
+- The 409 release-check path was not triggered against the deployed function. It is covered by fingerprint tests and code review.

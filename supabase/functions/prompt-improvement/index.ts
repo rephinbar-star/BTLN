@@ -563,7 +563,7 @@ Deno.serve(async (req) => {
   // function as that account. Every model call inside it reserves spend first.
   // pipeline_finalize: advances multi-step runs, reads the persisted result, checks
   // stage coverage from the spend ledger and stores an immutable result row.
-  if (action === "pipeline_start" || action === "ownership_probe" || action === "pipeline_finalize" || action === "synthetic_as_user" || action === "recovery_probe_resubmit") {
+  if (action === "pipeline_start" || action === "question_quota_probe" || action === "ownership_probe" || action === "pipeline_finalize" || action === "synthetic_as_user" || action === "recovery_probe_resubmit") {
     const supaUrl = Deno.env.get("SUPABASE_URL")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     // Synthetic accounts only. The password is derived server-side from the
@@ -616,6 +616,28 @@ Deno.serve(async (req) => {
         return json(200, r);
       }
       return json(400, { error: "nothing to do" });
+    }
+
+    // No-model probe of the atomic Relationship360 question allowance: fires N
+    // reservations at once for a synthetic account under a fresh isolated scope
+    // tag, reports how many were granted, then deletes the probe rows.
+    if (action === "question_quota_probe") {
+      const target = String(body.target_user_id ?? "");
+      if (!UUID_RE.test(target)) return json(400, { error: "target_user_id required" });
+      const { data: u } = await admin.auth.admin.getUserById(target);
+      if (!TEST_EMAIL.test(u?.user?.email ?? "")) return json(403, { error: "Synthetic accounts only." });
+      const n = Math.max(2, Math.min(30, Number(body.concurrency) || 20));
+      const limit = Math.max(1, Math.min(10, Number(body.limit) || 10));
+      const tag = crypto.randomUUID();
+      const started = Date.now();
+      const results = await Promise.all(Array.from({ length: n }, () =>
+        admin.rpc("reserve_question_usage", { p_user: target, p_eval_run: tag, p_limit: limit, p_started_version: 0, p_usage: {} })));
+      const granted = results.filter((r: Admin) => !r.error && r.data).length;
+      const errors = results.filter((r: Admin) => r.error).length;
+      const { count } = await admin.from("journey_jobs").select("id", { count: "exact", head: true }).eq("user_id", target).eq("evaluation_run_id", tag);
+      await admin.from("journey_jobs").delete().eq("user_id", target).eq("evaluation_run_id", tag).eq("kind", "question_answer");
+      await audit(admin, user.id, "question_quota_probe", "journey_jobs", target, { n, limit, granted });
+      return json(200, { concurrency: n, limit, granted, refused: n - granted - errors, errors, rows_written: count, elapsed_ms: Date.now() - started, cleaned_up: true });
     }
 
     if (action === "ownership_probe") {
@@ -700,6 +722,11 @@ Deno.serve(async (req) => {
       const payload = pipelineRequest(firstKey, firstCase as ModeCase);
       // Relationship-level Relationship360 (a normal product scope), owner-checked by the function itself.
       if (key === "relationship360" && UUID_RE.test(String(body.relationship_id ?? ""))) (payload as Admin).relationship_id = String(body.relationship_id);
+      // Questions smoke (r360 ask): fixed operator question, ephemeral answer, same metered run.
+      if (key === "relationship360" && body.r360_action === "ask") {
+        for (const k of Object.keys(payload)) delete (payload as Admin)[k];
+        Object.assign(payload, { action: "ask", question: String(body.question ?? "What keeps repeating?").slice(0, 300) });
+      }
       if (key === "deep_read_full" && body.personalization?.free_text !== undefined) (payload.context_data as Admin).free_text = String(body.personalization.free_text).slice(0, 500);
       const r = await callFn(FUNCTION_FOR[firstKey], access, header, payload);
       // Server-owned provenance (eval-isolation-1): the result is recorded as

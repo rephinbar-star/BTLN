@@ -89,6 +89,7 @@ export type LiveReflection = {
   outcome: "used" | "partly_used" | "not_used" | "not_applicable" | null;
   self_reported_at: string;
   relationship_id: string | null;
+  updated_at?: string | null;
 };
 
 export type LiveStatus = {

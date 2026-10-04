@@ -45,6 +45,8 @@ export default function JourneyQuestionsExample() {
         canAsk={question.trim() === "What keeps repeating?"}
         sources={SOURCES}
         selected={SOURCES.map((s) => s.id)}
+        notes={[{ id: "ex-n1", label: "My reflection · Sep 26 (fictional)", excerpt: "Slow replies make me feel like I did something wrong." }]}
+        selectedNotes={["ex-n1"]}
         sourceSummary="Based on 3 fictional reads and 1 note"
         result={shown ? ANSWER : null}
         askedQuestion={question}

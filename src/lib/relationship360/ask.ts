@@ -9,9 +9,10 @@ export type AskResult = AskAnswer | { state: "no_evidence"; support: { sources: 
 export const SUGGESTED_QUESTIONS = ["What keeps repeating?", "What has changed?", "What can I work on?"] as const;
 
 /** Ephemeral: nothing about the question or answer is stored by the app. */
-export const askPatterns = async (question: string, sourceIds: string[]): Promise<AskResult> => {
+export const askPatterns = async (question: string, sourceIds: string[], noteIds: string[], signal?: AbortSignal): Promise<AskResult> => {
   const { data, error } = await supabase.functions.invoke("relationship360", {
-    body: { action: "ask", question, source_ids: sourceIds },
+    body: { action: "ask", question, source_ids: sourceIds, note_ids: noteIds },
+    signal,
   });
   if (error) {
     // supabase-js wraps non-2xx; read the server's honest message when present.

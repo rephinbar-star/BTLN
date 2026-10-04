@@ -6,9 +6,15 @@
 //  - a question-specific selection may only NARROW the eligible set (never widen,
 //    never mutate inclusion); unknown or ineligible ids reject the request;
 //  - notes are self-reports, only from selected relationships, never evidence;
-//  - every cited moment must map to a supplied observation/note id, and a quote
-//    is shown only when it matches a retained evidence excerpt exactly;
-//  - unsupported certainty, diagnoses or change claims without dated evidence abstain.
+//    an explicit note selection may only narrow (and may be empty);
+//  - every cited moment must map to a supplied observation/note id;
+//  - a quote is shown only when the observation's evidence was copied verbatim
+//    from the supplied messages by ingestion (attributed Deep Read schema) AND the
+//    model's quote is contained in that stored excerpt — otherwise paraphrase;
+//  - a date is "verified" only when the source's stored date provenance is
+//    parsed/ocr_confirmed and the observation day lies inside the source period;
+//  - change claims need >= 2 distinct reads with distinct verified days;
+//  - unsupported certainty, diagnoses or mind-reading abstain.
 
 export const ASK_LIMITS = {
   questionMin: 3,
@@ -34,6 +40,11 @@ export type AskSource = {
   excluded_at: string | null;
   quarantined_at?: string | null;
   evaluation_run_id?: string | null;
+  subject_participant_id?: string | null;
+  updated_at?: string | null;
+  date_provenance?: string | null;
+  observed_period_start?: string | null;
+  observed_period_end?: string | null;
 };
 export type AskObservation = {
   id: string;
@@ -47,8 +58,11 @@ export type AskObservation = {
   observed_period_start: string | null;
   observed_period_end: string | null;
   created_at: string;
+  version?: number | null;
+  updated_at?: string | null;
+  corrected_at?: string | null;
 };
-export type AskNote = { id: string; relationship_id: string | null; response_text: string; self_reported_at: string; excluded_at?: string | null };
+export type AskNote = { id: string; relationship_id: string | null; response_text: string; self_reported_at: string; excluded_at?: string | null; updated_at?: string | null };
 export type AskRelationship = { id: string; label: string | null; is_confirmed: boolean };
 
 export const isEligibleSource = (s: AskSource, evalScope: string | null) =>
@@ -78,14 +92,82 @@ export const selectSources = (eligible: AskSource[], requested: unknown):
   return { ok: true, selected: unique.map((id) => byId.get(id as string)!) };
 };
 
-/** Notes only from selected, existing relationships; excluded notes never contribute. */
-export const selectNotes = (notes: AskNote[], selected: AskSource[], rels: Map<string, AskRelationship>) => {
+/** Notes eligible for a question: owned, current, not excluded, from selected owned relationships. */
+export const eligibleNotes = (notes: AskNote[], selected: AskSource[], rels: Map<string, AskRelationship>) => {
   const relIds = new Set(selected.map((s) => s.relationship_id));
   return notes
     .filter((n) => !n.excluded_at && n.relationship_id && relIds.has(n.relationship_id) && rels.has(n.relationship_id))
-    .sort((a, b) => (a.self_reported_at < b.self_reported_at ? 1 : -1))
-    .slice(0, ASK_LIMITS.maxNotes);
+    .sort((a, b) => (a.self_reported_at < b.self_reported_at ? 1 : -1));
 };
+
+/**
+ * Explicit per-question note choice. Omitted = newest eligible notes (capped).
+ * An array may only narrow the eligible set and may be empty (no notes at all).
+ * Any unknown, foreign, excluded or out-of-scope id rejects the request.
+ */
+export const pickNotes = (notes: AskNote[], selected: AskSource[], rels: Map<string, AskRelationship>, requested: unknown):
+  { ok: true; notes: AskNote[] } | { ok: false; error: string } => {
+  const eligible = eligibleNotes(notes, selected, rels);
+  if (requested === undefined || requested === null) return { ok: true, notes: eligible.slice(0, ASK_LIMITS.maxNotes) };
+  if (!Array.isArray(requested)) return { ok: false, error: "Invalid note selection." };
+  const unique = [...new Set(requested)];
+  if (unique.length > ASK_LIMITS.maxNotes) return { ok: false, error: `Choose up to ${ASK_LIMITS.maxNotes} notes.` };
+  const byId = new Map(eligible.map((n) => [n.id, n]));
+  if (unique.some((id) => typeof id !== "string" || !UUID_RE.test(id) || !byId.has(id))) {
+    return { ok: false, error: "One of those notes is not available for this question." };
+  }
+  return { ok: true, notes: eligible.filter((n) => unique.includes(n.id)) };
+};
+
+/** Back-compat helper (tests): default note choice. */
+export const selectNotes = (notes: AskNote[], selected: AskSource[], rels: Map<string, AskRelationship>) =>
+  eligibleNotes(notes, selected, rels).slice(0, ASK_LIMITS.maxNotes);
+
+const TRUSTED_PROVENANCE = new Set(["parsed", "ocr_confirmed"]);
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const validDay = (v: string | null | undefined): string | null => {
+  if (!v) return null;
+  const d = v.slice(0, 10);
+  if (!ISO_DAY.test(d)) return null;
+  const t = Date.parse(`${d}T00:00:00Z`);
+  return Number.isNaN(t) || new Date(t).toISOString().slice(0, 10) !== d ? null : d;
+};
+
+/**
+ * Established provenance rule: only message timestamps parsed from an export or
+ * confirmed from reviewed screenshots date a claim. Unknown, user-supplied or
+ * inconsistent dates stay undated (never usable for change claims).
+ */
+export const trustedDay = (o: Pick<AskObservation, "observed_period_start">, s: AskSource | undefined): string | null => {
+  if (!s || !TRUSTED_PROVENANCE.has(String(s.date_provenance ?? ""))) return null;
+  const d = validDay(o.observed_period_start);
+  const a = validDay(s.observed_period_start), b = validDay(s.observed_period_end ?? s.observed_period_start);
+  if (!d || !a || !b || d < a || d > b) return null;
+  return d;
+};
+
+/** Observation types whose evidence excerpts ingestion copied verbatim from supplied messages. */
+const VERBATIM_TYPES = /^deep_read\.(behavior|interpretation|joint|context|unresolved_self)(\.recent_window)?$/;
+const verifiedExcerpts = (o: AskObservation): string[] =>
+  !VERBATIM_TYPES.test(o.observation_type) || !Array.isArray(o.evidence_refs) ? [] :
+    (o.evidence_refs as unknown[]).map((r) => {
+      const x = (r ?? {}) as { quote?: unknown; speaker?: unknown };
+      return typeof x.quote === "string" && "speaker" in x ? x.quote.replace(/\u2026$/, "").trim() : "";
+    }).filter((q) => q.length >= 3);
+export const hasVerifiedExcerpt = (o: AskObservation) => verifiedExcerpts(o).length > 0;
+
+/** Server fingerprint material: consent, identity, sources, observations and notes, content-sensitive. */
+export const askScopeParts = (
+  profile: { opted_in_at: string | null; activation_consent_at: string | null; consent_version: number | null },
+  selected: AskSource[], obs: AskObservation[], notes: AskNote[],
+): string[] => [
+  `p:${profile.opted_in_at ?? ""}:${profile.activation_consent_at ?? ""}:${profile.consent_version ?? 0}`,
+  ...[...selected].sort((a, b) => (a.id < b.id ? -1 : 1)).map((s) =>
+    `s:${s.id}:${s.relationship_id}:${s.identity_status}:${s.subject_participant ?? ""}:${s.subject_participant_id ?? ""}:${s.excluded_at ?? ""}:${s.quarantined_at ?? ""}:${s.updated_at ?? ""}:${s.date_provenance ?? ""}:${s.observed_period_start ?? ""}:${s.observed_period_end ?? ""}`),
+  ...[...obs].sort((a, b) => (a.id < b.id ? -1 : 1)).map((o) =>
+    `o:${o.id}:${o.version ?? ""}:${o.updated_at ?? ""}:${o.corrected_at ?? ""}:${o.subject_kind}:${o.subject_label ?? ""}:${o.observed_period_start ?? ""}:${o.statement}:${JSON.stringify(o.evidence_refs ?? null)}`),
+  ...[...notes].sort((a, b) => (a.id < b.id ? -1 : 1)).map((n) => `n:${n.id}:${n.updated_at ?? ""}:${n.relationship_id ?? ""}:${n.response_text}`),
+];
 
 /** Fair share per source, newest first, bounded. */
 export const selectObservations = (rows: AskObservation[], selected: AskSource[]) => {
@@ -122,8 +204,9 @@ export const buildAskContext = (question: string, obs: AskObservation[], notes: 
     if (!sRef.has(o.journey_source_id)) sRef.set(o.journey_source_id, `S${sRef.size + 1}`);
     const src = sources.get(o.journey_source_id);
     const rel = src ? rels.get(src.relationship_id) : undefined;
-    const d = day(o.observed_period_start) ?? "undated";
-    return `${ref}|${sRef.get(o.journey_source_id)}|${clean(rel?.label ?? "A relationship", 60)}|${o.subject_kind}|${d}|${clean(o.statement, ASK_LIMITS.statementChars)}`;
+    const d = trustedDay(o, src) ?? "undated";
+    const ex = verifiedExcerpts(o).slice(0, 2).map((e) => clean(e, 160).replace(/\|/g, "/")).join(" / ");
+    return `${ref}|${sRef.get(o.journey_source_id)}|${clean(rel?.label ?? "A relationship", 60)}|${o.subject_kind}|${d}|${clean(o.statement, ASK_LIMITS.statementChars).replace(/\|/g, "/")}|${ex}`;
   });
   const noteRows = notes.map((n, i) => {
     const ref = `N${i + 1}`;
@@ -131,7 +214,7 @@ export const buildAskContext = (question: string, obs: AskObservation[], notes: 
     return `${ref}|${day(n.self_reported_at)}|${clean(n.response_text, ASK_LIMITS.noteChars)}`;
   });
   const text = `<question>${clean(question, ASK_LIMITS.questionMax)}</question>
-<observations>O|source|relationship|about|verified_date|statement
+<observations>O|source|relationship|about|verified_date|statement|verbatim_excerpt
 ${obsRows.join("\n")}
 </observations>
 <self_reported_notes>N|written|text
@@ -181,8 +264,6 @@ const ACTOR: Record<string, string> = {
 };
 const KIND_LABEL: Record<string, string> = { quick_take: "Quick Take", deep_read: "Deep Read", group_read: "Group Read", group_roast: "Group Roast" };
 
-const excerpts = (refs: unknown): string[] =>
-  Array.isArray(refs) ? refs.map((r) => (r && typeof (r as { quote?: unknown }).quote === "string" ? (r as { quote: string }).quote : "")).filter(Boolean) : [];
 
 /** Validate model output against the exact supplied evidence. Never trusts model ids or quotes. */
 export const validateAskOutput = (
@@ -210,11 +291,12 @@ export const validateAskOutput = (
       const src = sources.get(ob.journey_source_id);
       const rel = src ? rels.get(src.relationship_id) : undefined;
       const q = str((m as { quote?: unknown }).quote, 300);
-      const quote = q && excerpts(ob.evidence_refs).some((e) => e === q || (q.length >= 12 && e.includes(q))) ? q : null;
+      const quote = q && verifiedExcerpts(ob).some((e) => e === q || (q.length >= 12 && e.includes(q))) ? q : null;
+      const vd = trustedDay(ob, src);
       moments.push({
         kind: "conversation", ref_id: ob.id, source_id: ob.journey_source_id,
         label: `${KIND_LABEL[src?.source_kind ?? ""] ?? "Read"}${rel?.label ? ` · ${rel.label}` : ""}`,
-        date: day(ob.observed_period_start), date_kind: ob.observed_period_start ? "verified" : "undated",
+        date: vd, date_kind: vd ? "verified" : "undated",
         actor: ACTOR[ob.subject_kind] ?? "From a read", text: ob.statement.slice(0, ASK_LIMITS.statementChars), quote,
       });
     } else {
@@ -227,9 +309,12 @@ export const validateAskOutput = (
   const conv = moments.filter((m) => m.kind === "conversation");
   const support = {
     sources: new Set(conv.map((m) => m.source_id)).size,
-    dated: new Set(conv.map((m) => m.date).filter(Boolean)).size,
+    dated: new Set(conv.filter((m) => m.date_kind === "verified").map((m) => m.date)).size,
     notes: moments.length - conv.length,
   };
+  const dated = conv.filter((m) => m.date_kind === "verified" && m.date);
+  // A change needs two different reads whose verified days differ; one read is never enough.
+  const changeSupported = dated.some((a) => dated.some((b) => a.source_id !== b.source_id && a.date !== b.date));
   const abstain = (reason: string): AskAnswer => ({ state: "abstained", reason, support });
   const finding = str(o.finding, 500);
   const title = str(o.title, 120);
@@ -239,7 +324,7 @@ export const validateAskOutput = (
   const noteContext = support.notes > 0 ? str(o.note_context, 300) || null : null;
   const visible = [title, finding, nextStep ?? "", noteContext ?? ""].join(" ");
   if (CERTAINTY.test(visible) || MIND_READING.test(visible)) return abstain("An answer would need more certainty than your reads support.");
-  if (CHANGE.test(`${title} ${finding}`) && support.dated < 2) return abstain("Describing a change needs evidence from at least two dated moments in different reads.");
+  if (CHANGE.test(`${title} ${finding}`) && !changeSupported) return abstain("Describing a change needs evidence from at least two different reads with different verified dates.");
   if (REPEAT.test(`${title} ${finding}`) && support.sources < 2) return abstain("Calling something a pattern needs support from at least two different reads.");
   return {
     state: "answered", title, finding, note_context: noteContext, next_step: nextStep, moments,
@@ -247,6 +332,24 @@ export const validateAskOutput = (
   };
 };
 
+/** Short non-cryptographic digest so client keys never hold note text. */
+export const digest = (v: string) => {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < v.length; i++) { h ^= v.charCodeAt(i); h = Math.imul(h, 0x01000193); }
+  return (h >>> 0).toString(36);
+};
+
 /** Client-side: a visible or in-flight answer is valid only for the exact scope it was asked in. */
-export const askScopeKey = (p: { selected: string[]; eligible: string[]; consentCurrent: boolean; optedIn: boolean; notes: string[] }) =>
-  [p.optedIn ? "on" : "off", p.consentCurrent ? "c1" : "c0", [...p.selected].sort().join(","), [...p.eligible].sort().join(","), [...p.notes].sort().join(",")].join("|");
+export const askScopeKey = (p: {
+  optedIn: boolean; consentCurrent: boolean;
+  sources: { id: string; version?: string | null }[];
+  selected: string[];
+  notes: { id: string; updated_at?: string | null; response_text: string }[];
+  selectedNotes: string[];
+}) => [
+  p.optedIn ? "on" : "off", p.consentCurrent ? "c1" : "c0",
+  [...p.sources].map((s) => `${s.id}@${s.version ?? ""}`).sort().join(","),
+  [...p.selected].sort().join(","),
+  [...p.notes].map((n) => `${n.id}@${n.updated_at ?? ""}#${digest(n.response_text)}`).sort().join(","),
+  [...p.selectedNotes].sort().join(","),
+].join("|");

@@ -1,17 +1,18 @@
 import { describe, expect, it } from "vitest";
 import {
   ASK_LIMITS, askScopeKey, buildAskContext, isEligibleSource, selectNotes, selectObservations, selectSources,
-  validateAskOutput, validateQuestion, type AskNote, type AskObservation, type AskRelationship, type AskSource,
+  validateAskOutput, validateQuestion, pickNotes, askScopeParts, trustedDay, type AskNote, type AskObservation, type AskRelationship, type AskSource,
 } from "../../../supabase/functions/_shared/r360AskCore";
 
 const u = (n: number) => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const src = (n: number, extra: Partial<AskSource> = {}): AskSource => ({
   id: u(n), relationship_id: u(100 + (n % 2)), source_kind: "quick_take", subject_participant: "me",
-  identity_status: "confirmed", excluded_at: null, quarantined_at: null, evaluation_run_id: null, ...extra,
+  identity_status: "confirmed", excluded_at: null, quarantined_at: null, evaluation_run_id: null,
+  date_provenance: "parsed", observed_period_start: "2026-09-01", observed_period_end: "2026-09-30", ...extra,
 });
 const ob = (id: string, s: number, extra: Partial<AskObservation> = {}): AskObservation => ({
-  id, journey_source_id: u(s), subject_kind: "user_behavior", subject_label: null, observation_type: "x",
-  statement: `You asked for reassurance (${id}).`, evidence_refs: [{ quote: "are we still on for tonight?", label: "l" }],
+  id, journey_source_id: u(s), subject_kind: "user_behavior", subject_label: null, observation_type: "deep_read.behavior",
+  statement: `You asked for reassurance (${id}).`, evidence_refs: [{ quote: "are we still on for tonight?", speaker: "me", label: "l" }],
   confidence: "medium", observed_period_start: `2026-09-${10 + s}`, observed_period_end: null, created_at: `2026-09-${10 + s}T00:00:00Z`, ...extra,
 });
 const rels = new Map<string, AskRelationship>([[u(100), { id: u(100), label: "Alex", is_confirmed: true }], [u(101), { id: u(101), label: "Jordan", is_confirmed: true }]]);
@@ -42,7 +43,7 @@ describe("Relationship360 questions — gates", () => {
   it("notes come only from selected, existing relationships and never when excluded", () => {
     const all: AskNote[] = [...notes, { id: "n2", relationship_id: u(100), response_text: "a", self_reported_at: "2026-09-01T00:00:00Z", excluded_at: "x" }, { id: "n3", relationship_id: null, response_text: "b", self_reported_at: "2026-09-02T00:00:00Z" }, { id: "n4", relationship_id: u(555), response_text: "c", self_reported_at: "2026-09-03T00:00:00Z" }];
     expect(selectNotes(all, sources, rels).map((n) => n.id)).toEqual(["n1"]);
-    expect(selectNotes(all, [sources[0]], rels)).toEqual([]);
+    expect(selectNotes(all, [sources[1]], rels)).toEqual([]);
   });
   it("observations are limited to selected sources and bounded", () => {
     const many = Array.from({ length: 200 }, (_, i) => ob(`x${i}`, (i % 2) + 1));
@@ -79,6 +80,24 @@ describe("Relationship360 questions — injection and grounding", () => {
     expect(a.moments[0].quote).toBe("are we still on for tonight?");
     expect(a.moments[1].quote).toBeNull();
   });
+  it("generated (non-verbatim) evidence strings are never shown as quotes", () => {
+    const legacy = [ob("o1", 1, { observation_type: "pattern", evidence_refs: [{ quote: "are we still on for tonight?", label: "l" }] }), ob("o2", 2)];
+    const c = buildAskContext("q?", legacy, [], smap, rels);
+    expect(c.text).not.toContain("are we still on for tonight?|"); // no excerpt column for O1
+    const a = validateAskOutput({ answerable: true, title: "t", finding: "In two reads you checked in.", moments: [{ ref: "O1", quote: "are we still on for tonight?" }, { ref: "O2", quote: "are we still on for tonight?" }] }, c.back, legacy, [], smap, rels);
+    if (a.state !== "answered") throw new Error("expected answer");
+    expect(a.moments[0].quote).toBeNull();
+    expect(a.moments[1].quote).toBe("are we still on for tonight?");
+  });
+  it("dates are verified only with trusted provenance inside the source period", () => {
+    expect(trustedDay({ observed_period_start: "2026-09-11" }, src(1))).toBe("2026-09-11");
+    expect(trustedDay({ observed_period_start: "2026-09-11" }, src(1, { date_provenance: "unknown" }))).toBeNull();
+    expect(trustedDay({ observed_period_start: "2026-09-11" }, src(1, { date_provenance: "user_supplied" }))).toBeNull();
+    expect(trustedDay({ observed_period_start: "2026-09-11" }, src(1, { date_provenance: null }))).toBeNull();
+    expect(trustedDay({ observed_period_start: "2026-10-11" }, src(1))).toBeNull();
+    expect(trustedDay({ observed_period_start: "2026-02-31" }, src(1))).toBeNull();
+    expect(trustedDay({ observed_period_start: "2026-09-11" }, src(1, { observed_period_start: null }))).toBeNull();
+  });
   it("notes alone or no valid refs abstain", () => {
     expect(answer({ moments: [{ ref: "N1" }] }).state).toBe("abstained");
     expect(answer({ moments: [{ ref: "O77" }] }).state).toBe("abstained");
@@ -97,17 +116,66 @@ describe("Relationship360 questions — injection and grounding", () => {
     expect(v("This keeps happening as a pattern.").state).toBe("abstained");
     expect(v("In this read you asked one direct question.").state).toBe("answered");
   });
+  it("two dated observations from ONE read never support a change", () => {
+    const one = [ob("o1", 1, { observed_period_start: "2026-09-05" }), ob("o2", 1, { observed_period_start: "2026-09-25" })];
+    const c = buildAskContext("q?", one, [], smap, rels);
+    expect(validateAskOutput({ answerable: true, title: "t", finding: "Your replies have changed.", moments: [{ ref: "O1" }, { ref: "O2" }] }, c.back, one, [], smap, rels).state).toBe("abstained");
+  });
+  it("change across two reads needs distinct verified dates", () => {
+    const run = (o: AskObservation[], srcs = smap) => { const c = buildAskContext("q?", o, [], srcs, rels); return validateAskOutput({ answerable: true, title: "t", finding: "Your replies have changed.", moments: [{ ref: "O1" }, { ref: "O2" }] }, c.back, o, [], srcs, rels).state; };
+    expect(run([ob("o1", 1), ob("o2", 2)])).toBe("answered");
+    expect(run([ob("o1", 1, { observed_period_start: "2026-09-12" }), ob("o2", 2, { observed_period_start: "2026-09-12" })])).toBe("abstained");
+    const unk = new Map([[u(1), src(1)], [u(2), src(2, { date_provenance: "unknown" })]]);
+    expect(run([ob("o1", 1), ob("o2", 2)], unk)).toBe("abstained");
+  });
+});
+
+describe("Relationship360 questions — explicit note selection", () => {
+  const n = (id: number, rel: number, extra: Partial<AskNote> = {}): AskNote => ({ id: u(id), relationship_id: u(rel), response_text: `note ${id}`, self_reported_at: `2026-09-${10 + id}T00:00:00Z`, ...extra });
+  const all = [n(1, 100), n(2, 101), n(3, 101, { excluded_at: "x" }), n(4, 555)];
+  it("omitted = eligible notes; empty array = no notes", () => {
+    expect((pickNotes(all, sources, rels, undefined) as { notes: AskNote[] }).notes.map((x) => x.id).sort()).toEqual([u(1), u(2)].sort());
+    expect(pickNotes(all, sources, rels, [])).toEqual({ ok: true, notes: [] });
+  });
+  it("selection only narrows; tampered, excluded, foreign or out-of-scope ids reject", () => {
+    expect((pickNotes(all, sources, rels, [u(2)]) as { notes: AskNote[] }).notes.map((x) => x.id)).toEqual([u(2)]);
+    expect(pickNotes(all, sources, rels, [u(3)]).ok).toBe(false); // excluded
+    expect(pickNotes(all, sources, rels, [u(4)]).ok).toBe(false); // not an owned relationship
+    expect(pickNotes(all, sources, rels, [u(99)]).ok).toBe(false); // unknown / other owner
+    expect(pickNotes(all, [sources[0]], rels, [u(1)]).ok).toBe(false); // relationship not selected
+    expect(pickNotes(all, sources, rels, ["n1"]).ok).toBe(false);
+    expect(pickNotes(all, sources, rels, "x").ok).toBe(false);
+    expect(pickNotes(all, sources, rels, Array.from({ length: 9 }, (_, i) => u(i + 1))).ok).toBe(false);
+  });
+});
+
+describe("Relationship360 questions — server scope fingerprint", () => {
+  const prof = { opted_in_at: "a", activation_consent_at: "b", consent_version: 2 };
+  const base = askScopeParts(prof, sources, obs, notes).join("|");
+  it("changes on consent, identity, observation content/version, evidence and note text", () => {
+    expect(askScopeParts({ ...prof, consent_version: 1 }, sources, obs, notes).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, [src(1, { subject_participant: "them" }), src(2)], obs, notes).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, [src(1, { subject_participant_id: "p2" }), src(2)], obs, notes).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, sources, [ob("o1", 1, { statement: "edited" }), obs[1]], notes).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, sources, [ob("o1", 1, { version: 2 }), obs[1]], notes).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, sources, [ob("o1", 1, { evidence_refs: [] }), obs[1]], notes).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, sources, obs, [{ ...notes[0], response_text: "edited" }]).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, sources, obs, []).join("|")).not.toBe(base);
+    expect(askScopeParts(prof, [...sources].reverse(), [...obs].reverse(), notes).join("|")).toBe(base);
+  });
 });
 
 describe("Relationship360 questions — stale answers", () => {
-  const base = { selected: [u(1), u(2)], eligible: [u(1), u(2)], consentCurrent: true, optedIn: true, notes: ["n1"] };
-  it("scope key changes when selection, eligibility, consent, opt-in or notes change", () => {
+  const base = { optedIn: true, consentCurrent: true, sources: [{ id: u(1), version: "v1" }, { id: u(2), version: "v1" }], selected: [u(1), u(2)], notes: [{ id: "n1", updated_at: "t", response_text: "Slow replies" }], selectedNotes: ["n1"] };
+  it("client key changes on selection, versions, consent, opt-in, note text and note choice", () => {
     const k = askScopeKey(base);
     expect(askScopeKey({ ...base, selected: [u(2), u(1)] })).toBe(k);
     expect(askScopeKey({ ...base, selected: [u(1)] })).not.toBe(k);
-    expect(askScopeKey({ ...base, eligible: [u(1)] })).not.toBe(k);
+    expect(askScopeKey({ ...base, sources: [{ id: u(1), version: "v2" }, { id: u(2), version: "v1" }] })).not.toBe(k);
     expect(askScopeKey({ ...base, consentCurrent: false })).not.toBe(k);
     expect(askScopeKey({ ...base, optedIn: false })).not.toBe(k);
-    expect(askScopeKey({ ...base, notes: [] })).not.toBe(k);
+    expect(askScopeKey({ ...base, notes: [{ id: "n1", updated_at: "t", response_text: "Edited" }] })).not.toBe(k);
+    expect(askScopeKey({ ...base, selectedNotes: [] })).not.toBe(k);
+    expect(k).not.toContain("Slow replies");
   });
 });
