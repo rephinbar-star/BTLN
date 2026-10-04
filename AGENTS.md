@@ -11,3 +11,4 @@
 - Development requests for hosted asset pointers proxy through the project's preview origin — so the local Vite preview renders the same CDN artwork without bundling binaries or affecting production asset URLs.
 - Shared conversation intake owns the raw-input/review/identity progression; modes supply only their subsequent context or submission action — so corrections reset identity consistently without changing analysis payloads.
 - Relationship360 dashboard presentation shares scope, evidence-linked patterns and coaching primitives across fictional and live views; fictional counts never populate the real profile — so source coverage remains honest.
+- Relationship360 questions are answered ephemerally by the `ask` action of the existing `relationship360` function using pure rules in `_shared/r360AskCore.ts`; only content-free `journey_jobs` usage rows persist — so questions never widen inclusion, store answers, or render unverified citations.
