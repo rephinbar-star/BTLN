@@ -79,8 +79,8 @@
     /* Legacy btln aliases mapped onto the dark shell. */
     --btln-paper: 229 38% 5%;
     --btln-ink: 210 38% 95%;
-    --btln-wordmark: 152 76% 80%; /* Aurora mint #A7F3D0 */
-    --btln-wordmark-accent: 253 95% 85%; /* Aurora lavender #C4B5FD */
+    --btln-wordmark: 152.3684211 76% 80.3921569%; /* Aurora mint #A7F3D0 */
+    --btln-wordmark-accent: 252.5 94.7368421% 85.0980392%; /* Aurora lavender #C4B5FD */
     --btln-muted: 214 24% 74%;
     --btln-line: 226 26% 20%;
     --btln-mint: 258 36% 20%;
