@@ -165,6 +165,12 @@ export const Relationship360Live = ({ relationships, recorded }: { relationships
 
       <DashboardScope value={relationshipId ?? "all"} onChange={(value) => setRelationshipId(value === "all" ? null : value)} options={[{ value: "all", label: "All relationships" }, ...relationships.map((rel) => ({ value: rel.id, label: rel.label }))]} />
 
+      {!recorded && status?.prime && status.opted_in && (
+        <Button asChild variant="outline" className="mt-3 min-h-11 rounded-full">
+          <Link to="/journey/questions">Ask about my patterns</Link>
+        </Button>
+      )}
+
       {status && status.counts.pending > 0 && (
         <p className="mt-3 text-[13px] text-muted-foreground">
           {status.counts.pending} linked conversation{status.counts.pending === 1 ? " is" : "s are"} still waiting for you to say which participant is you, so {status.counts.pending === 1 ? "it contributes" : "they contribute"} nothing.
