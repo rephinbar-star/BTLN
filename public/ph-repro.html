@@ -1,4 +1,15 @@
 <!doctype html><html><head><script src="https://eu-assets.i.posthog.com/static/array.js"></script></head>
 <body><script>
-posthog.init("phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", { api_host: "https://eu.i.posthog.com", autocapture: false, capture_pageview: true, loaded: function(ph){ ph.opt_in_capturing(); ph.capture("test_event_http"); console.log("captured, opted out?", ph.has_opted_out_capturing()); } });
+posthog.init("phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", { api_host: "https://eu.i.posthog.com", autocapture: false, capture_pageview: false, loaded: function(ph){
+  ph.opt_in_capturing();
+  ph.capture("test_instant", {}, { send_instantly: true });
+  setTimeout(function(){
+    var q = ph._requestQueue || {};
+    console.log("queue keys:", Object.keys(q));
+    console.log("queue len:", (q._queue && q._queue.length) !== undefined ? q._queue.length : "n/a");
+    console.log("online:", navigator.onLine);
+    console.log("config host:", ph.config.api_host);
+    console.log("persistence:", ph.persistence ? "ok" : "missing");
+  }, 3000);
+} });
 </script></body></html>
