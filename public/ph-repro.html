@@ -1,6 +1,0 @@
-<!doctype html><html><body><script>
-const body = JSON.stringify({ api_key: "phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", event: "probe_keepalive", distinct_id: "sandbox-probe" });
-fetch("https://eu.i.posthog.com/i/v0/e/", { method: "POST", headers: {"Content-Type": "application/json"}, body, keepalive: true, priority: "low" })
-  .then(r => r.text().then(t => console.log("KEEPALIVE FETCH:", r.status, t)))
-  .catch(e => console.log("KEEPALIVE ERROR:", e.message));
-</script></body></html>
