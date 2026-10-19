@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
+import { BRANDON_COMPARE_FAQS, WHATSAPP_GUIDE_FAQS, faqPageJsonLd, type FaqItem } from "../src/lib/seo/faqs";
 
-const PAGES = [
+const PAGES: { path: string; title: string; description: string; faqs?: FaqItem[] }[] = [
   { path: "/pricing", title: "Pricing | BetweenTheLines™", description: "Compare a $4.99 single report with $9.99 monthly and $49.99 annual full-report access for Deep Reads and Group Reads." },
   { path: "/sample", title: "See a Sample AI Relationship Report (Fictional) | BetweenTheLines™", description: "Preview the exact report format — pattern, evidence and a practical next step — with clearly fictional romantic, friend and family examples before you upload anything." },
   { path: "/guides/mixed-signal-texts", title: "How to Read Mixed-Signal Texts | BetweenTheLines™", description: "A careful guide to reading mixed-signal texts without inventing intent, plus a path to Quick Take." },
