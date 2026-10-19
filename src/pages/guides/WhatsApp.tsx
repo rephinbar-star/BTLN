@@ -1,8 +1,73 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { PublicPage } from "@/components/marketing/PublicPage";
-export default function WhatsAppGuide() { return <PublicPage title="How to Export & Analyze a WhatsApp Chat (iPhone & Android) | BetweenTheLines™" description="Step-by-step WhatsApp chat export for iPhone and Android, then a private AI read of the conversation: patterns, participation and attachment signals. TXT and ZIP exports supported." path="/guides/whatsapp">
-<p className="text-sm text-muted-foreground">Supported import guide</p><h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">Import a WhatsApp chat</h1><p className="mt-5 text-[17px] leading-relaxed text-muted-foreground">BetweenTheLines reads WhatsApp text exports from iOS and Android, including common localized dates, 12/24-hour clocks, multiline messages, UTF-8/BOM, and ZIP exports containing a transcript.</p>
-<div className="mt-10 grid gap-8 sm:grid-cols-2"><section><h2 className="text-xl font-medium">iPhone</h2><ol className="mt-4 list-decimal space-y-3 pl-5 text-muted-foreground"><li>Open the chat and tap the contact or group name.</li><li>Tap <strong>Export Chat</strong>.</li><li>Choose <strong>Without Media</strong>.</li><li>Save or share the TXT/ZIP export.</li></ol></section><section><h2 className="text-xl font-medium">Android</h2><ol className="mt-4 list-decimal space-y-3 pl-5 text-muted-foreground"><li>Open the chat and tap the menu.</li><li>Choose <strong>More</strong>, then <strong>Export chat</strong>.</li><li>Choose <strong>Without media</strong>.</li><li>Save the TXT/ZIP export.</li></ol></section></div>
-<section className="mt-10 rounded-lg border border-border bg-card p-6"><h2 className="text-lg font-medium">Before analysis</h2><p className="mt-2 text-muted-foreground">You choose the transcript when a ZIP contains candidates, review participants, merge aliases, exclude bots or people, decide how unknown times are handled, and confirm the relationship category. Two-person chats continue to Deep Read; 3–15 participants continue to Group Read.</p></section>
-<div className="mt-8 flex gap-3"><Button asChild className="rounded-full"><Link to="/group">Import an export</Link></Button><Button asChild variant="outline" className="rounded-full"><Link to="/trust">Privacy details</Link></Button></div></PublicPage>; }
+import { FaqSection } from "@/components/marketing/FaqSection";
+import { WHATSAPP_GUIDE_FAQS, faqPageJsonLd } from "@/lib/seo/faqs";
+
+export default function WhatsAppGuide() {
+  return (
+    <PublicPage
+      title="How to Export & Analyze a WhatsApp Chat (iPhone & Android) | BetweenTheLines™"
+      description="Step-by-step WhatsApp chat export for iPhone and Android, then a private AI read of the conversation: patterns, participation and attachment signals. TXT and ZIP exports supported."
+      path="/guides/whatsapp"
+    >
+      <Helmet>
+        <script type="application/ld+json">{faqPageJsonLd(WHATSAPP_GUIDE_FAQS)}</script>
+      </Helmet>
+      <p className="text-sm text-muted-foreground">Supported import guide</p>
+      <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">Import a WhatsApp chat</h1>
+      <p className="mt-5 text-[17px] leading-relaxed text-muted-foreground">
+        BetweenTheLines reads WhatsApp text exports from iOS and Android, including common localized
+        dates, 12/24-hour clocks, multiline messages, UTF-8/BOM, and ZIP exports containing a
+        transcript.
+      </p>
+      <div className="mt-10 grid gap-8 sm:grid-cols-2">
+        <section>
+          <h2 className="text-xl font-medium">iPhone</h2>
+          <ol className="mt-4 list-decimal space-y-3 pl-5 text-muted-foreground">
+            <li>Open the chat and tap the contact or group name.</li>
+            <li>
+              Tap <strong>Export Chat</strong>.
+            </li>
+            <li>
+              Choose <strong>Without Media</strong>.
+            </li>
+            <li>Save or share the TXT/ZIP export.</li>
+          </ol>
+        </section>
+        <section>
+          <h2 className="text-xl font-medium">Android</h2>
+          <ol className="mt-4 list-decimal space-y-3 pl-5 text-muted-foreground">
+            <li>Open the chat and tap the menu.</li>
+            <li>
+              Choose <strong>More</strong>, then <strong>Export chat</strong>.
+            </li>
+            <li>
+              Choose <strong>Without media</strong>.
+            </li>
+            <li>Save the TXT/ZIP export.</li>
+          </ol>
+        </section>
+      </div>
+      <section className="mt-10 rounded-lg border border-border bg-card p-6">
+        <h2 className="text-lg font-medium">Before analysis</h2>
+        <p className="mt-2 text-muted-foreground">
+          You choose the transcript when a ZIP contains candidates, review participants, merge
+          aliases, exclude bots or people, decide how unknown times are handled, and confirm the
+          relationship category. Two-person chats continue to Deep Read; 3–15 participants continue
+          to Group Read.
+        </p>
+      </section>
+      <FaqSection items={WHATSAPP_GUIDE_FAQS} />
+      <div className="mt-8 flex gap-3">
+        <Button asChild className="rounded-full">
+          <Link to="/group">Import an export</Link>
+        </Button>
+        <Button asChild variant="outline" className="rounded-full">
+          <Link to="/trust">Privacy details</Link>
+        </Button>
+      </div>
+    </PublicPage>
+  );
+}

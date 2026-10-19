@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import { Button } from "@/components/ui/button";
 import { PublicPage } from "@/components/marketing/PublicPage";
+import { FaqSection } from "@/components/marketing/FaqSection";
+import { BRANDON_COMPARE_FAQS, faqPageJsonLd } from "@/lib/seo/faqs";
 import { track } from "@/lib/analytics";
 
 export default function BrandonCompare() {
