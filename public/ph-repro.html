@@ -1,0 +1,4 @@
+<!doctype html><html><body><script type="module">
+import posthog from "/node_modules/.vite/deps/posthog-js.js";
+posthog.init("phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", { api_host: "https://eu.i.posthog.com", autocapture: false, capture_pageview: true, loaded: (ph) => { console.log("is_bot:", ph._is_bot()); ph.capture("test_masked", {}, { send_instantly: true }); console.log("captured"); } });
+</script></body></html>
