@@ -15,7 +15,7 @@ const PAGES: { path: string; title: string; description: string; faqs?: FaqItem[
   { path: "/explore", title: "Explore: Group Read, Wrapped and Pair Types | BetweenTheLines\u2122", description: "Everything beyond the three main modes: Group Read, Roast Us, Relationship Wrapped, pair types, samples and plans." },
   { path: "/prime", title: "BTLN Prime $19.99/Month: Patterns Across Your Conversations", description: "Prime brings every BetweenTheLines feature together with your private Relationship Journey across your own conversations." },
   { path: "/wrapped", title: "Relationship Wrapped: Your Chat Year in Numbers | BetweenTheLines\u2122", description: "Import a WhatsApp or iMessage export and get a counted recap of a month, quarter or year: messages, who starts conversations, reply gaps, busiest days and most-used emojis." },
-  { path: "/compare/whatbrandonthinks-vs-betweenthelines", title: "What Brandon Thinks Review: vs BetweenTheLines Compared | BetweenTheLines\u2122", description: "What Brandon Thinks gives a persona-voiced verdict; BetweenTheLines gives a structured, evidence-marked read with computed counts and private sharing. A sourced side-by-side comparison." },
+  { path: "/compare/whatbrandonthinks-vs-betweenthelines", title: "What Brandon Thinks Review: vs BetweenTheLines Compared | BetweenTheLines\u2122", description: "What Brandon Thinks gives a persona-voiced verdict; BetweenTheLines gives a structured, evidence-marked read with computed counts and private sharing. A sourced side-by-side comparison.", faqs: BRANDON_COMPARE_FAQS },
 
   {
     path: "/about",
