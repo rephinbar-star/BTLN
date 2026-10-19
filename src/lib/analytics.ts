@@ -222,10 +222,19 @@ let initialized = false;
 export const initAnalytics = (): void => {
   if (initialized) return;
   if (typeof window === "undefined") return;
-  const key = import.meta.env.VITE_POSTHOG_KEY as string | undefined;
-  const host = (import.meta.env.VITE_POSTHOG_HOST as string | undefined) || "https://us.i.posthog.com";
+  // Prefer the linked PostHog connector credentials (key + region-derived
+  // host). The legacy VITE_POSTHOG_KEY/VITE_POSTHOG_HOST pair is only used
+  // when no connector is linked, so a stale manual host can never misroute a
+  // connector-linked project to the wrong region.
+  const connectorKey = import.meta.env.VITE_LOVABLE_CONNECTOR_POSTHOG_API_KEY as string | undefined;
+  const key = connectorKey || (import.meta.env.VITE_POSTHOG_KEY as string | undefined);
+  const host = connectorKey
+    ? ((import.meta.env.VITE_LOVABLE_CONNECTOR_POSTHOG_REGION as string | undefined) || "eu") === "us"
+      ? "https://us.i.posthog.com"
+      : "https://eu.i.posthog.com"
+    : ((import.meta.env.VITE_POSTHOG_HOST as string | undefined) || "https://us.i.posthog.com");
   if (!key) {
-    if (import.meta.env.DEV) console.info("[analytics] VITE_POSTHOG_KEY not set — analytics disabled");
+    if (import.meta.env.DEV) console.info("[analytics] PostHog key not set — analytics disabled");
     return;
   }
 
