@@ -1,4 +1,4 @@
-<!doctype html><html><body><script>
-const ok = navigator.sendBeacon("https://eu.i.posthog.com/i/v0/e/", JSON.stringify({ api_key: "phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", event: "probe_beacon", distinct_id: "sandbox-probe" }));
-console.log("sendBeacon returned:", ok);
+<!doctype html><html><body><script type="module">
+import posthog from "/node_modules/.vite/deps/posthog-js.js";
+posthog.init("phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", { api_host: "https://eu.i.posthog.com", autocapture: false, capture_pageview: true, person_profiles: "identified_only", disable_session_recording: true, persistence: "localStorage+cookie", loaded: (ph) => { ph.capture("test_no_optout", {}, { send_instantly: true }); console.log("captured without opt-out-default"); } });
 </script></body></html>
