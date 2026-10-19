@@ -1,8 +1,5 @@
-<!doctype html><html><head><script src="https://eu-assets.i.posthog.com/static/array.js"></script></head>
-<body><script>
-posthog.init("phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", { api_host: "https://eu.i.posthog.com", autocapture: false, capture_pageview: false, verbose: true, loaded: function(ph){
-  ph.debug(true);
-  ph.opt_in_capturing();
-  ph.capture("test_debug", {}, { send_instantly: true });
-} });
+<!doctype html><html><body><script>
+fetch("https://eu.i.posthog.com/i/v0/e/", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ api_key: "phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", event: "probe_fetch", distinct_id: "sandbox-probe" }) })
+  .then(r => r.text().then(t => console.log("FETCH RESULT:", r.status, t)))
+  .catch(e => console.log("FETCH ERROR:", e.message));
 </script></body></html>
