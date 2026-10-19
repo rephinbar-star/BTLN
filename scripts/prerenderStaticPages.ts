@@ -26,6 +26,7 @@ const PAGES: { path: string; title: string; description: string; faqs?: FaqItem[
     path: "/guides/whatsapp",
     title: "How to Export & Analyze a WhatsApp Chat (iPhone & Android) | BetweenTheLines™",
     description: "Step-by-step WhatsApp chat export for iPhone and Android, then a private AI read of the conversation: patterns, participation and attachment signals. TXT and ZIP exports supported.",
+    faqs: WHATSAPP_GUIDE_FAQS,
   },
   {
     path: "/guides/imessage",
