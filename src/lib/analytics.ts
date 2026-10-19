@@ -44,6 +44,8 @@ export type EventMap = {
   survey_dismissed: { analysis_id?: string };
   paywall_viewed: { analysis_id: string };
   intent_to_pay_click: { analysis_id: string; option: PaywallOption };
+  // Opaque identifiers only (UUIDs / enum) — never price, plan text or PII.
+  payment_made: { target_id: string; target_type: "analysis" | "group_read" | "group_roast" };
   pricing_cta_clicked: { option: PaywallOption; source?: string };
   /** "Help me choose" outcome. Enum key only — never the user's answers as text. */
   pricing_guide_result: { recommendation: string; source?: string };
@@ -139,6 +141,7 @@ const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & s
   survey_dismissed: ["analysis_id"],
   paywall_viewed: ["analysis_id"],
   intent_to_pay_click: ["analysis_id", "option"],
+  payment_made: ["target_id", "target_type"],
   pricing_cta_clicked: ["option", "source"],
   second_analysis_started: [],
   relationship_created: ["relationship_type"],
