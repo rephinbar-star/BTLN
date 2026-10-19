@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { Plugin } from "vite";
+import { BRANDON_COMPARE_FAQS, WHATSAPP_GUIDE_FAQS, faqPageJsonLd, type FaqItem } from "../src/lib/seo/faqs";
 
-const PAGES = [
+const PAGES: { path: string; title: string; description: string; faqs?: FaqItem[] }[] = [
   { path: "/pricing", title: "Pricing | BetweenTheLines™", description: "Compare a $4.99 single report with $9.99 monthly and $49.99 annual full-report access for Deep Reads and Group Reads." },
   { path: "/sample", title: "See a Sample AI Relationship Report (Fictional) | BetweenTheLines™", description: "Preview the exact report format — pattern, evidence and a practical next step — with clearly fictional romantic, friend and family examples before you upload anything." },
   { path: "/guides/mixed-signal-texts", title: "How to Read Mixed-Signal Texts | BetweenTheLines™", description: "A careful guide to reading mixed-signal texts without inventing intent, plus a path to Quick Take." },
@@ -14,7 +15,7 @@ const PAGES = [
   { path: "/explore", title: "Explore: Group Read, Wrapped and Pair Types | BetweenTheLines\u2122", description: "Everything beyond the three main modes: Group Read, Roast Us, Relationship Wrapped, pair types, samples and plans." },
   { path: "/prime", title: "BTLN Prime $19.99/Month: Patterns Across Your Conversations", description: "Prime brings every BetweenTheLines feature together with your private Relationship Journey across your own conversations." },
   { path: "/wrapped", title: "Relationship Wrapped: Your Chat Year in Numbers | BetweenTheLines\u2122", description: "Import a WhatsApp or iMessage export and get a counted recap of a month, quarter or year: messages, who starts conversations, reply gaps, busiest days and most-used emojis." },
-  { path: "/compare/whatbrandonthinks-vs-betweenthelines", title: "What Brandon Thinks Review: vs BetweenTheLines Compared | BetweenTheLines\u2122", description: "What Brandon Thinks gives a persona-voiced verdict; BetweenTheLines gives a structured, evidence-marked read with computed counts and private sharing. A sourced side-by-side comparison." },
+  { path: "/compare/whatbrandonthinks-vs-betweenthelines", title: "What Brandon Thinks Review: vs BetweenTheLines Compared | BetweenTheLines\u2122", description: "What Brandon Thinks gives a persona-voiced verdict; BetweenTheLines gives a structured, evidence-marked read with computed counts and private sharing. A sourced side-by-side comparison.", faqs: BRANDON_COMPARE_FAQS },
 
   {
     path: "/about",
@@ -25,6 +26,7 @@ const PAGES = [
     path: "/guides/whatsapp",
     title: "How to Export & Analyze a WhatsApp Chat (iPhone & Android) | BetweenTheLines™",
     description: "Step-by-step WhatsApp chat export for iPhone and Android, then a private AI read of the conversation: patterns, participation and attachment signals. TXT and ZIP exports supported.",
+    faqs: WHATSAPP_GUIDE_FAQS,
   },
   {
     path: "/guides/imessage",
@@ -78,6 +80,9 @@ export const prerenderStaticPages = (): Plugin => ({
         `<meta property="og:description" content="${escapeHtml(page.description)}" />`,
         `<meta property="og:url" content="${canonical}" />`,
         `<meta name="twitter:card" content="summary_large_image" />`,
+        ...(page.faqs
+          ? [`<script type="application/ld+json">${faqPageJsonLd(page.faqs).replace(/<\//g, "<\\/")}</script>`]
+          : []),
       ].join("\n    ");
 
       const html = template
