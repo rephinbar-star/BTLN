@@ -5,7 +5,7 @@ import { OPERATOR } from "@/config/operator";
 
 
 export default function About() {
-  return <PublicPage title="About BetweenTheLines™ | Private Chat Analysis" description="How BetweenTheLines turns selected conversations into structured, private communication reports without claiming certainty about people." path="/about">
+  return <PublicPage title="About BetweenTheLines™ — Private AI Chat Analysis by a Certified Life Coach" description="Why a certified life coach built BetweenTheLines: structured, private reports on your conversations — without diagnosis, stored transcripts, or invented certainty." path="/about">
     <p className="text-sm text-muted-foreground">About the Founder and the App</p>
     <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">A clearer way to look at a conversation</h1>
     <div className="mt-8 space-y-7 text-[17px] leading-relaxed text-muted-foreground">

@@ -17,7 +17,7 @@ export default function Sample() {
   const item = samples[kind];
   useEffect(() => { track("sample_viewed", { category: kind }); }, [kind]);
   return (
-    <PublicPage title="Sample Relationship Report | BetweenTheLines™" description="Explore a clearly fictional BetweenTheLines report for romantic, friendship, and family conversations." path="/sample">
+    <PublicPage title="See a Sample AI Relationship Report (Fictional) | BetweenTheLines™" description="Preview the exact report format — pattern, evidence and a practical next step — with clearly fictional romantic, friend and family examples before you upload anything." path="/sample">
       <p className="text-sm font-medium text-muted-foreground">Fictional demonstration</p>
       <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">See a sample read</h1>
       <p className="mt-4 text-[16px] leading-relaxed text-muted-foreground">These examples are synthetic. They show the report format, not a real person or guaranteed outcome.</p>
