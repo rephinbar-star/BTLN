@@ -4,7 +4,7 @@ import type { Plugin } from "vite";
 
 const PAGES = [
   { path: "/pricing", title: "Pricing | BetweenTheLines™", description: "Compare a $4.99 single report with $9.99 monthly and $49.99 annual full-report access for Deep Reads and Group Reads." },
-  { path: "/sample", title: "Conversation Analysis Sample | BetweenTheLines™", description: "Explore a clearly labeled fictional BetweenTheLines report for romantic, friend, or family conversations." },
+  { path: "/sample", title: "See a Sample AI Relationship Report (Fictional) | BetweenTheLines™", description: "Preview the exact report format — pattern, evidence and a practical next step — with clearly fictional romantic, friend and family examples before you upload anything." },
   { path: "/guides/mixed-signal-texts", title: "How to Read Mixed-Signal Texts | BetweenTheLines™", description: "A careful guide to reading mixed-signal texts without inventing intent, plus a path to Quick Take." },
   { path: "/guides/group-chat-communication", title: "Understand Group Chat Communication | BetweenTheLines™", description: "Learn what a group-chat read can support, from participation balance to unanswered questions and repair attempts." },
   { path: "/compare/chatgpt-vs-betweenthelines", title: "BetweenTheLines vs ChatGPT for Reading a Chat | BetweenTheLines\u2122", description: "An evidence-based comparison of using ChatGPT directly versus BetweenTheLines for analysing a WhatsApp or iMessage conversation, with sources and dates." },
@@ -18,13 +18,13 @@ const PAGES = [
 
   {
     path: "/about",
-    title: "About BetweenTheLines™ | Private Chat Analysis",
-    description: "How BetweenTheLines turns selected conversations into structured, private communication reports without claiming certainty about people.",
+    title: "About BetweenTheLines™ — Private AI Chat Analysis by a Certified Life Coach",
+    description: "Why a certified life coach built BetweenTheLines: structured, private reports on your conversations — without diagnosis, stored transcripts, or invented certainty.",
   },
   {
     path: "/guides/whatsapp",
-    title: "Import a WhatsApp Chat | BetweenTheLines™",
-    description: "Export a WhatsApp chat without media, preview participants and dates, then route two-person chats to Deep Read or groups to Group Read.",
+    title: "How to Export & Analyze a WhatsApp Chat (iPhone & Android) | BetweenTheLines™",
+    description: "Step-by-step WhatsApp chat export for iPhone and Android, then a private AI read of the conversation: patterns, participation and attachment signals. TXT and ZIP exports supported.",
   },
   {
     path: "/guides/imessage",
