@@ -13,6 +13,9 @@ export default function BrandonCompare() {
       description="What Brandon Thinks gives a persona-voiced verdict; BetweenTheLines gives a structured, evidence-marked read with computed counts and private sharing. A sourced side-by-side comparison."
       path="/compare/whatbrandonthinks-vs-betweenthelines"
     >
+      <Helmet>
+        <script type="application/ld+json">{faqPageJsonLd(BRANDON_COMPARE_FAQS)}</script>
+      </Helmet>
       <p className="text-sm text-muted-foreground">Comparison</p>
       <h1 className="mt-3 text-[36px] font-medium leading-tight sm:text-[48px]">
         What Brandon Thinks and BetweenTheLines read the same files, differently
@@ -101,6 +104,8 @@ export default function BrandonCompare() {
         </div>
       </section>
 
+
+      <FaqSection items={BRANDON_COMPARE_FAQS} />
 
       <p className="mt-6 text-[13px] leading-relaxed text-muted-foreground">
         Sources: whatbrandonthinks.com home page and FAQ, and its privacy policy (updated
