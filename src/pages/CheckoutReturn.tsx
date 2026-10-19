@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { track } from "@/lib/analytics";
 import { supabase } from "@/integrations/supabase/client";
 import { getSessionId } from "@/lib/session";
 
@@ -43,6 +44,10 @@ export default function CheckoutReturn() {
       }
       if (cancelled) return;
       if (granted) {
+        track("payment_made", {
+          target_type: groupRoastId ? "group_roast" : groupReadId ? "group_read" : "analysis",
+          target_id: groupRoastId || groupReadId || analysisId || "",
+        });
         setStatus("ready");
       } else if (attempts >= 45) {
         setStatus("waiting");
