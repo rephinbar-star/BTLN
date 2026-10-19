@@ -6,8 +6,8 @@ import { track } from "@/lib/analytics";
 export default function BrandonCompare() {
   return (
     <PublicPage
-      title="What Brandon Thinks vs BetweenTheLines | BetweenTheLines™"
-      description="A sourced comparison of What Brandon Thinks and BetweenTheLines: a persona-voiced verdict on a chat export versus a structured, evidence-marked read."
+      title="What Brandon Thinks Review: vs BetweenTheLines Compared | BetweenTheLines™"
+      description="What Brandon Thinks gives a persona-voiced verdict; BetweenTheLines gives a structured, evidence-marked read with computed counts and private sharing. A sourced side-by-side comparison."
       path="/compare/whatbrandonthinks-vs-betweenthelines"
     >
       <p className="text-sm text-muted-foreground">Comparison</p>
