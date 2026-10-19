@@ -1,0 +1,4 @@
+<!doctype html><html><head><script src="https://eu-assets.i.posthog.com/static/array.js"></script></head>
+<body><script>
+posthog.init("phc_uQfPeq4h8WLg72L3Rjd4bnFgkQgohcpLrirJfDBWgZ4m", { api_host: "https://eu.i.posthog.com", autocapture: false, capture_pageview: true, loaded: function(ph){ ph.opt_in_capturing(); ph.capture("test_event_http"); console.log("captured, opted out?", ph.has_opted_out_capturing()); } });
+</script></body></html>
