@@ -80,6 +80,9 @@ export const prerenderStaticPages = (): Plugin => ({
         `<meta property="og:description" content="${escapeHtml(page.description)}" />`,
         `<meta property="og:url" content="${canonical}" />`,
         `<meta name="twitter:card" content="summary_large_image" />`,
+        ...(page.faqs
+          ? [`<script type="application/ld+json">${faqPageJsonLd(page.faqs).replace(/<\//g, "<\\/")}</script>`]
+          : []),
       ].join("\n    ");
 
       const html = template
