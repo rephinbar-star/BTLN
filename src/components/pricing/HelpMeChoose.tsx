@@ -25,22 +25,22 @@ const REC: Record<string, Rec> = {
   quick_single: {
     title: "Quick Take",
     reason: "One message, one read: what it may mean and three ways to reply.",
-    price: "First read free, then the Quick Take plan at $6.99/month.",
+    price: "First read free, then $4.99 for one session or $6.99/month with Interactive Mode included.",
     primary: { to: "/quick", label: "Start a Quick Take" },
     example: { to: exampleRoute("quick"), label: "See Example" },
   },
   quick_interactive: {
     title: "Quick Take + Interactive Mode",
     reason:
-      "You want help as the conversation continues, not just on one message. Interactive Mode is planned to add ongoing exchanges on top of Quick Take.",
-    price: "$6.99/month + $2.99/month = $9.98/month combined.",
+      "You want help as the conversation continues, not just on one message. Interactive Mode continues your exchange and is included in the Quick Take plan.",
+    price: "$6.99/month, including Interactive Mode.",
     primary: {
       to: "/pricing?plan=BTLN_decode_monthly&interactive=1#sec-quick",
       label: "See Quick Take + Interactive Mode",
     },
     example: { to: exampleRoute("quick"), label: "See Quick Take example" },
     availability:
-      "In development — not available to buy. The example shows Quick Take only; base Quick Take works today.",
+      "Interactive Mode is included in the monthly plan, not in a single-session purchase. The example shows Quick Take only.",
   },
   deep_one: {
     title: "Single report",

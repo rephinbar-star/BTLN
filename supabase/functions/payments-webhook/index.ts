@@ -1,3 +1,4 @@
+import { entitlementsForTier, validSingleQuickTakePayment } from "../_shared/quickTakePurchases.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { type StripeEnv, verifyWebhook } from "../_shared/stripe.ts";
 
@@ -16,13 +17,7 @@ function resolveTier(lookupKey?: string | null): string {
   return "unknown";
 }
 
-function entitlementsForTier(tier: string): string[] {
-  if (tier === "decode_monthly") return ["quick_take"];
-  if (tier === "monthly" || tier === "annual") return ["quick_take", "full_reports"];
-  if (tier === "interactive_addon") return ["interactive_mode"];
-  if (tier === "prime") return ["prime", "quick_take", "interactive_mode", "full_reports", "relationship360"];
-  return [];
-}
+
 
 async function reconcileEntitlements(userId: string, subscription: any, tier: string, periodStart: any, periodEnd: any) {
   const wanted = entitlementsForTier(tier);
@@ -160,6 +155,18 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
       typeof session.payment_intent === "string"
         ? session.payment_intent
         : session.payment_intent?.id ?? null;
+
+    if (reportKind === "quick_take") {
+      if (!validSingleQuickTakePayment(session as never)) throw new Error("Invalid single Quick Take payment");
+      const decodeId = session.metadata?.decodeId;
+      const { data: target } = await getSupabase().from("decodes").select("id,user_id,status").eq("id", decodeId).eq("user_id", userId).maybeSingle();
+      const { data: artifact, error: artifactError } = await getSupabase().from("evaluation_artifacts").select("id").eq("source_id", decodeId).limit(1);
+      if (!target || target.status !== "complete" || artifactError || artifact?.length || !paymentIntent) throw new Error("Quick Take target is unavailable");
+      const { error } = await getSupabase().from("decode_unlocks").upsert({ user_id: userId, decode_id: decodeId, amount_cents: 499, stripe_payment_intent_id: paymentIntent }, { onConflict: "user_id,decode_id" });
+      if (error) throw new Error("Could not unlock Quick Take");
+      await recordAudit({ environment: env, event_id: eventId, event_type: "checkout.session.completed", checkout_session_id: session.id, status: "processed", changes: { decode_unlocks: "upserted" } });
+      return;
+    }
 
     if (reportKind === "group_roast") {
       if (!userId || !groupRoastId || amount !== 499) {

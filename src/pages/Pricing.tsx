@@ -11,6 +11,7 @@ import { useStripeCheckout } from "@/hooks/useStripeCheckout";
 import { logEvent } from "@/lib/session";
 import { track } from "@/lib/analytics";
 import { PRICING_BTN } from "@/lib/pricing/button";
+import { Button } from "@/components/ui/button";
 import { OPERATOR } from "@/config/operator";
 
 type ProductKey = "BTLN_decode_monthly" | "BTLN_monthly" | "BTLN_annual" | "BTLN_report_unlock";
@@ -63,13 +64,13 @@ const QUICK_TIER: Tier = {
   name: "Quick Take plan",
   price: "$6.99",
   period: "month",
-  modes: ["quick"],
+  modes: ["quick", "interactive"],
   description:
     "One read of a message each time: what it may mean, and three suggested replies.",
   features: [
     "Quick Takes without the one-free-read limit",
     "Each read: interpretation, signals and three suggested replies",
-    "One session per read — ongoing exchanges need Interactive Mode",
+    "Interactive Mode included — continue the same conversation",
     "Does not unlock Deep Read, Group Read or Group Roast",
     "Cancel anytime",
   ],
@@ -82,14 +83,14 @@ const REPORT_TIERS: Tier[] = [
     name: "Single report",
     price: "$4.99",
     period: "one-time",
-    modes: ["deep", "groupRead", "groupRoast"],
+    modes: ["quick", "deep", "groupRead", "groupRoast"],
     description:
-      "1 selected report. The payment is attached to the report you start, so choose the read first.",
+      "1 single session: choose Quick Take, Deep Read, Group Read or Group Roast. Payment attaches to that selected read.",
     features: [
-      "1 selected report: a Deep Read, a Group Read or a Group Roast",
+      "1 single session: Quick Take, Deep Read, Group Read or Group Roast",
       "Every section of that report",
-      "Share and download that report",
-      "Does not cover Quick Take sessions",
+      "Full access to the selected read; sharing and downloads where supported",
+      "Interactive Mode is not included",
       "No subscription",
     ],
     cta: "Choose a report to start",
@@ -155,29 +156,13 @@ const PRODUCT_TO_OPTION: Record<ProductKey, "monthly" | "annual" | "one_time" | 
   BTLN_report_unlock: "one_time",
 };
 
-/**
- * Coverage matrix. Every cell is taken from the server rules that actually
- * decide access, not from marketing copy:
- *  - Quick Take: useDecodeAccess / count_completed_decodes — the first read is
- *    free per session/user; any active subscription lifts that limit. The
- *    $4.99 single-report unlock is bound to a report row and grants no Quick
- *    Take session, so that cell states the real free-session status instead.
- *  - Interactive Mode: no entitlement exists yet; the add-on is in development.
- *  - Deep Read: user_has_paid_access (monthly/annual tiers, or a one-time
- *    unlock bound to that analysis).
- *  - Group Read: analyze-group FULL_PLAN_TIERS = monthly, annual, or a
- *    group_read_unlocks row.
- *  - Group Roast: group-roast-data — monthly/annual, or a group_roast_unlocks
- *    row. Group Read access does not grant it.
- *  - Relationship360: no entitlement exists on any plan; it belongs to Prime's
- *    intended coverage and the engine is in development.
- */
+/** Single purchases unlock one selected read; monthly Quick Take includes Interactive Mode. */
 const COVERAGE: { row: string; cells: Record<string, string> }[] = [
   {
     row: "Quick Take",
     cells: {
       quick: "Included",
-      single: "Not included — first session free",
+      single: "1 single session",
       monthly: "Included",
       annual: "Included",
       prime: "Included in Prime",
@@ -186,7 +171,7 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
   {
     row: "Interactive Mode",
     cells: {
-      quick: "Optional +$2.99/mo · In development",
+      quick: "Included",
       single: "Not included",
       monthly: "Not included",
       annual: "Not included",
@@ -236,7 +221,7 @@ const COVERAGE: { row: string; cells: Record<string, string> }[] = [
 ];
 
 const COLUMNS = [
-  { id: "quick", label: "Quick Take · $6.99/mo · optional Interactive Mode" },
+  { id: "quick", label: "Quick Take + Interactive Mode · $6.99/mo" },
   { id: "single", label: "Single report · $4.99" },
   { id: "monthly", label: "Monthly · $9.99/mo" },
   { id: "annual", label: "Annual · $49.99/yr" },
@@ -247,7 +232,7 @@ const COLUMNS = [
 export default function Pricing() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isMember, tier: memberTier, hasInteractiveMode } = useMembership();
+  const { isMember, tier: memberTier } = useMembership();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [pending, setPending] = useState<string | null>(null);
   const [chooseMode, setChooseMode] = useState(false);
@@ -257,28 +242,10 @@ export default function Pricing() {
   const intended = searchParams.get("plan");
   const selectedByGuide = searchParams.get("interactive") === "1";
   const isPrime = memberTier === "prime";
-  const [interactiveSelected, setInteractiveSelected] = useState(selectedByGuide);
   const intendedRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
-    if (intended && intendedRef.current) {
-      intendedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    if (intended && intendedRef.current) intendedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [intended]);
-
-  useEffect(() => {
-    if (selectedByGuide || hasInteractiveMode || isPrime) setInteractiveSelected(true);
-  }, [selectedByGuide, hasInteractiveMode, isPrime]);
-
-  const setInteractiveIntent = (checked: boolean) => {
-    if (hasInteractiveMode || isPrime) return;
-    setInteractiveSelected(checked);
-    const next = new URLSearchParams(searchParams);
-    next.set("plan", "BTLN_decode_monthly");
-    if (checked) next.set("interactive", "1");
-    else next.delete("interactive");
-    navigate(`/pricing?${next.toString()}#sec-quick`, { replace: true });
-  };
 
   const launch = (priceId: ProductKey) => {
     setPending(priceId);
@@ -389,116 +356,18 @@ export default function Pricing() {
     );
   };
 
-  const QuickTakeCard = () => {
-    const quickIsCurrent = currentPlanKey === "BTLN_decode_monthly";
-    const addonIncluded = hasInteractiveMode || isPrime;
-    const bundleUnavailable = interactiveSelected && !addonIncluded;
-    const status = isPrime
-      ? "Included with Prime — no add-on charge"
-      : hasInteractiveMode
-        ? "Interactive Mode is current on your account"
-        : "In development — not available to buy yet";
-
-    return (
-      <div
-        ref={intended === QUICK_TIER.key ? intendedRef : undefined}
-        className={`relative flex w-full max-w-[600px] flex-col rounded-2xl border border-border bg-card p-5 transition-all duration-200 motion-reduce:transition-none hover:shadow-lg sm:p-6 ${intended === QUICK_TIER.key ? "ring-2 ring-foreground/40" : ""}`}
-      >
-        <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">Quick Take plan</div>
-        <div className="mt-2 flex items-baseline gap-1">
-          <span className="text-[36px] font-medium tracking-tight">$6.99</span>
-          <span className="text-[14px] text-muted-foreground">/month</span>
-        </div>
-        <ModeChips modes={["quick"]} />
-        <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">
-          The base plan reads one message at a time and gives you three suggested replies.
-        </p>
-        <ul className="mt-4 space-y-2.5">
-          {QUICK_TIER.features.map((feature) => (
-            <li key={feature} className="flex items-start gap-2 text-[14px]">
-              <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-prism-emerald-text" aria-hidden />
-              <span>{feature}</span>
-            </li>
-          ))}
-        </ul>
-
-        <div className="mt-6 rounded-xl border border-btln-line bg-btln-mint/30 p-4">
-          <label className={`flex min-h-11 items-start gap-3 ${addonIncluded ? "cursor-default" : "cursor-pointer"}`}>
-            <input
-              type="checkbox"
-              checked={interactiveSelected}
-              disabled={addonIncluded}
-              onChange={(event) => setInteractiveIntent(event.target.checked)}
-              className="mt-1 h-5 w-5 flex-none accent-btln-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-btln-ink focus-visible:ring-offset-2"
-            />
-            <span>
-              <span className="block text-[15px] font-medium">Add Interactive Mode — +$2.99/month</span>
-              <span className="mt-1 block text-[13px] text-muted-foreground">Requires Quick Take · $6.99/month</span>
-            </span>
-          </label>
-
-          <div className="mt-3 border-t border-btln-line pt-3" aria-live="polite" aria-atomic="true">
-            <p className="text-[20px] font-medium">{interactiveSelected ? "$9.98/month" : "$6.99/month"}</p>
-            <p className="text-[13px] text-muted-foreground">
-              {interactiveSelected ? "$6.99 Quick Take + $2.99 Interactive Mode" : "$6.99 Quick Take only"}
-            </p>
-          </div>
-
-          <h3 className="mt-4 text-[15px] font-medium">Interactive Mode adds:</h3>
-          <ul className="mt-2 space-y-2 text-[14px] leading-relaxed">
-            {[
-              "Continue the same conversation as new messages arrive.",
-              "Add the response you actually sent, by text or follow-up screenshot.",
-              "Get updated insights and fresh reply suggestions based on the continuing exchange.",
-              "Keep the context together instead of starting a new read each time.",
-              "Record what happened next and reflect on how the exchange unfolded.",
-            ].map((benefit) => (
-              <li key={benefit} className="flex items-start gap-2">
-                <Check className="mt-0.5 h-4 w-4 flex-shrink-0 text-prism-emerald-text" aria-hidden />
-                <span>{benefit}</span>
-              </li>
-            ))}
-          </ul>
-          <p className="mt-3 text-[13px] text-muted-foreground">
-            With Prime, eligible exchanges also contribute to your Relationship360.
-          </p>
-          <p className="mt-3 text-[13px] font-medium">{status}</p>
-        </div>
-
-        {isPrime ? (
-          <Link to="/account" className={`mt-6 ${PRICING_BTN}`}>Included with Prime · Manage</Link>
-        ) : hasInteractiveMode ? (
-          <Link to="/account" className={`mt-6 ${PRICING_BTN}`}>Interactive Mode current · Manage</Link>
-        ) : bundleUnavailable ? (
-          <>
-            <button type="button" disabled className={`mt-6 ${PRICING_BTN}`}>Bundle not available to buy yet</button>
-            <button
-              type="button"
-              onClick={() => {
-                setInteractiveIntent(false);
-                if (!quickIsCurrent) launch("BTLN_decode_monthly");
-              }}
-              className="mt-3 min-h-11 text-[14px] font-medium underline underline-offset-4"
-            >
-              {quickIsCurrent ? "Keep my current Quick Take plan" : "Continue with base Quick Take only — $6.99/month"}
-            </button>
-          </>
-        ) : quickIsCurrent ? (
-          <Link to="/account" className={`mt-6 ${PRICING_BTN}`}>Your current plan · Manage</Link>
-        ) : (
-          <button
-            type="button"
-            onClick={() => launch("BTLN_decode_monthly")}
-            disabled={pending === "BTLN_decode_monthly"}
-            className={`mt-6 ${PRICING_BTN}`}
-          >
-            {pending === "BTLN_decode_monthly" ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />Opening checkout…</> : "Subscribe to Quick Take — $6.99/month"}
-          </button>
-        )}
-      </div>
-    );
-  };
-
+  const QuickTakeCard = () => (
+    <div ref={intended === QUICK_TIER.key ? intendedRef : undefined} className="flex w-full max-w-[600px] flex-col rounded-lg border border-border bg-card p-5 sm:p-6">
+      <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">Quick Take plan</div>
+      <div className="mt-2 flex items-baseline gap-1"><span className="text-[36px] font-medium">$6.99</span><span className="text-[14px] text-muted-foreground">/month</span></div>
+      <ModeChips modes={QUICK_TIER.modes} />
+      <p className="mt-3 text-[14px] leading-relaxed text-muted-foreground">First Quick Take free. Subscribe for unlimited Quick Takes and Interactive Mode, or choose a $4.99 single session.</p>
+      <ul className="mt-4 space-y-2.5">{QUICK_TIER.features.map((feature) => <li key={feature} className="flex items-start gap-2 text-[14px]"><Check className="mt-0.5 h-4 w-4 shrink-0 text-prism-emerald-text" aria-hidden /><span>{feature}</span></li>)}</ul>
+      <h3 className="mt-6 text-[15px] font-medium">Interactive Mode — included</h3>
+      <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">Add what you actually sent and what came back for updated insights and reply suggestions in the same conversation. No separate add-on charge.</p>
+      {isPrime || currentPlanKey === QUICK_TIER.key ? <Link to="/account" className={`mt-6 ${PRICING_BTN}`}>Your current plan · Manage</Link> : <Button onClick={() => launch("BTLN_decode_monthly")} disabled={pending === QUICK_TIER.key} className={`mt-6 ${PRICING_BTN}`}>{pending === QUICK_TIER.key ? "Opening checkout…" : "Subscribe to Quick Take — $6.99/month"}</Button>}
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -542,7 +411,7 @@ export default function Pricing() {
         {intended && !isMember && (
           <p className="mx-auto mt-6 max-w-xl rounded-2xl border border-border bg-muted/40 p-4 text-center text-[14px]">
             {selectedByGuide
-              ? "Your Quick Take + Interactive Mode choice is selected below. Nothing has been charged. The combined purchase is not available yet, but you can continue with base Quick Take only."
+              ? "Your Quick Take plan with Interactive Mode included is selected below. Nothing has been charged — open checkout when you’re ready."
               : "Your plan choice is still selected below. Nothing has been charged — open checkout when you're ready."}
           </p>
         )}
@@ -588,8 +457,7 @@ export default function Pricing() {
             Which plan covers what?
           </h2>
           <p className="mx-auto mt-1 max-w-xl text-center text-[14px] text-muted-foreground">
-            Compare what each plan includes. Interactive Mode, Relationship360 and Prime
-            are in development and cannot be purchased yet.
+            Compare what each plan includes. Prime remains in development and cannot be purchased yet.
           </p>
 
 
@@ -652,30 +520,28 @@ export default function Pricing() {
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
                 Quick Take on its own reads one message and suggests three replies. Interactive Mode
                 lets you carry on: tell us what you actually sent, add what came back, and get an
-                updated read. Select the optional checkbox inside the Quick Take card to see the
-                $6.99 base plus $2.99 add-on breakdown — $9.98/month combined. It is included in
-                Prime without an add-on charge. It is still being built, so selecting it cannot
-                start a bundle purchase yet.
+                updated read. It is included in the $6.99/month Quick Take plan without a separate
+                add-on charge. A $4.99 single session does not include Interactive Mode.
               </p>
             </div>
             <div className="py-5">
               <h3 className="font-medium">Does the $4.99 single report cover a Quick Take?</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                No. The single-report payment is attached to one Deep Read, Group Read or Group
-                Roast. Quick Take has its own free first session, then the $6.99/month plan.
+                Yes. Your first Quick Take is free. After that, pay $4.99 for 1 single session,
+                or subscribe for $6.99/month with Interactive Mode included.
               </p>
             </div>
             <div className="py-5">
               <h3 className="font-medium">Can I buy a single report before starting it?</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                A one-time purchase is attached to a specific report, so start the read first. Choose Deep Read,
+                A one-time purchase is attached to a specific report, so start the read first. Choose Quick Take, Deep Read,
                 Group Read or Group Roast and checkout appears for that exact report.
               </p>
             </div>
             <div className="py-5">
               <h3 className="font-medium">Does the Quick Take plan unlock Deep Read or the group reads?</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                No. The $6.99 Quick Take plan covers Quick Takes only. Deep Read, Group Read and Group Roast need
+                No. The $6.99 Quick Take plan covers Quick Takes and Interactive Mode. Deep Read, Group Read and Group Roast need
                 the full-report plan or a single-report purchase.
               </p>
             </div>
@@ -721,6 +587,7 @@ export default function Pricing() {
             </p>
             <div className="mt-4 flex flex-col gap-2">
               {[
+                { to: "/quick", label: "Quick Take — one message and suggested replies" },
                 { to: "/deep", label: "Deep Read — one conversation, two people" },
                 { to: "/group", label: "Group Read — a serious read of a group chat" },
                 { to: "/group-roast", label: "Group Roast — a playful roast of a group chat" },

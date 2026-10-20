@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792457697018,
+      "tag": "0000_quick_take_single_session_unlocks",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792457851686,
+      "tag": "0001_stable_first_quick_take_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792458001748,
+      "tag": "0002_lock_quick_take_unlock_writes",
+      "breakpoints": true
+    }
+  ]
+}

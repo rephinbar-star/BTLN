@@ -8,6 +8,8 @@ import { track } from "@/lib/analytics";
 import { useAuth } from "@/hooks/useAuth";
 import { useDecodeAccess, FREE_DECODES } from "@/hooks/useDecodeAccess";
 import { useStripeCheckout } from "@/hooks/useStripeCheckout";
+import { Button } from "@/components/ui/button";
+import { getStripeEnvironment } from "@/lib/stripe";
 import { Header } from "@/components/chemistry/Header";
 import { NextSteps } from "@/components/results/NextSteps";
 import { PrimeOffer } from "@/components/prime/PrimeOffer";
@@ -29,6 +31,7 @@ type DecodeResultJson = {
   flag?: { type?: string | null; note?: string | null } | null;
   reply_options?: ReplyOption[];
   confidence?: string;
+  _access_locked?: boolean;
 };
 
 const ReplyCard = ({
@@ -121,6 +124,9 @@ const DecodeResult = () => {
   const { user } = useAuth();
   const { entitled, completedCount, isLoading: accessLoading, refresh: refreshAccess } =
     useDecodeAccess();
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [accessVersion, setAccessVersion] = useState(0);
+  const paymentTracked = useRef(false);
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const paywallTracked = useRef(false);
   const resumeTried = useRef(false);
@@ -171,7 +177,7 @@ const DecodeResult = () => {
       stopped.current = true;
       clearInterval(t);
     };
-  }, [decodeId, refreshAccess]);
+  }, [decodeId, refreshAccess, accessVersion, user?.id]);
 
   const flagType = result?.flag?.type ?? null;
   const isSafety = flagType === "safety";
@@ -180,7 +186,7 @@ const DecodeResult = () => {
 
   // First-free metering: any active subscription = unlimited decodes.
   const locked =
-    status === "complete" && !accessLoading && !entitled && completedCount > FREE_DECODES;
+    status === "complete" && result?._access_locked === true;
 
   useEffect(() => {
     if (locked && !paywallTracked.current) {
@@ -189,72 +195,52 @@ const DecodeResult = () => {
     }
   }, [locked]);
 
-  const startDecodeCheckout = useCallback(() => {
-    track("decode_intent_to_pay_click", { plan: "decode_monthly" });
+  const startDecodeCheckout = useCallback(async (purchase: "single" | "monthly" = "monthly") => {
+    if (!decodeId) return;
+    setCheckoutError(null);
+    track("decode_intent_to_pay_click", { plan: purchase === "single" ? "one_time" : "decode_monthly" });
     if (!user?.id) {
-      navigate(
-        "/auth?return_to=" +
-          encodeURIComponent(`/decode/${decodeId}?intent=decode_upgrade`),
-      );
+      navigate("/auth?return_to=" + encodeURIComponent(`/decode/${decodeId}?intent=${purchase === "single" ? "decode_single" : "decode_upgrade"}`));
       return;
     }
-    openCheckout({
-      priceId: DECODE_PLAN_PRICE_ID,
-      customerEmail: user.email,
-      userId: user.id,
+    const { data: claimed, error } = await supabase.rpc("claim_decode_for_session", { p_id: decodeId, p_session_id: getSessionId() });
+    if (error || !claimed) { setCheckoutError("We could not confirm this take belongs to you. Please return to your take and retry."); return; }
+    openCheckout({ priceId: purchase === "single" ? "BTLN_report_unlock" : DECODE_PLAN_PRICE_ID,
+      ...(purchase === "single" ? { decodeId, reportKind: "quick_take" as const } : {}),
+      customerEmail: user.email, userId: user.id,
       returnUrl: `${window.location.origin}/decode/${decodeId}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
     });
   }, [user?.id, user?.email, decodeId, navigate, openCheckout]);
 
-  // Resume checkout after the user signs in mid-flow.
   useEffect(() => {
-    if (resumeTried.current) return;
-    if (searchParams.get("intent") !== "decode_upgrade") return;
-    if (accessLoading || !user?.id || entitled) return;
+    const intent = searchParams.get("intent");
+    if (resumeTried.current || !user?.id || (intent !== "decode_single" && intent !== "decode_upgrade")) return;
     resumeTried.current = true;
-    // Claim this decode for the freshly authenticated account (best effort).
-    void supabase.rpc("claim_anonymous_analyses", {
-      p_session_id: getSessionId(),
-      p_user_id: user.id,
-    });
-    startDecodeCheckout();
-  }, [searchParams, user?.id, entitled, accessLoading, startDecodeCheckout]);
+    void startDecodeCheckout(intent === "decode_single" ? "single" : "monthly");
+  }, [searchParams, user?.id, startDecodeCheckout]);
 
-  // After returning from checkout, poll until the subscription lands (webhook lag).
   useEffect(() => {
-    if (searchParams.get("checkout") !== "success") return;
-    if (pollingUnlock.current) return;
-    pollingUnlock.current = true;
+    const sessionId = searchParams.get("session_id");
+    if (searchParams.get("checkout") !== "success" || !sessionId || !user?.id || !decodeId) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     let attempts = 0;
-    const clear = () => {
-      const next = new URLSearchParams(searchParams);
-      next.delete("checkout");
-      next.delete("session_id");
-      next.delete("intent");
-      setSearchParams(next, { replace: true });
-    };
-    const t = window.setInterval(() => {
+    const tick = async () => {
       attempts += 1;
+      const { data: confirmation, error } = await supabase.functions.invoke("sync-subscription", { body: { sessionId, decodeId, environment: getStripeEnvironment() } });
+      if (cancelled) return;
+      setAccessVersion((version) => version + 1);
       refreshAccess();
-      if (attempts >= 7) {
-        window.clearInterval(t);
-        clear();
-      }
-    }, 1500);
-    refreshAccess();
-    return () => window.clearInterval(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (entitled && searchParams.get("checkout") === "success") {
-      const next = new URLSearchParams(searchParams);
-      next.delete("checkout");
-      next.delete("session_id");
-      next.delete("intent");
-      setSearchParams(next, { replace: true });
-    }
-  }, [entitled, searchParams, setSearchParams]);
+      if (!error && confirmation?.paymentVerified === true) {
+        if (!paymentTracked.current) { paymentTracked.current = true; track("payment_made", { target_id: decodeId, target_type: "quick_take" }); }
+        const next = new URLSearchParams(searchParams); next.delete("checkout"); next.delete("session_id"); next.delete("intent");
+        setSearchParams(next, { replace: true });
+      } else if (attempts < 20) timer = setTimeout(tick, 1500);
+      else setCheckoutError("Your payment is still being confirmed. This take stays locked until secure confirmation arrives. Please check again shortly.");
+    };
+    void tick();
+    return () => { cancelled = true; if (timer) clearTimeout(timer); };
+  }, [searchParams, user?.id, decodeId, refreshAccess, setSearchParams]);
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -366,14 +352,14 @@ const DecodeResult = () => {
               </div>
             )}
 
-            {replies.length > 0 && (
+            {(replies.length > 0 || locked) && (
               <section className="mt-9">
                 <h2 className="text-[13px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   How you could reply
                 </h2>
                 <div className="relative mt-3">
                   <div
-                    className={`space-y-3 ${locked ? "pointer-events-none select-none blur-[7px]" : ""}`}
+                    className="space-y-3"
                     aria-hidden={locked}
                   >
                     {replies.map((o, i) => (
@@ -388,24 +374,19 @@ const DecodeResult = () => {
                   </div>
 
                   {locked && (
-                    <div className="absolute inset-0 flex items-center justify-center p-2">
+                    <div className="flex items-center justify-center py-2">
                       <div className="w-full max-w-md rounded-2xl border border-border bg-card/95 p-6 text-center shadow-xl backdrop-blur">
                         <Lock className="mx-auto h-5 w-5 text-muted-foreground" />
                         <h3 className="mt-3 text-[18px] font-semibold tracking-tight">
                           Your free Quick Take is used up
                         </h3>
                         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                          Keep the reply options coming — unlimited Quick Takes, whenever a text
-                          leaves you guessing.
+                          Unlock this one session for $4.99, or subscribe for unlimited Quick Takes
+                          and Interactive Mode at $6.99/month.
                         </p>
-                        <p className="mt-4 text-[15px] font-medium">$6.99 / month · cancel anytime</p>
-                        <button
-                          type="button"
-                          onClick={startDecodeCheckout}
-                          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-foreground px-6 py-3 text-[15px] font-medium text-background transition-opacity hover:opacity-90"
-                        >
-                          <Sparkles className="h-4 w-4" /> Unlock unlimited Quick Takes
-                        </button>
+                        <Button onClick={() => void startDecodeCheckout("single")} className="mt-4 min-h-11 w-full">Unlock this session — $4.99</Button>
+                        <Button onClick={() => void startDecodeCheckout("monthly")} variant="outline" className="mt-3 min-h-11 h-auto w-full whitespace-normal py-3">Quick Take + Interactive Mode — $6.99/month</Button>
+                        <p className="mt-3 text-[13px] text-muted-foreground">Monthly plan: cancel anytime. Single session: no subscription or Interactive Mode.</p>
                         <PrimeOffer className="mt-4 text-left" returnTo={`/decode/${decodeId}`} />
                       </div>
                     </div>
@@ -414,6 +395,7 @@ const DecodeResult = () => {
               </section>
             )}
 
+            {checkoutError && <p role="alert" className="mt-4 text-sm text-destructive">{checkoutError}</p>}
             {isOpen && (
               <div className="fixed inset-0 z-50 overflow-y-auto bg-background/95 p-4 backdrop-blur">
                 <div className="mx-auto mt-6 max-w-2xl">

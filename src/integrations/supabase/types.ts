@@ -395,6 +395,41 @@ export type Database = {
         }
         Relationships: []
       }
+      decode_unlocks: {
+        Row: {
+          amount_cents: number
+          created_at: string
+          decode_id: string
+          id: string
+          stripe_payment_intent_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_cents?: number
+          created_at?: string
+          decode_id: string
+          id?: string
+          stripe_payment_intent_id: string
+          user_id: string
+        }
+        Update: {
+          amount_cents?: number
+          created_at?: string
+          decode_id?: string
+          id?: string
+          stripe_payment_intent_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decode_unlocks_decode_id_fkey"
+            columns: ["decode_id"]
+            isOneToOne: false
+            referencedRelation: "decodes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decodes: {
         Row: {
           created_at: string
@@ -3041,6 +3076,10 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
+      claim_decode_for_session: {
+        Args: { p_id: string; p_session_id: string }
+        Returns: boolean
+      }
       claim_extraction_budget: {
         Args: {
           p_bucket: string
@@ -3085,6 +3124,7 @@ export type Database = {
         Args: { p_session_id: string; p_user_id: string }
         Returns: number
       }
+      decode_access_allowed: { Args: { p_id: string }; Returns: boolean }
       delete_my_ai_feedback: { Args: never; Returns: number }
       expire_advice_reviews: { Args: never; Returns: number }
       expire_prompt_reservations: {
