@@ -1,5 +1,8 @@
 # Roadmap
 
+## Authorized fictional Quick Take follow-up check (2026-10-20)
+- [ ] Run one fictional Quick Take and Interactive Mode continuation through legitimate access and isolated metering; no subscription changes or publication.
+
 ## Revised Quick Take offer (2026-10-20)
 - [x] Implement first-free, $4.99 single-session Quick Take access and $6.99/month Quick Take with Interactive Mode included.
 - [x] Update pricing/chooser/payment access consistently; verify rule tests, protected first-free reads and UI; leave frontend unpublished.
