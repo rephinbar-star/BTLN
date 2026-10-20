@@ -17,7 +17,7 @@
 - Browser pricing at 320, 375 and 1280 widths: no horizontal overflow or page errors; Single report choice includes `/quick`. Screenshots reviewed for narrow-screen chooser wrapping.
 - Live content-free anonymous fixtures: first pending target returned `_access_locked=false`; second returned `true`. Wrong-session reads returned zero rows. Direct anonymous invocation of privileged `decode_access_allowed` returned permission denied (42501). Temporary fixtures were removed.
 - Migration/tool read role could not execute the protected RPC directly; checks used the actual app anonymous client instead. No privilege was widened to accommodate the diagnostic.
-- Five existing functions were deployed; two additive migrations applied. These backend changes are live because preview and published app share the backend. Frontend remains unpublished.
+- Five existing functions were deployed; three migrations applied, including explicit revocation of inherited client write grants on unlocks. Verified authenticated insert privilege is false and owner read privilege is true. These backend changes are live because preview and published app share the backend. Frontend remains unpublished.
 
 ## Limitations
 - No real payment or isolated Stripe checkout was performed: server key mode has not been authoritatively confirmed, so sandbox catalog/browser keys do not prove isolation. Real paid fulfilment and a subscribed customer's Interactive Mode browser flow remain unverified.
@@ -26,6 +26,6 @@
 - Anonymous first-free tracking retains the existing browser/session capability limits; it is not a cross-device person-identification guarantee.
 
 ## Changed areas
-`Pricing`, `HelpMeChoose` and its tests, `DecodeResult`, `InteractiveModePanel`, `useMembership`, checkout hook/component, analytics target enum; shared `quickTakePurchases` rules/tests; `create-checkout`, `payments-webhook`, `sync-subscription`, `interactive-mode`, `decode-conversation`; two `drizzle/migrations` files; `AGENTS.md`, roadmap and this closeout.
+`Pricing`, `HelpMeChoose` and its tests, `DecodeResult`, `InteractiveModePanel`, `useMembership`, checkout hook/component, analytics target enum; shared `quickTakePurchases` rules/tests; `create-checkout`, `payments-webhook`, `sync-subscription`, `interactive-mode`, `decode-conversation`; three `drizzle/migrations` files; `AGENTS.md`, roadmap and this closeout.
 
-Saved revision observed during verification: `62cb6772c60347abda38c73e956fb08825d99800` (subsequent final safeguards/docs are managed separately; no manual Git commit performed).
+Saved revision observed after final function safeguards: `0605520a23edb5bb8d4402f125705167c6d5c014` (subsequent grant hardening/docs are managed separately; no manual Git commit performed).
