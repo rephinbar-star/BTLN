@@ -49,7 +49,7 @@ export function InteractiveModePanel({ decodeId }: { decodeId: string }) {
       <section className="mt-10 rounded-xl border border-border bg-card p-5">
         <h2 className="text-[18px] font-semibold">Continue with Interactive Mode</h2>
         <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-          Add what you actually sent and what happened next for an updated take. Interactive Mode requires the Quick Take add-on or Prime and is not available to purchase yet.
+          Add what you actually sent and what happened next for an updated take. Interactive Mode is included in the $6.99/month Quick Take plan. A single $4.99 session does not include continuing exchanges.
         </p>
       </section>
     );

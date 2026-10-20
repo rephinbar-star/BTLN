@@ -23,11 +23,11 @@ describe("Help Me Choose recommendations", () => {
     expect(screen.getByRole("link", { name: "See Example" })).toHaveAttribute("href", expected);
   });
 
-  it("identifies unavailable Interactive Mode before its proposed price", () => {
+  it("links included Interactive Mode to the Quick Take plan", () => {
     open();
     fireEvent.click(screen.getByRole("button", { name: "A message and how to reply" }));
     fireEvent.click(screen.getByRole("button", { name: /Help as it continues/ }));
-    expect(screen.getByText(/In development — not available to buy/)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "See Quick Take + Interactive Mode" })).toHaveAttribute("href", "/pricing?plan=BTLN_decode_monthly&interactive=1#sec-quick");
     expect(screen.getByRole("link", { name: "See Quick Take example" })).toHaveAttribute("href", "/examples/quick");
   });
 

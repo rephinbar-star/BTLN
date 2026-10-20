@@ -1,3 +1,4 @@
+import { activeSubscription, includesInteractive } from "../../supabase/functions/_shared/quickTakePurchases";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -37,11 +38,10 @@ export function useMembership(): MembershipState {
     (async () => {
       const { data } = await supabase
         .from("user_subscriptions")
-        .select("tier,status")
-        .eq("user_id", user.id)
-        .eq("status", "active");
+        .select("tier,status,current_period_end")
+        .eq("user_id", user.id);
       if (cancelled) return;
-      const rows = (data ?? []) as { tier: string | null }[];
+      const rows = (data ?? []).filter((row) => activeSubscription(row));
       const tiers = rows.flatMap((row) => row.tier ? [row.tier] : []);
       const tier = tiers.find((value) => value === "prime")
         ?? tiers.find((value) => value !== "interactive_addon")
@@ -52,7 +52,7 @@ export function useMembership(): MembershipState {
         isMember: tiers.length > 0,
         tier,
         tiers,
-        hasInteractiveMode: tiers.includes("prime") || tiers.includes("interactive_addon"),
+        hasInteractiveMode: includesInteractive(tiers),
       });
     })();
     return () => {

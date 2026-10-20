@@ -55,7 +55,6 @@ export function StripeEmbeddedCheckout({
         groupReadId,
         groupRoastId,
         decodeId,
-  decodeId,
         reportKind,
         customerCountry,
         returnUrl,
