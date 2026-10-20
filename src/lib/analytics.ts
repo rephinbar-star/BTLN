@@ -126,7 +126,7 @@ export type EventMap = {
 // Allowed property keys per event. Anything not listed is silently dropped.
 const ALLOWED_KEYS: { [K in keyof EventMap]: ReadonlyArray<keyof EventMap[K] & string> } = {
   report_started: ["relationship_type"],
-  report_completed: ["analysis_id", "low_confidence", "message_count_bucket"],
+  analysis_completed: ["analysis_id", "low_confidence", "message_count_bucket"],
   analysis_failed: ["reason_code"],
   share_clicked: ["analysis_id", "platform"],
   survey_shown: ["analysis_id", "trigger_source"],
