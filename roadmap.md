@@ -1,5 +1,9 @@
 # Roadmap
 
+## Revised Quick Take offer (2026-10-20)
+- [ ] Implement first-free, $4.99 single-session Quick Take access and $6.99/month Quick Take with Interactive Mode included.
+- [ ] Update pricing/chooser/payment access consistently and verify security, payment lifecycle and UI; leave unpublished.
+
 - [x] Implement approved Quick Take, Deep Read, Group Roast and Relationship360 layouts with shared intake safeguards.
 - [x] Verify responsive pages, universal intake and fictional profile; document limits (authenticated opted-in live profile and payment flows remain untested).
 
