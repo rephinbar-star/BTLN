@@ -1,7 +1,8 @@
 # Roadmap
 
 ## Authorized fictional Quick Take follow-up check (2026-10-20)
-- [ ] Run one fictional Quick Take and Interactive Mode continuation through legitimate access and isolated metering; no subscription changes or publication.
+- [x] Generate one fictional Quick Take plus sent-reply and observed-follow-up through the authorized operator workflow; all four reply tones returned, $0.097475 actual spend, no subscription changes or publication.
+- [ ] Read this isolated run in the ordinary result page — normal access returned zero rows for the evaluation artifact; no access bypass attempted. The fixture also produced an explicit speaker-attribution warning; clean customer browser round-trip remains unverified.
 
 ## Revised Quick Take offer (2026-10-20)
 - [x] Implement first-free, $4.99 single-session Quick Take access and $6.99/month Quick Take with Interactive Mode included.
