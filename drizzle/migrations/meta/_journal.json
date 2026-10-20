@@ -8,6 +8,13 @@
       "when": 1792457697018,
       "tag": "0000_quick_take_single_session_unlocks",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792457851686,
+      "tag": "0001_stable_first_quick_take_access",
+      "breakpoints": true
     }
   ]
 }
