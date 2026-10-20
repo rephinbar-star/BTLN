@@ -375,7 +375,9 @@ export const screen = (key: ModeKey, c: ModeCase, output: unknown, promptText?: 
     const safety = o.flag?.type === "safety";
     const texts = ro.map((r: any) => norm(String(r?.text ?? ""))).filter(Boolean);
     const tones = ro.map((r: any) => norm(String(r?.tone ?? "")));
-    const ok = safety ? ro.length === 0 : texts.length === 3 && new Set(texts).size === 3 && new Set(tones).size === 3;
+    // Four tones (Direct, Warm, Playful, Set Boundary); legacy three-reply outputs still pass.
+    const n = texts.length;
+    const ok = safety ? ro.length === 0 : (n === 3 || n === 4) && ro.length === n && new Set(texts).size === n && new Set(tones).size === n;
     add("three_distinct_replies", true, ok, safety ? "safety flag: replies withheld" : `${texts.length} replies, ${new Set(texts).size} distinct texts, ${new Set(tones).size} distinct tones`);
     add("interpretation_present", true, typeof o.read === "string" && o.read.trim().split(" ").length >= 8, typeof o.read === "string" ? "read present" : "read missing");
   }
