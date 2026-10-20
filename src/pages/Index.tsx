@@ -144,9 +144,15 @@ const Index = () => {
             >
               <img src={mode.art.url} alt="" width={560} height={560} loading={index === 0 ? "eager" : "lazy"} decoding="async" className="m-1 h-[96px] w-[96px] self-center rounded-[11px] object-cover min-[361px]:h-[112px] min-[361px]:w-[112px] md:m-0 md:aspect-square md:h-auto md:w-full md:rounded-none" />
               <span className="flex min-w-0 flex-col justify-center px-3 py-3 min-[361px]:px-4 md:flex-1 md:justify-start md:px-4 md:py-4">
-                {mode.free && (
+                {mode.free ? (
                   <span className="mb-2 inline-flex w-fit items-center rounded-full bg-prism-emerald px-2.5 py-1 font-mono text-[10px] font-bold uppercase leading-none tracking-[0.07em] text-background shadow-glow-emerald min-[361px]:text-[11px] md:mb-2.5">
                     {mode.free}
+                  </span>
+                ) : (
+                  // Keeps the label row level with badged cards in the grid;
+                  // hidden below md where the cards stack instead of aligning.
+                  <span aria-hidden="true" className="invisible mb-2 hidden w-fit items-center rounded-full px-2.5 py-1 font-mono text-[10px] font-bold uppercase leading-none tracking-[0.07em] min-[361px]:text-[11px] md:mb-2.5 md:inline-flex">
+                    Free to try
                   </span>
                 )}
                 <span className="flex items-start justify-between gap-1">
