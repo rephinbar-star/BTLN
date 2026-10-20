@@ -10,7 +10,7 @@ const QuickTake = () => (
       <title>Quick Take — what did that text actually mean?</title>
       <meta
         name="description"
-        content="Screenshot or paste one text and get the real read, what's underneath it, and three ways you could reply."
+        content="Screenshot or paste one text and get the real read, what's underneath it, and four ways you could reply."
       />
       <link rel="canonical" href="https://betweenthelines.app/quick" />
     </Helmet>

@@ -421,7 +421,7 @@ export default function Pricing() {
             Quick Take — one message at a time
           </h2>
           <p className="mx-auto mt-1 max-w-xl text-center text-[14px] text-muted-foreground">
-            Quick Take reads one message and suggests three replies. Interactive Mode keeps the same
+            Quick Take reads one message and suggests four replies. Interactive Mode keeps the same
             conversation going.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-6">
@@ -518,7 +518,7 @@ export default function Pricing() {
             <div className="py-5">
               <h3 className="font-medium">What is Interactive Mode, and what does it cost?</h3>
               <p className="mt-2 text-[14px] leading-relaxed text-muted-foreground">
-                Quick Take on its own reads one message and suggests three replies. Interactive Mode
+                Quick Take on its own reads one message and suggests four replies. Interactive Mode
                 lets you carry on: tell us what you actually sent, add what came back, and get an
                 updated read. It is included in the $6.99/month Quick Take plan without a separate
                 add-on charge. A $4.99 single session does not include Interactive Mode.

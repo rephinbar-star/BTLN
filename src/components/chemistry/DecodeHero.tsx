@@ -15,7 +15,7 @@ export const DecodeHero = () => (
         </h1>
         <p className="mt-5 max-w-[560px] text-[18px] leading-relaxed text-muted-foreground sm:text-[20px]">
           Screenshot it, paste it, stop re-reading it. In seconds you'll get the real read, what's going on
-          underneath, and three ways you could reply.
+          underneath, and four ways you could reply.
         </p>
         <ul className="mt-6 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted-foreground">
           <li className="font-medium text-foreground">Quick Take</li>

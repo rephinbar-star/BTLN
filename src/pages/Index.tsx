@@ -21,7 +21,7 @@ type RecentRead = { id: string; created_at: string };
 const modes = [
   {
     to: "/quick", label: "Quick Take", title: "Decode a text",
-    description: <>Possible meanings.<br />Three ways to reply.</>,
+    description: <>Possible meanings.<br />Four ways to reply.</>,
     action: "Get a Quick Take", art: quickArt,
     tone: "border-prism-lavender/70 bg-prism-violet/10 shadow-glow-violet",
     accent: "text-prism-lavender", actionTone: "border-prism-lavender bg-prism-lavender text-background",
