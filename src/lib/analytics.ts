@@ -25,7 +25,7 @@ type QuestionVariant = "wrong" | "balanced";
 
 export type EventMap = {
   report_started: { relationship_type: RelationshipType };
-  report_completed: {
+  analysis_completed: {
     analysis_id: string;
     low_confidence: boolean;
     message_count_bucket: MessageCountBucket;
