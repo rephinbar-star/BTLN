@@ -1,4 +1,4 @@
-import { includesInteractive } from "../_shared/quickTakePurchases.ts";
+import { activeSubscription as active, includesInteractive } from "../_shared/quickTakePurchases.ts";
 import { withTestRun } from "../_shared/testRun.ts";
 import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { INTERACTIVE_SYSTEM } from "../_shared/modePrompts.ts";
@@ -32,10 +32,6 @@ const hashText = async (value: string) => {
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
 };
-
-const active = (row: { status?: string; current_period_end?: string | null }) =>
-  ["active", "trialing", "past_due"].includes(row.status ?? "") &&
-  (!row.current_period_end || new Date(row.current_period_end).getTime() > Date.now());
 
 const reviewedIngestion = (value: unknown): ReviewedIngestion | null => {
   if (!value || typeof value !== "object") return null;

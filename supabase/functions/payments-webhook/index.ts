@@ -157,11 +157,11 @@ async function handleCheckoutCompleted(session: any, env: StripeEnv, eventId: st
         : session.payment_intent?.id ?? null;
 
     if (reportKind === "quick_take") {
-      if (!validSingleQuickTakePayment(session)) throw new Error("Invalid single Quick Take payment");
+      if (!validSingleQuickTakePayment(session as never)) throw new Error("Invalid single Quick Take payment");
       const decodeId = session.metadata?.decodeId;
       const { data: target } = await getSupabase().from("decodes").select("id,user_id,status").eq("id", decodeId).eq("user_id", userId).maybeSingle();
-      const { data: artifact } = await getSupabase().from("evaluation_artifacts").select("id").eq("source_id", decodeId).limit(1);
-      if (!target || target.status !== "complete" || artifact?.length) throw new Error("Quick Take target is unavailable");
+      const { data: artifact, error: artifactError } = await getSupabase().from("evaluation_artifacts").select("id").eq("source_id", decodeId).limit(1);
+      if (!target || target.status !== "complete" || artifactError || artifact?.length || !paymentIntent) throw new Error("Quick Take target is unavailable");
       const { error } = await getSupabase().from("decode_unlocks").upsert({ user_id: userId, decode_id: decodeId, amount_cents: 499, stripe_payment_intent_id: paymentIntent }, { onConflict: "user_id,decode_id" });
       if (error) throw new Error("Could not unlock Quick Take");
       await recordAudit({ environment: env, event_id: eventId, event_type: "checkout.session.completed", checkout_session_id: session.id, status: "processed", changes: { decode_unlocks: "upserted" } });

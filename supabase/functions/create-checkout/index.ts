@@ -134,6 +134,8 @@ Deno.serve(async (req) => {
       const { data: target } = await admin.from("decodes").select("id,user_id,status").eq("id", decodeId).maybeSingle();
       const { data: artifacts, error: artifactError } = await admin.from("evaluation_artifacts").select("id").eq("source_id", decodeId).limit(1);
       if (!target || target.user_id !== userId || target.status !== "complete" || artifactError || artifacts?.length) return new Response(JSON.stringify({ error: "That Quick Take is not available to buy" }), { status: 403, headers: corsHeaders });
+      const { data: allowed, error: accessError } = await admin.rpc("decode_access_allowed", { p_id: decodeId });
+      if (accessError || allowed) return new Response(JSON.stringify({ error: "This Quick Take already has access, or access cannot be confirmed" }), { status: 409, headers: corsHeaders });
     }
 
     if (kind === "group_read") {
@@ -210,6 +212,7 @@ Deno.serve(async (req) => {
     }
     const stripePrice = prices.data[0];
     const isRecurring = stripePrice.type === "recurring";
+    if ((priceId === "BTLN_decode_monthly" || priceId === "decode_monthly") && (!userId || !stripePrice.active || stripePrice.unit_amount !== 699 || stripePrice.currency !== "usd" || stripePrice.recurring?.interval !== "month" || stripePrice.recurring?.interval_count !== 1 || (quantity !== undefined && quantity !== 1))) return new Response(JSON.stringify({ error: "The $6.99 monthly Quick Take plan is unavailable or requires sign-in" }), { status: 409, headers: corsHeaders });
     if ((kind === "group_read" || kind === "group_roast") && isRecurring) {
       return new Response(JSON.stringify({ error: "This purchase must use a one-time price" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
