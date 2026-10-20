@@ -113,13 +113,14 @@ Deno.serve(withTestRun("decode-conversation", async (req) => {
   if (decode_id) {
     const { data: existing } = await supabase
       .from("decodes")
-      .select("id, session_id, user_id")
+      .select("id, session_id, user_id,status")
       .eq("id", decode_id)
       .maybeSingle();
     if (!existing) return json(404, { error: "Decode not found" });
-    if (existing.session_id !== session_id) {
+    if ((existing.user_id && existing.user_id !== personalizationUserId) || (!existing.user_id && existing.session_id !== session_id)) {
       return json(403, { error: "Not authorized for this decode" });
     }
+    if (existing.status !== "pending" && existing.status !== "failed") return json(200, { decode_id: existing.id, status: existing.status });
     row_id = existing.id as string;
     await supabase
       .from("decodes")

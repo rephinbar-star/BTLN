@@ -91,24 +91,37 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json().catch(() => ({}));
-    const { environment, analysisId, sessionId } = body ?? {};
+    const { environment, analysisId, sessionId, decodeId } = body ?? {};
     if (environment !== "sandbox" && environment !== "live") {
       return new Response(JSON.stringify({ error: "Invalid environment" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const stripe = createStripeClient(environment as StripeEnv);
     const synced = new Set<string>();
+    let paymentVerified = false;
     if (sessionId && typeof sessionId === "string") {
       const session = await stripe.checkout.sessions.retrieve(sessionId, { expand: ["subscription"] });
       const sessionUserId = session.metadata?.userId;
       if (sessionUserId !== user.id) {
         return new Response(JSON.stringify({ error: "Unauthorized session" }), { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
+      if (session.mode === "payment" && session.metadata?.reportKind === "quick_take") {
+        if (session.metadata?.decodeId !== decodeId || !validSingleQuickTakePayment(session as never)) return new Response(JSON.stringify({ paymentVerified: false }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        const { data: target } = await supabase.from("decodes").select("id,status").eq("id", decodeId).eq("user_id", user.id).maybeSingle();
+        const { data: artifacts, error: artifactError } = await supabase.from("evaluation_artifacts").select("id").eq("source_id", decodeId).limit(1);
+        if (!target || target.status !== "complete" || artifactError || artifacts?.length) throw new Error("Quick Take target is unavailable");
+        const paymentIntent = typeof session.payment_intent === "string" ? session.payment_intent : session.payment_intent?.id;
+        if (!paymentIntent) throw new Error("Payment confirmation is incomplete");
+        const { error: unlockError } = await supabase.from("decode_unlocks").upsert({ user_id: user.id, decode_id: decodeId, amount_cents: 499, stripe_payment_intent_id: paymentIntent }, { onConflict: "user_id,decode_id" });
+        if (unlockError) throw new Error("Could not unlock Quick Take");
+        return new Response(JSON.stringify({ paymentVerified: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
       const sub = typeof session.subscription === "string"
         ? await stripe.subscriptions.retrieve(session.subscription)
         : session.subscription;
       if (sub && await syncSubscription(sub, analysisId ?? session.metadata?.analysisId, user.id)) {
         synced.add(sub.id);
+        paymentVerified = session.payment_status === "paid" && isAccessGrantingStatus(sub.status);
       }
     }
 
@@ -132,7 +145,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ synced: synced.size }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ synced: synced.size, paymentVerified }), { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
     console.error("sync-subscription error:", msg);

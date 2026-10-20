@@ -45,7 +45,7 @@ export type EventMap = {
   paywall_viewed: { analysis_id: string };
   intent_to_pay_click: { analysis_id: string; option: PaywallOption };
   // Opaque identifiers only (UUIDs / enum) — never price, plan text or PII.
-  payment_made: { target_id: string; target_type: "analysis" | "group_read" | "group_roast" };
+  payment_made: { target_id: string; target_type: "analysis" | "group_read" | "group_roast" | "quick_take" };
   pricing_cta_clicked: { option: PaywallOption; source?: string };
   /** "Help me choose" outcome. Enum key only — never the user's answers as text. */
   pricing_guide_result: { recommendation: string; source?: string };
