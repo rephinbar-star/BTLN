@@ -215,7 +215,7 @@ const Processing = () => {
             return false;
           }
         })();
-        track("report_completed", {
+        track("analysis_completed", {
           analysis_id: analysisId!,
           low_confidence: lowConfidence,
           message_count_bucket: messageCountBucket(
