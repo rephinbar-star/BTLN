@@ -85,3 +85,7 @@
 - [x] Compact Deep context and Group context with secondary controls disclosed.
 - [x] Shared concise Relationship360 example/live dashboard with honest evidence and reachable management/privacy.
 - [x] Browser checks at 375/1280, focused tests, typecheck and updated closeout; opted-in live account and OCR/model flows remain untested.
+
+## Homepage "Free to try" badge (2026-10-20, unpublished)
+- [x] Add a standout "Free to try" pill to the Quick Take and Group Roast cards only; Deep Read and Relationship360 unchanged.
+- [x] Keep the card label row level in the tablet/desktop grids and verify at 320/375/768/1280 with no overflow; typecheck and build pass.
