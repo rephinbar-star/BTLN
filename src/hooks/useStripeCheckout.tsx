@@ -9,7 +9,8 @@ interface CheckoutOptions {
   analysisId?: string;
   groupReadId?: string;
   groupRoastId?: string;
-  reportKind?: "analysis" | "group_read" | "group_roast";
+  decodeId?: string;
+  reportKind?: "analysis" | "group_read" | "group_roast" | "quick_take";
   customerCountry?: string;
   returnUrl?: string;
 }

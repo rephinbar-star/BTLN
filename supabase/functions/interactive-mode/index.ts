@@ -1,3 +1,4 @@
+import { includesInteractive } from "../_shared/quickTakePurchases.ts";
 import { withTestRun } from "../_shared/testRun.ts";
 import { inStage, markStage, systemFor } from "../_shared/testRunCore.ts";
 import { INTERACTIVE_SYSTEM } from "../_shared/modePrompts.ts";
@@ -112,10 +113,7 @@ Deno.serve(withTestRun("interactive-mode", async (req) => {
   ]);
   const activeEntitlements = (entitlementRows ?? []).filter(active).map((row) => row.entitlement);
   const activeTiers = (subscriptionRows ?? []).filter(active).map((row) => row.tier);
-  const prime = activeEntitlements.includes("prime") || activeTiers.includes("prime");
-  const hasAddon = activeEntitlements.includes("interactive_mode") || activeTiers.includes("interactive_addon");
-  const hasBase = activeEntitlements.includes("quick_take") || activeTiers.includes("decode_monthly");
-  if (!prime && !(hasAddon && hasBase)) return json(402, { error: "Interactive Mode requires both an active Quick Take plan and add-on, or Prime." });
+  if (!includesInteractive(activeTiers, activeEntitlements)) return json(402, { error: "Interactive Mode is included with an active $6.99/month Quick Take plan or Prime." });
   if (!decode || decode.user_id !== user.id || decode.status !== "complete") return json(403, { error: "That Quick Take is not available to this account." });
 
   const { data: ownedThread } = await admin.from("interactive_threads").select("id,context_version,structured_context").eq("user_id", user.id).eq("decode_id", decodeId).maybeSingle();

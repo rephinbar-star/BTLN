@@ -1,3 +1,4 @@
+import { entitlementsForTier, validSingleQuickTakePayment } from "../_shared/quickTakePurchases.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
 
@@ -19,13 +20,7 @@ function resolveTier(lookupKey?: string | null): string {
   return "unknown";
 }
 
-function entitlementsForTier(tier: string): string[] {
-  if (tier === "decode_monthly") return ["quick_take"];
-  if (tier === "monthly" || tier === "annual") return ["quick_take", "full_reports"];
-  if (tier === "interactive_addon") return ["interactive_mode"];
-  if (tier === "prime") return ["prime", "quick_take", "interactive_mode", "full_reports", "relationship360"];
-  return [];
-}
+
 
 function isAccessGrantingStatus(status?: string | null): boolean {
   return status === "active" || status === "trialing" || status === "past_due";

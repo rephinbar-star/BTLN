@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
   }
   try {
     const body = await req.json();
-    const { priceId, quantity, customerEmail, userId: bodyUserId, analysisId, groupReadId, groupRoastId, reportKind, customerCountry, returnUrl, environment } = body ?? {};
+    const { priceId, quantity, customerEmail, userId: bodyUserId, analysisId, groupReadId, groupRoastId, reportKind, decodeId, customerCountry, returnUrl, environment } = body ?? {};
 
 
     // Derive userId from the verified JWT — never trust a body-supplied userId,
@@ -113,9 +113,9 @@ Deno.serve(async (req) => {
     // only ever target something the signed-in caller actually owns; the kind
     // is never inferred from the client's word alone.
     const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    let kind: "analysis" | "group_read" | "group_roast" | null = null;
+    let kind: "analysis" | "group_read" | "group_roast" | "quick_take" | null = null;
     if (reportKind !== undefined && reportKind !== null) {
-      if (reportKind !== "analysis" && reportKind !== "group_read" && reportKind !== "group_roast") {
+      if (reportKind !== "analysis" && reportKind !== "group_read" && reportKind !== "group_roast" && reportKind !== "quick_take") {
         return new Response(JSON.stringify({ error: "Invalid reportKind" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
       kind = reportKind;
@@ -125,6 +125,15 @@ Deno.serve(async (req) => {
       kind = "group_read";
     } else if (analysisId) {
       kind = "analysis";
+    }
+
+    if (kind === "quick_take") {
+      if (!userId) return new Response(JSON.stringify({ error: "Sign in to buy this Quick Take" }), { status: 401, headers: corsHeaders });
+      if (typeof decodeId !== "string" || !UUID_RE.test(decodeId) || priceId !== "BTLN_report_unlock" || quantity && quantity !== 1) return new Response(JSON.stringify({ error: "Invalid single Quick Take purchase" }), { status: 400, headers: corsHeaders });
+      const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+      const { data: target } = await admin.from("decodes").select("id,user_id,status").eq("id", decodeId).maybeSingle();
+      const { data: artifacts, error: artifactError } = await admin.from("evaluation_artifacts").select("id").eq("source_id", decodeId).limit(1);
+      if (!target || target.user_id !== userId || target.status !== "complete" || artifactError || artifacts?.length) return new Response(JSON.stringify({ error: "That Quick Take is not available to buy" }), { status: 403, headers: corsHeaders });
     }
 
     if (kind === "group_read") {
@@ -207,6 +216,7 @@ Deno.serve(async (req) => {
     if (kind === "group_roast" && (priceId !== "BTLN_report_unlock" || stripePrice.unit_amount !== 499 || stripePrice.currency !== "usd")) {
       return new Response(JSON.stringify({ error: "The $4.99 Group Roast test price is not configured correctly" }), { status: 409, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
+    if (kind === "quick_take" && (isRecurring || stripePrice.unit_amount !== 499 || stripePrice.currency !== "usd" || !stripePrice.active)) return new Response(JSON.stringify({ error: "The $4.99 single-session price is not configured correctly" }), { status: 409, headers: corsHeaders });
     const useManagedPayments = false; // disabled until Stripe head office address is set
     const customerId = await resolveOrCreateCustomer(stripe, { email: customerEmail, userId });
 
@@ -222,6 +232,7 @@ Deno.serve(async (req) => {
         ...(kind === "group_read" && { groupReadId }),
         ...(kind === "group_roast" && { groupRoastId }),
         ...(kind && { reportKind: kind }),
+        ...(kind === "quick_take" && { decodeId, productKey: priceId }),
         ...(customerCountry && { customer_country: customerCountry }),
         managed_payments: useManagedPayments ? "true" : "false",
       },
