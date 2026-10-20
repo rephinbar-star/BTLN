@@ -122,18 +122,19 @@ Deno.serve(withTestRun("decode-conversation", async (req) => {
     }
     if (existing.status !== "pending" && existing.status !== "failed") return json(200, { decode_id: existing.id, status: existing.status });
     row_id = existing.id as string;
-    await supabase
+    const { data: claimed } = await supabase
       .from("decodes")
       .update({
-        status: "pending", error_message: null, source: source ?? null,
+        status: "extracting", error_message: null, source: source ?? null,
         // Record the verified signed-in owner once (never reassign an owned decode).
         ...(personalizationUserId && !existing.user_id ? { user_id: personalizationUserId } : {}),
       })
-      .eq("id", row_id);
+      .eq("id", row_id).eq("status", existing.status).select("id").maybeSingle();
+    if (!claimed) return json(200, { decode_id: row_id, status: "extracting" });
   } else {
     const { data: created, error: createErr } = await supabase
       .from("decodes")
-      .insert({ session_id, source: source ?? null, status: "pending", user_id: personalizationUserId })
+      .insert({ session_id, source: source ?? null, status: "extracting", user_id: personalizationUserId })
       .select("id")
       .single();
     if (createErr || !created) {

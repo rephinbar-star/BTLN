@@ -232,7 +232,7 @@ const COLUMNS = [
 export default function Pricing() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { isMember, tier: memberTier, hasInteractiveMode } = useMembership();
+  const { isMember, tier: memberTier } = useMembership();
   const { openCheckout, checkoutElement, isOpen, closeCheckout } = useStripeCheckout();
   const [pending, setPending] = useState<string | null>(null);
   const [chooseMode, setChooseMode] = useState(false);
