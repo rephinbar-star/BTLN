@@ -405,7 +405,6 @@ export default function Pricing() {
         className={`relative flex w-full max-w-[600px] flex-col rounded-2xl border border-border bg-card p-5 transition-all duration-200 motion-reduce:transition-none hover:shadow-lg sm:p-6 ${intended === QUICK_TIER.key ? "ring-2 ring-foreground/40" : ""}`}
       >
         <div className="text-[12px] font-medium uppercase tracking-wide text-muted-foreground">Quick Take plan</div>
-        <p className="mt-2 text-[14px] font-semibold">Interactive Mode: In development — not available to buy</p>
         <div className="mt-2 flex items-baseline gap-1">
           <span className="text-[36px] font-medium tracking-tight">$6.99</span>
           <span className="text-[14px] text-muted-foreground">/month</span>
