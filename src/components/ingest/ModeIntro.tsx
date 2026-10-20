@@ -6,7 +6,7 @@ import relationshipArt from "@/assets/home-modes/relationship360.webp.asset.json
 
 type Kind = "quick" | "deep" | "group" | "relationship";
 const modes = {
-  quick: { label: "Quick Take", title: "What did they mean?", lines: ["Possible meanings.", "Three ways to reply."], art: quickArt, color: "text-prism-lavender" },
+  quick: { label: "Quick Take", title: "What did they mean?", lines: ["Possible meanings.", "Four ways to reply."], art: quickArt, color: "text-prism-lavender" },
   deep: { label: "Deep Read", title: "See your patterns.", lines: ["Understand each other.", "Find a better way forward."], art: deepArt, color: "text-prism-emerald-text" },
   group: { label: "Group Roast", title: "Your chat. Roasted.", lines: ["Find the roles.", "Laugh at the habits."], art: groupArt, color: "text-prism-amber-text" },
   relationship: { label: "Your Relationship360", title: "See how you connect.", lines: ["Patterns over time.", "Practical coaching for you."], art: relationshipArt, color: "text-prism-lavender" },

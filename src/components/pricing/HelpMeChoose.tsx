@@ -24,7 +24,7 @@ const exampleRoute = (kind: (typeof EXAMPLES)[number]["kind"]) => EXAMPLES.find(
 const REC: Record<string, Rec> = {
   quick_single: {
     title: "Quick Take",
-    reason: "One message, one read: what it may mean and three ways to reply.",
+    reason: "One message, one read: what it may mean and four ways to reply.",
     price: "First read free, then $4.99 for one session or $6.99/month with Interactive Mode included.",
     primary: { to: "/quick", label: "Start a Quick Take" },
     example: { to: exampleRoute("quick"), label: "See Example" },
