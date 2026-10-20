@@ -51,6 +51,12 @@ describe("screens", () => {
     const dup = { ...qt, reply_options: [qt.reply_options[0], qt.reply_options[0], qt.reply_options[1]] };
     expect(hardPass(screen("quick_take", byId("quick_take", "qt-plan"), dup))).toBe(false);
   });
+  it("quick take passes with four distinct replies including Set Boundary", () => {
+    const four = { ...qt, reply_options: [...qt.reply_options, { tone: "Set Boundary", text: "I'd like us to decide plans together from now on." }] };
+    expect(hardPass(screen("quick_take", byId("quick_take", "qt-plan"), four))).toBe(true);
+    const five = { ...four, reply_options: [...four.reply_options, { tone: "Extra", text: "One more." }] };
+    expect(hardPass(screen("quick_take", byId("quick_take", "qt-plan"), five))).toBe(false);
+  });
   it("unreadable output fails closed", () => {
     expect(hardPass(screen("deep_read_full", byId("deep_read_full", "dr-balanced"), null))).toBe(false);
   });

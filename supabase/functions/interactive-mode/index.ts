@@ -234,7 +234,7 @@ Deno.serve(withTestRun("interactive-mode", async (req) => {
       verdict: String(parsed.verdict ?? "Updated take").slice(0, 180),
       read: parsed.read.slice(0, 1600),
       signals: parsed.signals?.slice?.(0, 4) ?? [],
-      reply_options: parsed.reply_options.slice(0, 3).map((option: Record<string, unknown>) => ({ tone: String(option.tone ?? "Reply").slice(0, 40), text: String(option.text ?? "").slice(0, 800) })),
+      reply_options: parsed.reply_options.slice(0, 4).map((option: Record<string, unknown>) => ({ tone: String(option.tone ?? "Reply").slice(0, 40), text: String(option.text ?? "").slice(0, 800) })),
       confidence: ["low", "medium", "high"].includes(parsed.confidence) ? parsed.confidence : "low",
       provenance_notes: String(parsed.provenance_notes ?? "Based on the confirmed continuation.").slice(0, 500),
     };
