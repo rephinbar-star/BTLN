@@ -1,8 +1,9 @@
 # Roadmap
 
 ## Revised Quick Take offer (2026-10-20)
-- [ ] Implement first-free, $4.99 single-session Quick Take access and $6.99/month Quick Take with Interactive Mode included.
-- [ ] Update pricing/chooser/payment access consistently and verify security, payment lifecycle and UI; leave unpublished.
+- [x] Implement first-free, $4.99 single-session Quick Take access and $6.99/month Quick Take with Interactive Mode included.
+- [x] Update pricing/chooser/payment access consistently; verify rule tests, protected first-free reads and UI; leave frontend unpublished.
+- [ ] Verify isolated Stripe paid fulfilment and subscribed Interactive Mode browser flow — blocked on demonstrably isolated server payment setup and legitimate entitled session.
 
 - [x] Implement approved Quick Take, Deep Read, Group Roast and Relationship360 layouts with shared intake safeguards.
 - [x] Verify responsive pages, universal intake and fictional profile; document limits (authenticated opted-in live profile and payment flows remain untested).
