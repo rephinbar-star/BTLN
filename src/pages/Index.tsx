@@ -26,6 +26,7 @@ const modes = [
     tone: "border-prism-lavender/70 bg-prism-violet/10 shadow-glow-violet",
     accent: "text-prism-lavender", actionTone: "border-prism-lavender bg-prism-lavender text-background",
     tag: "home_quick",
+    free: "Free to try",
   },
   {
     to: "/deep", label: "Deep Read", title: "Understand a relationship",
@@ -40,6 +41,7 @@ const modes = [
     action: "Roast our group", art: groupArt,
     tone: "border-btln-line bg-card", accent: "text-prism-amber-text",
     actionTone: "border-btln-line bg-elevated text-foreground", tag: "home_group_roast",
+    free: "Free to try",
   },
   {
     to: "/prime", label: "Relationship360", title: "Understand your patterns",
@@ -137,11 +139,16 @@ const Index = () => {
               key={mode.to}
               to={mode.to}
               onClick={() => logEvent("cta_clicked", { location: mode.tag })}
-              aria-label={`${mode.label}: ${mode.title}${mode.status ? `. ${mode.status}` : ""}`}
+              aria-label={`${mode.label}: ${mode.title}${mode.free ? `. ${mode.free}` : ""}${mode.status ? `. ${mode.status}` : ""}`}
               className={`group grid min-h-[116px] grid-cols-[96px_minmax(0,1fr)] overflow-hidden rounded-[17px] border transition-[background-color,border-color,transform] duration-150 hover:-translate-y-0.5 hover:border-prism-lavender focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background motion-reduce:transform-none min-[361px]:min-h-[120px] min-[361px]:grid-cols-[112px_minmax(0,1fr)] md:flex md:min-h-0 md:flex-col ${mode.tone}`}
             >
               <img src={mode.art.url} alt="" width={560} height={560} loading={index === 0 ? "eager" : "lazy"} decoding="async" className="m-1 h-[96px] w-[96px] self-center rounded-[11px] object-cover min-[361px]:h-[112px] min-[361px]:w-[112px] md:m-0 md:aspect-square md:h-auto md:w-full md:rounded-none" />
               <span className="flex min-w-0 flex-col justify-center px-3 py-3 min-[361px]:px-4 md:flex-1 md:justify-start md:px-4 md:py-4">
+                {mode.free && (
+                  <span className="mb-2 inline-flex w-fit items-center rounded-full bg-prism-emerald px-2.5 py-1 font-mono text-[10px] font-bold uppercase leading-none tracking-[0.07em] text-background shadow-glow-emerald min-[361px]:text-[11px] md:mb-2.5">
+                    {mode.free}
+                  </span>
+                )}
                 <span className="flex items-start justify-between gap-1">
                   <span className={`min-w-0 break-words font-mono text-[11px] font-medium leading-5 min-[361px]:text-[12px] ${mode.accent}`}>{mode.label}</span>
                   <ArrowRight aria-hidden="true" className={`h-4 w-4 shrink-0 ${mode.accent}`} />
